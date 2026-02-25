@@ -8,29 +8,19 @@ import Animated, {
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
-  premiumColors,
-  premiumTypography,
-  premiumShadows,
   premiumSpacing,
-  premiumBorderRadius,
   premiumAnimation,
 } from '../../../constants/premiumTheme';
+import { useTheme } from '@/theme';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 
 interface QuickActionButtonProps {
-  /** Nom de l'icône MaterialCommunityIcons */
   icon: string;
-  /** Couleur(s) dégradé de l'icône */
   iconGradient: readonly string[];
-  /** Texte sous l'icône */
   label: string;
-  /** Callback au press */
   onPress: () => void;
 }
 
-/**
- * Bouton d'action rapide avec glassmorphism simulé et icône dégradée
- */
 const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   icon,
   iconGradient,
@@ -40,6 +30,7 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   const pressScale = useSharedValue(1);
   const { width: screenWidth } = useWindowDimensions();
   const tablet = checkIsTablet(screenWidth);
+  const { colors } = useTheme();
 
   const handlePressIn = useCallback(() => {
     pressScale.value = withTiming(premiumAnimation.pressScaleSmall, {
@@ -62,6 +53,8 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
     onPress();
   }, [onPress]);
 
+  const accentColor = iconGradient[0] as string;
+
   return (
     <Animated.View style={[styles.wrapper, pressStyle]}>
       <TouchableOpacity
@@ -71,19 +64,33 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
         onPressOut={handlePressOut}
         style={styles.touchable}
       >
-        <View style={[styles.container, tablet && styles.containerTablet]}>
-          {/* Cercle icône avec dégradé */}
+        <View style={[
+          styles.container,
+          { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+          tablet && styles.containerTablet,
+        ]}>
+          {/* Top accent line */}
           <LinearGradient
             colors={[...(iconGradient as string[])]}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.iconCircle, tablet && styles.iconCircleTablet]}
-          >
-            <Icon name={icon} size={tablet ? 28 : 24} color={premiumColors.text.inverse} />
-          </LinearGradient>
+            end={{ x: 1, y: 0 }}
+            style={styles.accentLine}
+          />
+
+          {/* Gradient icon pill */}
+          <View style={[styles.iconShadow, { shadowColor: accentColor }]}>
+            <LinearGradient
+              colors={[...(iconGradient as string[])]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.iconPill, tablet && styles.iconPillTablet]}
+            >
+              <Icon name={icon} size={tablet ? 24 : 20} color="#FFFFFF" />
+            </LinearGradient>
+          </View>
 
           {/* Label */}
-          <Text style={[styles.label, tablet && styles.labelTablet]} numberOfLines={1}>
+          <Text style={[styles.label, { color: colors.textSecondary }, tablet && styles.labelTablet]} numberOfLines={1}>
             {label}
           </Text>
         </View>
@@ -99,40 +106,59 @@ const styles = StyleSheet.create({
   },
   touchable: {
     alignItems: 'center',
+    width: '100%',
   },
   container: {
     alignItems: 'center',
-    backgroundColor: premiumColors.glass.white,
-    borderRadius: premiumBorderRadius.xl,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: premiumColors.glass.border,
-    paddingVertical: premiumSpacing.md,
-    paddingHorizontal: premiumSpacing.sm,
-    width: 78,
-    ...premiumShadows.xs,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
+    width: '100%',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   containerTablet: {
-    width: 110,
     paddingVertical: premiumSpacing.lg,
     paddingHorizontal: premiumSpacing.md,
   },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  accentLine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2.5,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  iconShadow: {
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    marginBottom: 8,
+  },
+  iconPill: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: premiumSpacing.sm,
   },
-  iconCircleTablet: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  iconPillTablet: {
+    width: 50,
+    height: 50,
+    borderRadius: 16,
   },
   label: {
-    ...premiumTypography.smallMedium,
-    color: premiumColors.text.secondary,
+    fontSize: 12,
+    fontWeight: '600',
     textAlign: 'center',
+    letterSpacing: -0.1,
   },
   labelTablet: {
     fontSize: 14,

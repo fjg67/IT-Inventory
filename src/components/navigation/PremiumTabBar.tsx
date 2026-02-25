@@ -15,11 +15,11 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import {
-  premiumColors,
   premiumTypography,
   premiumShadows,
   premiumSpacing,
 } from '../../constants/premiumTheme';
+import { useTheme } from '@/theme';
 import { isTablet as checkIsTablet } from '../../utils/responsive';
 
 // ==================== CONFIG ====================
@@ -45,6 +45,7 @@ const TabItem: React.FC<TabItemProps> = ({ routeName, isFocused, onPress, onLong
   const config = TAB_CONFIG[routeName] ?? { icon: 'circle-outline', iconFocused: 'circle', label: routeName };
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
+  const { colors } = useTheme();
 
   const iconScale = useSharedValue(1);
   const dotOpacity = useSharedValue(0);
@@ -89,15 +90,15 @@ const TabItem: React.FC<TabItemProps> = ({ routeName, isFocused, onPress, onLong
         <Icon
           name={isFocused ? config.iconFocused : config.icon}
           size={tablet ? 28 : 23}
-          color={isFocused ? premiumColors.primary.base : 'rgba(148,163,184,0.7)'}
+          color={isFocused ? colors.tabBarActive : colors.tabBarInactive}
         />
       </Animated.View>
 
-      <Text style={[s.tabLabel, tablet && s.tabLabelTablet, isFocused && s.tabLabelActive]} numberOfLines={1}>
+      <Text style={[s.tabLabel, { color: colors.tabBarInactive }, tablet && s.tabLabelTablet, isFocused && { color: colors.tabBarActive, fontWeight: '600' as const }]} numberOfLines={1}>
         {config.label}
       </Text>
 
-      <Animated.View style={[s.activeDot, tablet && s.activeDotTablet, dotAnim]} />
+      <Animated.View style={[s.activeDot, { backgroundColor: colors.tabBarActive }, tablet && s.activeDotTablet, dotAnim]} />
     </TouchableOpacity>
   );
 };
@@ -114,6 +115,7 @@ const ScanCenterButton: React.FC<ScanBtnProps> = ({ isFocused, onPress, onLongPr
   const tablet = checkIsTablet(width);
   const scale = useSharedValue(1);
   const glowOpacity = useSharedValue(0);
+  const { colors, gradients } = useTheme();
 
   useEffect(() => {
     if (isFocused) {
@@ -150,10 +152,10 @@ const ScanCenterButton: React.FC<ScanBtnProps> = ({ isFocused, onPress, onLongPr
           onPress={handlePress}
           onLongPress={onLongPress}
           activeOpacity={0.8}
-          style={[s.scanBtnOuter, tablet && s.scanBtnOuterTablet]}
+          style={[s.scanBtnOuter, { borderColor: colors.tabBarBackground }, tablet && s.scanBtnOuterTablet]}
         >
           <LinearGradient
-            colors={isFocused ? ['#3B82F6', '#2563EB'] : ['#3B82F6', '#1D4ED8']}
+            colors={isFocused ? [...gradients.scanButton.slice(0, 2)] : [...gradients.scanButton]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={s.scanBtnGrad}
@@ -163,7 +165,7 @@ const ScanCenterButton: React.FC<ScanBtnProps> = ({ isFocused, onPress, onLongPr
         </TouchableOpacity>
       </Animated.View>
 
-      <Text style={[s.scanLabel, tablet && s.scanLabelTablet, isFocused && s.scanLabelActive]}>Scan</Text>
+      <Text style={[s.scanLabel, { color: colors.tabBarInactive }, tablet && s.scanLabelTablet, isFocused && { color: colors.tabBarActive, fontWeight: '600' as const }]}>Scan</Text>
     </View>
   );
 };
@@ -172,9 +174,10 @@ const ScanCenterButton: React.FC<ScanBtnProps> = ({ isFocused, onPress, onLongPr
 const PremiumTabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation }) => {
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
+  const { colors } = useTheme();
 
   return (
-    <View style={s.container}>
+    <View style={[s.container, { backgroundColor: colors.tabBarBackground, borderTopColor: colors.tabBarBorder }]}>
       <View style={[s.tabBar, tablet && s.tabBarTablet]}>
         {state.routes.map((route, index) => {
           const isFocused = state.index === index;
@@ -224,9 +227,7 @@ const PremiumTabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
 // ==================== STYLES ====================
 const s = StyleSheet.create({
   container: {
-    backgroundColor: premiumColors.surface,
     borderTopWidth: 1,
-    borderTopColor: premiumColors.border,
     ...premiumShadows.md,
   },
   tabBar: {
@@ -259,7 +260,6 @@ const s = StyleSheet.create({
   },
   tabLabel: {
     ...premiumTypography.small,
-    color: 'rgba(148,163,184,0.7)',
     fontSize: 10.5,
     marginTop: 2,
   },
@@ -268,14 +268,11 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   tabLabelActive: {
-    color: premiumColors.primary.base,
-    fontWeight: '600',
   },
   activeDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: premiumColors.primary.base,
     marginTop: 2,
     ...premiumShadows.glowBlue,
   },
@@ -315,13 +312,13 @@ const s = StyleSheet.create({
     height: 56,
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#2563EB',
+    shadowColor: '#6366F1',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 10,
     borderWidth: 3,
-    borderColor: premiumColors.surface,
+    borderColor: 'transparent',
   },
   scanBtnOuterTablet: {
     width: 68,
@@ -337,7 +334,6 @@ const s = StyleSheet.create({
   scanLabel: {
     fontSize: 10,
     fontWeight: '500',
-    color: 'rgba(148,163,184,0.7)',
     marginTop: 4,
   },
   scanLabelTablet: {
@@ -345,8 +341,6 @@ const s = StyleSheet.create({
     marginTop: 6,
   },
   scanLabelActive: {
-    color: premiumColors.primary.base,
-    fontWeight: '600',
   },
 });
 

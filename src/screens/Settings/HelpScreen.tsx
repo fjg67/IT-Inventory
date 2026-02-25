@@ -44,6 +44,7 @@ import {
   getPopularFAQ,
 } from '@/constants/faqContent';
 import debounce from 'lodash/debounce';
+import { useTheme } from '@/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SUPPORT_EMAIL = 'Florian.JOVEGARCIA-ext@ca-alsace-vosges.fr';
@@ -57,6 +58,7 @@ interface FAQAccordionProps {
 
 const FAQAccordion: React.FC<FAQAccordionProps> = React.memo(
   ({ item, expanded, onToggle }) => {
+    const { colors } = useTheme();
     const rotation = useSharedValue(expanded ? 1 : 0);
 
     React.useEffect(() => {
@@ -71,7 +73,7 @@ const FAQAccordion: React.FC<FAQAccordionProps> = React.memo(
     }));
 
     return (
-      <View style={styles.faqCard}>
+      <View style={[styles.faqCard, { backgroundColor: colors.surface }]}>
         <TouchableOpacity
           style={styles.faqHeader}
           onPress={() => {
@@ -80,23 +82,24 @@ const FAQAccordion: React.FC<FAQAccordionProps> = React.memo(
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.faqQuestion, expanded && styles.faqQuestionExpanded]}>
+          <Text style={[styles.faqQuestion, { color: colors.textSecondary }, expanded && { fontWeight: '600', color: colors.textPrimary }]}>
             {item.question}
           </Text>
           <Animated.View style={chevronStyle}>
-            <Icon name="chevron-down" size={22} color="#9CA3AF" />
+            <Icon name="chevron-down" size={22} color={colors.textMuted} />
           </Animated.View>
         </TouchableOpacity>
 
         {expanded && (
           <Animated.View entering={FadeIn.duration(200)} style={styles.faqContent}>
-            <View style={styles.faqDivider} />
+            <View style={[styles.faqDivider, { backgroundColor: colors.divider }]} />
             {item.answer.split('\n\n').map((paragraph, idx) => (
               <Text
                 key={idx}
                 style={[
                   styles.faqAnswer,
-                  paragraph.endsWith(':') && styles.faqAnswerBold,
+                  { color: colors.textSecondary },
+                  paragraph.endsWith(':') && { fontWeight: '600', color: colors.textPrimary },
                 ]}
               >
                 {paragraph}
@@ -113,6 +116,7 @@ const FAQAccordion: React.FC<FAQAccordionProps> = React.memo(
 export const HelpScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { isConnected, supabaseReachable } = useAppSelector(state => state.network);
+  const { colors, isDark } = useTheme();
 
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
@@ -200,8 +204,8 @@ export const HelpScreen: React.FC = () => {
 
   // ==================== RENDER ====================
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#2563EB" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
 
       {/* ===== HEADER ===== */}
       <LinearGradient
@@ -254,12 +258,12 @@ export const HelpScreen: React.FC = () => {
           entering={FadeInUp.delay(50).duration(350)}
           style={styles.searchContainer}
         >
-          <View style={styles.searchBar}>
-            <Icon name="magnify" size={22} color="#9CA3AF" />
+          <View style={[styles.searchBar, { backgroundColor: colors.surface }]}>
+            <Icon name="magnify" size={22} color={colors.textMuted} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: colors.textPrimary }]}
               placeholder="Rechercher dans l'aide..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textMuted}
               value={searchQuery}
               onChangeText={handleSearchChange}
               returnKeyType="search"
@@ -267,39 +271,39 @@ export const HelpScreen: React.FC = () => {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={clearSearch} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <Icon name="close-circle" size={20} color="#D1D5DB" />
+                <Icon name="close-circle" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             )}
           </View>
 
           {/* Search Results Dropdown */}
           {showResults && searchResults.length > 0 && (
-            <Animated.View entering={FadeIn.duration(200)} style={styles.searchResultsCard}>
+            <Animated.View entering={FadeIn.duration(200)} style={[styles.searchResultsCard, { backgroundColor: colors.surface }]}>
               {searchResults.map((item, idx) => (
                 <TouchableOpacity
                   key={item.id}
                   style={[
                     styles.searchResultItem,
-                    idx < searchResults.length - 1 && styles.searchResultBorder,
+                    idx < searchResults.length - 1 && [styles.searchResultBorder, { borderBottomColor: colors.borderSubtle }],
                   ]}
                   onPress={() => handleSearchResultPress(item)}
                   activeOpacity={0.6}
                 >
-                  <Icon name="help-circle-outline" size={18} color="#3B82F6" />
-                  <Text style={styles.searchResultText} numberOfLines={1}>
+                  <Icon name="help-circle-outline" size={18} color={colors.primary} />
+                  <Text style={[styles.searchResultText, { color: colors.textPrimary }]} numberOfLines={1}>
                     {item.question}
                   </Text>
-                  <Icon name="chevron-right" size={16} color="#D1D5DB" />
+                  <Icon name="chevron-right" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
               ))}
             </Animated.View>
           )}
           {showResults && searchResults.length === 0 && searchQuery.length >= 2 && (
-            <Animated.View entering={FadeIn.duration(200)} style={styles.searchResultsCard}>
+            <Animated.View entering={FadeIn.duration(200)} style={[styles.searchResultsCard, { backgroundColor: colors.surface }]}>
               <View style={styles.noResultsContainer}>
-                <Icon name="magnify-close" size={28} color="#D1D5DB" />
-                <Text style={styles.noResultsText}>Aucun résultat trouvé</Text>
-                <Text style={styles.noResultsHint}>Essayez d'autres mots-clés</Text>
+                <Icon name="magnify-close" size={28} color={colors.textMuted} />
+                <Text style={[styles.noResultsText, { color: colors.textSecondary }]}>Aucun résultat trouvé</Text>
+                <Text style={[styles.noResultsHint, { color: colors.textMuted }]}>Essayez d'autres mots-clés</Text>
               </View>
             </Animated.View>
           )}
@@ -307,10 +311,10 @@ export const HelpScreen: React.FC = () => {
 
         {/* ===== QUICK ACTIONS ===== */}
         <Animated.View entering={FadeInUp.delay(120).duration(400)}>
-          <Text style={styles.sectionTitle}>Actions rapides</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Actions rapides</Text>
           <View style={styles.quickGrid}>
             <TouchableOpacity
-              style={styles.quickCard}
+              style={[styles.quickCard, { backgroundColor: colors.surface }]}
               activeOpacity={0.7}
               onPress={() => {
                 Vibration.vibrate(10);
@@ -320,11 +324,11 @@ export const HelpScreen: React.FC = () => {
               <View style={[styles.quickIconCircle, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
                 <Icon name="rocket-launch-outline" size={24} color="#3B82F6" />
               </View>
-              <Text style={styles.quickLabel}>Guide de{'\n'}démarrage</Text>
+              <Text style={[styles.quickLabel, { color: colors.textPrimary }]}>Guide de{'\n'}démarrage</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.quickCard}
+              style={[styles.quickCard, { backgroundColor: colors.surface }]}
               activeOpacity={0.7}
               onPress={() => {
                 Vibration.vibrate(10);
@@ -334,11 +338,11 @@ export const HelpScreen: React.FC = () => {
               <View style={[styles.quickIconCircle, { backgroundColor: 'rgba(139,92,246,0.1)' }]}>
                 <Icon name="cog-outline" size={24} color="#8B5CF6" />
               </View>
-              <Text style={styles.quickLabel}>Toutes les{'\n'}fonctions</Text>
+              <Text style={[styles.quickLabel, { color: colors.textPrimary }]}>Toutes les{'\n'}fonctions</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.quickCard}
+              style={[styles.quickCard, { backgroundColor: colors.surface }]}
               activeOpacity={0.7}
               onPress={() => {
                 Vibration.vibrate(10);
@@ -348,11 +352,11 @@ export const HelpScreen: React.FC = () => {
               <View style={[styles.quickIconCircle, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
                 <Icon name="email-fast-outline" size={24} color="#10B981" />
               </View>
-              <Text style={styles.quickLabel}>Nous{'\n'}contacter</Text>
+              <Text style={[styles.quickLabel, { color: colors.textPrimary }]}>Nous{'\n'}contacter</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.quickCard}
+              style={[styles.quickCard, { backgroundColor: colors.surface }]}
               activeOpacity={0.7}
               onPress={() => {
                 Vibration.vibrate(10);
@@ -362,14 +366,14 @@ export const HelpScreen: React.FC = () => {
               <View style={[styles.quickIconCircle, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
                 <Icon name="bug-outline" size={24} color="#F59E0B" />
               </View>
-              <Text style={styles.quickLabel}>Résoudre{'\n'}un problème</Text>
+              <Text style={[styles.quickLabel, { color: colors.textPrimary }]}>Résoudre{'\n'}un problème</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
 
         {/* ===== CATEGORIES ===== */}
         <Animated.View entering={FadeInUp.delay(200).duration(400)}>
-          <Text style={styles.sectionTitle}>Questions par catégorie</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Questions par catégorie</Text>
           {FAQ_CATEGORIES.map((cat, idx) => {
             const count = FAQ_ITEMS.filter(i => i.category === cat.id).length;
             const isSelected = selectedCategory === cat.id;
@@ -378,7 +382,7 @@ export const HelpScreen: React.FC = () => {
                 key={cat.id}
                 style={[
                   styles.categoryCard,
-                  { borderLeftColor: cat.color },
+                  { borderLeftColor: cat.color, backgroundColor: colors.surface },
                   isSelected && { borderLeftWidth: 5, backgroundColor: `${cat.color}08` },
                 ]}
                 onPress={() => handleCategoryPress(cat.id)}
@@ -388,8 +392,8 @@ export const HelpScreen: React.FC = () => {
                   <Icon name={cat.icon} size={22} color={cat.color} />
                 </View>
                 <View style={styles.categoryTextCol}>
-                  <Text style={styles.categoryTitle}>{cat.title}</Text>
-                  <Text style={styles.categoryDesc}>{cat.description}</Text>
+                  <Text style={[styles.categoryTitle, { color: colors.textPrimary }]}>{cat.title}</Text>
+                  <Text style={[styles.categoryDesc, { color: colors.textMuted }]}>{cat.description}</Text>
                 </View>
                 <View style={styles.categoryRight}>
                   <View style={[styles.countBadge, { backgroundColor: `${cat.color}15` }]}>
@@ -398,7 +402,7 @@ export const HelpScreen: React.FC = () => {
                   <Icon
                     name={isSelected ? 'chevron-up' : 'chevron-right'}
                     size={20}
-                    color="#D1D5DB"
+                    color={colors.textMuted}
                   />
                 </View>
               </TouchableOpacity>
@@ -423,8 +427,8 @@ export const HelpScreen: React.FC = () => {
               }}
               activeOpacity={0.7}
             >
-              <Icon name="filter-remove-outline" size={16} color="#3B82F6" />
-              <Text style={styles.resetFilterText}>Voir toutes les questions</Text>
+              <Icon name="filter-remove-outline" size={16} color={colors.primary} />
+              <Text style={[styles.resetFilterText, { color: colors.primary }]}>Voir toutes les questions</Text>
             </TouchableOpacity>
           )}
 
@@ -440,30 +444,30 @@ export const HelpScreen: React.FC = () => {
 
         {/* ===== CONTACT ===== */}
         <Animated.View entering={FadeInUp.delay(400).duration(400)}>
-          <Text style={styles.sectionTitle}>Besoin d'aide personnalisée ?</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Besoin d'aide personnalisée ?</Text>
 
           {/* Email */}
           <TouchableOpacity
-            style={styles.contactCard}
+            style={[styles.contactCard, { backgroundColor: colors.surface }]}
             onPress={handleEmailPress}
             activeOpacity={0.7}
           >
             <View style={[styles.contactIconCircle, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
-              <Icon name="email-outline" size={24} color="#3B82F6" />
+              <Icon name="email-outline" size={24} color={colors.primary} />
             </View>
             <View style={styles.contactTextCol}>
-              <Text style={styles.contactTitle}>Email</Text>
-              <Text style={styles.contactPrimary}>{SUPPORT_EMAIL}</Text>
-              <Text style={styles.contactSecondary}>Réponse sous 24h</Text>
+              <Text style={[styles.contactTitle, { color: colors.textPrimary }]}>Email</Text>
+              <Text style={[styles.contactPrimary, { color: colors.primary }]}>{SUPPORT_EMAIL}</Text>
+              <Text style={[styles.contactSecondary, { color: colors.textMuted }]}>Réponse sous 24h</Text>
             </View>
-            <Icon name="chevron-right" size={20} color="#D1D5DB" />
+            <Icon name="chevron-right" size={20} color={colors.textMuted} />
           </TouchableOpacity>
         </Animated.View>
 
         {/* ===== SYSTEM STATUS ===== */}
         <Animated.View entering={FadeInUp.delay(480).duration(400)}>
-          <Text style={styles.sectionTitle}>Statut du système</Text>
-          <View style={styles.statusCard}>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Statut du système</Text>
+          <View style={[styles.statusCard, { backgroundColor: colors.surface }]}>
             {/* Global status */}
             <View style={[
               styles.statusGlobalRow,
@@ -493,43 +497,43 @@ export const HelpScreen: React.FC = () => {
 
             {/* Service rows */}
             <View style={styles.statusServiceRow}>
-              <Text style={styles.statusServiceLabel}>Application</Text>
+              <Text style={[styles.statusServiceLabel, { color: colors.textPrimary }]}>Application</Text>
               <View style={styles.statusServiceRight}>
-                <View style={[styles.statusDotSmall, { backgroundColor: '#10B981' }]} />
-                <Text style={[styles.statusServiceStatus, { color: '#10B981' }]}>
+                <View style={[styles.statusDotSmall, { backgroundColor: colors.success }]} />
+                <Text style={[styles.statusServiceStatus, { color: colors.success }]}>
                   Opérationnel
                 </Text>
               </View>
             </View>
-            <View style={styles.statusServiceDivider} />
+            <View style={[styles.statusServiceDivider, { backgroundColor: colors.borderSubtle }]} />
 
             <View style={styles.statusServiceRow}>
-              <Text style={styles.statusServiceLabel}>Réseau</Text>
+              <Text style={[styles.statusServiceLabel, { color: colors.textPrimary }]}>Réseau</Text>
               <View style={styles.statusServiceRight}>
                 <View style={[
                   styles.statusDotSmall,
-                  { backgroundColor: isConnected ? '#10B981' : '#EF4444' },
+                  { backgroundColor: isConnected ? colors.success : colors.danger },
                 ]} />
                 <Text style={[
                   styles.statusServiceStatus,
-                  { color: isConnected ? '#10B981' : '#EF4444' },
+                  { color: isConnected ? colors.success : colors.danger },
                 ]}>
                   {isConnected ? 'Connecté' : 'Hors ligne'}
                 </Text>
               </View>
             </View>
-            <View style={styles.statusServiceDivider} />
+            <View style={[styles.statusServiceDivider, { backgroundColor: colors.borderSubtle }]} />
 
             <View style={styles.statusServiceRow}>
-              <Text style={styles.statusServiceLabel}>Synchronisation</Text>
+              <Text style={[styles.statusServiceLabel, { color: colors.textPrimary }]}>Synchronisation</Text>
               <View style={styles.statusServiceRight}>
                 <View style={[
                   styles.statusDotSmall,
-                  { backgroundColor: supabaseReachable ? '#10B981' : '#F59E0B' },
+                  { backgroundColor: supabaseReachable ? colors.success : colors.warning },
                 ]} />
                 <Text style={[
                   styles.statusServiceStatus,
-                  { color: supabaseReachable ? '#10B981' : '#F59E0B' },
+                  { color: supabaseReachable ? colors.success : colors.warning },
                 ]}>
                   {supabaseReachable ? 'Opérationnel' : 'Indisponible'}
                 </Text>
@@ -544,10 +548,10 @@ export const HelpScreen: React.FC = () => {
           style={styles.footerInfo}
         >
           <View style={styles.footerRow}>
-            <Icon name="information-outline" size={16} color="#9CA3AF" />
-            <Text style={styles.footerText}>IT-Inventory — Aide et Support</Text>
+            <Icon name="information-outline" size={16} color={colors.textMuted} />
+            <Text style={[styles.footerText, { color: colors.textMuted }]}>IT-Inventory — Aide et Support</Text>
           </View>
-          <Text style={styles.footerSubtext}>
+          <Text style={[styles.footerSubtext, { color: colors.textMuted }]}>
             © {new Date().getFullYear()} IT-Inventory. Tous droits réservés.
           </Text>
         </Animated.View>
@@ -561,7 +565,6 @@ const styles = StyleSheet.create({
   // === Container ===
   container: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
   },
 
   // === Header ===
@@ -662,7 +665,6 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     paddingHorizontal: 14,
     height: 52,
@@ -680,12 +682,10 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#111827',
     paddingVertical: 0,
   },
   searchResultsCard: {
     marginTop: 8,
-    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     overflow: 'hidden',
     ...Platform.select({
@@ -707,13 +707,11 @@ const styles = StyleSheet.create({
   },
   searchResultBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#F3F4F6',
   },
   searchResultText: {
     flex: 1,
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
   },
   noResultsContainer: {
     alignItems: 'center',
@@ -723,19 +721,16 @@ const styles = StyleSheet.create({
   noResultsText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
     marginTop: 4,
   },
   noResultsHint: {
     fontSize: 13,
-    color: '#9CA3AF',
   },
 
   // === Section Title ===
   sectionTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#111827',
     marginHorizontal: 16,
     marginTop: 24,
     marginBottom: 12,
@@ -750,7 +745,6 @@ const styles = StyleSheet.create({
   },
   quickCard: {
     width: (SCREEN_WIDTH - 24 - 10) / 2,
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 18,
     ...Platform.select({
@@ -774,7 +768,6 @@ const styles = StyleSheet.create({
   quickLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
     lineHeight: 20,
   },
 
@@ -782,7 +775,6 @@ const styles = StyleSheet.create({
   categoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
     marginBottom: 10,
     borderRadius: 14,
@@ -812,11 +804,9 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
   },
   categoryDesc: {
     fontSize: 12,
-    color: '#9CA3AF',
     marginTop: 2,
   },
   categoryRight: {
@@ -850,14 +840,12 @@ const styles = StyleSheet.create({
   resetFilterText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#3B82F6',
   },
 
   // === FAQ Accordion ===
   faqCard: {
     marginHorizontal: 16,
     marginBottom: 10,
-    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     overflow: 'hidden',
     ...Platform.select({
@@ -881,12 +869,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14.5,
     fontWeight: '500',
-    color: '#374151',
     lineHeight: 21,
   },
   faqQuestionExpanded: {
     fontWeight: '600',
-    color: '#111827',
   },
   faqContent: {
     paddingHorizontal: 16,
@@ -894,19 +880,16 @@ const styles = StyleSheet.create({
   },
   faqDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#E5E7EB',
     marginBottom: 14,
   },
   faqAnswer: {
     fontSize: 13.5,
     fontWeight: '400',
-    color: '#4B5563',
     lineHeight: 21,
     marginBottom: 8,
   },
   faqAnswerBold: {
     fontWeight: '600',
-    color: '#1F2937',
     marginTop: 4,
   },
 
@@ -914,7 +897,6 @@ const styles = StyleSheet.create({
   contactCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
     marginBottom: 10,
     borderRadius: 14,
@@ -943,24 +925,20 @@ const styles = StyleSheet.create({
   contactTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
   },
   contactPrimary: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#3B82F6',
     marginTop: 3,
   },
   contactSecondary: {
     fontSize: 12,
-    color: '#9CA3AF',
     marginTop: 2,
   },
 
   // === Status ===
   statusCard: {
     marginHorizontal: 16,
-    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 16,
     ...Platform.select({
@@ -1000,7 +978,6 @@ const styles = StyleSheet.create({
   statusServiceLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
   },
   statusServiceRight: {
     flexDirection: 'row',
@@ -1018,7 +995,6 @@ const styles = StyleSheet.create({
   },
   statusServiceDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#F3F4F6',
   },
 
   // === Footer ===
@@ -1036,11 +1012,9 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#9CA3AF',
   },
   footerSubtext: {
     fontSize: 12,
-    color: '#D1D5DB',
     marginTop: 4,
   },
 });

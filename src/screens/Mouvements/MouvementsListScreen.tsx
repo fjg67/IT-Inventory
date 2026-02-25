@@ -1,5 +1,5 @@
 // ============================================
-// MOUVEMENTS LIST SCREEN - Premium Design
+// MOUVEMENTS LIST SCREEN - Modern Redesign
 // IT-Inventory Application
 // ============================================
 
@@ -18,10 +18,9 @@ import {
   TextInput,
 } from 'react-native';
 import Animated, {
-  FadeInUp,
-  FadeInDown,
   FadeIn,
-  ZoomIn,
+  FadeInUp,
+  SlideInRight,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -29,18 +28,21 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAppSelector } from '@/store';
 import { mouvementRepository } from '@/database';
 import { formatTimeParis, formatRelativeDateParis, formatDateTimeParis } from '@/utils/dateUtils';
-import { Mouvement, MouvementType } from '@/types';
+import { Mouvement } from '@/types';
 import { useResponsive } from '@/utils/responsive';
-
-// Dimensions removed — responsive utilities used instead
+import { useTheme } from '@/theme';
+import {
+  premiumSpacing,
+  premiumAnimation,
+} from '@/constants/premiumTheme';
 
 // ==================== HELPERS ====================
-const TYPE_CONFIG: Record<string, { icon: string; color: string; bgColor: string; label: string; prefix: string }> = {
-  entree: { icon: 'arrow-up-bold', color: '#10B981', bgColor: 'rgba(16,185,129,0.1)', label: 'Entrée', prefix: '+' },
-  sortie: { icon: 'arrow-down-bold', color: '#EF4444', bgColor: 'rgba(239,68,68,0.1)', label: 'Sortie', prefix: '-' },
-  ajustement: { icon: 'swap-vertical', color: '#F59E0B', bgColor: 'rgba(245,158,11,0.1)', label: 'Ajustement', prefix: '' },
-  transfert_depart: { icon: 'arrow-right-bold', color: '#8B5CF6', bgColor: 'rgba(139,92,246,0.1)', label: 'Transfert ↗', prefix: '-' },
-  transfert_arrivee: { icon: 'arrow-left-bold', color: '#8B5CF6', bgColor: 'rgba(139,92,246,0.1)', label: 'Transfert ↙', prefix: '+' },
+const TYPE_CONFIG: Record<string, { icon: string; color: string; gradient: [string, string]; label: string; prefix: string }> = {
+  entree: { icon: 'arrow-up-bold', color: '#10B981', gradient: ['#10B981', '#059669'], label: 'Entrée', prefix: '+' },
+  sortie: { icon: 'arrow-down-bold', color: '#EF4444', gradient: ['#EF4444', '#DC2626'], label: 'Sortie', prefix: '-' },
+  ajustement: { icon: 'swap-vertical', color: '#F59E0B', gradient: ['#F59E0B', '#D97706'], label: 'Ajustement', prefix: '' },
+  transfert_depart: { icon: 'arrow-right-bold', color: '#8B5CF6', gradient: ['#8B5CF6', '#6D28D9'], label: 'Transfert ↗', prefix: '-' },
+  transfert_arrivee: { icon: 'arrow-left-bold', color: '#8B5CF6', gradient: ['#8B5CF6', '#6D28D9'], label: 'Transfert ↙', prefix: '+' },
 };
 
 const getTypeConfig = (type: string) => TYPE_CONFIG[type] || TYPE_CONFIG.entree;
@@ -65,11 +67,14 @@ const groupMouvementsByDate = (mouvements: Mouvement[]): { label: string; date: 
 // ==================== TYPES FILTER ====================
 type QuickTypeFilter = 'all' | 'entree' | 'sortie' | 'ajustement' | 'transfert';
 
+const STAGGER = premiumAnimation.staggerDelay;
+
 // ==================== MAIN SCREEN ====================
 export const MouvementsListScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const siteActif = useAppSelector(state => state.site.siteActif);
   const { isTablet, contentMaxWidth } = useResponsive();
+  const { colors, isDark } = useTheme();
 
   const [mouvements, setMouvements] = useState<Mouvement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,7 +95,7 @@ export const MouvementsListScreen: React.FC = () => {
   const loadMouvements = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
-      const result = await mouvementRepository.findAll(siteActif?.id, 0, 200);
+      const result = await mouvementRepository.findAll(siteActif?.id, 0, 50);
       setMouvements(result.data);
     } catch (error) {
       console.error('Erreur chargement mouvements:', error);
@@ -104,7 +109,6 @@ export const MouvementsListScreen: React.FC = () => {
     loadMouvements();
   }, [siteActif, loadMouvements]);
 
-  // Recharger la liste à chaque retour sur l'écran (données toujours à jour)
   useFocusEffect(
     useCallback(() => {
       loadMouvements(true);
@@ -120,7 +124,6 @@ export const MouvementsListScreen: React.FC = () => {
   // ==================== FILTERING ====================
   const filteredMouvements = useMemo(() => {
     let data = mouvements;
-    // Type filter
     if (typeFilter !== 'all') {
       if (typeFilter === 'transfert') {
         data = data.filter(m => m.type === 'transfert_depart' || m.type === 'transfert_arrivee');
@@ -128,7 +131,6 @@ export const MouvementsListScreen: React.FC = () => {
         data = data.filter(m => m.type === typeFilter);
       }
     }
-    // Search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       data = data.filter(m =>
@@ -173,131 +175,166 @@ export const MouvementsListScreen: React.FC = () => {
 
   // ==================== RENDER ====================
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#2563EB" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scrollContent, isTablet && contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : undefined]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isTablet && contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const } : undefined,
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#2563EB"
-            colors={['#2563EB']}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
       >
-        {/* ===== HEADER PREMIUM ===== */}
-        <Animated.View entering={FadeInDown.duration(500)}>
-          <LinearGradient
-            colors={['#3B82F6', '#2563EB']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.header}
-          >
+        {/* ===== HEADER ===== */}
+        <Animated.View entering={SlideInRight.springify().damping(18)} style={styles.headerWrap}>
+          <View style={[styles.header, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+            {/* Accent strip */}
+            <LinearGradient
+              colors={['#4338CA', '#6366F1']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.headerAccent}
+            />
+
+            {/* Mesh dots */}
+            <View style={[styles.meshDot, styles.meshDot1, { backgroundColor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.04)' }]} />
+            <View style={[styles.meshDot, styles.meshDot2, { backgroundColor: isDark ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.03)' }]} />
+
             <View style={styles.headerTop}>
-              <Text style={styles.headerTitle}>Mouvements</Text>
-              <View style={styles.headerActions}>
-                <TouchableOpacity
-                  onPress={() => {
-                    Vibration.vibrate(10);
-                    setShowSearch(!showSearch);
-                  }}
-                  style={styles.headerBtn}
-                >
-                  <Icon name={showSearch ? 'close' : 'magnify'} size={22} color="#FFF" />
-                </TouchableOpacity>
+              <View style={styles.headerTitleRow}>
+                <View style={styles.headerIconShadow}>
+                  <LinearGradient
+                    colors={['#4338CA', '#6366F1']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.headerIconPill}
+                  >
+                    <Icon name="swap-vertical" size={20} color="#FFF" />
+                  </LinearGradient>
+                </View>
+                <View>
+                  <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Mouvements</Text>
+                  <Text style={[styles.headerSummary, { color: colors.textMuted }]}>
+                    {stats.total} mouvement{stats.total !== 1 ? 's' : ''} enregistré{stats.total !== 1 ? 's' : ''}
+                  </Text>
+                </View>
               </View>
+              <TouchableOpacity
+                onPress={() => {
+                  Vibration.vibrate(10);
+                  setShowSearch(!showSearch);
+                }}
+                style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' }]}
+              >
+                <Icon name={showSearch ? 'close' : 'magnify'} size={20} color={colors.primary} />
+              </TouchableOpacity>
             </View>
 
-            <Text style={styles.headerSummary}>
-              {stats.total} mouvement{stats.total !== 1 ? 's' : ''} enregistré{stats.total !== 1 ? 's' : ''}
-            </Text>
-
             {/* Mini stats */}
-            <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.miniStatsRow}>
-              <View style={styles.miniStatCard}>
-                <Text style={styles.miniStatValue}>+{stats.entrees}</Text>
-                <Text style={styles.miniStatLabel}>Entrées</Text>
-              </View>
-              <View style={styles.miniStatCard}>
-                <Text style={styles.miniStatValue}>-{stats.sorties}</Text>
-                <Text style={styles.miniStatLabel}>Sorties</Text>
-              </View>
-              <View style={styles.miniStatCard}>
-                <Text style={styles.miniStatValue}>{stats.ajustements}</Text>
-                <Text style={styles.miniStatLabel}>Ajustements</Text>
-              </View>
-            </Animated.View>
-          </LinearGradient>
+            <View style={styles.miniStatsRow}>
+              {[
+                { label: 'Entrées', value: stats.entrees, prefix: '+', color: '#10B981', gradient: ['#10B981', '#059669'] as [string, string] },
+                { label: 'Sorties', value: stats.sorties, prefix: '-', color: '#EF4444', gradient: ['#EF4444', '#DC2626'] as [string, string] },
+                { label: 'Ajustements', value: stats.ajustements, prefix: '+', color: '#F59E0B', gradient: ['#F59E0B', '#D97706'] as [string, string] },
+              ].map((stat, i) => (
+                <View key={i} style={[styles.miniStatCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)', borderColor: colors.borderSubtle }]}>
+                  <LinearGradient
+                    colors={stat.gradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={styles.miniStatAccent}
+                  />
+                  <Text style={[styles.miniStatValue, { color: colors.textPrimary }]}>{stat.prefix}{stat.value}</Text>
+                  <Text style={[styles.miniStatLabel, { color: colors.textMuted }]}>{stat.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
         </Animated.View>
 
         {/* ===== SEARCH BAR (collapsible) ===== */}
         {showSearch && (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.searchContainer}>
-            <Icon name="magnify" size={20} color="#9CA3AF" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Rechercher article, technicien..."
-              placeholderTextColor="#9CA3AF"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoFocus
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Icon name="close-circle" size={18} color="#9CA3AF" />
-              </TouchableOpacity>
-            )}
+          <Animated.View entering={SlideInRight.springify().damping(20)} style={styles.searchWrap}>
+            <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+              <View style={[styles.searchIconPill, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' }]}>
+                <Icon name="magnify" size={16} color={colors.primary} />
+              </View>
+              <TextInput
+                style={[styles.searchInput, { color: colors.textPrimary }]}
+                placeholder="Rechercher article, technicien..."
+                placeholderTextColor={colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.searchClearBtn}>
+                  <Icon name="close-circle" size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
           </Animated.View>
         )}
 
         {/* ===== QUICK FILTERS ===== */}
-        <Animated.View entering={FadeIn.delay(200).duration(400)}>
+        <Animated.View entering={SlideInRight.delay(STAGGER).springify().damping(18)}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filtersScroll}
           >
             {([
-              { key: 'all' as QuickTypeFilter, label: 'Tous', icon: 'format-list-bulleted' },
-              { key: 'entree' as QuickTypeFilter, label: 'Entrées', icon: 'arrow-up-bold' },
-              { key: 'sortie' as QuickTypeFilter, label: 'Sorties', icon: 'arrow-down-bold' },
-              { key: 'ajustement' as QuickTypeFilter, label: 'Ajustements', icon: 'swap-vertical' },
-              { key: 'transfert' as QuickTypeFilter, label: 'Transferts', icon: 'swap-horizontal' },
-            ]).map(f => (
-              <TouchableOpacity
-                key={f.key}
-                style={[styles.filterChip, typeFilter === f.key && styles.filterChipActive]}
-                onPress={() => {
-                  Vibration.vibrate(10);
-                  setTypeFilter(f.key);
-                }}
-                activeOpacity={0.7}
-              >
-                <Icon
-                  name={f.icon}
-                  size={16}
-                  color={typeFilter === f.key ? '#2563EB' : '#6B7280'}
-                  style={{ marginRight: 6 }}
-                />
-                <Text style={[styles.filterChipText, typeFilter === f.key && styles.filterChipTextActive]}>
-                  {f.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+              { key: 'all' as QuickTypeFilter, label: 'Tous', icon: 'format-list-bulleted', color: '#6366F1' },
+              { key: 'entree' as QuickTypeFilter, label: 'Entrées', icon: 'arrow-up-bold', color: '#10B981' },
+              { key: 'sortie' as QuickTypeFilter, label: 'Sorties', icon: 'arrow-down-bold', color: '#EF4444' },
+              { key: 'ajustement' as QuickTypeFilter, label: 'Ajustements', icon: 'swap-vertical', color: '#F59E0B' },
+              { key: 'transfert' as QuickTypeFilter, label: 'Transferts', icon: 'swap-horizontal', color: '#8B5CF6' },
+            ]).map(f => {
+              const isActive = typeFilter === f.key;
+              return (
+                <TouchableOpacity
+                  key={f.key}
+                  style={[
+                    styles.filterChip,
+                    {
+                      backgroundColor: isActive
+                        ? (isDark ? `${f.color}20` : `${f.color}12`)
+                        : colors.surface,
+                      borderColor: isActive ? f.color : colors.borderSubtle,
+                    },
+                  ]}
+                  onPress={() => {
+                    Vibration.vibrate(10);
+                    setTypeFilter(f.key);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.filterDot, { backgroundColor: isActive ? f.color : colors.textMuted }]} />
+                  <Text style={[styles.filterChipText, { color: isActive ? f.color : colors.textSecondary }]}>
+                    {f.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
 
             {hasActiveFilters && (
               <TouchableOpacity
-                style={styles.resetBtn}
+                style={[styles.resetBtn, { backgroundColor: isDark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.06)' }]}
                 onPress={() => {
                   Vibration.vibrate(10);
                   setTypeFilter('all');
                   setSearchQuery('');
                 }}
               >
-                <Icon name="close" size={14} color="#2563EB" />
+                <Icon name="close" size={13} color="#EF4444" />
                 <Text style={styles.resetBtnText}>Reset</Text>
               </TouchableOpacity>
             )}
@@ -309,58 +346,73 @@ export const MouvementsListScreen: React.FC = () => {
           /* Skeleton */
           <View style={styles.skeletonContainer}>
             {[0, 1, 2, 3, 4].map(i => (
-              <Animated.View key={i} entering={FadeIn.delay(i * 100).duration(400)} style={styles.skeletonCard}>
-                <View style={styles.skeletonDot} />
-                <View style={styles.skeletonBody}>
-                  <View style={[styles.skeletonLine, { width: '70%' }]} />
-                  <View style={[styles.skeletonLine, { width: '45%', marginTop: 8 }]} />
-                  <View style={[styles.skeletonLine, { width: '55%', marginTop: 8 }]} />
+              <Animated.View key={i} entering={FadeIn.delay(i * 100).duration(400)}>
+                <View style={[styles.skeletonCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+                  <View style={[styles.skeletonDot, { backgroundColor: colors.skeleton }]} />
+                  <View style={{ flex: 1 }}>
+                    <View style={[styles.skeletonLine, { width: '70%', backgroundColor: colors.skeleton }]} />
+                    <View style={[styles.skeletonLine, { width: '45%', marginTop: 8, backgroundColor: colors.skeleton }]} />
+                    <View style={[styles.skeletonLine, { width: '55%', marginTop: 8, backgroundColor: colors.skeleton }]} />
+                  </View>
                 </View>
               </Animated.View>
             ))}
           </View>
         ) : filteredMouvements.length === 0 ? (
-          /* Empty State */
-          <Animated.View entering={FadeIn.delay(300).duration(500)} style={styles.emptyContainer}>
-            <View style={styles.emptyIconCircle}>
-              <Icon
-                name={hasActiveFilters ? 'filter-remove-outline' : 'chart-timeline-variant'}
-                size={56}
-                color="rgba(37,99,235,0.4)"
-              />
+          /* Empty state */
+          <Animated.View entering={SlideInRight.delay(STAGGER * 2).springify().damping(18)} style={styles.emptyContainer}>
+            <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+              {/* Mesh */}
+              <View style={[styles.meshDot, { width: 80, height: 80, top: -16, right: -16, backgroundColor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.04)', borderRadius: 999 }]} />
+              <View style={[styles.meshDot, { width: 50, height: 50, bottom: -10, left: -10, backgroundColor: isDark ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.03)', borderRadius: 999 }]} />
+
+              <View style={styles.emptyIconShadow}>
+                <LinearGradient
+                  colors={['#4338CA', '#6366F1']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.emptyIconPill}
+                >
+                  <Icon
+                    name={hasActiveFilters ? 'filter-remove-outline' : 'chart-timeline-variant'}
+                    size={32}
+                    color="#FFF"
+                  />
+                </LinearGradient>
+              </View>
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+                {hasActiveFilters ? 'Aucun résultat' : 'Aucun mouvement'}
+              </Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+                {hasActiveFilters
+                  ? 'Aucun mouvement ne correspond à vos filtres'
+                  : 'Les mouvements de stock apparaîtront ici'}
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  Vibration.vibrate(10);
+                  if (hasActiveFilters) {
+                    setTypeFilter('all');
+                    setSearchQuery('');
+                  } else {
+                    handleNewMouvement();
+                  }
+                }}
+                style={styles.emptyCtaWrap}
+              >
+                <LinearGradient colors={['#4338CA', '#6366F1']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.emptyCtaGradient}>
+                  <Icon
+                    name={hasActiveFilters ? 'filter-remove' : 'plus'}
+                    size={16}
+                    color="#FFF"
+                  />
+                  <Text style={styles.emptyCtaText}>
+                    {hasActiveFilters ? 'Réinitialiser les filtres' : 'Nouveau mouvement'}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.emptyTitle}>
-              {hasActiveFilters ? 'Aucun résultat' : 'Aucun mouvement'}
-            </Text>
-            <Text style={styles.emptySubtitle}>
-              {hasActiveFilters
-                ? 'Aucun mouvement ne correspond à vos filtres'
-                : 'Les mouvements de stock apparaîtront ici'}
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyCta}
-              activeOpacity={0.8}
-              onPress={() => {
-                Vibration.vibrate(10);
-                if (hasActiveFilters) {
-                  setTypeFilter('all');
-                  setSearchQuery('');
-                } else {
-                  handleNewMouvement();
-                }
-              }}
-            >
-              <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.emptyCtaGradient}>
-                <Icon
-                  name={hasActiveFilters ? 'filter-remove' : 'plus'}
-                  size={18}
-                  color="#FFF"
-                />
-                <Text style={styles.emptyCtaText}>
-                  {hasActiveFilters ? 'Réinitialiser les filtres' : 'Nouveau mouvement'}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
           </Animated.View>
         ) : (
           /* Timeline list */
@@ -369,12 +421,12 @@ export const MouvementsListScreen: React.FC = () => {
               <View key={group.date.toISOString()}>
                 {/* Date header */}
                 <Animated.View
-                  entering={FadeInUp.delay(gIdx * 80).duration(400)}
+                  entering={SlideInRight.delay(STAGGER * 2 + gIdx * 60).springify().damping(18)}
                   style={styles.dateHeaderRow}
                 >
-                  <View style={styles.dateLineBefore} />
-                  <Text style={styles.dateHeaderText}>{group.label}</Text>
-                  <View style={styles.dateLineAfter} />
+                  <View style={[styles.dateAccentBar, { backgroundColor: '#6366F1' }]} />
+                  <Text style={[styles.dateHeaderText, { color: colors.textSecondary }]}>{group.label}</Text>
+                  <View style={[styles.dateLineAfter, { backgroundColor: colors.borderSubtle }]} />
                 </Animated.View>
 
                 {/* Mouvements */}
@@ -383,59 +435,71 @@ export const MouvementsListScreen: React.FC = () => {
                   return (
                     <Animated.View
                       key={mouvement.id}
-                      entering={FadeInUp.delay(gIdx * 80 + mIdx * 50).duration(400)}
+                      entering={SlideInRight.delay(STAGGER * 2 + gIdx * 60 + mIdx * 40).springify().damping(18)}
                     >
                       <TouchableOpacity
-                        style={styles.mouvCard}
+                        style={[styles.mouvCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle, shadowColor: cfg.color }]}
                         activeOpacity={0.7}
                         onPress={() => {
                           Vibration.vibrate(10);
                           setSelectedMouvement(mouvement);
                         }}
                       >
-                        {/* Timeline elements */}
-                        <View style={styles.timelineCol}>
-                          <View style={[styles.timelineBar, { backgroundColor: cfg.color + '30' }]} />
-                          <View style={[styles.timelineDot, { backgroundColor: cfg.color }]} />
+                        {/* Accent strip */}
+                        <LinearGradient
+                          colors={cfg.gradient}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 0, y: 1 }}
+                          style={styles.mouvAccent}
+                        />
+
+                        {/* Icon pill */}
+                        <View style={[styles.mouvIconShadow, { shadowColor: cfg.color }]}>
+                          <LinearGradient
+                            colors={cfg.gradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.mouvIconPill}
+                          >
+                            <Icon name={cfg.icon} size={17} color="#FFF" />
+                          </LinearGradient>
                         </View>
 
-                        {/* Card body */}
-                        <View style={[styles.mouvCardBody, { borderLeftColor: cfg.color }]}>
-                          {/* Row 1: type badge + article ref/name */}
+                        {/* Content */}
+                        <View style={styles.mouvContent}>
                           <View style={styles.mouvRow1}>
-                            <View style={[styles.typeBadge, { backgroundColor: cfg.bgColor }]}>
-                              <Icon name={cfg.icon} size={18} color={cfg.color} />
-                            </View>
                             <View style={styles.mouvArticle}>
-                              <Text style={styles.mouvRef} numberOfLines={1}>
-                                {mouvement.article?.reference || 'N/A'}
-                              </Text>
-                              <Text style={styles.mouvArticleName} numberOfLines={1}>
+                              <Text style={[styles.mouvArticleName, { color: colors.textPrimary }]} numberOfLines={1}>
                                 {mouvement.article?.nom || 'Article inconnu'}
                               </Text>
+                              <Text style={[styles.mouvRef, { color: colors.textMuted }]} numberOfLines={1}>
+                                {mouvement.article?.reference || 'N/A'}
+                              </Text>
                             </View>
+                            <Text style={[styles.mouvQty, { color: cfg.color }]}>
+                              {cfg.prefix}{Math.abs(mouvement.quantite)}
+                            </Text>
                           </View>
 
-                          {/* Row 2: quantité */}
-                          <Text style={[styles.mouvQty, { color: cfg.color }]}>
-                            {cfg.prefix}{Math.abs(mouvement.quantite)} unités
-                          </Text>
-
-                          {/* Row 3: metadata */}
-                          <View style={styles.mouvMeta}>
-                            <Icon name="clock-outline" size={12} color="#9CA3AF" />
-                            <Text style={styles.mouvMetaText}>
-                              {formatTime(new Date(mouvement.dateMouvement))}
-                            </Text>
-                            <Text style={styles.mouvMetaSep}>•</Text>
-                            <Icon name="account-outline" size={12} color="#9CA3AF" />
-                            <Text style={styles.mouvMetaText}>
-                              {`${mouvement.technicien?.nom?.charAt(0) || ''}${mouvement.technicien?.prenom?.charAt(0) || ''}`.toUpperCase()}
-                            </Text>
+                          <View style={styles.mouvBottom}>
+                            <View style={[styles.mouvTypeBadge, { backgroundColor: isDark ? `${cfg.color}20` : `${cfg.color}10` }]}>
+                              <View style={[styles.mouvTypeDot, { backgroundColor: cfg.color }]} />
+                              <Text style={[styles.mouvTypeBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
+                            </View>
+                            <View style={styles.mouvMeta}>
+                              <Text style={[styles.mouvMetaText, { color: colors.textMuted }]}>
+                                {formatTime(new Date(mouvement.dateMouvement))}
+                              </Text>
+                              {mouvement.technicien && (
+                                <Text style={[styles.mouvMetaText, { color: colors.textMuted }]}>
+                                  {' · '}{mouvement.technicien.prenom?.charAt(0)}{mouvement.technicien.nom?.charAt(0)}
+                                </Text>
+                              )}
+                            </View>
                           </View>
                         </View>
 
-                        <Icon name="chevron-right" size={18} color="#D1D5DB" />
+                        <Icon name="chevron-right" size={16} color={colors.borderMedium} style={{ marginLeft: 4 }} />
                       </TouchableOpacity>
                     </Animated.View>
                   );
@@ -458,46 +522,32 @@ export const MouvementsListScreen: React.FC = () => {
 
       {fabOpen && (
         <Animated.View entering={FadeIn.duration(200)} style={styles.fabMenu}>
-          <Animated.View entering={FadeInUp.delay(0).duration(250)}>
-            <TouchableOpacity style={styles.fabMenuItem} activeOpacity={0.8} onPress={handleScan}>
-              <View style={[styles.fabMenuIcon, { backgroundColor: 'rgba(37,99,235,0.1)' }]}>
-                <Icon name="barcode-scan" size={20} color="#2563EB" />
-              </View>
-              <Text style={styles.fabMenuLabel}>Scanner</Text>
-            </TouchableOpacity>
-          </Animated.View>
-          <Animated.View entering={FadeInUp.delay(60).duration(250)}>
-            <TouchableOpacity
-              style={styles.fabMenuItem}
-              activeOpacity={0.8}
-              onPress={() => {
-                Vibration.vibrate(10);
-                setFabOpen(false);
-                navigation.navigate('MouvementForm', { type: 'entree' });
-              }}
-            >
-              <View style={[styles.fabMenuIcon, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
-                <Icon name="arrow-up-bold" size={20} color="#10B981" />
-              </View>
-              <Text style={styles.fabMenuLabel}>Entrée</Text>
-            </TouchableOpacity>
-          </Animated.View>
-          <Animated.View entering={FadeInUp.delay(120).duration(250)}>
-            <TouchableOpacity
-              style={styles.fabMenuItem}
-              activeOpacity={0.8}
-              onPress={() => {
-                Vibration.vibrate(10);
-                setFabOpen(false);
-                navigation.navigate('MouvementForm', { type: 'sortie' });
-              }}
-            >
-              <View style={[styles.fabMenuIcon, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
-                <Icon name="arrow-down-bold" size={20} color="#EF4444" />
-              </View>
-              <Text style={styles.fabMenuLabel}>Sortie</Text>
-            </TouchableOpacity>
-          </Animated.View>
+          {[
+            { icon: 'barcode-scan', label: 'Scanner', gradient: ['#4338CA', '#6366F1'] as [string, string], onPress: handleScan },
+            {
+              icon: 'arrow-up-bold', label: 'Entrée', gradient: ['#10B981', '#059669'] as [string, string],
+              onPress: () => { Vibration.vibrate(10); setFabOpen(false); navigation.navigate('MouvementForm', { type: 'entree' }); },
+            },
+            {
+              icon: 'arrow-down-bold', label: 'Sortie', gradient: ['#EF4444', '#DC2626'] as [string, string],
+              onPress: () => { Vibration.vibrate(10); setFabOpen(false); navigation.navigate('MouvementForm', { type: 'sortie' }); },
+            },
+          ].map((item, idx) => (
+            <Animated.View key={item.label} entering={FadeInUp.delay(idx * 60).duration(250)}>
+              <TouchableOpacity
+                style={[styles.fabMenuItem, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}
+                activeOpacity={0.8}
+                onPress={item.onPress}
+              >
+                <View style={[styles.fabMenuIconShadow, { shadowColor: item.gradient[0] }]}>
+                  <LinearGradient colors={item.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabMenuIconPill}>
+                    <Icon name={item.icon} size={18} color="#FFF" />
+                  </LinearGradient>
+                </View>
+                <Text style={[styles.fabMenuLabel, { color: colors.textPrimary }]}>{item.label}</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          ))}
         </Animated.View>
       )}
 
@@ -509,8 +559,8 @@ export const MouvementsListScreen: React.FC = () => {
           setFabOpen(!fabOpen);
         }}
       >
-        <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.fabGradient}>
-          <Icon name={fabOpen ? 'close' : 'plus'} size={28} color="#FFF" />
+        <LinearGradient colors={['#4338CA', '#6366F1', '#4F46E5']} style={styles.fabGradient}>
+          <Icon name={fabOpen ? 'close' : 'plus'} size={26} color="#FFF" />
         </LinearGradient>
       </TouchableOpacity>
 
@@ -522,10 +572,10 @@ export const MouvementsListScreen: React.FC = () => {
         onRequestClose={() => setSelectedMouvement(null)}
       >
         <TouchableWithoutFeedback onPress={() => setSelectedMouvement(null)}>
-          <View style={styles.detailOverlay}>
+          <View style={[styles.detailOverlay, { backgroundColor: colors.modalOverlay }]}>
             <TouchableWithoutFeedback>
-              <View style={styles.detailSheet}>
-                <View style={styles.detailHandle} />
+              <View style={[styles.detailSheet, { backgroundColor: colors.surface }]}>
+                <View style={[styles.detailHandle, { backgroundColor: colors.borderMedium }]} />
 
                 {selectedMouvement && (() => {
                   const cfg = getTypeConfig(selectedMouvement.type);
@@ -533,74 +583,107 @@ export const MouvementsListScreen: React.FC = () => {
                     <>
                       {/* Header */}
                       <View style={styles.detailHeader}>
-                        <Text style={styles.detailTitle}>Détails du mouvement</Text>
+                        <View style={styles.detailHeaderLeft}>
+                          <LinearGradient colors={['#4338CA', '#6366F1']} style={styles.detailHeaderIcon}>
+                            <Icon name="file-document-outline" size={18} color="#FFF" />
+                          </LinearGradient>
+                          <Text style={[styles.detailTitle, { color: colors.textPrimary }]}>Détails du mouvement</Text>
+                        </View>
                         <TouchableOpacity
-                          style={styles.detailClose}
+                          style={[styles.detailClose, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
                           onPress={() => {
                             Vibration.vibrate(10);
                             setSelectedMouvement(null);
                           }}
                         >
-                          <Icon name="close" size={20} color="#6B7280" />
+                          <Icon name="close" size={18} color={colors.textMuted} />
                         </TouchableOpacity>
                       </View>
 
                       {/* Type badge */}
-                      <View style={styles.detailTypeBadge}>
-                        <View style={[styles.detailTypeIcon, { backgroundColor: cfg.bgColor }]}>
-                          <Icon name={cfg.icon} size={28} color={cfg.color} />
+                      <View style={[styles.detailTypeBadgeWrap, { backgroundColor: isDark ? `${cfg.color}18` : `${cfg.color}0A`, borderColor: colors.borderSubtle }]}>
+                        <LinearGradient colors={cfg.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.detailTypeIconPill}>
+                          <Icon name={cfg.icon} size={24} color="#FFF" />
+                        </LinearGradient>
+                        <View>
+                          <Text style={[styles.detailTypeLabel, { color: cfg.color }]}>{cfg.label}</Text>
+                          <Text style={[styles.detailTypeQty, { color: colors.textMuted }]}>
+                            {cfg.prefix}{Math.abs(selectedMouvement.quantite)} unités
+                          </Text>
                         </View>
-                        <Text style={[styles.detailTypeLabel, { color: cfg.color }]}>{cfg.label}</Text>
                       </View>
 
                       {/* Info rows */}
-                      <View style={styles.detailDivider} />
+                      <View style={[styles.detailDivider, { backgroundColor: colors.borderSubtle }]} />
 
                       <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Article</Text>
-                        <View>
-                          <Text style={styles.detailValue}>{selectedMouvement.article?.nom || 'N/A'}</Text>
-                          <Text style={styles.detailValueSub}>{selectedMouvement.article?.reference || ''}</Text>
+                        <View style={styles.detailRowIconWrap}>
+                          <Icon name="package-variant-closed" size={15} color={colors.textMuted} />
+                        </View>
+                        <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Article</Text>
+                        <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                          <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{selectedMouvement.article?.nom || 'N/A'}</Text>
+                          <Text style={[styles.detailValueSub, { color: colors.textMuted }]}>{selectedMouvement.article?.reference || ''}</Text>
                         </View>
                       </View>
 
                       <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Quantité</Text>
-                        <Text style={[styles.detailValue, { color: cfg.color, fontWeight: '700' }]}>
+                        <View style={styles.detailRowIconWrap}>
+                          <Icon name="counter" size={15} color={colors.textMuted} />
+                        </View>
+                        <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Quantité</Text>
+                        <Text style={[styles.detailValue, { color: cfg.color, fontWeight: '800' }]}>
                           {cfg.prefix}{Math.abs(selectedMouvement.quantite)} unités
                         </Text>
                       </View>
 
                       <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Stock avant</Text>
-                        <Text style={styles.detailValue}>{selectedMouvement.stockAvant}</Text>
+                        <View style={styles.detailRowIconWrap}>
+                          <Icon name="arrow-collapse-left" size={15} color={colors.textMuted} />
+                        </View>
+                        <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Stock avant</Text>
+                        <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{selectedMouvement.stockAvant}</Text>
                       </View>
 
                       <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Stock après</Text>
-                        <Text style={[styles.detailValue, { fontWeight: '700' }]}>{selectedMouvement.stockApres}</Text>
+                        <View style={styles.detailRowIconWrap}>
+                          <Icon name="arrow-collapse-right" size={15} color={colors.textMuted} />
+                        </View>
+                        <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Stock après</Text>
+                        <Text style={[styles.detailValue, { color: colors.textPrimary, fontWeight: '800' }]}>{selectedMouvement.stockApres}</Text>
                       </View>
 
-                      <View style={styles.detailDivider} />
+                      <View style={[styles.detailDivider, { backgroundColor: colors.borderSubtle }]} />
 
                       <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Technicien</Text>
-                        <Text style={styles.detailValue}>
-                          {`${selectedMouvement.technicien?.nom?.charAt(0) || ''}${selectedMouvement.technicien?.prenom?.charAt(0) || ''}`.toUpperCase()}
+                        <View style={styles.detailRowIconWrap}>
+                          <Icon name="account-outline" size={15} color={colors.textMuted} />
+                        </View>
+                        <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Technicien</Text>
+                        <Text style={[styles.detailValue, { color: colors.textPrimary }]}>
+                          {selectedMouvement.technicien
+                            ? `${selectedMouvement.technicien.prenom || ''} ${selectedMouvement.technicien.nom || ''}`.trim()
+                            : 'N/A'}
                         </Text>
                       </View>
 
                       <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Date</Text>
-                        <Text style={styles.detailValue}>
+                        <View style={styles.detailRowIconWrap}>
+                          <Icon name="calendar-outline" size={15} color={colors.textMuted} />
+                        </View>
+                        <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Date</Text>
+                        <Text style={[styles.detailValue, { color: colors.textPrimary }]}>
                           {formatDateTimeParis(selectedMouvement.dateMouvement)}
                         </Text>
                       </View>
 
                       {selectedMouvement.commentaire ? (
                         <View style={styles.detailRow}>
-                          <Text style={styles.detailLabel}>Commentaire</Text>
-                          <Text style={[styles.detailValue, { flex: 1, textAlign: 'right' }]}>
+                          <View style={styles.detailRowIconWrap}>
+                            <Icon name="comment-outline" size={15} color={colors.textMuted} />
+                          </View>
+                          <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Commentaire</Text>
+                          <Text style={[styles.detailValue, { color: colors.textPrimary, flex: 1, textAlign: 'right' }]}>
                             {selectedMouvement.commentaire}
                           </Text>
                         </View>
@@ -621,109 +704,159 @@ export const MouvementsListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   scrollContent: {
     paddingBottom: 20,
   },
 
   // ===== HEADER =====
+  headerWrap: {
+    paddingHorizontal: premiumSpacing.lg,
+    paddingTop: premiumSpacing.xl + 24,
+  },
   header: {
-    paddingTop: 44,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: premiumSpacing.lg,
+    paddingLeft: premiumSpacing.lg + 6,
+    overflow: 'hidden',
+  },
+  headerAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3.5,
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+  },
+  meshDot: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  meshDot1: {
+    width: 100,
+    height: 100,
+    top: -30,
+    right: -30,
+  },
+  meshDot2: {
+    width: 60,
+    height: 60,
+    bottom: -15,
+    left: 30,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: premiumSpacing.md,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+  },
+  headerIconShadow: {
+    shadowColor: '#4338CA',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  headerIconPill: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.4,
   },
-  headerActions: {
-    flexDirection: 'row',
-    gap: 12,
+  headerSummary: {
+    fontSize: 13,
+    fontWeight: '400',
+    marginTop: 2,
   },
   headerBtn: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerSummary: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.85)',
-    marginTop: 6,
-  },
   miniStatsRow: {
     flexDirection: 'row',
-    marginTop: 16,
     gap: 8,
   },
   miniStatCard: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
+    paddingLeft: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
+  },
+  miniStatAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
   },
   miniStatValue: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
   miniStatLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.75)',
     marginTop: 2,
   },
 
   // ===== SEARCH =====
+  searchWrap: {
+    paddingHorizontal: premiumSpacing.lg,
+    marginTop: premiumSpacing.md,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 14,
-    backgroundColor: '#FFF',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 14,
     height: 46,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
     gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+  },
+  searchIconPill: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#111827',
     padding: 0,
+    fontWeight: '400',
+  },
+  searchClearBtn: {
+    padding: 4,
   },
 
   // ===== FILTERS =====
   filtersScroll: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: premiumSpacing.lg,
+    paddingVertical: premiumSpacing.md,
     gap: 8,
   },
   filterChip: {
@@ -731,243 +864,249 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    gap: 6,
   },
-  filterChipActive: {
-    backgroundColor: 'rgba(37,99,235,0.08)',
-    borderColor: 'rgba(37,99,235,0.3)',
+  filterDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   filterChipText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  filterChipTextActive: {
-    color: '#2563EB',
+    fontWeight: '600',
   },
   resetBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
+    borderRadius: 10,
     gap: 4,
   },
   resetBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#2563EB',
+    color: '#EF4444',
   },
 
   // ===== SKELETON =====
   skeletonContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: premiumSpacing.lg,
     paddingTop: 8,
+    gap: 10,
   },
   skeletonCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-    paddingLeft: 8,
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
   },
   skeletonDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#E5E7EB',
-    marginRight: 14,
-    marginTop: 8,
-  },
-  skeletonBody: {
-    flex: 1,
-    backgroundColor: '#FFF',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    width: 38,
+    height: 38,
+    borderRadius: 12,
   },
   skeletonLine: {
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#F3F4F6',
   },
 
   // ===== EMPTY STATE =====
   emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 32,
+    paddingHorizontal: premiumSpacing.lg,
+    paddingTop: premiumSpacing.xxxl,
   },
-  emptyIconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(37,99,235,0.06)',
+  emptyCard: {
+    alignItems: 'center',
+    paddingVertical: premiumSpacing.xxxl + 8,
+    paddingHorizontal: premiumSpacing.xxl,
+    borderRadius: 20,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  emptyIconShadow: {
+    shadowColor: '#4338CA',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5,
+    marginBottom: premiumSpacing.lg,
+  },
+  emptyIconPill: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(37,99,235,0.1)',
   },
   emptyTitle: {
-    fontSize: 19,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: premiumSpacing.xs,
+    letterSpacing: -0.3,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 24,
+    fontWeight: '400',
   },
-  emptyCta: {
-    borderRadius: 14,
+  emptyCtaWrap: {
+    marginTop: premiumSpacing.lg,
+    borderRadius: 999,
     overflow: 'hidden',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowColor: '#4338CA',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   emptyCtaGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 13,
+    paddingVertical: 11,
     paddingHorizontal: 24,
-    borderRadius: 14,
+    borderRadius: 999,
     gap: 8,
   },
   emptyCtaText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#FFF',
+    letterSpacing: 0.1,
   },
 
   // ===== TIMELINE =====
   timelineContainer: {
-    paddingHorizontal: 12,
+    paddingHorizontal: premiumSpacing.lg,
     paddingTop: 4,
   },
   dateHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 12,
+    marginTop: premiumSpacing.xl,
+    marginBottom: premiumSpacing.md,
     paddingHorizontal: 4,
   },
-  dateLineBefore: {
-    height: 1,
-    width: 16,
-    backgroundColor: '#D1D5DB',
+  dateAccentBar: {
+    width: 3.5,
+    height: 16,
+    borderRadius: 2,
+    marginRight: 8,
   },
   dateHeaderText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#4B5563',
-    marginHorizontal: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginRight: 10,
   },
   dateLineAfter: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E5E7EB',
   },
 
   // ===== MOVEMENT CARD =====
   mouvCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    paddingRight: 8,
-  },
-  timelineCol: {
-    width: 28,
-    alignItems: 'center',
-    marginRight: 4,
-  },
-  timelineBar: {
-    position: 'absolute',
-    width: 3,
-    top: 0,
-    bottom: 0,
-    borderRadius: 1.5,
-  },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2.5,
-    borderColor: '#FFF',
-    marginTop: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    marginBottom: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    paddingLeft: 18,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
   },
-  mouvCardBody: {
+  mouvAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  mouvIconShadow: {
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    marginRight: 12,
+  },
+  mouvIconPill: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mouvContent: {
     flex: 1,
-    backgroundColor: '#FFF',
-    borderRadius: 14,
-    padding: 14,
-    borderLeftWidth: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
   },
   mouvRow1: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 6,
-  },
-  typeBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
   },
   mouvArticle: {
     flex: 1,
-  },
-  mouvRef: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#9CA3AF',
+    marginRight: 8,
   },
   mouvArticleName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  mouvRef: {
+    fontSize: 11,
+    fontWeight: '400',
+    marginTop: 1,
   },
   mouvQty: {
     fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 6,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  mouvBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mouvTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 7,
+    gap: 4,
+  },
+  mouvTypeDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  mouvTypeBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.1,
   },
   mouvMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
   },
   mouvMetaText: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  mouvMetaSep: {
-    fontSize: 12,
-    color: '#D1D5DB',
-    marginHorizontal: 2,
+    fontSize: 11,
+    fontWeight: '400',
   },
 
   // ===== FAB =====
@@ -975,20 +1114,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 24,
     right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    shadowColor: '#2563EB',
+    width: 58,
+    height: 58,
+    borderRadius: 18,
+    shadowColor: '#4338CA',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.35,
     shadowRadius: 14,
     elevation: 10,
     zIndex: 20,
   },
   fabGradient: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 58,
+    height: 58,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -999,49 +1138,52 @@ const styles = StyleSheet.create({
   },
   fabMenu: {
     position: 'absolute',
-    bottom: 96,
+    bottom: 94,
     right: 20,
     zIndex: 20,
-    gap: 10,
+    gap: 8,
   },
   fabMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
     borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
     gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  fabMenuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+  fabMenuIconShadow: {
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  fabMenuIconPill: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },
   fabMenuLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: 14,
+    fontWeight: '700',
   },
 
   // ===== DETAIL MODAL =====
   detailOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   detailSheet: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 22,
     paddingBottom: 32,
     maxHeight: '80%',
   },
@@ -1049,7 +1191,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D1D5DB',
     alignSelf: 'center',
     marginTop: 12,
     marginBottom: 16,
@@ -1060,61 +1201,84 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  detailTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
+  detailHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  detailClose: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F3F4F6',
+  detailHeaderIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  detailTypeBadge: {
+  detailTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  detailClose: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailTypeBadgeWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
     marginBottom: 16,
   },
-  detailTypeIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+  detailTypeIconPill: {
+    width: 48,
+    height: 48,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
   detailTypeLabel: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  detailTypeQty: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 1,
   },
   detailDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 12,
+    marginVertical: 8,
   },
   detailRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingVertical: 10,
+    gap: 8,
+  },
+  detailRowIconWrap: {
+    width: 24,
+    alignItems: 'center',
+    marginTop: 1,
   },
   detailLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    color: '#6B7280',
+    width: 80,
   },
   detailValue: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#111827',
+    fontWeight: '600',
     textAlign: 'right',
+    flex: 1,
   },
   detailValueSub: {
-    fontSize: 12,
-    color: '#9CA3AF',
+    fontSize: 11,
     textAlign: 'right',
     marginTop: 2,
   },

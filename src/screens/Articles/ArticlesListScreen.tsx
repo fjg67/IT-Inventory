@@ -19,8 +19,9 @@ import { useAppSelector } from '@/store';
 import { articleRepository } from '@/database';
 import { Article, ArticleFilters, PaginatedResult } from '@/types';
 import { APP_CONFIG } from '@/constants';
-import { premiumColors, premiumSpacing } from '@/constants/premiumTheme';
+import { premiumSpacing } from '@/constants/premiumTheme';
 import { useResponsive } from '@/utils/responsive';
+import { useTheme } from '@/theme';
 
 // Composants premium
 import PremiumArticleHeader from './components/PremiumArticleHeader';
@@ -46,6 +47,7 @@ export const ArticlesListScreen: React.FC = () => {
   const route = useRoute<any>();
   const siteActif = useAppSelector((state) => state.site.siteActif);
   const { isTablet, contentMaxWidth, rv } = useResponsive();
+  const { colors, isDark } = useTheme();
   const numColumns = rv({ phone: 1, tablet: 2 });
 
   // ===== STATE =====
@@ -433,10 +435,10 @@ export const ArticlesListScreen: React.FC = () => {
   }, [isLoading, emptyType, searchQuery, emptyAction]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
-        barStyle="light-content"
-        backgroundColor={premiumColors.primary.base}
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.primary}
       />
 
       {/* Header Premium */}
@@ -493,8 +495,8 @@ export const ArticlesListScreen: React.FC = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={premiumColors.primary.base}
-              colors={[premiumColors.primary.base]}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
         />
@@ -550,7 +552,6 @@ export const ArticlesListScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: premiumColors.background,
   },
   searchWrapper: {
     paddingHorizontal: premiumSpacing.lg,

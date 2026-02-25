@@ -25,10 +25,8 @@ import { useAppSelector } from '@/store';
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { stockRepository, mouvementRepository } from '@/database';
 import { KIT_DEFINITIONS, KitDefinition, KitArticle } from '@/constants/kitDefinitions';
-import {
-  premiumColors,
-} from '@/constants/premiumTheme';
 import { useResponsive } from '@/utils/responsive';
+import { useTheme } from '@/theme';
 
 // ==================== TYPES ====================
 
@@ -67,6 +65,7 @@ export const KitScreen: React.FC = () => {
   const siteActif = useAppSelector((state) => state.site.siteActif);
   const technicien = useAppSelector((state) => state.auth.currentTechnicien);
   const { isTablet, contentMaxWidth } = useResponsive();
+  const { colors, isDark } = useTheme();
 
   // State
   const [selectedKit, setSelectedKit] = useState<KitDefinition | null>(null);
@@ -357,13 +356,13 @@ export const KitScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0B1120" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.headerBackground} />
 
       {/* ===== HEADER IMMERSIF ===== */}
       <View style={styles.headerWrapper}>
         <LinearGradient
-          colors={['#0B1120', '#162044', '#1E3A5F']}
+          colors={isDark ? ['#0B1120', '#162044', '#1E3A5F'] : ['#1E3A5F', '#2D4A7A', '#3B5998']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.header}
@@ -404,8 +403,7 @@ export const KitScreen: React.FC = () => {
           </Animated.View>
         </LinearGradient>
 
-        {/* Courbe bottom */}
-        <View style={styles.headerCurve} />
+        <View style={[styles.headerCurve, { backgroundColor: colors.background }]} />
       </View>
 
       {/* ===== LISTE DES KITS ===== */}
@@ -416,18 +414,18 @@ export const KitScreen: React.FC = () => {
       >
         {/* Info tip */}
         <Animated.View entering={FadeInUp.delay(200).duration(500)}>
-          <View style={styles.tipContainer}>
+          <View style={[styles.tipContainer, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
             <View style={styles.tipIconWrapper}>
               <LinearGradient
-                colors={['#EEF2FF', '#E0E7FF']}
+                colors={isDark ? ['#1E1B4B', '#312E81'] : ['#EEF2FF', '#E0E7FF']}
                 style={styles.tipIconBg}
               >
                 <Icon name="lightbulb-on-outline" size={18} color="#6366F1" />
               </LinearGradient>
             </View>
-            <Text style={styles.tipText}>
+            <Text style={[styles.tipText, { color: colors.textSecondary }]}>
               Appuyez sur un kit pour{' '}
-              <Text style={styles.tipTextBold}>vérifier la disponibilité</Text> et valider la sortie.
+              <Text style={[styles.tipTextBold, { color: colors.primary }]}>vérifier la disponibilité</Text> et valider la sortie.
             </Text>
           </View>
         </Animated.View>
@@ -442,7 +440,7 @@ export const KitScreen: React.FC = () => {
               entering={FadeInUp.delay(280 + index * 100).duration(500).springify().damping(16)}
             >
               <TouchableOpacity
-                style={styles.kitCard}
+                style={[styles.kitCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}
                 activeOpacity={0.85}
                 onPress={() => {
                   Vibration.vibrate(15);
@@ -479,7 +477,7 @@ export const KitScreen: React.FC = () => {
                     {/* Info */}
                     <View style={styles.kitInfo}>
                       <View style={styles.kitNameRow}>
-                        <Text style={styles.kitName}>{kit.nom}</Text>
+                        <Text style={[styles.kitName, { color: colors.textPrimary }]}>{kit.nom}</Text>
                         {isKitComplet && (
                           <View style={styles.kitCompletBadge}>
                             <Icon name="star" size={10} color="#F59E0B" />
@@ -487,14 +485,14 @@ export const KitScreen: React.FC = () => {
                           </View>
                         )}
                       </View>
-                      <Text style={styles.kitDescription} numberOfLines={2}>
+                      <Text style={[styles.kitDescription, { color: colors.textSecondary }]} numberOfLines={2}>
                         {kit.description}
                       </Text>
                     </View>
 
                     {/* Arrow */}
-                    <View style={styles.kitArrow}>
-                      <Icon name="chevron-right" size={20} color="#94A3B8" />
+                    <View style={[styles.kitArrow, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle }]}>
+                      <Icon name="chevron-right" size={20} color={colors.textMuted} />
                     </View>
                   </View>
 
@@ -502,14 +500,14 @@ export const KitScreen: React.FC = () => {
                   <View style={styles.kitMetaRow}>
                     <View style={styles.kitMetaItem}>
                       <View style={[styles.kitMetaDot, { backgroundColor: kit.color }]} />
-                      <Text style={styles.kitMetaLabel}>{getKitTypeLabel(kit)}</Text>
+                      <Text style={[styles.kitMetaLabel, { color: colors.textMuted }]}>{getKitTypeLabel(kit)}</Text>
                     </View>
 
                     <View style={styles.kitMetaDivider} />
 
                     <View style={styles.kitMetaItem}>
-                      <Icon name="layers-outline" size={14} color="#94A3B8" />
-                      <Text style={styles.kitMetaLabel}>
+                      <Icon name="layers-outline" size={14} color={colors.textMuted} />
+                      <Text style={[styles.kitMetaLabel, { color: colors.textMuted }]}>
                         {kit.articles.length} article{kit.articles.length > 1 ? 's' : ''}
                       </Text>
                     </View>
@@ -518,8 +516,8 @@ export const KitScreen: React.FC = () => {
                       <>
                         <View style={styles.kitMetaDivider} />
                         <View style={styles.kitMetaItem}>
-                          <Icon name="checkbox-multiple-marked-outline" size={14} color="#94A3B8" />
-                          <Text style={styles.kitMetaLabel}>Choix individuel</Text>
+                          <Icon name="checkbox-multiple-marked-outline" size={14} color={colors.textMuted} />
+                          <Text style={[styles.kitMetaLabel, { color: colors.textMuted }]}>Choix individuel</Text>
                         </View>
                       </>
                     )}
@@ -540,10 +538,10 @@ export const KitScreen: React.FC = () => {
         animationType="slide"
         onRequestClose={closeModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.surface }]}>
             {/* Handle */}
-            <View style={styles.modalHandle} />
+            <View style={[styles.modalHandle, { backgroundColor: colors.borderSubtle }]} />
 
             {selectedKit && (
               <>
@@ -556,23 +554,23 @@ export const KitScreen: React.FC = () => {
                     <Icon name={selectedKit.icon} size={32} color="#FFF" />
                   </LinearGradient>
                   <View style={styles.modalHeaderInfo}>
-                    <Text style={styles.modalTitle}>{selectedKit.nom}</Text>
-                    <Text style={styles.modalSubtitle}>{selectedKit.description}</Text>
+                    <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{selectedKit.nom}</Text>
+                    <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>{selectedKit.description}</Text>
                   </View>
                   <TouchableOpacity
-                    style={styles.modalCloseBtn}
+                    style={[styles.modalCloseBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle }]}
                     onPress={closeModal}
                     disabled={validating}
                   >
-                    <Icon name="close" size={22} color="#64748B" />
+                    <Icon name="close" size={22} color={colors.textMuted} />
                   </TouchableOpacity>
                 </View>
 
                 {/* Contenu */}
                 {loadingKit ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={premiumColors.primary.base} />
-                    <Text style={styles.loadingText}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                       Vérification du stock...
                     </Text>
                   </View>
@@ -586,8 +584,8 @@ export const KitScreen: React.FC = () => {
                       style={[
                         styles.statusBanner,
                         kitAvailability.tousDisponibles
-                          ? styles.statusBannerOk
-                          : styles.statusBannerError,
+                          ? { backgroundColor: colors.successBg, borderWidth: 1, borderColor: colors.successBorder }
+                          : { backgroundColor: colors.dangerBg, borderWidth: 1, borderColor: colors.dangerBorder },
                       ]}
                     >
                       <Icon
@@ -599,16 +597,14 @@ export const KitScreen: React.FC = () => {
                         size={22}
                         color={
                           kitAvailability.tousDisponibles
-                            ? '#059669'
-                            : '#DC2626'
+                            ? colors.success
+                            : colors.danger
                         }
                       />
                       <Text
                         style={[
                           styles.statusBannerText,
-                          kitAvailability.tousDisponibles
-                            ? styles.statusTextOk
-                            : styles.statusTextError,
+                          { color: kitAvailability.tousDisponibles ? colors.success : colors.danger },
                         ]}
                       >
                         {kitAvailability.tousDisponibles
@@ -624,15 +620,15 @@ export const KitScreen: React.FC = () => {
                     {/* Sélection info (uniquement pour Kit Complet) */}
                     {isSelectableKit && (
                       <View style={styles.selectionInfo}>
-                        <Icon name="checkbox-multiple-marked-outline" size={16} color="#6366F1" />
-                        <Text style={styles.selectionInfoText}>
+                        <Icon name="checkbox-multiple-marked-outline" size={16} color={colors.primary} />
+                        <Text style={[styles.selectionInfoText, { color: colors.primary }]}>
                           {selectedAvailableCount} article{selectedAvailableCount > 1 ? 's' : ''} sélectionné{selectedAvailableCount > 1 ? 's' : ''} sur {kitAvailability.articles.length}
                         </Text>
                       </View>
                     )}
 
                     {/* Liste des articles */}
-                    <Text style={styles.articlesSectionTitle}>
+                    <Text style={[styles.articlesSectionTitle, { color: colors.textPrimary }]}>
                       {isSelectableKit ? 'Articles du kit' : 'Contenu du kit'}
                     </Text>
 
@@ -648,9 +644,10 @@ export const KitScreen: React.FC = () => {
                           <TouchableOpacity
                             style={[
                               styles.articleRow,
-                              !resolved.estDisponible && styles.articleRowUnavailable,
-                              isSelectableKit && isSelected && resolved.estDisponible && styles.articleRowSelected,
-                              !isSelectableKit && resolved.estDisponible && styles.articleRowSelected,
+                              { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle },
+                              !resolved.estDisponible && { backgroundColor: colors.dangerBg, borderColor: colors.dangerBorder },
+                              isSelectableKit && isSelected && resolved.estDisponible && { backgroundColor: colors.primaryLight, borderColor: colors.borderFocus },
+                              !isSelectableKit && resolved.estDisponible && { backgroundColor: colors.primaryLight, borderColor: colors.borderFocus },
                             ]}
                             activeOpacity={canSelect ? 0.7 : 1}
                             onPress={() => {
@@ -666,8 +663,9 @@ export const KitScreen: React.FC = () => {
                               <View
                                 style={[
                                   styles.checkbox,
-                                  isSelected && resolved.estDisponible && styles.checkboxChecked,
-                                  !resolved.estDisponible && styles.checkboxDisabled,
+                                  { borderColor: colors.borderMedium, backgroundColor: colors.surface },
+                                  isSelected && resolved.estDisponible && { backgroundColor: colors.primary, borderColor: colors.primary },
+                                  !resolved.estDisponible && { backgroundColor: colors.danger, borderColor: colors.danger },
                                 ]}
                               >
                                 {isSelected && resolved.estDisponible && (
@@ -683,7 +681,8 @@ export const KitScreen: React.FC = () => {
                               <View
                                 style={[
                                   styles.checkbox,
-                                  resolved.estDisponible ? styles.checkboxChecked : styles.checkboxDisabled,
+                                  { borderColor: colors.borderMedium, backgroundColor: colors.surface },
+                                  resolved.estDisponible ? { backgroundColor: colors.primary, borderColor: colors.primary } : { backgroundColor: colors.danger, borderColor: colors.danger },
                                 ]}
                               >
                                 <Icon
@@ -697,17 +696,18 @@ export const KitScreen: React.FC = () => {
                             <View style={styles.articleInfo}>
                               <Text style={[
                                 styles.articleLabel,
-                                !resolved.estDisponible && styles.articleLabelDisabled,
+                                { color: colors.textPrimary },
+                                !resolved.estDisponible && { color: colors.textMuted },
                               ]}>
                                 {resolved.articleNom || resolved.kitArticle.label}
                               </Text>
                               {resolved.articleReference && (
-                                <Text style={styles.articleRef}>
+                                <Text style={[styles.articleRef, { color: colors.textMuted }]}>
                                   Réf: {resolved.articleReference}
                                 </Text>
                               )}
                               {!resolved.articleId && (
-                                <Text style={styles.articleNotFound}>
+                                <Text style={[styles.articleNotFound, { color: colors.danger }]}>
                                   Article non trouvé dans le stock
                                 </Text>
                               )}
@@ -718,16 +718,16 @@ export const KitScreen: React.FC = () => {
                               style={[
                                 styles.stockBadge,
                                 resolved.estDisponible
-                                  ? styles.stockBadgeOk
-                                  : styles.stockBadgeError,
+                                  ? { backgroundColor: colors.successBg }
+                                  : { backgroundColor: colors.dangerBg },
                               ]}
                             >
                               <Text
                                 style={[
                                   styles.stockBadgeText,
                                   resolved.estDisponible
-                                    ? styles.stockTextOk
-                                    : styles.stockTextError,
+                                    ? { color: colors.success }
+                                    : { color: colors.danger },
                                 ]}
                               >
                                 {resolved.articleId
@@ -746,7 +746,7 @@ export const KitScreen: React.FC = () => {
 
                 {/* Bouton de validation */}
                 {!loadingKit && kitAvailability && (
-                  <View style={styles.modalFooter}>
+                  <View style={[styles.modalFooter, { borderTopColor: colors.borderSubtle }]}>
                     <TouchableOpacity
                       style={[
                         styles.validateButton,
@@ -809,10 +809,10 @@ export const KitScreen: React.FC = () => {
           }
         }}
       >
-        <View style={confirmStyles.overlay}>
+        <View style={[confirmStyles.overlay, { backgroundColor: colors.modalOverlay }]}>
           <Animated.View
             entering={ZoomIn.duration(250).springify().damping(15)}
-            style={confirmStyles.card}
+            style={[confirmStyles.card, { backgroundColor: colors.surface }]}
           >
             {/* Icône en cercle avec gradient */}
             <View style={confirmStyles.iconWrapper}>
@@ -845,10 +845,10 @@ export const KitScreen: React.FC = () => {
             </View>
 
             {/* Titre */}
-            <Text style={confirmStyles.title}>{confirmModal.title}</Text>
+            <Text style={[confirmStyles.title, { color: colors.textPrimary }]}>{confirmModal.title}</Text>
 
             {/* Message */}
-            <Text style={confirmStyles.message}>{confirmModal.message}</Text>
+            <Text style={[confirmStyles.message, { color: colors.textSecondary }]}>{confirmModal.message}</Text>
 
             {/* Liste des articles */}
             {confirmModal.articles && confirmModal.articles.length > 0 && (
@@ -862,8 +862,8 @@ export const KitScreen: React.FC = () => {
                     <LinearGradient
                       colors={
                         confirmModal.type === 'success'
-                          ? ['#ECFDF5', '#D1FAE5']
-                          : ['#EEF2FF', '#E0E7FF']
+                          ? isDark ? ['#064E3B', '#065F46'] : ['#ECFDF5', '#D1FAE5']
+                          : isDark ? ['#1E1B4B', '#312E81'] : ['#EEF2FF', '#E0E7FF']
                       }
                       style={confirmStyles.articleChipGradient}
                     >
@@ -876,16 +876,16 @@ export const KitScreen: React.FC = () => {
                         size={16}
                         color={
                           confirmModal.type === 'success'
-                            ? '#059669'
-                            : '#6366F1'
+                            ? colors.success
+                            : colors.primary
                         }
                       />
                       <Text
                         style={[
                           confirmStyles.articleChipText,
                           confirmModal.type === 'success'
-                            ? { color: '#065F46' }
-                            : { color: '#3730A3' },
+                            ? { color: colors.success }
+                            : { color: colors.primary },
                         ]}
                         numberOfLines={1}
                       >
@@ -898,17 +898,17 @@ export const KitScreen: React.FC = () => {
             )}
 
             {/* Séparateur */}
-            <View style={confirmStyles.divider} />
+            <View style={[confirmStyles.divider, { backgroundColor: colors.divider }]} />
 
             {/* Boutons */}
             <View style={confirmStyles.buttonsRow}>
               {confirmModal.showCancel && (
                 <TouchableOpacity
-                  style={confirmStyles.cancelBtn}
+                  style={[confirmStyles.cancelBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderSubtle }]}
                   activeOpacity={0.7}
                   onPress={closeConfirmModal}
                 >
-                  <Text style={confirmStyles.cancelBtnText}>Annuler</Text>
+                  <Text style={[confirmStyles.cancelBtnText, { color: colors.textSecondary }]}>Annuler</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity
@@ -962,7 +962,6 @@ export const KitScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
   },
 
   // ===== Header =====
@@ -1073,7 +1072,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 20,
-    backgroundColor: '#F0F4F8',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
@@ -1093,13 +1091,12 @@ const styles = StyleSheet.create({
   tipContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
     borderRadius: 16,
     padding: 14,
     marginBottom: 22,
     gap: 12,
     borderWidth: 1,
-    borderColor: '#E0E7FF',
+    borderWidth: 1,
     shadowColor: '#6366F1',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
@@ -1120,17 +1117,14 @@ const styles = StyleSheet.create({
   tipText: {
     flex: 1,
     fontSize: 13,
-    color: '#64748B',
     lineHeight: 19,
   },
   tipTextBold: {
     fontWeight: '700',
-    color: '#4F46E5',
   },
 
   // ===== Kit Card =====
   kitCard: {
-    backgroundColor: '#FFF',
     borderRadius: 20,
     marginBottom: 14,
     overflow: 'hidden',
@@ -1140,7 +1134,6 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 3,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.6)',
   },
   kitCardAccent: {
     height: 3,
@@ -1179,7 +1172,6 @@ const styles = StyleSheet.create({
   kitName: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
     letterSpacing: -0.3,
   },
   kitCompletBadge: {
@@ -1200,18 +1192,15 @@ const styles = StyleSheet.create({
   },
   kitDescription: {
     fontSize: 13,
-    color: '#64748B',
     lineHeight: 18,
   },
   kitArrow: {
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#F1F5F9',
   },
 
   // Meta row
@@ -1235,14 +1224,12 @@ const styles = StyleSheet.create({
   },
   kitMetaLabel: {
     fontSize: 11,
-    color: '#94A3B8',
     fontWeight: '600',
     letterSpacing: 0.2,
   },
   kitMetaDivider: {
     width: 1,
     height: 12,
-    backgroundColor: '#E2E8F0',
   },
 
   bottomSpacer: {
@@ -1252,11 +1239,9 @@ const styles = StyleSheet.create({
   // ===== Modal =====
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(11, 17, 32, 0.65)',
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#FFF',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: '88%',
@@ -1271,7 +1256,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#E2E8F0',
     alignSelf: 'center',
     marginTop: 14,
     marginBottom: 18,
@@ -1298,21 +1282,17 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#0F172A',
     letterSpacing: -0.3,
   },
   modalSubtitle: {
     fontSize: 13,
-    color: '#64748B',
     marginTop: 3,
   },
   modalCloseBtn: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1325,7 +1305,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: '#64748B',
   },
 
   // Status banner
@@ -1339,14 +1318,8 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   statusBannerOk: {
-    backgroundColor: '#ECFDF5',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
   },
   statusBannerError: {
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
   },
   statusBannerText: {
     flex: 1,
@@ -1354,17 +1327,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   statusTextOk: {
-    color: '#059669',
   },
   statusTextError: {
-    color: '#DC2626',
   },
 
   // Articles section
   articlesSectionTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#374151',
     marginHorizontal: 22,
     marginBottom: 10,
     letterSpacing: 0.3,
@@ -1380,38 +1350,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 22,
     padding: 14,
-    backgroundColor: '#F8FAFC',
     borderRadius: 14,
     marginBottom: 8,
     gap: 12,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
   },
   articleRowUnavailable: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
   },
   articleRowSelected: {
-    backgroundColor: '#EEF2FF',
-    borderColor: '#C7D2FE',
   },
   checkbox: {
     width: 26,
     height: 26,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#6366F1',
-    borderColor: '#6366F1',
   },
   checkboxDisabled: {
-    backgroundColor: '#EF4444',
-    borderColor: '#EF4444',
   },
   selectionInfo: {
     flexDirection: 'row',
@@ -1422,11 +1380,9 @@ const styles = StyleSheet.create({
   },
   selectionInfoText: {
     fontSize: 13,
-    color: '#6366F1',
     fontWeight: '600',
   },
   articleLabelDisabled: {
-    color: '#94A3B8',
   },
   articleInfo: {
     flex: 1,
@@ -1434,16 +1390,13 @@ const styles = StyleSheet.create({
   articleLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0F172A',
   },
   articleRef: {
     fontSize: 12,
-    color: '#94A3B8',
     marginTop: 1,
   },
   articleNotFound: {
     fontSize: 12,
-    color: '#EF4444',
     fontStyle: 'italic',
     marginTop: 1,
   },
@@ -1455,20 +1408,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   stockBadgeOk: {
-    backgroundColor: '#D1FAE5',
   },
   stockBadgeError: {
-    backgroundColor: '#FEE2E2',
   },
   stockBadgeText: {
     fontSize: 12,
     fontWeight: '600',
   },
   stockTextOk: {
-    color: '#059669',
   },
   stockTextError: {
-    color: '#DC2626',
   },
 
   // Footer / Validate button
@@ -1476,7 +1425,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
   },
   validateButton: {
     borderRadius: 16,
@@ -1504,13 +1452,11 @@ const styles = StyleSheet.create({
 const confirmStyles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(11, 17, 32, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 28,
   },
   card: {
-    backgroundColor: '#FFF',
     borderRadius: 28,
     width: '100%',
     maxWidth: 380,
@@ -1542,14 +1488,12 @@ const confirmStyles = StyleSheet.create({
   title: {
     fontSize: 21,
     fontWeight: '800',
-    color: '#0F172A',
     textAlign: 'center',
     marginBottom: 8,
     letterSpacing: -0.4,
   },
   message: {
     fontSize: 14,
-    color: '#64748B',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 16,
@@ -1578,7 +1522,6 @@ const confirmStyles = StyleSheet.create({
   divider: {
     width: '100%',
     height: 1,
-    backgroundColor: '#F1F5F9',
     marginVertical: 16,
   },
   buttonsRow: {
@@ -1590,16 +1533,13 @@ const confirmStyles = StyleSheet.create({
     flex: 1,
     paddingVertical: 15,
     borderRadius: 16,
-    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   cancelBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#64748B',
   },
   confirmBtn: {
     flex: 1,

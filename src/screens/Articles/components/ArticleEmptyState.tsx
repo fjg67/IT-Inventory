@@ -11,12 +11,12 @@ import Animated, {
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
-  premiumColors,
   premiumTypography,
   premiumSpacing,
   premiumBorderRadius,
   premiumShadows,
 } from '../../../constants/premiumTheme';
+import { useTheme } from '@/theme';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 
 type EmptyType = 'no-articles' | 'no-results' | 'no-filters';
@@ -64,6 +64,7 @@ const ArticleEmptyState: React.FC<ArticleEmptyStateProps> = ({
 }) => {
   const config = EMPTY_CONFIGS[type];
 
+  const { colors, theme: { gradients } } = useTheme();
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
 
@@ -93,14 +94,14 @@ const ArticleEmptyState: React.FC<ArticleEmptyStateProps> = ({
     <Animated.View entering={FadeIn.duration(500)} style={styles.container}>
       {/* Icône flottante */}
       <Animated.View style={[styles.iconWrapper, floatStyle]}>
-        <View style={[styles.iconCircle, tablet && { width: 140, height: 140, borderRadius: 70 }]}>
-          <Icon name={config.icon} size={tablet ? 72 : 56} color={premiumColors.primary.base} />
+        <View style={[styles.iconCircle, { backgroundColor: colors.primary + '10' }, tablet && { width: 140, height: 140, borderRadius: 70 }]}>
+          <Icon name={config.icon} size={tablet ? 72 : 56} color={colors.primary} />
         </View>
       </Animated.View>
 
       {/* Textes */}
-      <Text style={[styles.title, tablet && { fontSize: 26 }]}>{config.title}</Text>
-      <Text style={[styles.subtitle, tablet && { fontSize: 17, lineHeight: 26 }]}>{subtitle}</Text>
+      <Text style={[styles.title, { color: colors.textPrimary }, tablet && { fontSize: 26 }]}>{config.title}</Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }, tablet && { fontSize: 17, lineHeight: 26 }]}>{subtitle}</Text>
 
       {/* Bouton CTA */}
       {onAction && (
@@ -113,7 +114,7 @@ const ArticleEmptyState: React.FC<ArticleEmptyStateProps> = ({
           style={styles.ctaWrapper}
         >
           <LinearGradient
-            colors={[...premiumColors.gradients.scanButton]}
+            colors={[...gradients.scanButton]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.cta}
@@ -140,19 +141,16 @@ const styles = StyleSheet.create({
     width: 112,
     height: 112,
     borderRadius: 56,
-    backgroundColor: premiumColors.primary.base + '10',
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
     ...premiumTypography.h2,
-    color: premiumColors.text.primary,
     textAlign: 'center',
     marginBottom: premiumSpacing.sm,
   },
   subtitle: {
     ...premiumTypography.body,
-    color: premiumColors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: premiumSpacing.xxl,

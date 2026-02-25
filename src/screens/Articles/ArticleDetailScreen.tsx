@@ -31,6 +31,7 @@ import { formatTimeParis, formatRelativeDateParis } from '@/utils/dateUtils';
 import { exportArticleDetail } from '@/utils/csv';
 import { Article, Mouvement, StockSite } from '@/types';
 import { useResponsive } from '@/utils/responsive';
+import { useTheme } from '@/theme';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -75,6 +76,8 @@ export const ArticleDetailScreen: React.FC = () => {
   const { articleId } = route.params;
   const siteActif = useAppSelector(state => state.site.siteActif);
   const { isTablet, contentMaxWidth } = useResponsive();
+  const { colors, isDark, theme } = useTheme();
+  const { gradients } = theme;
 
   const [article, setArticle] = useState<Article | null>(null);
   const [historique, setHistorique] = useState<Mouvement[]>([]);
@@ -146,30 +149,30 @@ export const ArticleDetailScreen: React.FC = () => {
   // Loading
   if (isLoading) {
     return (
-      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
-        <StatusBar barStyle="dark-content" />
-        <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={{ marginTop: 12, color: '#6B7280', fontSize: 14 }}>Chargement...</Text>
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 12, color: colors.textSecondary, fontSize: 14 }}>Chargement...</Text>
       </View>
     );
   }
 
   if (!article) {
     return (
-      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
-        <StatusBar barStyle="dark-content" />
-        <Icon name="package-variant-closed-remove" size={56} color="#D1D5DB" />
-        <Text style={{ marginTop: 12, color: '#6B7280', fontSize: 15 }}>Article non trouvé</Text>
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+        <Icon name="package-variant-closed-remove" size={56} color={colors.textMuted} />
+        <Text style={{ marginTop: 12, color: colors.textSecondary, fontSize: 15 }}>Article non trouvé</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
-          <Text style={{ color: '#2563EB', fontWeight: '600' }}>Retour</Text>
+          <Text style={{ color: colors.primary, fontWeight: '600' }}>Retour</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={gradient[1]} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: 40 }, isTablet && contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : undefined]}>
         {/* ===== HEADER IMMERSIF ===== */}
@@ -177,30 +180,31 @@ export const ArticleDetailScreen: React.FC = () => {
           {/* Back + Edit */}
           <View style={styles.headerNav}>
             <TouchableOpacity style={styles.navBtn} onPress={() => { Vibration.vibrate(10); navigation.goBack(); }}>
-              <Icon name="arrow-left" size={22} color="#FFF" />
+              <Icon name="arrow-left" size={22} color={colors.textOnPrimary} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.navBtn} onPress={handleEdit}>
-              <Icon name="pencil-outline" size={22} color="#FFF" />
+              <Icon name="pencil-outline" size={22} color={colors.textOnPrimary} />
             </TouchableOpacity>
           </View>
 
           {/* Photo / Avatar */}
           <Animated.View entering={ZoomIn.delay(150).duration(400)} style={styles.avatarWrapper}>
             {article.photoUrl ? (
-              <Image source={{ uri: article.photoUrl }} style={styles.avatarImg} />
+              <Image source={{ uri: article.photoUrl }} style={[styles.avatarImg, { borderColor: colors.textOnPrimary }]} />
             ) : (
-              <View style={styles.avatarFallback}>
-                <Text style={styles.avatarText}>{getInitials(article.nom)}</Text>
+              <View style={[styles.avatarFallback, { borderColor: colors.textOnPrimary }]}>
+                <Text style={[styles.avatarText, { color: colors.textOnPrimary }]}>{getInitials(article.nom)}</Text>
               </View>
             )}
             {/* Stock badge */}
             <View style={[styles.stockDot, {
-              backgroundColor: isCritical ? '#EF4444' : isLowStock ? '#F59E0B' : '#10B981',
+              backgroundColor: isCritical ? colors.danger : isLowStock ? colors.warning : colors.success,
+              borderColor: colors.surface,
             }]}>
               <Icon
                 name={isCritical ? 'close' : isLowStock ? 'alert' : 'check'}
                 size={14}
-                color="#FFF"
+                color={colors.textOnPrimary}
               />
             </View>
           </Animated.View>
@@ -211,7 +215,7 @@ export const ArticleDetailScreen: React.FC = () => {
               <Icon name="barcode" size={13} color="rgba(255,255,255,0.8)" />
               <Text style={styles.refText}>{article.reference}</Text>
             </View>
-            <Text style={styles.headerName} numberOfLines={2}>{article.nom}</Text>
+            <Text style={[styles.headerName, { color: colors.textOnPrimary }]} numberOfLines={2}>{article.nom}</Text>
             {article.categorieNom ? (
               <View style={styles.catBadge}>
                 <Icon name="folder-outline" size={12} color="rgba(255,255,255,0.9)" />
@@ -223,28 +227,28 @@ export const ArticleDetailScreen: React.FC = () => {
 
         {/* ===== QUICK STATS ===== */}
         <Animated.View entering={FadeInUp.delay(200).duration(400)} style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: 'rgba(37,99,235,0.08)' }]}>
-              <Icon name="package-variant" size={20} color="#2563EB" />
+          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.statIcon, { backgroundColor: colors.infoBg }]}>
+              <Icon name="package-variant" size={20} color={colors.secondary} />
             </View>
             <Text style={[styles.statValue, {
-              color: isCritical ? '#EF4444' : isLowStock ? '#F59E0B' : '#111827',
+              color: isCritical ? colors.danger : isLowStock ? colors.warning : colors.textPrimary,
             }]}>{stockActuel}</Text>
-            <Text style={styles.statLabel}>Stock actuel</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Stock actuel</Text>
           </View>
-          <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: 'rgba(245,158,11,0.08)' }]}>
-              <Icon name="alert-circle-outline" size={20} color="#F59E0B" />
+          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.statIcon, { backgroundColor: colors.warningBg }]}>
+              <Icon name="alert-circle-outline" size={20} color={colors.warning} />
             </View>
-            <Text style={styles.statValue}>{article.stockMini}</Text>
-            <Text style={styles.statLabel}>Stock minimum</Text>
+            <Text style={[styles.statValue, { color: colors.textPrimary }]}>{article.stockMini}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Stock minimum</Text>
           </View>
-          <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: 'rgba(139,92,246,0.08)' }]}>
-              <Icon name="swap-vertical" size={20} color="#8B5CF6" />
+          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.statIcon, { backgroundColor: `${colors.mouvementTransfert}14` }]}>
+              <Icon name="swap-vertical" size={20} color={colors.mouvementTransfert} />
             </View>
-            <Text style={styles.statValue}>{historique.length}</Text>
-            <Text style={styles.statLabel}>Mouvements</Text>
+            <Text style={[styles.statValue, { color: colors.textPrimary }]}>{historique.length}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Mouvements</Text>
           </View>
         </Animated.View>
 
@@ -252,13 +256,13 @@ export const ArticleDetailScreen: React.FC = () => {
         {isLowStock && (
           <Animated.View entering={FadeIn.delay(400).duration(400)} style={styles.alertWrapper}>
             <LinearGradient
-              colors={isCritical ? ['#F87171', '#EF4444'] : ['#FBBF24', '#F59E0B']}
+              colors={isCritical ? gradients.danger : gradients.warning}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={styles.alertCard}
             >
-              <Icon name={isCritical ? 'alert-octagon' : 'alert'} size={24} color="#FFF" />
+              <Icon name={isCritical ? 'alert-octagon' : 'alert'} size={24} color={colors.textOnPrimary} />
               <View style={styles.alertContent}>
-                <Text style={styles.alertTitle}>
+                <Text style={[styles.alertTitle, { color: colors.textOnPrimary }]}>
                   {isCritical ? 'Stock critique !' : 'Stock inférieur au minimum'}
                 </Text>
                 <Text style={styles.alertSub}>
@@ -273,74 +277,74 @@ export const ArticleDetailScreen: React.FC = () => {
 
         {/* ===== INFORMATIONS ===== */}
         <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.section}>
-          <Text style={styles.sectionTitle}>Informations</Text>
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Référence</Text>
-              <Text style={styles.infoValue}>{article.reference}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Informations</Text>
+          <View style={[styles.infoCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Référence</Text>
+              <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{article.reference}</Text>
             </View>
             {article.codeFamille ? (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Code famille</Text>
-                <View style={[styles.infoTagBadge, { backgroundColor: 'rgba(99,102,241,0.1)' }]}>
-                  <Icon name="tag-outline" size={13} color="#6366F1" />
-                  <Text style={[styles.infoTagText, { color: '#6366F1' }]}>{article.codeFamille}</Text>
+              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Code famille</Text>
+                <View style={[styles.infoTagBadge, { backgroundColor: colors.badge }]}>
+                  <Icon name="tag-outline" size={13} color={colors.primary} />
+                  <Text style={[styles.infoTagText, { color: colors.primary }]}>{article.codeFamille}</Text>
                 </View>
               </View>
             ) : null}
             {article.famille ? (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Famille</Text>
-                <View style={[styles.infoTagBadge, { backgroundColor: 'rgba(139,92,246,0.1)' }]}>
-                  <Icon name="shape-outline" size={13} color="#8B5CF6" />
-                  <Text style={[styles.infoTagText, { color: '#8B5CF6' }]}>{article.famille}</Text>
+              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Famille</Text>
+                <View style={[styles.infoTagBadge, { backgroundColor: `${colors.mouvementTransfert}1A` }]}>
+                  <Icon name="shape-outline" size={13} color={colors.mouvementTransfert} />
+                  <Text style={[styles.infoTagText, { color: colors.mouvementTransfert }]}>{article.famille}</Text>
                 </View>
               </View>
             ) : null}
             {article.typeArticle ? (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Type</Text>
-                <View style={[styles.infoTagBadge, { backgroundColor: 'rgba(6,182,212,0.1)' }]}>
-                  <Icon name="format-list-bulleted-type" size={13} color="#06B6D4" />
-                  <Text style={[styles.infoTagText, { color: '#06B6D4' }]}>{article.typeArticle}</Text>
+              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Type</Text>
+                <View style={[styles.infoTagBadge, { backgroundColor: colors.infoBg }]}>
+                  <Icon name="format-list-bulleted-type" size={13} color={colors.info} />
+                  <Text style={[styles.infoTagText, { color: colors.info }]}>{article.typeArticle}</Text>
                 </View>
               </View>
             ) : null}
             {article.sousType ? (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Sous-type</Text>
-                <View style={[styles.infoTagBadge, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
-                  <Icon name="tag-text-outline" size={13} color="#F59E0B" />
-                  <Text style={[styles.infoTagText, { color: '#F59E0B' }]}>{article.sousType}</Text>
+              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Sous-type</Text>
+                <View style={[styles.infoTagBadge, { backgroundColor: colors.warningBg }]}>
+                  <Icon name="tag-text-outline" size={13} color={colors.warning} />
+                  <Text style={[styles.infoTagText, { color: colors.warning }]}>{article.sousType}</Text>
                 </View>
               </View>
             ) : null}
             {article.marque ? (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Marque</Text>
-                <View style={[styles.infoTagBadge, { backgroundColor: 'rgba(37,99,235,0.1)' }]}>
-                  <Icon name="domain" size={13} color="#2563EB" />
-                  <Text style={[styles.infoTagText, { color: '#2563EB' }]}>{article.marque}</Text>
+              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Marque</Text>
+                <View style={[styles.infoTagBadge, { backgroundColor: colors.infoBg }]}>
+                  <Icon name="domain" size={13} color={colors.secondary} />
+                  <Text style={[styles.infoTagText, { color: colors.secondary }]}>{article.marque}</Text>
                 </View>
               </View>
             ) : null}
             {article.emplacement ? (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Emplacement</Text>
-                <View style={[styles.infoTagBadge, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
-                  <Icon name="map-marker" size={13} color="#10B981" />
-                  <Text style={[styles.infoTagText, { color: '#10B981' }]}>{article.emplacement}</Text>
+              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Emplacement</Text>
+                <View style={[styles.infoTagBadge, { backgroundColor: colors.successBg }]}>
+                  <Icon name="map-marker" size={13} color={colors.success} />
+                  <Text style={[styles.infoTagText, { color: colors.success }]}>{article.emplacement}</Text>
                 </View>
               </View>
             ) : null}
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Site</Text>
-              <Text style={styles.infoValue}>{siteActif?.nom ?? '—'}</Text>
+            <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Site</Text>
+              <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{siteActif?.nom ?? '—'}</Text>
             </View>
             {article.description ? (
               <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-                <Text style={styles.infoLabel}>Description</Text>
-                <Text style={[styles.infoValue, { flex: 1, textAlign: 'right' }]} numberOfLines={3}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Description</Text>
+                <Text style={[styles.infoValue, { color: colors.textPrimary, flex: 1, textAlign: 'right' }]} numberOfLines={3}>
                   {article.description}
                 </Text>
               </View>
@@ -357,20 +361,20 @@ export const ArticleDetailScreen: React.FC = () => {
             disabled={exporting}
           >
             <LinearGradient
-              colors={['#0EA5E9', '#0284C7']}
+              colors={gradients.primaryHorizontal}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.exportGradient}
             >
               {exporting ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={colors.textOnPrimary} />
               ) : (
                 <>
-                  <View style={styles.exportIconCircle}>
-                    <Icon name="file-download-outline" size={28} color="#0EA5E9" />
+                  <View style={[styles.exportIconCircle, { backgroundColor: colors.surface }]}>
+                    <Icon name="file-download-outline" size={28} color={colors.secondary} />
                   </View>
                   <View style={styles.exportTextWrap}>
-                    <Text style={styles.exportTitle}>Exporter en CSV</Text>
+                    <Text style={[styles.exportTitle, { color: colors.textOnPrimary }]}>Exporter en CSV</Text>
                     <Text style={styles.exportSub}>Fiche article + historique • Enregistré sur le téléphone</Text>
                   </View>
                 </>
@@ -381,32 +385,32 @@ export const ArticleDetailScreen: React.FC = () => {
 
         {/* ===== ACTIONS RAPIDES ===== */}
         <Animated.View entering={FadeInUp.delay(400).duration(400)} style={styles.section}>
-          <Text style={styles.sectionTitle}>Actions rapides</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Actions rapides</Text>
           <View style={styles.actionsGrid}>
-            <TouchableOpacity style={styles.actionCard} activeOpacity={0.7} onPress={() => handleMouvement('entree')}>
-              <View style={[styles.actionIcon, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
-                <Icon name="arrow-up-bold-circle-outline" size={28} color="#10B981" />
+            <TouchableOpacity style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]} activeOpacity={0.7} onPress={() => handleMouvement('entree')}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.successBg }]}>
+                <Icon name="arrow-up-bold-circle-outline" size={28} color={colors.success} />
               </View>
-              <Text style={[styles.actionLabel, { color: '#10B981' }]}>Entrée</Text>
+              <Text style={[styles.actionLabel, { color: colors.success }]}>Entrée</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionCard, stockActuel === 0 && { opacity: 0.4 }]}
+              style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }, stockActuel === 0 && { opacity: 0.4 }]}
               activeOpacity={0.7}
               onPress={() => handleMouvement('sortie')}
               disabled={stockActuel === 0}
             >
-              <View style={[styles.actionIcon, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
-                <Icon name="arrow-down-bold-circle-outline" size={28} color="#EF4444" />
+              <View style={[styles.actionIcon, { backgroundColor: colors.dangerBg }]}>
+                <Icon name="arrow-down-bold-circle-outline" size={28} color={colors.danger} />
               </View>
-              <Text style={[styles.actionLabel, { color: '#EF4444' }]}>Sortie</Text>
+              <Text style={[styles.actionLabel, { color: colors.danger }]}>Sortie</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard} activeOpacity={0.7} onPress={handleTransfert}>
-              <View style={[styles.actionIcon, { backgroundColor: 'rgba(139,92,246,0.1)' }]}>
-                <Icon name="swap-horizontal" size={28} color="#8B5CF6" />
+            <TouchableOpacity style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]} activeOpacity={0.7} onPress={handleTransfert}>
+              <View style={[styles.actionIcon, { backgroundColor: `${colors.mouvementTransfert}1A` }]}>
+                <Icon name="swap-horizontal" size={28} color={colors.mouvementTransfert} />
               </View>
-              <Text style={[styles.actionLabel, { color: '#8B5CF6' }]}>Transfert</Text>
+              <Text style={[styles.actionLabel, { color: colors.mouvementTransfert }]}>Transfert</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -414,15 +418,15 @@ export const ArticleDetailScreen: React.FC = () => {
         {/* ===== HISTORIQUE ===== */}
         <Animated.View entering={FadeInUp.delay(500).duration(400)} style={styles.section}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Historique</Text>
-            <Text style={styles.sectionCount}>{historique.length} mouvement{historique.length !== 1 ? 's' : ''}</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Historique</Text>
+            <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{historique.length} mouvement{historique.length !== 1 ? 's' : ''}</Text>
           </View>
 
           {historique.length === 0 ? (
-            <View style={styles.emptyHistory}>
-              <Icon name="chart-timeline-variant" size={48} color="#D1D5DB" />
-              <Text style={styles.emptyTitle}>Aucun mouvement</Text>
-              <Text style={styles.emptySub}>Les mouvements de cet article apparaîtront ici</Text>
+            <View style={[styles.emptyHistory, { backgroundColor: colors.surface }]}>
+              <Icon name="chart-timeline-variant" size={48} color={colors.textMuted} />
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Aucun mouvement</Text>
+              <Text style={[styles.emptySub, { color: colors.textMuted }]}>Les mouvements de cet article apparaîtront ici</Text>
             </View>
           ) : (
             <View style={styles.timeline}>
@@ -435,30 +439,30 @@ export const ArticleDetailScreen: React.FC = () => {
                     style={styles.tlItem}
                   >
                     <View style={styles.tlLeft}>
-                      <View style={[styles.tlDot, { backgroundColor: cfg.color }]} />
+                      <View style={[styles.tlDot, { backgroundColor: cfg.color, borderColor: colors.surface }]} />
                       {idx < Math.min(historique.length, 5) - 1 && (
                         <View style={[styles.tlLine, { backgroundColor: cfg.color + '25' }]} />
                       )}
                     </View>
-                    <View style={styles.tlCard}>
+                    <View style={[styles.tlCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
                       <View style={styles.tlCardTop}>
                         <View style={[styles.tlBadge, { backgroundColor: cfg.color + '12' }]}>
                           <Icon name={cfg.icon} size={14} color={cfg.color} />
                           <Text style={[styles.tlBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
                         </View>
-                        <Text style={styles.tlTime}>{formatTime(new Date(m.dateMouvement))}</Text>
+                        <Text style={[styles.tlTime, { color: colors.textMuted }]}>{formatTime(new Date(m.dateMouvement))}</Text>
                       </View>
                       <Text style={[styles.tlQty, { color: cfg.color }]}>
                         {cfg.prefix}{Math.abs(m.quantite)} unités
                       </Text>
                       <View style={styles.tlMeta}>
-                        <Text style={styles.tlMetaText}>
+                        <Text style={[styles.tlMetaText, { color: colors.textMuted }]}>
                           {formatRelDate(new Date(m.dateMouvement))}
                         </Text>
                         {m.technicien && (
                           <>
-                            <Text style={styles.tlMetaSep}>•</Text>
-                            <Text style={styles.tlMetaText}>
+                            <Text style={[styles.tlMetaSep, { color: colors.textMuted }]}>•</Text>
+                            <Text style={[styles.tlMetaText, { color: colors.textMuted }]}>
                               {m.technicien.prenom} {m.technicien.nom?.charAt(0)}.
                             </Text>
                           </>
@@ -478,7 +482,7 @@ export const ArticleDetailScreen: React.FC = () => {
 
 // ==================== STYLES ====================
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1 },
 
   // ===== HEADER =====
   header: {
@@ -511,7 +515,6 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 24,
     borderWidth: 4,
-    borderColor: '#FFF',
   },
   avatarFallback: {
     width: 100,
@@ -519,14 +522,12 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderWidth: 4,
-    borderColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#FFF',
   },
   stockDot: {
     position: 'absolute',
@@ -536,7 +537,6 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 3,
-    borderColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -561,7 +561,6 @@ const styles = StyleSheet.create({
   headerName: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#FFF',
     textAlign: 'center',
     marginBottom: 6,
   },
@@ -589,7 +588,6 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#FFF',
     borderRadius: 14,
     padding: 14,
     alignItems: 'center',
@@ -610,12 +608,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
   },
   statLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#9CA3AF',
     marginTop: 2,
     textAlign: 'center',
   },
@@ -630,14 +626,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   alertContent: { flex: 1 },
-  alertTitle: { fontSize: 15, fontWeight: '700', color: '#FFF' },
+  alertTitle: { fontSize: 15, fontWeight: '700' },
   alertSub: { fontSize: 13, color: 'rgba(255,255,255,0.9)', marginTop: 2 },
 
   // ===== EXPORT CSV =====
   exportTouchable: {
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#0284C7',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -657,7 +653,6 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -665,7 +660,6 @@ const styles = StyleSheet.create({
   exportTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#FFF',
   },
   exportSub: {
     fontSize: 12,
@@ -676,13 +670,12 @@ const styles = StyleSheet.create({
 
   // ===== SECTIONS =====
   section: { marginTop: 24, paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 17, fontWeight: '700', color: '#111827', marginBottom: 12 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: 12 },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionCount: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },
+  sectionCount: { fontSize: 12, fontWeight: '500' },
 
   // ===== INFO CARD =====
   infoCard: {
-    backgroundColor: '#FFF',
     borderRadius: 14,
     padding: 4,
     shadowColor: '#000',
@@ -698,20 +691,18 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
-  infoLabel: { fontSize: 14, fontWeight: '500', color: '#6B7280' },
-  infoValue: { fontSize: 14, fontWeight: '500', color: '#111827' },
+  infoLabel: { fontSize: 14, fontWeight: '500' },
+  infoValue: { fontSize: 14, fontWeight: '500' },
   infoCatBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(37,99,235,0.08)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
   },
-  infoCatText: { fontSize: 13, fontWeight: '600', color: '#2563EB' },
+  infoCatText: { fontSize: 13, fontWeight: '600' },
   infoTagBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -729,10 +720,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 90,
-    backgroundColor: '#FFF',
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#F3F4F6',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -753,11 +742,10 @@ const styles = StyleSheet.create({
   emptyHistory: {
     alignItems: 'center',
     paddingVertical: 36,
-    backgroundColor: '#FFF',
     borderRadius: 14,
   },
-  emptyTitle: { fontSize: 15, fontWeight: '600', color: '#374151', marginTop: 12 },
-  emptySub: { fontSize: 13, color: '#9CA3AF', marginTop: 4 },
+  emptyTitle: { fontSize: 15, fontWeight: '600', marginTop: 12 },
+  emptySub: { fontSize: 13, marginTop: 4 },
 
   // ===== TIMELINE =====
   timeline: { paddingLeft: 4 },
@@ -769,7 +757,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 14,
     borderWidth: 2,
-    borderColor: '#FFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -779,12 +766,10 @@ const styles = StyleSheet.create({
   tlLine: { flex: 1, width: 2, borderRadius: 1, marginTop: 2 },
   tlCard: {
     flex: 1,
-    backgroundColor: '#FFF',
     borderRadius: 12,
     padding: 12,
     marginLeft: 8,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
   },
   tlCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   tlBadge: {
@@ -796,11 +781,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   tlBadgeText: { fontSize: 11, fontWeight: '600' },
-  tlTime: { fontSize: 11, color: '#9CA3AF' },
+  tlTime: { fontSize: 11 },
   tlQty: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
   tlMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  tlMetaText: { fontSize: 11, color: '#9CA3AF' },
-  tlMetaSep: { fontSize: 11, color: '#D1D5DB' },
+  tlMetaText: { fontSize: 11 },
+  tlMetaSep: { fontSize: 11 },
 });
 
 export default ArticleDetailScreen;

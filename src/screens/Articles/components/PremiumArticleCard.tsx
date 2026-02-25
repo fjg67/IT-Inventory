@@ -1,19 +1,28 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Vibration, Image, useWindowDimensions } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Vibration,
+  Image,
+  useWindowDimensions,
+} from 'react-native';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
+import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
-  premiumColors,
   premiumShadows,
   premiumSpacing,
   premiumBorderRadius,
   premiumAnimation,
 } from '../../../constants/premiumTheme';
+import { useTheme } from '@/theme';
 import { Article } from '../../../types';
 
 const MARQUE_MAP: Record<string, { color: string; initials: string }> = {
@@ -76,13 +85,14 @@ interface PremiumArticleCardProps {
 }
 
 /**
- * Card article premium avec badge stock, métadonnées, et animation press
+ * Card article premium avec accent latéral, photo raffinée, badges modernes
  */
 const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
   article,
   onPress,
 }) => {
   const { width } = useWindowDimensions();
+  const { colors, isDark } = useTheme();
   const tablet = checkIsTablet(width);
   const pressScale = useSharedValue(1);
 
@@ -107,34 +117,40 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
     onPress(article.id);
   }, [onPress, article.id]);
 
-  // Couleur du badge stock
+  // Stock config
   const stockConfig = useMemo(() => {
     const qty = article.quantiteActuelle ?? 0;
     const mini = article.stockMini;
 
     if (qty === 0) {
       return {
-        bg: premiumColors.error.base + '12',
-        color: premiumColors.error.base,
+        gradient: ['#EF4444', '#DC2626'] as const,
+        color: '#EF4444',
+        lightColor: isDark ? '#EF444420' : '#FEF2F2',
         icon: 'alert-circle' as const,
         label: 'Rupture',
+        accentColor: '#EF4444',
       };
     }
     if (qty <= mini) {
       return {
-        bg: premiumColors.warning.base + '12',
-        color: premiumColors.warning.dark,
+        gradient: ['#F59E0B', '#D97706'] as const,
+        color: '#F59E0B',
+        lightColor: isDark ? '#F59E0B20' : '#FFFBEB',
         icon: 'alert-outline' as const,
         label: 'Stock faible',
+        accentColor: '#F59E0B',
       };
     }
     return {
-      bg: premiumColors.success.base + '12',
-      color: premiumColors.success.dark,
+      gradient: ['#10B981', '#059669'] as const,
+      color: '#10B981',
+      lightColor: isDark ? '#10B98120' : '#ECFDF5',
       icon: 'check-circle-outline' as const,
       label: 'En stock',
+      accentColor: '#10B981',
     };
-  }, [article.quantiteActuelle, article.stockMini]);
+  }, [article.quantiteActuelle, article.stockMini, isDark]);
 
   // Date relative
   const relativeDate = useMemo(() => {
@@ -160,84 +176,181 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
       >
-        <View style={[styles.card, tablet && { padding: premiumSpacing.lg }]}>
-          {/* Photo ou icône */}
-          {article.photoUrl ? (
-            <Image source={{ uri: article.photoUrl }} style={[styles.photoThumb, tablet && { width: 56, height: 56 }]} />
-          ) : (
-            <View style={[styles.iconContainer, tablet && { width: 56, height: 56 }]}>
-              <Icon name="package-variant" size={tablet ? 30 : 24} color={premiumColors.primary.base} />
-            </View>
-          )}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF',
+              borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              shadowColor: isDark ? '#000' : stockConfig.accentColor,
+              shadowOpacity: isDark ? 0.2 : 0.06,
+            },
+            tablet && { padding: premiumSpacing.lg },
+          ]}
+        >
+          {/* Accent strip left side */}
+          <LinearGradient
+            colors={[...stockConfig.gradient]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.accentStrip}
+          />
 
-          {/* Contenu principal */}
+          {/* Photo / Icon */}
+          <View style={styles.imageSection}>
+            {article.photoUrl ? (
+              <View style={[
+                styles.photoContainer,
+                {
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC',
+                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+                },
+                tablet && { width: 60, height: 60 },
+              ]}>
+                <Image
+                  source={{ uri: article.photoUrl }}
+                  style={[
+                    styles.photoThumb,
+                    tablet && { width: 54, height: 54 },
+                  ]}
+                />
+              </View>
+            ) : (
+              <View style={[
+                styles.iconContainer,
+                {
+                  backgroundColor: isDark ? 'rgba(99,102,241,0.1)' : '#EEF2FF',
+                  borderColor: isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.1)',
+                },
+                tablet && { width: 60, height: 60 },
+              ]}>
+                <Icon name="package-variant" size={tablet ? 28 : 22} color={colors.primary} />
+              </View>
+            )}
+          </View>
+
+          {/* Content */}
           <View style={styles.content}>
-            {/* Ligne 1 : Nom */}
-            <View style={styles.headerRow}>
-              <Text style={[styles.name, tablet && { fontSize: 17 }]} numberOfLines={1}>
-                {article.nom}
-              </Text>
-            </View>
+            {/* Name */}
+            <Text
+              style={[
+                styles.name,
+                { color: colors.textPrimary },
+                tablet && { fontSize: 17 },
+              ]}
+              numberOfLines={1}
+            >
+              {article.nom}
+            </Text>
 
-            {/* Description optionnelle */}
+            {/* Description */}
             {article.description ? (
-              <Text style={[styles.description, tablet && { fontSize: 14 }]} numberOfLines={1}>
+              <Text
+                style={[
+                  styles.description,
+                  { color: colors.textMuted },
+                  tablet && { fontSize: 13 },
+                ]}
+                numberOfLines={1}
+              >
                 {article.description}
               </Text>
             ) : null}
 
-            {/* Footer : Badge stock + Métadonnées */}
-            <View style={styles.footer}>
-              <View style={[styles.stockBadge, { backgroundColor: premiumColors.primary.base + '10' }, tablet && { paddingHorizontal: 8, paddingVertical: 4 }]}>
-                <Icon name="barcode" size={tablet ? 16 : 13} color={premiumColors.primary.base} />
-                <Text style={[styles.stockText, { color: premiumColors.primary.base }, tablet && { fontSize: 12 }]}>
+            {/* Badges row 1: Reference + Famille */}
+            <View style={styles.badgesRow}>
+              <View
+                style={[
+                  styles.badge,
+                  {
+                    backgroundColor: isDark ? 'rgba(99,102,241,0.1)' : '#EEF2FF',
+                  },
+                ]}
+              >
+                <Icon name="barcode" size={11} color={colors.primary} />
+                <Text style={[styles.badgeText, { color: colors.primary }]}>
                   {article.reference}
                 </Text>
               </View>
 
               {article.famille && FAMILLE_MAP[article.famille] ? (
-                <View style={[styles.stockBadge, { backgroundColor: FAMILLE_MAP[article.famille].color + '15', marginLeft: 6 }]}>
-                  <Icon name={FAMILLE_MAP[article.famille].icon} size={12} color={FAMILLE_MAP[article.famille].color} />
-                  <Text style={[styles.stockText, { color: FAMILLE_MAP[article.famille].color }]}>
+                <View
+                  style={[
+                    styles.badge,
+                    {
+                      backgroundColor: FAMILLE_MAP[article.famille].color + (isDark ? '18' : '10'),
+                    },
+                  ]}
+                >
+                  <Icon
+                    name={FAMILLE_MAP[article.famille].icon}
+                    size={11}
+                    color={FAMILLE_MAP[article.famille].color}
+                  />
+                  <Text style={[styles.badgeText, { color: FAMILLE_MAP[article.famille].color }]}>
                     {article.famille}
                   </Text>
                 </View>
               ) : article.codeFamille ? (
-                <View style={[styles.stockBadge, { backgroundColor: '#8B5CF620', marginLeft: 6 }]}>
-                  <Icon name="tag-outline" size={12} color="#8B5CF6" />
-                  <Text style={[styles.stockText, { color: '#8B5CF6' }]}>
+                <View style={[styles.badge, { backgroundColor: '#8B5CF6' + (isDark ? '18' : '10') }]}>
+                  <Icon name="tag-outline" size={11} color="#8B5CF6" />
+                  <Text style={[styles.badgeText, { color: '#8B5CF6' }]}>
                     F{article.codeFamille}
                   </Text>
                 </View>
               ) : null}
-
             </View>
 
-            {/* Badges Type / Sous-type / Marque */}
+            {/* Badges row 2: Marque + Type + Sous-type */}
             {(article.typeArticle || article.sousType || article.marque) ? (
-              <View style={[styles.footer, { marginTop: 4, flexWrap: 'wrap', gap: 4 }]}>
+              <View style={styles.badgesRow}>
                 {article.marque && MARQUE_MAP[article.marque] ? (
-                  <View style={[styles.stockBadge, { backgroundColor: MARQUE_MAP[article.marque].color + '12' }]}>
-                    <Text style={{ fontSize: 8, fontWeight: '900', color: MARQUE_MAP[article.marque].color, marginRight: 3 }}>
+                  <View
+                    style={[
+                      styles.badge,
+                      { backgroundColor: MARQUE_MAP[article.marque].color + (isDark ? '18' : '10') },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 8,
+                        fontWeight: '800',
+                        color: MARQUE_MAP[article.marque].color,
+                        letterSpacing: 0.5,
+                      }}
+                    >
                       {MARQUE_MAP[article.marque].initials}
                     </Text>
-                    <Text style={[styles.stockText, { color: MARQUE_MAP[article.marque].color, fontSize: 10 }]}>
+                    <Text style={[styles.badgeText, { color: MARQUE_MAP[article.marque].color }]}>
                       {article.marque}
                     </Text>
                   </View>
                 ) : null}
                 {article.typeArticle && TYPE_MAP[article.typeArticle] ? (
-                  <View style={[styles.stockBadge, { backgroundColor: TYPE_MAP[article.typeArticle].color + '12' }]}>
-                    <Icon name={TYPE_MAP[article.typeArticle].icon} size={11} color={TYPE_MAP[article.typeArticle].color} />
-                    <Text style={[styles.stockText, { color: TYPE_MAP[article.typeArticle].color, fontSize: 10 }]}>
+                  <View
+                    style={[
+                      styles.badge,
+                      { backgroundColor: TYPE_MAP[article.typeArticle].color + (isDark ? '18' : '10') },
+                    ]}
+                  >
+                    <Icon
+                      name={TYPE_MAP[article.typeArticle].icon}
+                      size={10}
+                      color={TYPE_MAP[article.typeArticle].color}
+                    />
+                    <Text style={[styles.badgeText, { color: TYPE_MAP[article.typeArticle].color }]}>
                       {article.typeArticle}
                     </Text>
                   </View>
                 ) : null}
                 {article.sousType ? (
-                  <View style={[styles.stockBadge, { backgroundColor: '#64748B12' }]}>
-                    <Icon name="tag-text-outline" size={10} color="#64748B" />
-                    <Text style={[styles.stockText, { color: '#64748B', fontSize: 10 }]}>
+                  <View
+                    style={[
+                      styles.badge,
+                      { backgroundColor: isDark ? 'rgba(100,116,139,0.12)' : '#F1F5F9' },
+                    ]}
+                  >
+                    <Text style={[styles.badgeText, { color: '#64748B' }]}>
                       {article.sousType}
                     </Text>
                   </View>
@@ -245,32 +358,42 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
               </View>
             ) : null}
 
-            {/* Métadonnées */}
-            <View style={[styles.footer, { marginTop: 3 }]}>
-              <View style={styles.meta}>
-                {article.categorieNom ? (
-                  <Text style={styles.metaText} numberOfLines={1}>
-                    {article.categorieNom}
-                  </Text>
-                ) : null}
-                <Text style={styles.metaDate}>{relativeDate}</Text>
-              </View>
-            </View>
+            {/* Date */}
+            <Text style={[styles.dateText, { color: colors.textMuted }]}>
+              {relativeDate}
+            </Text>
           </View>
 
-          {/* Stock actual */}
-          <View style={styles.stockRight}>
-            <View style={[styles.stockBadgeRight, { backgroundColor: stockConfig.bg }, tablet && { paddingHorizontal: 10, paddingVertical: 6 }]}>
-              <Icon name={stockConfig.icon} size={tablet ? 18 : 14} color={stockConfig.color} />
-              <Text style={[styles.stockValueRight, { color: stockConfig.color }, tablet && { fontSize: 17 }]}>
+          {/* Stock indicator (right) */}
+          <View style={styles.stockColumn}>
+            <View
+              style={[
+                styles.stockPill,
+                { backgroundColor: stockConfig.lightColor },
+                tablet && { paddingHorizontal: 12, paddingVertical: 8 },
+              ]}
+            >
+              <Icon name={stockConfig.icon} size={14} color={stockConfig.color} />
+              <Text
+                style={[
+                  styles.stockValue,
+                  { color: stockConfig.color },
+                  tablet && { fontSize: 18 },
+                ]}
+              >
                 {article.quantiteActuelle ?? 0}
               </Text>
             </View>
-            <Text style={[styles.stockUnitRight, tablet && { fontSize: 12 }]}>{article.unite}</Text>
+            <Text
+              style={[
+                styles.stockUnit,
+                { color: colors.textMuted },
+                tablet && { fontSize: 11 },
+              ]}
+            >
+              {article.unite}
+            </Text>
           </View>
-
-          {/* Chevron */}
-          <Icon name="chevron-right" size={tablet ? 24 : 20} color={premiumColors.border} />
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -285,121 +408,111 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: premiumColors.surface,
-    borderRadius: premiumBorderRadius.lg,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: premiumColors.borderLight,
-    padding: premiumSpacing.md,
-    marginBottom: premiumSpacing.sm,
-    ...premiumShadows.xs,
+    padding: 14,
+    marginBottom: 10,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  accentStrip: {
+    position: 'absolute',
+    left: 0,
+    top: 8,
+    bottom: 8,
+    width: 3,
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
+  },
+  imageSection: {
+    marginRight: 12,
+    marginLeft: 4,
+  },
+  photoContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   photoThumb: {
     width: 44,
     height: 44,
-    borderRadius: premiumBorderRadius.md,
-    marginRight: premiumSpacing.md,
+    borderRadius: 10,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: premiumBorderRadius.md, // 12
-    backgroundColor: premiumColors.primary.base + '08', // very light blue
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: premiumSpacing.md,
   },
   content: {
     flex: 1,
-    marginRight: premiumSpacing.sm,
+    marginRight: 8,
     justifyContent: 'center',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  reference: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: premiumColors.text.tertiary,
-    fontFamily: 'Inter-Medium',
-  },
-  separator: {
-    fontSize: 12,
-    color: premiumColors.text.tertiary,
-    marginHorizontal: 4,
   },
   name: {
     fontSize: 15,
-    fontWeight: '600',
-    color: premiumColors.text.primary,
-    fontFamily: 'Inter-SemiBold',
-    flexShrink: 1,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    marginBottom: 1,
   },
   description: {
-    fontSize: 12,
-    color: premiumColors.text.tertiary,
-    marginBottom: 4,
+    fontSize: 11,
+    marginBottom: 6,
+    lineHeight: 16,
   },
-  footer: {
+  badgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 3,
+  },
+  badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
     gap: 4,
   },
-  stockBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    gap: 4,
-    backgroundColor: premiumColors.primary.base + '10',
-    marginRight: 6,
-  },
-  stockText: {
+  badgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: premiumColors.primary.base,
+    letterSpacing: 0.1,
   },
-  meta: {
-    flexDirection: 'column',
-    gap: 0,
-  },
-  metaText: {
-    fontSize: 11,
-    color: premiumColors.text.secondary,
-    fontWeight: '500',
-  },
-  metaDate: {
+  dateText: {
     fontSize: 10,
-    color: premiumColors.text.tertiary,
+    marginTop: 5,
+    letterSpacing: 0.2,
   },
-  // New styles for right stock display
-  stockRight: {
-    alignItems: 'flex-end',
+  stockColumn: {
+    alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: premiumSpacing.xs,
-    marginRight: premiumSpacing.xs,
-    minWidth: 50,
+    minWidth: 52,
   },
-  stockBadgeRight: {
+  stockPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
     gap: 4,
-    marginBottom: 2,
+    marginBottom: 3,
   },
-  stockValueRight: {
-    fontSize: 15,
-    fontWeight: '700',
-    fontFamily: 'Inter-Bold',
+  stockValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
-  stockUnitRight: {
+  stockUnit: {
     fontSize: 10,
-    color: premiumColors.text.tertiary,
     fontWeight: '500',
     textTransform: 'lowercase',
   },

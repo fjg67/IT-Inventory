@@ -37,6 +37,7 @@ import { loadTechniciens, loginTechnicien, createTechnicien } from '@/store/slic
 import { FullScreenLoading } from '@/components';
 import { Technicien } from '@/types';
 import { useResponsive } from '@/utils/responsive';
+import { useTheme } from '@/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -87,6 +88,7 @@ export const AuthScreen: React.FC = () => {
   const dispatch = useAppDispatch();
   const route = useRoute();
   const { isTablet } = useResponsive();
+  const { colors, isDark } = useTheme();
   const params = (route.params ?? {}) as { rememberMe?: boolean };
   const rememberMe = params.rememberMe ?? true;
   const { techniciens, isLoading, error } = useAppSelector(state => state.auth);
@@ -192,7 +194,7 @@ export const AuthScreen: React.FC = () => {
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => handleSelectTechnicien(item)}
-            style={styles.profileCard}
+            style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle, shadowColor: isDark ? '#000' : '#64748B' }]}
           >
             <LinearGradient
               colors={gradient}
@@ -206,16 +208,16 @@ export const AuthScreen: React.FC = () => {
             </LinearGradient>
 
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName} numberOfLines={1} ellipsizeMode="tail">
+              <Text style={[styles.profileName, { color: colors.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">
                 {getInitials(item)}
               </Text>
-              <Text style={styles.profileMatricule} numberOfLines={1} ellipsizeMode="tail">
+              <Text style={[styles.profileMatricule, { color: colors.textMuted }]} numberOfLines={1} ellipsizeMode="tail">
                 Technicien
               </Text>
             </View>
 
             <View style={styles.profileChevron}>
-              <Icon name="chevron-right" size={22} color="#C7D2FE" />
+              <Icon name="chevron-right" size={22} color={colors.primaryLight} />
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -227,11 +229,11 @@ export const AuthScreen: React.FC = () => {
   const renderEmpty = useCallback(
     () => (
       <Animated.View entering={FadeIn.delay(1000).duration(600)} style={styles.emptyContainer}>
-        <View style={styles.emptyIconCircle}>
-          <Icon name="account-plus-outline" size={48} color="#4F46E5" />
+        <View style={[styles.emptyIconCircle, { backgroundColor: isDark ? colors.primaryGlow : '#EEF2FF', borderColor: isDark ? colors.primaryGlowStrong : '#E0E7FF' }]}>
+          <Icon name="account-plus-outline" size={48} color={colors.primaryDark} />
         </View>
-        <Text style={styles.emptyTitle}>Aucun profil trouvé</Text>
-        <Text style={styles.emptySubtitle}>
+        <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Aucun profil trouvé</Text>
+        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
           Créez votre premier profil{'\n'}technicien pour commencer
         </Text>
         <TouchableOpacity
@@ -243,7 +245,7 @@ export const AuthScreen: React.FC = () => {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={['#4F46E5', '#4338CA']}
+            colors={[colors.primaryDark, isDark ? '#3730A3' : '#4338CA']}
           >
             <Icon name="plus" size={20} color="#FFF" />
             <Text style={styles.emptyCtaText}>Créer un profil</Text>
@@ -259,17 +261,17 @@ export const AuthScreen: React.FC = () => {
       techniciens.length > 0 ? (
         <Animated.View entering={FadeInUp.delay(1200 + techniciens.length * 120).duration(400)}>
           <TouchableOpacity
-            style={styles.addButton}
+            style={[styles.addButton, { borderColor: isDark ? colors.primaryGlow : '#E0E7FF', backgroundColor: isDark ? colors.surfaceElevated : '#FAFBFF' }]}
             onPress={() => {
               Vibration.vibrate(10);
               setIsModalVisible(true);
             }}
             activeOpacity={0.7}
           >
-            <View style={styles.addIconCircle}>
-              <Icon name="plus" size={22} color="#4F46E5" />
+            <View style={[styles.addIconCircle, { backgroundColor: isDark ? colors.primaryGlow : '#EEF2FF' }]}>
+              <Icon name="plus" size={22} color={colors.primaryDark} />
             </View>
-            <Text style={styles.addButtonText}>Ajouter un profil</Text>
+            <Text style={[styles.addButtonText, { color: colors.primaryDark }]}>Ajouter un profil</Text>
           </TouchableOpacity>
         </Animated.View>
       ) : null,
@@ -278,9 +280,9 @@ export const AuthScreen: React.FC = () => {
 
   // Helper for input border
   const getInputBorder = (focused: boolean, err: string) => {
-    if (focused) return '#2563EB';
-    if (err) return '#EF4444';
-    return '#E2E8F0';
+    if (focused) return colors.secondary;
+    if (err) return colors.danger;
+    return isDark ? colors.borderStrong : '#E2E8F0';
   };
 
   if (isLoading && techniciens.length === 0 && !isCreating) {
@@ -288,8 +290,8 @@ export const AuthScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFD" />
+    <View style={[styles.container, { backgroundColor: colors.backgroundBase }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.backgroundBase} />
 
       {/* Background decoration */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -329,7 +331,7 @@ export const AuthScreen: React.FC = () => {
         entering={FadeInDown.delay(200).duration(600)}
         style={styles.headerSection}
       >
-        <View style={styles.logoBox}>
+        <View style={[styles.logoBox, { shadowColor: colors.primaryDark }]}>
           <Image
             source={require('@/assets/images/logo.png')}
             style={styles.logoImage}
@@ -338,16 +340,16 @@ export const AuthScreen: React.FC = () => {
         </View>
 
         <Animated.View entering={FadeInUp.delay(500).duration(500)}>
-          <Text style={styles.appName}>IT-Inventory</Text>
+          <Text style={[styles.appName, { color: colors.textPrimary }]}>IT-Inventory</Text>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(650).duration(500)}>
-          <Text style={styles.tagline}>Gestion de stock IT</Text>
+          <Text style={[styles.tagline, { color: colors.textMuted }]}>Gestion de stock IT</Text>
         </Animated.View>
 
         <Animated.View entering={ZoomIn.delay(800).duration(400)}>
           <LinearGradient
-            colors={['transparent', '#C7D2FE', 'transparent']}
+            colors={['transparent', isDark ? colors.primaryGlow : '#C7D2FE', 'transparent']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.separator}
@@ -357,20 +359,20 @@ export const AuthScreen: React.FC = () => {
 
       {/* Instruction */}
       <Animated.View entering={FadeIn.delay(900).duration(400)} style={styles.instructionWrap}>
-        <View style={styles.instructionDot} />
-        <Text style={styles.instruction}>
+        <View style={[styles.instructionDot, { backgroundColor: isDark ? colors.primaryGlow : '#C7D2FE' }]} />
+        <Text style={[styles.instruction, { color: colors.textSecondary }]}>
           {techniciens.length > 0
             ? 'Sélectionnez votre profil pour continuer'
             : 'Bienvenue sur IT-Inventory'}
         </Text>
-        <View style={styles.instructionDot} />
+        <View style={[styles.instructionDot, { backgroundColor: isDark ? colors.primaryGlow : '#C7D2FE' }]} />
       </Animated.View>
 
       {/* Erreur */}
       {error ? (
-        <Animated.View entering={FadeInDown.duration(300)} style={styles.errorBanner}>
-          <Icon name="alert-circle-outline" size={18} color="#EF4444" />
-          <Text style={styles.errorBannerText}>{error}</Text>
+        <Animated.View entering={FadeInDown.duration(300)} style={[styles.errorBanner, { backgroundColor: colors.dangerBg, borderColor: isDark ? colors.dangerBorder : '#FECACA' }]}>
+          <Icon name="alert-circle-outline" size={18} color={colors.danger} />
+          <Text style={[styles.errorBannerText, { color: colors.danger }]}>{error}</Text>
         </Animated.View>
       ) : null}
 
@@ -388,11 +390,11 @@ export const AuthScreen: React.FC = () => {
 
       {/* Version */}
       <View style={styles.footer}>
-        <View style={styles.footerBadge}>
-          <Icon name="lock-outline" size={12} color="#94A3B8" />
-          <Text style={styles.footerText}>Données protégées et chiffrées</Text>
+        <View style={[styles.footerBadge, { backgroundColor: isDark ? colors.surfaceElevated : '#F1F5F9' }]}>
+          <Icon name="lock-outline" size={12} color={colors.textMuted} />
+          <Text style={[styles.footerText, { color: colors.textMuted }]}>Données protégées et chiffrées</Text>
         </View>
-        <Text style={styles.versionText}>Version 1.0.0</Text>
+        <Text style={[styles.versionText, { color: isDark ? colors.textMuted : '#CBD5E1' }]}>Version 1.0.0</Text>
       </View>
 
       {/* ===== MODAL CRÉATION ===== */}
@@ -408,9 +410,9 @@ export const AuthScreen: React.FC = () => {
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               style={styles.modalWrapper}
             >
-              <View style={styles.modalSheet}>
+              <View style={[styles.modalSheet, { backgroundColor: colors.surface }]}>
                 {/* Handle */}
-                <View style={styles.modalHandle} />
+                <View style={[styles.modalHandle, { backgroundColor: colors.textMuted }]} />
 
                 {showSuccess ? (
                   /* ===== SUCCESS STATE ===== */
@@ -418,35 +420,35 @@ export const AuthScreen: React.FC = () => {
                     <View style={styles.successCircle}>
                       <Icon name="check" size={44} color="#FFF" />
                     </View>
-                    <Text style={styles.successText}>Profil créé avec succès !</Text>
+                    <Text style={[styles.successText, { color: colors.success }]}>Profil créé avec succès !</Text>
                   </Animated.View>
                 ) : (
                   /* ===== FORM ===== */
                   <>
                     {/* Header */}
                     <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>Nouveau Profil</Text>
+                      <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Nouveau Profil</Text>
                       <TouchableOpacity
                         onPress={() => {
                           Vibration.vibrate(10);
                           closeModal();
                         }}
-                        style={styles.closeBtn}
+                        style={[styles.closeBtn, { backgroundColor: isDark ? colors.surfaceElevated : '#F1F5F9' }]}
                         activeOpacity={0.7}
                       >
-                        <Icon name="close" size={20} color="#64748B" />
+                        <Icon name="close" size={20} color={colors.textSecondary} />
                       </TouchableOpacity>
                     </View>
 
-                    <Text style={styles.modalSubtitle}>
+                    <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
                       Remplissez les informations ci-dessous pour créer un nouveau profil technicien.
                     </Text>
 
                     {/* Input Prénom */}
                     <View style={styles.inputGroup}>
                       <View style={styles.labelRow}>
-                        <Text style={styles.inputLabel}>Prénom</Text>
-                        <Text style={styles.requiredStar}> *</Text>
+                        <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Prénom</Text>
+                        <Text style={[styles.requiredStar, { color: colors.danger }]}> *</Text>
                       </View>
                       <View
                         style={[
@@ -454,13 +456,14 @@ export const AuthScreen: React.FC = () => {
                           {
                             borderColor: getInputBorder(prenomFocused, prenomError),
                             borderWidth: prenomFocused ? 2 : 1.5,
+                            backgroundColor: colors.surfaceInput,
                           },
                         ]}
                       >
                         <TextInput
-                          style={styles.input}
+                          style={[styles.input, { color: colors.textPrimary }]}
                           placeholder="Ex: Jean"
-                          placeholderTextColor="#94A3B8"
+                          placeholderTextColor={colors.textMuted}
                           value={newPrenom}
                           onChangeText={setNewPrenom}
                           onFocus={() => setPrenomFocused(true)}
@@ -469,22 +472,22 @@ export const AuthScreen: React.FC = () => {
                           autoCorrect={false}
                         />
                         {newPrenom.trim().length >= 2 && !prenomError && (
-                          <Icon name="check-circle" size={20} color="#10B981" />
+                          <Icon name="check-circle" size={20} color={colors.success} />
                         )}
                         {prenomError ? (
-                          <Icon name="close-circle" size={20} color="#EF4444" />
+                          <Icon name="close-circle" size={20} color={colors.danger} />
                         ) : null}
                       </View>
                       {prenomError ? (
-                        <Text style={styles.errorMsg}>{prenomError}</Text>
+                        <Text style={[styles.errorMsg, { color: colors.danger }]}>{prenomError}</Text>
                       ) : null}
                     </View>
 
                     {/* Input Nom */}
                     <View style={styles.inputGroup}>
                       <View style={styles.labelRow}>
-                        <Text style={styles.inputLabel}>Nom</Text>
-                        <Text style={styles.requiredStar}> *</Text>
+                        <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Nom</Text>
+                        <Text style={[styles.requiredStar, { color: colors.danger }]}> *</Text>
                       </View>
                       <View
                         style={[
@@ -492,13 +495,14 @@ export const AuthScreen: React.FC = () => {
                           {
                             borderColor: getInputBorder(nomFocused, nomError),
                             borderWidth: nomFocused ? 2 : 1.5,
+                            backgroundColor: colors.surfaceInput,
                           },
                         ]}
                       >
                         <TextInput
-                          style={styles.input}
+                          style={[styles.input, { color: colors.textPrimary }]}
                           placeholder="Ex: Dupont"
-                          placeholderTextColor="#94A3B8"
+                          placeholderTextColor={colors.textMuted}
                           value={newNom}
                           onChangeText={setNewNom}
                           onFocus={() => setNomFocused(true)}
@@ -507,35 +511,36 @@ export const AuthScreen: React.FC = () => {
                           autoCorrect={false}
                         />
                         {newNom.trim().length >= 2 && !nomError && (
-                          <Icon name="check-circle" size={20} color="#10B981" />
+                          <Icon name="check-circle" size={20} color={colors.success} />
                         )}
                         {nomError ? (
-                          <Icon name="close-circle" size={20} color="#EF4444" />
+                          <Icon name="close-circle" size={20} color={colors.danger} />
                         ) : null}
                       </View>
                       {nomError ? (
-                        <Text style={styles.errorMsg}>{nomError}</Text>
+                        <Text style={[styles.errorMsg, { color: colors.danger }]}>{nomError}</Text>
                       ) : null}
                     </View>
 
                     {/* Input Matricule */}
                     <View style={styles.inputGroup}>
                       <View style={styles.labelRow}>
-                        <Text style={styles.inputLabel}>Matricule (Optionnel)</Text>
+                        <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Matricule (Optionnel)</Text>
                       </View>
                       <View
                         style={[
                           styles.inputContainer,
                           {
-                            borderColor: matriculeFocused ? '#2563EB' : '#E2E8F0',
+                            borderColor: matriculeFocused ? colors.secondary : (isDark ? colors.borderStrong : '#E2E8F0'),
                             borderWidth: matriculeFocused ? 2 : 1.5,
+                            backgroundColor: colors.surfaceInput,
                           },
                         ]}
                       >
                         <TextInput
-                          style={styles.input}
+                          style={[styles.input, { color: colors.textPrimary }]}
                           placeholder="Ex: T-12345"
-                          placeholderTextColor="#94A3B8"
+                          placeholderTextColor={colors.textMuted}
                           value={newMatricule}
                           onChangeText={setNewMatricule}
                           onFocus={() => setMatriculeFocused(true)}
@@ -549,14 +554,14 @@ export const AuthScreen: React.FC = () => {
                     {/* Boutons */}
                     <View style={styles.modalButtons}>
                       <TouchableOpacity
-                        style={styles.cancelBtn}
+                        style={[styles.cancelBtn, { borderColor: isDark ? colors.borderStrong : '#E2E8F0' }]}
                         onPress={() => {
                           Vibration.vibrate(10);
                           closeModal();
                         }}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.cancelBtnText}>Annuler</Text>
+                        <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>Annuler</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -574,8 +579,8 @@ export const AuthScreen: React.FC = () => {
                         <LinearGradient
                           colors={
                             isFormValid && !isCreating
-                              ? ['#3B82F6', '#2563EB']
-                              : ['#94A3B8', '#64748B']
+                              ? [colors.secondary, isDark ? '#1E40AF' : '#2563EB']
+                              : isDark ? [colors.surfaceElevated, colors.surfaceElevated] : ['#94A3B8', '#64748B']
                           }
                           style={styles.submitBtnGradient}
                         >
@@ -605,7 +610,6 @@ export const AuthScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFD',
   },
 
   // Header / Logo
@@ -622,7 +626,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 16,
     overflow: 'hidden',
-    shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 24,
@@ -636,20 +639,17 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 40,
     fontWeight: '700',
-    color: '#1E293B',
     letterSpacing: -1,
   },
   appName: {
     fontSize: 30,
     fontWeight: '800',
-    color: '#1E293B',
     letterSpacing: -0.8,
     marginBottom: 4,
   },
   tagline: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#94A3B8',
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: 16,
@@ -673,12 +673,10 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#C7D2FE',
   },
   instruction: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#64748B',
     textAlign: 'center',
   },
 
@@ -690,15 +688,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#FEF2F2',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#FECACA',
     gap: 8,
   },
   errorBannerText: {
     fontSize: 13,
-    color: '#DC2626',
     fontWeight: '600',
     flex: 1,
   },
@@ -714,14 +709,11 @@ const styles = StyleSheet.create({
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 16,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
     minHeight: 72,
-    shadowColor: '#64748B',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -750,12 +742,10 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#1E293B',
   },
   profileMatricule: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#94A3B8',
     marginTop: 2,
   },
   profileChevron: {
@@ -772,22 +762,18 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#E0E7FF',
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1E293B',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#64748B',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
@@ -795,7 +781,6 @@ const styles = StyleSheet.create({
   emptyCta: {
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
@@ -823,25 +808,21 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#E0E7FF',
     borderStyle: 'dashed',
     marginTop: 4,
     marginBottom: 16,
     gap: 10,
-    backgroundColor: '#FAFBFF',
   },
   addIconCircle: {
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   addButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#4F46E5',
   },
 
   // Footer
@@ -854,19 +835,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F1F5F9',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
   },
   footerText: {
     fontSize: 11,
-    color: '#94A3B8',
     fontWeight: '500',
   },
   versionText: {
     fontSize: 12,
-    color: '#CBD5E1',
     textAlign: 'center',
     fontWeight: '500',
     letterSpacing: 0.5,
@@ -882,7 +860,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalSheet: {
-    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 24,
@@ -897,7 +874,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#CBD5E1',
     alignSelf: 'center',
     marginTop: 12,
     marginBottom: 20,
@@ -911,19 +887,16 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0F172A',
   },
   closeBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalSubtitle: {
     fontSize: 14,
-    color: '#64748B',
     lineHeight: 20,
     marginBottom: 24,
   },
@@ -939,17 +912,14 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0F172A',
   },
   requiredStar: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#EF4444',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
     borderRadius: 12,
     paddingHorizontal: 14,
     height: 50,
@@ -957,12 +927,10 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: '#0F172A',
     padding: 0,
   },
   errorMsg: {
     fontSize: 12,
-    color: '#EF4444',
     marginTop: 4,
     marginLeft: 4,
   },
@@ -978,14 +946,12 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelBtnText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#64748B',
   },
   submitBtn: {
     flex: 2,
@@ -1031,7 +997,6 @@ const styles = StyleSheet.create({
   successText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#10B981',
   },
 });
 

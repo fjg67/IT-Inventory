@@ -16,7 +16,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
 } from 'react-native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInUp, SlideInRight } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -25,10 +25,10 @@ import { selectSite, loadSites } from '@/store/slices/siteSlice';
 import { articleRepository, mouvementRepository } from '@/database';
 import { DashboardStats, MouvementType } from '@/types';
 import {
-  premiumColors,
   premiumSpacing,
   premiumAnimation,
 } from '@/constants/premiumTheme';
+import { useTheme } from '@/theme';
 import { useResponsive } from '@/utils/responsive';
 
 // Composants premium
@@ -47,6 +47,7 @@ export const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { isTablet, contentMaxWidth, spacing } = useResponsive();
+  const { colors, gradients, isDark } = useTheme();
 
   // Store
   const technicien = useAppSelector((state) => state.auth.currentTechnicien);
@@ -152,7 +153,7 @@ export const DashboardScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -166,8 +167,8 @@ export const DashboardScreen: React.FC = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={premiumColors.primary.base}
-            colors={[premiumColors.primary.base]}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -191,12 +192,12 @@ export const DashboardScreen: React.FC = () => {
 
         {/* ===== CARDS STATISTIQUES ===== */}
         <Animated.View
-          entering={FadeInUp.delay(STAGGER * 2).duration(500)}
+          entering={SlideInRight.delay(STAGGER * 2).springify().damping(18)}
         >
           <View style={[styles.statsGrid, isTablet && styles.statsGridTablet]}>
             <GlassStatCard
               icon="package-variant-closed"
-              iconGradient={premiumColors.primary.gradient}
+              iconGradient={gradients.primary}
               value={stats.totalArticles}
               label="Articles en stock"
               sparklineData={[
@@ -208,15 +209,15 @@ export const DashboardScreen: React.FC = () => {
                 Math.max(0, stats.totalArticles - 1),
                 stats.totalArticles,
               ]}
-              sparklineColor={premiumColors.primary.base}
+              sparklineColor={colors.primary}
               onPress={() => navigation.navigate('Articles')}
             />
             <GlassStatCard
               icon="alert-circle-outline"
               iconGradient={
                 stats.articlesAlerte > 0
-                  ? premiumColors.warning.gradient
-                  : premiumColors.success.gradient
+                  ? gradients.warning
+                  : gradients.success
               }
               value={stats.articlesAlerte}
               label="Alertes stock"
@@ -233,8 +234,8 @@ export const DashboardScreen: React.FC = () => {
               ]}
               sparklineColor={
                 stats.articlesAlerte > 0
-                  ? premiumColors.warning.base
-                  : premiumColors.success.base
+                  ? colors.warning
+                  : colors.success
               }
               onPress={() =>
                 navigation.navigate('Articles', {
@@ -247,11 +248,11 @@ export const DashboardScreen: React.FC = () => {
 
           <GlassStatCard
             icon="swap-vertical"
-            iconGradient={premiumColors.info.gradient}
+            iconGradient={gradients.info}
             value={stats.mouvementsAujourdhui}
             label="Mouvements aujourd'hui"
             sparklineData={mouvementsParJour}
-            sparklineColor={premiumColors.info.base}
+            sparklineColor={colors.info}
             showDayLabels
             fullWidth
             onPress={() => navigation.navigate('Mouvements')}
@@ -260,14 +261,14 @@ export const DashboardScreen: React.FC = () => {
 
         {/* ===== ACTIONS RAPIDES ===== */}
         <Animated.View
-          entering={FadeInUp.delay(STAGGER * 3).duration(500)}
+          entering={SlideInRight.delay(STAGGER * 3).springify().damping(18)}
           style={styles.actionsSection}
         >
-          <SectionHeader title="Actions rapides" />
+          <SectionHeader title="Actions rapides" accentColor="#6366F1" />
           <View style={[styles.actionsRow, isTablet && styles.actionsRowTablet]}>
             <QuickActionButton
               icon="plus"
-              iconGradient={premiumColors.success.gradient}
+              iconGradient={gradients.success}
               label="Entrée"
               onPress={() =>
                 navigation.navigate('Mouvements', {
@@ -278,7 +279,7 @@ export const DashboardScreen: React.FC = () => {
             />
             <QuickActionButton
               icon="minus"
-              iconGradient={premiumColors.error.gradient}
+              iconGradient={gradients.danger}
               label="Sortie"
               onPress={() =>
                 navigation.navigate('Mouvements', {
@@ -289,7 +290,7 @@ export const DashboardScreen: React.FC = () => {
             />
             <QuickActionButton
               icon="format-list-bulleted"
-              iconGradient={premiumColors.primary.gradient}
+              iconGradient={gradients.primary}
               label="Articles"
               onPress={() => navigation.navigate('Articles')}
             />
@@ -304,13 +305,14 @@ export const DashboardScreen: React.FC = () => {
 
         {/* ===== DERNIERS MOUVEMENTS ===== */}
         <Animated.View
-          entering={FadeInUp.delay(STAGGER * 4).duration(500)}
+          entering={SlideInRight.delay(STAGGER * 4).springify().damping(18)}
           style={styles.mouvementsSection}
         >
           <SectionHeader
             title="Derniers mouvements"
             actionLabel="Voir tout"
             onActionPress={() => navigation.navigate('Mouvements')}
+            accentColor="#4338CA"
           />
 
           {loading ? (
@@ -320,9 +322,9 @@ export const DashboardScreen: React.FC = () => {
               {stats.derniersMovements.map((mouvement, index) => (
                 <Animated.View
                   key={mouvement.id}
-                  entering={FadeInUp.delay(
+                  entering={SlideInRight.delay(
                     STAGGER * 4 + index * STAGGER,
-                  ).duration(400)}
+                  ).springify().damping(18)}
                   style={isTablet ? styles.mouvementCardTablet : undefined}
                 >
                   <PremiumMouvementCard
@@ -359,14 +361,21 @@ export const DashboardScreen: React.FC = () => {
       {/* ===== MODAL SÉLECTION SITE ===== */}
       <Modal visible={showSiteModal} transparent animationType="slide" onRequestClose={() => setShowSiteModal(false)}>
         <TouchableWithoutFeedback onPress={() => setShowSiteModal(false)}>
-          <View style={styles.siteModalOverlay}>
+          <View style={[styles.siteModalOverlay, { backgroundColor: colors.modalOverlay }]}>
             <TouchableWithoutFeedback>
-              <View style={[styles.siteModalSheet, isTablet && styles.siteModalSheetTablet]}>
-                <View style={styles.siteModalHandle} />
-                <Text style={styles.siteModalTitle}>Changer de site</Text>
-                <Text style={styles.siteModalSubtitle}>
-                  Sélectionnez le site de stockage
-                </Text>
+              <View style={[styles.siteModalSheet, { backgroundColor: colors.surface }, isTablet && styles.siteModalSheetTablet]}>
+                <View style={[styles.siteModalHandle, { backgroundColor: colors.borderMedium }]} />
+                <View style={styles.siteModalTitleRow}>
+                  <LinearGradient colors={['#4338CA', '#6366F1']} style={styles.siteModalIconWrap}>
+                    <Icon name="map-marker-radius-outline" size={18} color="#FFF" />
+                  </LinearGradient>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.siteModalTitle, { color: colors.textPrimary }]}>Changer de site</Text>
+                    <Text style={[styles.siteModalSubtitle, { color: colors.textMuted }]}>
+                      Sélectionnez le site de stockage
+                    </Text>
+                  </View>
+                </View>
 
                 {sitesDisponibles.map((site) => {
                   const isActive = siteActif?.id === site.id;
@@ -380,7 +389,11 @@ export const DashboardScreen: React.FC = () => {
                   return (
                     <TouchableOpacity
                       key={site.id}
-                      style={[styles.siteCard, isActive && styles.siteCardActive]}
+                      style={[
+                        styles.siteCard,
+                        { backgroundColor: colors.surfaceGlass, borderColor: colors.borderSubtle },
+                        isActive && { borderColor: colors.primaryGlow, backgroundColor: colors.primaryGlow },
+                      ]}
                       activeOpacity={0.7}
                       onPress={() => handleSelectSite(site.id as number)}
                     >
@@ -391,12 +404,12 @@ export const DashboardScreen: React.FC = () => {
                         <Icon name={cfg.icon} size={22} color="#FFF" />
                       </LinearGradient>
                       <View style={styles.siteInfo}>
-                        <Text style={[styles.siteName, isActive && styles.siteNameActive]}>
+                        <Text style={[styles.siteName, { color: colors.textPrimary }, isActive && { color: colors.primary }]}>
                           {site.nom}
                         </Text>
                       </View>
                       {isActive && (
-                        <Icon name="check-circle" size={22} color="#2563EB" />
+                        <Icon name="check-circle" size={22} color={colors.primary} />
                       )}
                     </TouchableOpacity>
                   );
@@ -413,7 +426,6 @@ export const DashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: premiumColors.background,
   },
   scrollContent: {
     padding: premiumSpacing.lg,
@@ -457,11 +469,9 @@ const styles = StyleSheet.create({
   // ===== SITE MODAL =====
   siteModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   siteModalSheet: {
-    backgroundColor: '#FFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -478,21 +488,31 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#D1D5DB',
     alignSelf: 'center',
     marginTop: 12,
     marginBottom: 18,
   },
   siteModalTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   siteModalSubtitle: {
     fontSize: 13,
-    color: '#9CA3AF',
-    marginTop: 4,
+    marginTop: 2,
+  },
+  siteModalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     marginBottom: 20,
+  },
+  siteModalIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   siteCard: {
     flexDirection: 'row',
@@ -500,14 +520,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 14,
     marginBottom: 10,
-    backgroundColor: '#F9FAFB',
     borderWidth: 1.5,
-    borderColor: '#F3F4F6',
     gap: 14,
-  },
-  siteCardActive: {
-    borderColor: 'rgba(37,99,235,0.3)',
-    backgroundColor: 'rgba(37,99,235,0.04)',
   },
   siteIcon: {
     width: 44,
@@ -522,14 +536,9 @@ const styles = StyleSheet.create({
   siteName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
-  },
-  siteNameActive: {
-    color: '#2563EB',
   },
   siteAddr: {
     fontSize: 12,
-    color: '#9CA3AF',
     marginTop: 2,
   },
 });

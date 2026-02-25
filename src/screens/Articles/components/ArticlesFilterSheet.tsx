@@ -11,11 +11,11 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
-  premiumColors,
   premiumTypography,
   premiumSpacing,
   premiumBorderRadius,
 } from '../../../constants/premiumTheme';
+import { useTheme } from '@/theme';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 
 export type ArticleFilterKey =
@@ -55,6 +55,7 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
   onClose,
   onSelectRow,
 }) => {
+  const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
 
@@ -76,13 +77,13 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
         activeOpacity={1}
         onPress={onClose}
       >
-        <View style={[styles.sheet, tablet && { maxWidth: 540, width: '100%' }]} onStartShouldSetResponder={() => true}>
-          <View style={styles.handle} />
+        <View style={[styles.sheet, { backgroundColor: colors.surface }, tablet && { maxWidth: 540, width: '100%' }]} onStartShouldSetResponder={() => true}>
+          <View style={[styles.handle, { backgroundColor: colors.borderSubtle }]} />
           <View style={styles.titleRow}>
-            <Icon name="filter-variant" size={24} color={premiumColors.primary.base} />
-            <Text style={styles.title}>Filtrer par</Text>
+            <Icon name="filter-variant" size={24} color={colors.primary} />
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Filtrer par</Text>
           </View>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Code famille, famille, type, sous-type, marque, emplacement
           </Text>
 
@@ -98,7 +99,7 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
               return (
                 <TouchableOpacity
                   key={row.key}
-                  style={[styles.row, isSet && styles.rowActive]}
+                  style={[styles.row, isSet && [styles.rowActive, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '20' }]]}
                   onPress={() => handleRowPress(row.key)}
                   activeOpacity={0.7}
                 >
@@ -106,26 +107,26 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
                     <Icon name={row.icon as any} size={20} color={row.iconColor} />
                   </View>
                   <View style={styles.rowContent}>
-                    <Text style={styles.rowLabel}>{row.label}</Text>
+                    <Text style={[styles.rowLabel, { color: colors.textSecondary }]}>{row.label}</Text>
                     <Text
-                      style={[styles.rowValue, isSet && styles.rowValueSet]}
+                      style={[styles.rowValue, { color: colors.textMuted }, isSet && [styles.rowValueSet, { color: colors.primary }]]}
                       numberOfLines={1}
                     >
                       {displayValue}
                     </Text>
                   </View>
-                  <Icon name="chevron-right" size={20} color={premiumColors.text.tertiary} />
+                  <Icon name="chevron-right" size={20} color={colors.textMuted} />
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
 
           <TouchableOpacity
-            style={styles.closeButton}
+            style={[styles.closeButton, { backgroundColor: colors.borderSubtle }]}
             onPress={() => { Vibration.vibrate(10); onClose(); }}
             activeOpacity={0.7}
           >
-            <Text style={styles.closeText}>Fermer</Text>
+            <Text style={[styles.closeText, { color: colors.textSecondary }]}>Fermer</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -140,7 +141,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: premiumColors.surface,
     borderTopLeftRadius: premiumBorderRadius.xxl,
     borderTopRightRadius: premiumBorderRadius.xxl,
     paddingTop: premiumSpacing.md,
@@ -151,7 +151,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: premiumColors.border,
     alignSelf: 'center',
     marginBottom: premiumSpacing.lg,
   },
@@ -164,11 +163,9 @@ const styles = StyleSheet.create({
   },
   title: {
     ...premiumTypography.h3,
-    color: premiumColors.text.primary,
   },
   subtitle: {
     ...premiumTypography.small,
-    color: premiumColors.text.secondary,
     paddingHorizontal: premiumSpacing.xl,
     marginBottom: premiumSpacing.lg,
   },
@@ -186,9 +183,7 @@ const styles = StyleSheet.create({
     gap: premiumSpacing.md,
   },
   rowActive: {
-    backgroundColor: premiumColors.primary.base + '08',
     borderWidth: 1,
-    borderColor: premiumColors.primary.base + '20',
   },
   rowIcon: {
     width: 40,
@@ -200,15 +195,12 @@ const styles = StyleSheet.create({
   rowContent: { flex: 1 },
   rowLabel: {
     ...premiumTypography.small,
-    color: premiumColors.text.secondary,
     marginBottom: 2,
   },
   rowValue: {
     ...premiumTypography.body,
-    color: premiumColors.text.tertiary,
   },
   rowValueSet: {
-    color: premiumColors.primary.base,
     fontWeight: '600',
   },
   closeButton: {
@@ -217,11 +209,9 @@ const styles = StyleSheet.create({
     paddingVertical: premiumSpacing.md,
     alignItems: 'center',
     borderRadius: premiumBorderRadius.md,
-    backgroundColor: premiumColors.borderLight,
   },
   closeText: {
     ...premiumTypography.bodyMedium,
-    color: premiumColors.text.secondary,
   },
 });
 

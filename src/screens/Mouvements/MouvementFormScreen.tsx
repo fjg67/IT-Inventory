@@ -51,6 +51,7 @@ import { Article, MouvementStockForm } from '@/types';
 import { ERROR_MESSAGES } from '@/constants';
 import debounce from 'lodash/debounce';
 import { useResponsive } from '@/utils/responsive';
+import { useTheme } from '@/theme';
 
 const { height: SCREEN_H } = Dimensions.get('window');
 const SCAN_FRAME = 240;
@@ -100,6 +101,7 @@ export const MouvementFormScreen: React.FC = () => {
   const route = useRoute<any>();
   const dispatch = useAppDispatch();
   const { isTablet, contentMaxWidth } = useResponsive();
+  const { colors, gradients, isDark } = useTheme();
 
   const siteActif = useAppSelector(state => state.site.siteActif);
   const technicien = useAppSelector(state => state.auth.currentTechnicien);
@@ -178,7 +180,7 @@ export const MouvementFormScreen: React.FC = () => {
     return 1;
   }, [article, type]);
 
-  const typeColor = TYPE_CONFIG[type]?.color ?? '#2563EB';
+  const typeColor = TYPE_CONFIG[type]?.color ?? colors.primary;
 
   // ===== Load article =====
   const loadArticle = useCallback(async (articleId: number) => {
@@ -427,22 +429,22 @@ export const MouvementFormScreen: React.FC = () => {
 
   // ==================== RENDER ====================
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* ===== HEADER ===== */}
-      <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(400)} style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.borderSubtle }]}>
         <View style={styles.headerTop}>
           <TouchableOpacity
-            style={styles.backBtn}
+            style={[styles.backBtn, { backgroundColor: colors.background }]}
             onPress={() => {
               Vibration.vibrate(10);
               navigation.goBack();
             }}
           >
-            <Icon name="arrow-left" size={22} color="#111827" />
+            <Icon name="arrow-left" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Mouvement de stock</Text>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Mouvement de stock</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -451,7 +453,7 @@ export const MouvementFormScreen: React.FC = () => {
           {['Article', 'Type', 'Détails'].map((step, i) => {
             const done = i < currentStep;
             const active = i === currentStep;
-            const dotBg = done ? '#10B981' : active ? '#2563EB' : '#D1D5DB';
+            const dotBg = done ? colors.success : active ? colors.primary : colors.borderSubtle;
             return (
               <View key={step} style={styles.stepItem}>
                 <View style={styles.stepDotRow}>
@@ -459,12 +461,12 @@ export const MouvementFormScreen: React.FC = () => {
                     {done && <Icon name="check" size={10} color="#FFF" />}
                   </View>
                   {i < 2 && (
-                    <View style={styles.stepLineTrack}>
-                      <View style={[styles.stepLineFill, { width: done ? '100%' : '0%' }]} />
+                    <View style={[styles.stepLineTrack, { backgroundColor: colors.borderSubtle }]}>
+                      <View style={[styles.stepLineFill, { backgroundColor: colors.success, width: done ? '100%' : '0%' }]} />
                     </View>
                   )}
                 </View>
-                <Text style={[styles.stepLabel, { color: done ? '#10B981' : active ? '#2563EB' : '#9CA3AF' }]}>
+                <Text style={[styles.stepLabel, { color: done ? colors.success : active ? colors.primary : colors.textMuted }]}>
                   {step}
                 </Text>
               </View>
@@ -488,19 +490,19 @@ export const MouvementFormScreen: React.FC = () => {
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={handleScanPress}
-                style={styles.scanZone}
+                style={[styles.scanZone, { borderColor: colors.primaryGlow }]}
               >
                 <LinearGradient
-                  colors={['#EFF6FF', '#DBEAFE']}
+                  colors={[colors.primaryGlow, colors.primaryGlowStrong]}
                   style={styles.scanGradient}
                 >
-                  <View style={styles.scanIconCircle}>
-                    <Icon name="barcode-scan" size={40} color="#2563EB" />
+                  <View style={[styles.scanIconCircle, { backgroundColor: colors.primaryGlow }]}>
+                    <Icon name="barcode-scan" size={40} color={colors.primary} />
                   </View>
-                  <Text style={styles.scanTitle}>
+                  <Text style={[styles.scanTitle, { color: colors.primary }]}>
                     {isScanning ? 'Scan en cours...' : 'Appuyez pour scanner'}
                   </Text>
-                  <Text style={styles.scanSubtitle}>
+                  <Text style={[styles.scanSubtitle, { color: colors.textSecondary }]}>
                     Ou recherchez manuellement ci-dessous
                   </Text>
                 </LinearGradient>
@@ -508,20 +510,20 @@ export const MouvementFormScreen: React.FC = () => {
 
               {/* ===== SEPARATOR ===== */}
               <View style={styles.orRow}>
-                <View style={styles.orLine} />
-                <Text style={styles.orText}>OU</Text>
-                <View style={styles.orLine} />
+                <View style={[styles.orLine, { backgroundColor: colors.borderSubtle }]} />
+                <Text style={[styles.orText, { color: colors.textMuted }]}>OU</Text>
+                <View style={[styles.orLine, { backgroundColor: colors.borderSubtle }]} />
               </View>
 
               {/* ===== 2. SEARCH ===== */}
               <View style={styles.searchSection}>
-                <Text style={styles.sectionLabel}>Code-barres / Référence</Text>
-                <View style={styles.searchBox}>
-                  <Icon name="magnify" size={20} color="#9CA3AF" />
+                <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Code-barres / Référence</Text>
+                <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+                  <Icon name="magnify" size={20} color={colors.textMuted} />
                   <TextInput
-                    style={styles.searchInput}
+                    style={[styles.searchInput, { color: colors.textPrimary }]}
                     placeholder="Entrez la référence..."
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.textMuted}
                     value={barcodeInput}
                     onChangeText={handleSearchChange}
                     onSubmitEditing={searchByBarcode}
@@ -530,36 +532,36 @@ export const MouvementFormScreen: React.FC = () => {
                   />
                   {barcodeInput.length > 0 && (
                     <TouchableOpacity onPress={() => { setBarcodeInput(''); setSuggestions([]); }}>
-                      <Icon name="close-circle" size={18} color="#9CA3AF" />
+                      <Icon name="close-circle" size={18} color={colors.textMuted} />
                     </TouchableOpacity>
                   )}
-                  {searching && <ActivityIndicator size="small" color="#2563EB" style={{ marginLeft: 6 }} />}
+                  {searching && <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 6 }} />}
                 </View>
                 {errors.barcode ? (
                   <Animated.View entering={FadeIn.duration(200)} style={styles.errorRow}>
-                    <Icon name="alert-circle-outline" size={14} color="#EF4444" />
-                    <Text style={styles.errorText}>{errors.barcode}</Text>
+                    <Icon name="alert-circle-outline" size={14} color={colors.danger} />
+                    <Text style={[styles.errorText, { color: colors.danger }]}>{errors.barcode}</Text>
                   </Animated.View>
                 ) : null}
 
                 {/* Suggestions */}
                 {suggestions.length > 0 && (
-                  <Animated.View entering={FadeInDown.duration(250)} style={styles.suggestionsBox}>
+                  <Animated.View entering={FadeInDown.duration(250)} style={[styles.suggestionsBox, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
                     {suggestions.map((a, idx) => (
                       <TouchableOpacity
                         key={a.id}
-                        style={[styles.suggestionItem, idx < suggestions.length - 1 && styles.suggestionBorder]}
+                        style={[styles.suggestionItem, idx < suggestions.length - 1 && [styles.suggestionBorder, { borderBottomColor: colors.borderSubtle }]]}
                         onPress={() => handleSelectSuggestion(a)}
                         activeOpacity={0.6}
                       >
-                        <View style={styles.suggestionIcon}>
-                          <Icon name="package-variant-closed" size={18} color="#6B7280" />
+                        <View style={[styles.suggestionIcon, { backgroundColor: colors.background }]}>
+                          <Icon name="package-variant-closed" size={18} color={colors.textSecondary} />
                         </View>
                         <View style={styles.suggestionInfo}>
-                          <Text style={styles.suggestionRef}>{a.reference}</Text>
-                          <Text style={styles.suggestionName} numberOfLines={1}>{a.nom}</Text>
+                          <Text style={[styles.suggestionRef, { color: colors.textSecondary }]}>{a.reference}</Text>
+                          <Text style={[styles.suggestionName, { color: colors.textPrimary }]} numberOfLines={1}>{a.nom}</Text>
                         </View>
-                        <Text style={styles.suggestionStock}>
+                        <Text style={[styles.suggestionStock, { color: colors.textMuted }]}>
                           {a.quantiteActuelle ?? 0} {a.unite}
                         </Text>
                       </TouchableOpacity>
@@ -574,37 +576,37 @@ export const MouvementFormScreen: React.FC = () => {
           {article && (
             <Animated.View entering={ZoomIn.duration(350)} style={styles.articleSection}>
               <View style={styles.articleLabelRow}>
-                <Icon name="check-circle" size={18} color="#10B981" />
-                <Text style={styles.articleLabelText}>Article sélectionné</Text>
+                <Icon name="check-circle" size={18} color={colors.success} />
+                <Text style={[styles.articleLabelText, { color: colors.success }]}>Article sélectionné</Text>
               </View>
-              <View style={styles.articleCard}>
+              <View style={[styles.articleCard, { backgroundColor: colors.surface, borderColor: colors.success, shadowColor: colors.success }]}>
                 <View style={styles.articleCardTop}>
-                  <View style={styles.articleIconCircle}>
-                    <Icon name="package-variant-closed" size={22} color="#2563EB" />
+                  <View style={[styles.articleIconCircle, { backgroundColor: colors.primaryGlow }]}>
+                    <Icon name="package-variant-closed" size={22} color={colors.primary} />
                   </View>
                   <View style={styles.articleInfo}>
-                    <Text style={styles.articleRef}>{article.reference}</Text>
-                    <Text style={styles.articleName} numberOfLines={2}>{article.nom}</Text>
+                    <Text style={[styles.articleRef, { color: colors.textSecondary }]}>{article.reference}</Text>
+                    <Text style={[styles.articleName, { color: colors.textPrimary }]} numberOfLines={2}>{article.nom}</Text>
                   </View>
-                  <TouchableOpacity style={styles.removeBtn} onPress={resetArticle}>
-                    <Icon name="close" size={16} color="#6B7280" />
+                  <TouchableOpacity style={[styles.removeBtn, { backgroundColor: colors.background }]} onPress={resetArticle}>
+                    <Icon name="close" size={16} color={colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
                 <View style={styles.articleMeta}>
                   <View style={[
                     styles.stockBadge,
-                    { backgroundColor: stockActuel < (article.stockMini ?? 0) ? 'rgba(239,68,68,0.08)' : 'rgba(37,99,235,0.08)' },
+                    { backgroundColor: stockActuel < (article.stockMini ?? 0) ? colors.dangerBg : colors.primaryGlow },
                   ]}>
                     <Text style={[
                       styles.stockBadgeText,
-                      { color: stockActuel < (article.stockMini ?? 0) ? '#EF4444' : '#2563EB' },
+                      { color: stockActuel < (article.stockMini ?? 0) ? colors.danger : colors.primary },
                     ]}>
                       Stock actuel : {stockActuel} {article.unite}
                     </Text>
                   </View>
                   <View style={styles.siteRow}>
-                    <Icon name="map-marker-outline" size={13} color="#9CA3AF" />
-                    <Text style={styles.siteText}>{siteActif?.nom ?? ''}</Text>
+                    <Icon name="map-marker-outline" size={13} color={colors.textMuted} />
+                    <Text style={[styles.siteText, { color: colors.textMuted }]}>{siteActif?.nom ?? ''}</Text>
                   </View>
                 </View>
               </View>
@@ -617,8 +619,8 @@ export const MouvementFormScreen: React.FC = () => {
           {/* ===== 4. TYPE SELECTOR ===== */}
           <Animated.View entering={FadeInUp.delay(100).duration(400)}>
             <View style={styles.typeSectionHeader}>
-              <Text style={styles.sectionLabel}>Type de mouvement</Text>
-              <Text style={styles.required}>*</Text>
+              <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Type de mouvement</Text>
+              <Text style={[styles.required, { color: colors.danger }]}>*</Text>
             </View>
             <View style={styles.typeGrid}>
               {(['entree', 'sortie', 'ajustement'] as MouvementType[]).map((t) => {
@@ -629,6 +631,7 @@ export const MouvementFormScreen: React.FC = () => {
                     key={t}
                     style={[
                       styles.typeCard,
+                      { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
                       selected && { backgroundColor: cfg.bgColor, borderColor: cfg.color },
                     ]}
                     activeOpacity={0.75}
@@ -640,9 +643,9 @@ export const MouvementFormScreen: React.FC = () => {
                     <Icon
                       name={cfg.icon}
                       size={30}
-                      color={selected ? cfg.color : '#9CA3AF'}
+                      color={selected ? cfg.color : colors.textMuted}
                     />
-                    <Text style={[styles.typeLabel, selected && { color: cfg.color, fontWeight: '700' }]}>
+                    <Text style={[styles.typeLabel, { color: colors.textSecondary }, selected && { color: cfg.color, fontWeight: '700' }]}>
                       {cfg.label}
                     </Text>
                   </TouchableOpacity>
@@ -654,21 +657,21 @@ export const MouvementFormScreen: React.FC = () => {
           {/* ===== 5. QUANTITY STEPPER ===== */}
           <Animated.View entering={FadeInUp.delay(200).duration(400)}>
             <View style={styles.typeSectionHeader}>
-              <Text style={styles.sectionLabel}>Quantité</Text>
-              <Text style={styles.required}>*</Text>
+              <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Quantité</Text>
+              <Text style={[styles.required, { color: colors.danger }]}>*</Text>
             </View>
-            <View style={styles.stepperRow}>
+            <View style={[styles.stepperRow, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
               <TouchableOpacity
-                style={[styles.qtyBtn, { backgroundColor: 'rgba(239,68,68,0.08)' }]}
+                style={[styles.qtyBtn, { backgroundColor: colors.dangerBg }]}
                 onPress={handleDecrement}
                 disabled={quantite <= 1}
                 activeOpacity={0.7}
               >
-                <Icon name="minus" size={22} color={quantite <= 1 ? '#D1D5DB' : '#EF4444'} />
+                <Icon name="minus" size={22} color={quantite <= 1 ? colors.borderSubtle : colors.danger} />
               </TouchableOpacity>
 
               <TextInput
-                style={styles.qtyInput}
+                style={[styles.qtyInput, { color: colors.textPrimary }]}
                 value={quantite > 0 ? quantite.toString() : ''}
                 onChangeText={handleQtyTextChange}
                 keyboardType="numeric"
@@ -677,19 +680,19 @@ export const MouvementFormScreen: React.FC = () => {
               />
 
               <TouchableOpacity
-                style={[styles.qtyBtn, { backgroundColor: 'rgba(16,185,129,0.08)' }]}
+                style={[styles.qtyBtn, { backgroundColor: colors.successBg }]}
                 onPress={handleIncrement}
                 activeOpacity={0.7}
               >
-                <Icon name="plus" size={22} color="#10B981" />
+                <Icon name="plus" size={22} color={colors.success} />
               </TouchableOpacity>
             </View>
 
             {/* Validation erreur quantité */}
             {type === 'sortie' && quantite > stockActuel && article && (
               <Animated.View entering={FadeIn.duration(200)} style={styles.errorRow}>
-                <Icon name="alert-circle-outline" size={14} color="#EF4444" />
-                <Text style={styles.errorText}>
+                <Icon name="alert-circle-outline" size={14} color={colors.danger} />
+                <Text style={[styles.errorText, { color: colors.danger }]}>
                   Stock insuffisant (disponible : {stockActuel})
                 </Text>
               </Animated.View>
@@ -699,32 +702,32 @@ export const MouvementFormScreen: React.FC = () => {
           {/* ===== 6. STOCK PREVIEW ===== */}
           {article && nouveauStock !== null && (
             <Animated.View entering={FadeInUp.delay(250).duration(400)}>
-              <Text style={styles.sectionLabel}>Aperçu du stock</Text>
-              <View style={[styles.previewCard, { borderColor: typeColor + '30' }]}>
+              <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Aperçu du stock</Text>
+              <View style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: typeColor + '30' }]}>
                 <View style={styles.previewCol}>
-                  <Text style={styles.previewNumber}>{stockActuel}</Text>
-                  <Text style={styles.previewCaption}>Stock actuel</Text>
+                  <Text style={[styles.previewNumber, { color: colors.textPrimary }]}>{stockActuel}</Text>
+                  <Text style={[styles.previewCaption, { color: colors.textMuted }]}>Stock actuel</Text>
                 </View>
-                <Icon name="arrow-right" size={22} color="#9CA3AF" />
+                <Icon name="arrow-right" size={22} color={colors.textMuted} />
                 <View style={styles.previewCol}>
                   <Text style={[styles.previewNumber, { color: typeColor }]}>{nouveauStock}</Text>
-                  <Text style={styles.previewCaption}>Nouveau stock</Text>
+                  <Text style={[styles.previewCaption, { color: colors.textMuted }]}>Nouveau stock</Text>
                 </View>
               </View>
 
               {/* Warning seuil mini */}
               {nouveauStock < (article.stockMini ?? 0) && nouveauStock >= 0 && (
-                <Animated.View entering={FadeIn.duration(200)} style={styles.warningBanner}>
-                  <Icon name="alert-outline" size={16} color="#F59E0B" />
-                  <Text style={styles.warningText}>
+                <Animated.View entering={FadeIn.duration(200)} style={[styles.warningBanner, { backgroundColor: colors.warningBg }]}>
+                  <Icon name="alert-outline" size={16} color={colors.warning} />
+                  <Text style={[styles.warningText, { color: colors.warning }]}>
                     Le stock sera en dessous du minimum ({article.stockMini})
                   </Text>
                 </Animated.View>
               )}
               {nouveauStock < 0 && (
-                <Animated.View entering={FadeIn.duration(200)} style={styles.dangerBanner}>
-                  <Icon name="alert-circle-outline" size={16} color="#EF4444" />
-                  <Text style={styles.dangerText}>
+                <Animated.View entering={FadeIn.duration(200)} style={[styles.dangerBanner, { backgroundColor: colors.dangerBg }]}>
+                  <Icon name="alert-circle-outline" size={16} color={colors.danger} />
+                  <Text style={[styles.dangerText, { color: colors.danger }]}>
                     Stock négatif impossible
                   </Text>
                 </Animated.View>
@@ -735,18 +738,18 @@ export const MouvementFormScreen: React.FC = () => {
           {/* ===== 7. OPTIONAL FIELDS ===== */}
           <Animated.View entering={FadeInUp.delay(300).duration(400)}>
             {/* Commentaire */}
-            <Text style={[styles.sectionLabel, { marginTop: 24 }]}>Commentaire (optionnel)</Text>
-            <View style={styles.textareaBox}>
+            <Text style={[styles.sectionLabel, { marginTop: 24, color: colors.textPrimary }]}>Commentaire (optionnel)</Text>
+            <View style={[styles.textareaBox, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
               <TextInput
-                style={styles.textarea}
+                style={[styles.textarea, { color: colors.textPrimary }]}
                 placeholder="Motif, précision..."
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textMuted}
                 value={commentaire}
                 onChangeText={setCommentaire}
                 multiline
                 maxLength={200}
               />
-              <Text style={styles.charCount}>{commentaire.length}/200</Text>
+              <Text style={[styles.charCount, { color: colors.textMuted }]}>{commentaire.length}/200</Text>
             </View>
 
           </Animated.View>
@@ -766,10 +769,10 @@ export const MouvementFormScreen: React.FC = () => {
                 handleSubmit();
               }}
               disabled={!isFormValid || isSubmitting || showSuccess}
-              style={[styles.submitTouchable, (!isFormValid || isSubmitting) && { opacity: 0.5 }, { marginTop: 0 }]}
+              style={[styles.submitTouchable, (!isFormValid || isSubmitting) && { opacity: 0.5 }, { marginTop: 0, shadowColor: colors.primary }]}
             >
               <LinearGradient
-                colors={showSuccess ? ['#10B981', '#059669'] : (TYPE_CONFIG[type]?.gradient ?? ['#3B82F6', '#2563EB'])}
+                colors={showSuccess ? gradients.success : (TYPE_CONFIG[type]?.gradient ?? gradients.primary)}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.submitGradient}
@@ -845,10 +848,10 @@ export const MouvementFormScreen: React.FC = () => {
             {/* Scan frame */}
             <View style={styles.cameraFrameWrap}>
               <View style={styles.cameraFrame}>
-                <View style={[styles.cameraCorner, styles.camCTL]} />
-                <View style={[styles.cameraCorner, styles.camCTR]} />
-                <View style={[styles.cameraCorner, styles.camCBL]} />
-                <View style={[styles.cameraCorner, styles.camCBR]} />
+                <View style={[styles.cameraCorner, styles.camCTL, { borderColor: colors.primary }]} />
+                <View style={[styles.cameraCorner, styles.camCTR, { borderColor: colors.primary }]} />
+                <View style={[styles.cameraCorner, styles.camCBL, { borderColor: colors.primary }]} />
+                <View style={[styles.cameraCorner, styles.camCBR, { borderColor: colors.primary }]} />
               </View>
             </View>
 
@@ -867,7 +870,6 @@ export const MouvementFormScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -876,12 +878,10 @@ const styles = StyleSheet.create({
 
   // ===== HEADER =====
   header: {
-    backgroundColor: '#FFF',
     paddingTop: 44,
     paddingBottom: 12,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   headerTop: {
     flexDirection: 'row',
@@ -893,14 +893,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#111827',
   },
 
   // ===== STEPPER =====
@@ -928,13 +926,11 @@ const styles = StyleSheet.create({
   stepLineTrack: {
     flex: 1,
     height: 3,
-    backgroundColor: '#E5E7EB',
     borderRadius: 1.5,
     marginLeft: 4,
   },
   stepLineFill: {
     height: '100%',
-    backgroundColor: '#10B981',
     borderRadius: 1.5,
   },
   stepLabel: {
@@ -949,7 +945,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: 'rgba(37,99,235,0.25)',
     borderStyle: 'dashed',
   },
   scanGradient: {
@@ -961,7 +956,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(37,99,235,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
@@ -969,11 +963,9 @@ const styles = StyleSheet.create({
   scanTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2563EB',
   },
   scanSubtitle: {
     fontSize: 13,
-    color: '#6B7280',
     marginTop: 6,
   },
 
@@ -986,12 +978,10 @@ const styles = StyleSheet.create({
   orLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E5E7EB',
   },
   orText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#9CA3AF',
     marginHorizontal: 14,
   },
 
@@ -1002,23 +992,18 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
     marginBottom: 8,
   },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
     borderRadius: 12,
     height: 52,
     paddingHorizontal: 14,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
     gap: 10,
   },
   searchBoxFocused: {
-    borderColor: '#2563EB',
-    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -1027,7 +1012,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#111827',
     padding: 0,
   },
   errorRow: {
@@ -1039,17 +1023,14 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: '#EF4444',
     fontWeight: '500',
   },
 
   // ===== SUGGESTIONS =====
   suggestionsBox: {
-    backgroundColor: '#FFF',
     borderRadius: 14,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -1066,13 +1047,11 @@ const styles = StyleSheet.create({
   },
   suggestionBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   suggestionIcon: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1082,17 +1061,14 @@ const styles = StyleSheet.create({
   suggestionRef: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
   },
   suggestionName: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#111827',
   },
   suggestionStock: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#9CA3AF',
   },
 
   // ===== ARTICLE CARD =====
@@ -1109,15 +1085,11 @@ const styles = StyleSheet.create({
   articleLabelText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#10B981',
   },
   articleCard: {
-    backgroundColor: '#FFF',
     borderRadius: 16,
     padding: 16,
     borderWidth: 2,
-    borderColor: '#10B981',
-    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -1131,7 +1103,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: 'rgba(37,99,235,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -1142,19 +1113,16 @@ const styles = StyleSheet.create({
   articleRef: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
   },
   articleName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
     marginTop: 2,
   },
   removeBtn: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1179,7 +1147,6 @@ const styles = StyleSheet.create({
   },
   siteText: {
     fontSize: 12,
-    color: '#9CA3AF',
   },
 
   // ===== TYPE SELECTOR =====
@@ -1192,7 +1159,6 @@ const styles = StyleSheet.create({
   },
   required: {
     fontSize: 14,
-    color: '#EF4444',
     fontWeight: '700',
   },
   typeGrid: {
@@ -1205,9 +1171,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: 92,
     borderRadius: 16,
-    backgroundColor: '#FFF',
     borderWidth: 2,
-    borderColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
@@ -1217,7 +1181,6 @@ const styles = StyleSheet.create({
   typeLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
     marginTop: 8,
   },
 
@@ -1225,10 +1188,8 @@ const styles = StyleSheet.create({
   stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
     height: 60,
     paddingHorizontal: 8,
   },
@@ -1244,7 +1205,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 26,
     fontWeight: '700',
-    color: '#111827',
     padding: 0,
   },
 
@@ -1253,7 +1213,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF',
     borderRadius: 14,
     paddingVertical: 18,
     paddingHorizontal: 20,
@@ -1267,18 +1226,15 @@ const styles = StyleSheet.create({
   previewNumber: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#374151',
   },
   previewCaption: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#9CA3AF',
     marginTop: 2,
   },
   warningBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(245,158,11,0.08)',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -1288,13 +1244,11 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#F59E0B',
     flex: 1,
   },
   dangerBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239,68,68,0.08)',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -1304,29 +1258,24 @@ const styles = StyleSheet.create({
   dangerText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#EF4444',
     flex: 1,
   },
 
   // ===== OPTIONAL FIELDS =====
   textareaBox: {
-    backgroundColor: '#FFF',
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
     padding: 14,
     minHeight: 88,
   },
   textarea: {
     fontSize: 14,
-    color: '#111827',
     padding: 0,
     textAlignVertical: 'top',
     minHeight: 50,
   },
   charCount: {
     fontSize: 11,
-    color: '#9CA3AF',
     textAlign: 'right',
     marginTop: 4,
   },
@@ -1337,7 +1286,6 @@ const styles = StyleSheet.create({
     marginTop: 32,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 14,
@@ -1372,11 +1320,9 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
-    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 20,
@@ -1385,17 +1331,14 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#10B981',
     marginBottom: 8,
   },
   successDetail: {
     fontSize: 15,
-    color: '#374151',
     fontWeight: '500',
   },
   successStock: {
     fontSize: 14,
-    color: '#6B7280',
     marginTop: 4,
   },
 
@@ -1443,7 +1386,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderWidth: 4,
-    borderColor: '#3B82F6',
   },
   camCTL: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 12 },
   camCTR: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 12 },

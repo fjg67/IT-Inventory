@@ -16,16 +16,16 @@ import Animated, {
   withSequence,
   withTiming,
   FadeInDown,
+  SlideInRight,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
-  premiumColors,
   premiumTypography,
   premiumShadows,
   premiumSpacing,
-  premiumBorderRadius,
 } from '../../../constants/premiumTheme';
+import { useTheme } from '@/theme';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { loginTechnicien } from '@/store/slices/authSlice';
 import { Technicien } from '@/types';
@@ -42,7 +42,6 @@ interface PremiumHeaderProps {
   syncStatus: 'synced' | 'syncing' | 'pending' | 'error' | 'idle';
   syncPendingCount?: number;
   isConnected: boolean;
-  /** True si Supabase a répondu récemment */
   supabaseReachable?: boolean;
   onSiteChange: () => void;
 }
@@ -67,20 +66,18 @@ const getAvatarGradient = (id: string | number | undefined): [string, string] =>
 const getInitials = (t: Technicien): string =>
   `${(t.nom?.charAt(0) || '')}${(t.prenom?.charAt(0) || '')}`.toUpperCase() || '?';
 
-/**
- * Header premium avec avatar dégradé, statut sync animé et sélecteur de site
- */
 const PremiumHeader: React.FC<PremiumHeaderProps> = ({
   user,
   site,
   syncStatus,
-  syncPendingCount = 0,
+  syncPendingCount: _syncPendingCount = 0,
   isConnected,
   supabaseReachable = false,
   onSiteChange,
 }) => {
   const dispatch = useAppDispatch();
   const { isTablet, fs } = useResponsive();
+  const { colors, gradients, isDark } = useTheme();
   const techniciens = useAppSelector((state) => state.auth.techniciens);
   const currentTechnicien = useAppSelector((state) => state.auth.currentTechnicien);
   const [showTechnicienModal, setShowTechnicienModal] = useState(false);
@@ -112,7 +109,15 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => handleSelectTechnicien(item)}
-            style={[styles.technicienRow, isCurrent && styles.technicienRowCurrent]}
+            style={[
+              styles.technicienRow,
+              { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' },
+              isCurrent && {
+                backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.06)',
+                borderWidth: 1.5,
+                borderColor: isDark ? 'rgba(99,102,241,0.3)' : 'rgba(99,102,241,0.2)',
+              },
+            ]}
           >
             <LinearGradient
               colors={gradient}
@@ -123,30 +128,33 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
               <Text style={styles.technicienAvatarText}>{initials}</Text>
             </LinearGradient>
             <View style={styles.technicienInfo}>
-              <Text style={styles.technicienName}>
+              <Text style={[styles.technicienName, { color: colors.textPrimary }]}>
                 {initials}
               </Text>
-              <Text style={styles.technicienRole}>
+              <Text style={[styles.technicienRole, { color: colors.textMuted }]}>
                 Technicien
               </Text>
             </View>
             {isCurrent ? (
-              <View style={styles.checkBadge}>
-                <Icon name="check" size={14} color={premiumColors.text.inverse} />
-              </View>
+              <LinearGradient
+                colors={['#10B981', '#059669']}
+                style={styles.checkBadge}
+              >
+                <Icon name="check" size={14} color="#FFFFFF" />
+              </LinearGradient>
             ) : (
-              <View style={styles.selectBadge}>
-                <Icon name="chevron-right" size={18} color={premiumColors.text.tertiary} />
+              <View style={[styles.selectBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                <Icon name="chevron-right" size={18} color={colors.textMuted} />
               </View>
             )}
           </TouchableOpacity>
         </Animated.View>
       );
     },
-    [currentTechnicien?.id, handleSelectTechnicien],
+    [currentTechnicien?.id, handleSelectTechnicien, colors, isDark],
   );
 
-  // Animation du badge sync (pulse)
+  // Sync pulse animation
   const syncPulse = useSharedValue(1);
 
   useEffect(() => {
@@ -168,25 +176,31 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
     transform: [{ scale: syncPulse.value }],
   }));
 
-  // Initiales de l'avatar
   const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
 
-  // Couleur et texte du statut : Hors ligne / Connecté à Supabase / Supabase indisponible
   const getSyncConfig = () => {
     if (!isConnected) {
-      return { color: premiumColors.text.tertiary, text: 'Hors ligne', icon: 'wifi-off' as const };
+      return { color: '#94A3B8', text: 'Hors ligne', icon: 'wifi-off' as const };
     }
     if (supabaseReachable) {
-      return { color: premiumColors.success.base, text: 'Connecté', icon: 'cloud-check' as const };
+      return { color: '#10B981', text: 'Connecté', icon: 'cloud-check' as const };
     }
-    return { color: premiumColors.warning.base, text: 'Supabase indisponible', icon: 'cloud-off-outline' as const };
+    return { color: '#F59E0B', text: 'Indisponible', icon: 'cloud-off-outline' as const };
   };
 
   const syncConfig = getSyncConfig();
 
   return (
-    <Animated.View entering={FadeInDown.duration(500)} style={styles.container}>
-      {/* Avatar (cliquable → liste des techniciens du compte) */}
+    <Animated.View entering={SlideInRight.springify().damping(18)} style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+      {/* Left accent strip */}
+      <LinearGradient
+        colors={[...gradients.avatar]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.accentStrip}
+      />
+
+      {/* Avatar */}
       <TouchableOpacity
         style={styles.avatarContainer}
         onPress={() => {
@@ -195,68 +209,52 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
         }}
         activeOpacity={0.8}
       >
-        <LinearGradient
-          colors={[...premiumColors.gradients.avatar]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.avatar, isTablet && { width: 56, height: 56, borderRadius: 28 }]}
-        >
-          <Text style={[styles.avatarText, isTablet && { fontSize: fs(18) }]}>{initials}</Text>
-        </LinearGradient>
+        <View style={styles.avatarGlow}>
+          <LinearGradient
+            colors={[...gradients.avatar]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.avatar, isTablet && { width: 56, height: 56, borderRadius: 16 }]}
+          >
+            <Text style={[styles.avatarText, isTablet && { fontSize: fs(18) }]}>{initials}</Text>
+          </LinearGradient>
+        </View>
       </TouchableOpacity>
 
-      {/* Infos utilisateur */}
+      {/* User info */}
       <View style={styles.userInfo}>
-        <Text style={styles.greeting}>
-          Bonjour 👋
+        <Text style={[styles.greeting, { color: colors.textPrimary }]}>
+          Bonjour <Text style={{ fontSize: 16 }}>👋</Text>
         </Text>
         <TouchableOpacity
-          style={styles.siteSelector}
+          style={[styles.siteSelector, { backgroundColor: isDark ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.06)' }]}
           onPress={() => {
             Vibration.vibrate(10);
             onSiteChange();
           }}
           activeOpacity={0.7}
         >
-          <Icon
-            name="map-marker"
-            size={14}
-            color={premiumColors.primary.base}
-          />
-          <Text style={styles.siteName} numberOfLines={1}>
-            {site?.name ?? 'Sélectionner un site'}
+          <View style={[styles.siteIconPill, { backgroundColor: isDark ? 'rgba(99,102,241,0.2)' : 'rgba(99,102,241,0.12)' }]}>
+            <Icon name="map-marker" size={10} color={colors.primary} />
+          </View>
+          <Text style={[styles.siteName, { color: colors.primary }]} numberOfLines={1}>
+            {site?.name ?? 'Sélectionner'}
           </Text>
-          <Icon
-            name="chevron-down"
-            size={16}
-            color={premiumColors.primary.base}
-          />
+          <Icon name="chevron-down" size={14} color={colors.primary} style={{ opacity: 0.6 }} />
         </TouchableOpacity>
       </View>
 
-      {/* Badge sync */}
+      {/* Sync badge */}
       <Animated.View style={syncPulseStyle}>
-        <View
-          style={[
-            styles.syncBadge,
-            { backgroundColor: syncConfig.color + '15' },
-          ]}
-        >
-          <Icon
-            name={syncConfig.icon}
-            size={isTablet ? 20 : 16}
-            color={syncConfig.color}
-          />
-          <Text
-            style={[styles.syncText, { color: syncConfig.color }]}
-            numberOfLines={1}
-          >
+        <View style={[styles.syncBadge, { backgroundColor: isDark ? `${syncConfig.color}18` : `${syncConfig.color}12` }]}>
+          <View style={[styles.syncDot, { backgroundColor: syncConfig.color }]} />
+          <Text style={[styles.syncText, { color: syncConfig.color }]} numberOfLines={1}>
             {syncConfig.text}
           </Text>
         </View>
       </Animated.View>
 
-      {/* Modal choix technicien (même compte, même données de stock) */}
+      {/* Modal choix technicien */}
       <Modal
         visible={showTechnicienModal}
         transparent
@@ -265,22 +263,25 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
       >
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback onPress={() => setShowTechnicienModal(false)}>
-            <View style={styles.modalBackdrop} />
+            <View style={[styles.modalBackdrop, { backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)' }]} />
           </TouchableWithoutFeedback>
-          <Animated.View entering={FadeInDown.duration(400)} style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
+          <Animated.View entering={FadeInDown.duration(400)} style={[styles.modalSheet, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHandle, { backgroundColor: colors.textMuted }]} />
             <View style={styles.modalHeaderRow}>
-              <View style={styles.modalIconWrap}>
-                <Icon name="account-switch" size={22} color={premiumColors.primary.base} />
-              </View>
+              <LinearGradient
+                colors={['#4338CA', '#6366F1']}
+                style={styles.modalIconWrap}
+              >
+                <Icon name="account-switch" size={20} color="#FFF" />
+              </LinearGradient>
               <View style={{ flex: 1 }}>
-                <Text style={styles.modalTitle}>Changer de profil</Text>
-                <Text style={styles.modalSubtitle}>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Changer de profil</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textMuted }]}>
                   Sélectionnez un profil technique
                 </Text>
               </View>
             </View>
-            <View style={styles.modalDivider} />
+            <View style={[styles.modalDivider, { backgroundColor: colors.divider }]} />
             <FlatList
               data={techniciens}
               keyExtractor={(item) => item.id.toString()}
@@ -290,8 +291,8 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={
                 <View style={styles.emptyWrap}>
-                  <Icon name="account-off-outline" size={40} color={premiumColors.text.tertiary} />
-                  <Text style={styles.modalEmpty}>Aucun autre profil disponible</Text>
+                  <Icon name="account-off-outline" size={40} color={colors.textMuted} />
+                  <Text style={[styles.modalEmpty, { color: colors.textMuted }]}>Aucun autre profil disponible</Text>
                 </View>
               }
             />
@@ -301,13 +302,15 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
                 Vibration.vibrate(10);
                 setShowTechnicienModal(false);
               }}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
               <LinearGradient
-                colors={['rgba(37,99,235,0.08)', 'rgba(37,99,235,0.03)']}
+                colors={['#4338CA', '#6366F1']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
                 style={styles.modalCloseBtnInner}
               >
-                <Icon name="close" size={18} color={premiumColors.primary.base} />
+                <Icon name="close" size={16} color="#FFF" />
                 <Text style={styles.modalCloseText}>Fermer</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -322,65 +325,98 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: premiumSpacing.md,
-    paddingHorizontal: premiumSpacing.lg,
-    backgroundColor: premiumColors.surface,
-    borderRadius: premiumBorderRadius.xl,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingLeft: 20,
+    borderRadius: 18,
+    borderWidth: 1,
     ...premiumShadows.sm,
     marginBottom: premiumSpacing.lg,
+    overflow: 'hidden',
+  },
+  accentStrip: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3.5,
+    borderTopLeftRadius: 18,
+    borderBottomLeftRadius: 18,
   },
   avatarContainer: {
-    marginRight: premiumSpacing.md,
+    marginRight: 12,
+  },
+  avatarGlow: {
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
   },
   avatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    ...premiumShadows.md,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   avatarText: {
-    ...premiumTypography.bodyMedium,
-    color: premiumColors.text.inverse,
-    fontWeight: '700',
+    color: '#FFFFFF',
+    fontWeight: '800',
     fontSize: 18,
+    letterSpacing: 0.5,
   },
   userInfo: {
     flex: 1,
-    marginRight: premiumSpacing.sm,
+    marginRight: 8,
   },
   greeting: {
-    ...premiumTypography.body,
-    color: premiumColors.text.secondary,
-  },
-  userName: {
-    ...premiumTypography.bodySemiBold,
-    color: premiumColors.text.primary,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    marginBottom: 4,
   },
   siteSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
     gap: 4,
   },
+  siteIconPill: {
+    width: 18,
+    height: 18,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   siteName: {
-    ...premiumTypography.caption,
-    color: premiumColors.primary.base,
-    fontWeight: '500',
-    maxWidth: 160,
+    fontSize: 12,
+    fontWeight: '600',
+    maxWidth: 130,
+    letterSpacing: -0.1,
   },
   syncBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: premiumSpacing.sm,
-    paddingVertical: premiumSpacing.xs,
-    borderRadius: premiumBorderRadius.full,
-    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 5,
+  },
+  syncDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
   },
   syncText: {
-    ...premiumTypography.small,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.1,
   },
   modalOverlay: {
     flex: 1,
@@ -388,10 +424,8 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   modalSheet: {
-    backgroundColor: premiumColors.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: premiumSpacing.lg,
@@ -406,16 +440,14 @@ const styles = StyleSheet.create({
     marginBottom: premiumSpacing.sm,
   },
   modalIconWrap: {
-    width: 44,
-    height: 44,
+    width: 42,
+    height: 42,
     borderRadius: 14,
-    backgroundColor: premiumColors.primary.base + '12',
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalDivider: {
     height: 1,
-    backgroundColor: premiumColors.borderLight,
     marginBottom: premiumSpacing.sm,
   },
   technicienListContainer: {
@@ -431,19 +463,19 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: premiumColors.border,
     alignSelf: 'center',
     marginTop: premiumSpacing.sm,
     marginBottom: premiumSpacing.md,
   },
   modalTitle: {
     ...premiumTypography.h3,
-    color: premiumColors.text.primary,
+    fontWeight: '800',
+    letterSpacing: -0.3,
     marginBottom: 2,
   },
   modalSubtitle: {
-    ...premiumTypography.small,
-    color: premiumColors.text.tertiary,
+    fontSize: 12,
+    fontWeight: '400',
   },
   technicienRow: {
     flexDirection: 'row',
@@ -451,57 +483,47 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 16,
-    backgroundColor: premiumColors.background,
-  },
-  technicienRowCurrent: {
-    backgroundColor: premiumColors.primary.base + '10',
-    borderWidth: 1.5,
-    borderColor: premiumColors.primary.base + '30',
   },
   technicienAvatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 15,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
-    ...premiumShadows.sm,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   technicienAvatarText: {
-    ...premiumTypography.bodySemiBold,
-    color: premiumColors.text.inverse,
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 1,
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   technicienInfo: {
     flex: 1,
   },
   technicienName: {
-    ...premiumTypography.bodySemiBold,
-    color: premiumColors.text.primary,
     fontSize: 15,
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   technicienRole: {
-    ...premiumTypography.small,
-    color: premiumColors.text.tertiary,
-    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '400',
+    marginTop: 1,
   },
   checkBadge: {
     width: 28,
     height: 28,
-    borderRadius: 14,
-    backgroundColor: premiumColors.success.base,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    ...premiumShadows.sm,
   },
   selectBadge: {
     width: 28,
     height: 28,
-    borderRadius: 14,
-    backgroundColor: premiumColors.borderLight,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -511,8 +533,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   modalEmpty: {
-    ...premiumTypography.caption,
-    color: premiumColors.text.tertiary,
+    fontSize: 13,
     textAlign: 'center',
   },
   modalCloseBtn: {
@@ -525,13 +546,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
-    gap: 8,
+    gap: 6,
     borderRadius: 14,
   },
   modalCloseText: {
-    ...premiumTypography.bodySemiBold,
-    color: premiumColors.primary.base,
+    color: '#FFF',
     fontSize: 15,
+    fontWeight: '700',
   },
 });
 

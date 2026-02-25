@@ -156,6 +156,11 @@ const authSlice = createSlice({
       .addCase(logoutTechnicien.fulfilled, (state) => {
         state.currentTechnicien = null;
         state.isAuthenticated = false;
+      })
+      .addCase(logoutTechnicien.rejected, (state) => {
+        // Force logout even if AsyncStorage removal fails
+        state.currentTechnicien = null;
+        state.isAuthenticated = false;
       });
   },
 });

@@ -42,6 +42,7 @@ import { syncService } from '@/api';
 import { APP_CONFIG } from '@/constants/config';
 import { useResponsive } from '@/utils/responsive';
 import { SuccessOverlay } from '@/components/login/SuccessOverlay';
+import { useTheme } from '@/theme';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -62,6 +63,7 @@ const DOTS = Array.from({ length: 30 }).map((_, i) => ({
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { isTablet, rv, fs, width } = useResponsive();
+  const { colors, isDark } = useTheme();
 
   const passwordRef = useRef('');
   const inputRef = useRef<any>(null);
@@ -200,12 +202,12 @@ export const LoginScreen: React.FC = () => {
     borderColor: interpolateColor(
       errorFlash.value,
       [0, 1],
-      ['#E2E8F0', '#EF4444'],
+      [isDark ? '#1E293B' : '#E2E8F0', '#EF4444'],
     ),
     backgroundColor: interpolateColor(
       errorFlash.value,
       [0, 1],
-      ['#F8FAFC', '#FEF2F2'],
+      [isDark ? '#0E1520' : '#F8FAFC', isDark ? '#1A0808' : '#FEF2F2'],
     ),
   }));
 
@@ -282,22 +284,22 @@ export const LoginScreen: React.FC = () => {
   const inputDisabled = loading || success || syncing;
 
   return (
-    <View style={s.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFD" />
+    <View style={[s.container, { backgroundColor: colors.backgroundBase }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.backgroundBase} />
 
       {/* ===== Background decoration ===== */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         {/* Soft gradient blobs */}
         <LinearGradient
-          colors={['rgba(59,130,246,0.06)', 'rgba(59,130,246,0)']}
+          colors={isDark ? ['rgba(99,102,241,0.08)', 'rgba(99,102,241,0)'] : ['rgba(59,130,246,0.06)', 'rgba(59,130,246,0)']}
           style={[s.bgBlob, { top: -60, right: -80, width: 320, height: 320, borderRadius: 160 }]}
         />
         <LinearGradient
-          colors={['rgba(99,102,241,0.05)', 'rgba(99,102,241,0)']}
+          colors={isDark ? ['rgba(99,102,241,0.06)', 'rgba(99,102,241,0)'] : ['rgba(99,102,241,0.05)', 'rgba(99,102,241,0)']}
           style={[s.bgBlob, { bottom: '10%', left: -100, width: 300, height: 300, borderRadius: 150 }]}
         />
         <LinearGradient
-          colors={['rgba(6,182,212,0.04)', 'rgba(6,182,212,0)']}
+          colors={isDark ? ['rgba(59,130,246,0.05)', 'rgba(59,130,246,0)'] : ['rgba(6,182,212,0.04)', 'rgba(6,182,212,0)']}
           style={[s.bgBlob, { top: '40%', right: -50, width: 200, height: 200, borderRadius: 100 }]}
         />
 
@@ -367,7 +369,12 @@ export const LoginScreen: React.FC = () => {
               <View
                 style={[
                   s.logoBox,
-                  { width: sizes.logo, height: sizes.logo, borderRadius: sizes.logoRadius },
+                  {
+                    width: sizes.logo,
+                    height: sizes.logo,
+                    borderRadius: sizes.logoRadius,
+                    shadowColor: colors.primaryDark,
+                  },
                 ]}
               >
                 <Image
@@ -379,10 +386,10 @@ export const LoginScreen: React.FC = () => {
             </Animated.View>
 
             <Animated.View entering={FadeInDown.duration(600).delay(200)}>
-              <Text style={[s.title, { fontSize: sizes.titleSize }]}>IT-Inventory</Text>
+              <Text style={[s.title, { fontSize: sizes.titleSize, color: colors.textPrimary }]}>IT-Inventory</Text>
             </Animated.View>
             <Animated.View entering={FadeInDown.duration(600).delay(350)}>
-              <Text style={[s.subtitle, { fontSize: sizes.subtitleSize }]}>
+              <Text style={[s.subtitle, { fontSize: sizes.subtitleSize, color: colors.textMuted }]}>
                 Gestion de stock IT
               </Text>
             </Animated.View>
@@ -390,11 +397,11 @@ export const LoginScreen: React.FC = () => {
 
           {/* ===== INSTRUCTION ===== */}
           <View style={s.instructionWrap}>
-            <View style={s.instructionDot} />
-            <Text style={[s.instructionText, { fontSize: fs(13) }]}>
+            <View style={[s.instructionDot, { backgroundColor: colors.textMuted }]} />
+            <Text style={[s.instructionText, { fontSize: fs(13), color: colors.textMuted }]}>
               Entrez votre mot de passe pour continuer
             </Text>
-            <View style={s.instructionDot} />
+            <View style={[s.instructionDot, { backgroundColor: colors.textMuted }]} />
           </View>
 
           {/* ===== LOGIN CARD ===== */}
@@ -413,14 +420,18 @@ export const LoginScreen: React.FC = () => {
             <Animated.View
               style={[
                 s.card,
-                { padding: sizes.cardPadding, borderRadius: sizes.cardRadius },
+                {
+                  padding: sizes.cardPadding,
+                  borderRadius: sizes.cardRadius,
+                  shadowColor: isDark ? '#000' : '#64748B',
+                },
                 errorFlashBorderStyle,
               ]}
             >
               {/* Secure header */}
               <View style={s.secureHeader}>
                 <LinearGradient
-                  colors={['#EEF2FF', '#E0E7FF']}
+                  colors={isDark ? ['#1E1B4B', '#312E81'] : ['#EEF2FF', '#E0E7FF']}
                   style={[
                     s.secureIconWrap,
                     {
@@ -430,42 +441,47 @@ export const LoginScreen: React.FC = () => {
                     },
                   ]}
                 >
-                  <Icon name="shield-check" size={sizes.shieldIconSize} color="#4F46E5" />
+                  <Icon name="shield-check" size={sizes.shieldIconSize} color={colors.primaryDark} />
                 </LinearGradient>
                 <View>
-                  <Text style={[s.secureText, { fontSize: sizes.secureTextSize }]}>
+                  <Text style={[s.secureText, { fontSize: sizes.secureTextSize, color: colors.textPrimary }]}>
                     Connexion sécurisée
                   </Text>
-                  <Text style={s.secureSubtext}>Chiffrement de bout en bout</Text>
+                  <Text style={[s.secureSubtext, { color: colors.textMuted }]}>Chiffrement de bout en bout</Text>
                 </View>
               </View>
 
-              <View style={s.cardDivider} />
+              <View style={[s.cardDivider, { backgroundColor: colors.divider }]} />
 
               {/* Password field */}
               <View style={s.fieldWrap}>
-                <Text style={[s.label, { fontSize: sizes.labelSize }]}>MOT DE PASSE</Text>
+                <Text style={[s.label, { fontSize: sizes.labelSize, color: colors.textSecondary }]}>MOT DE PASSE</Text>
                 <View
                   style={[
                     s.inputRow,
-                    { height: sizes.inputHeight, borderRadius: sizes.inputRadius },
-                    passwordError ? s.inputRowError : null,
+                    {
+                      height: sizes.inputHeight,
+                      borderRadius: sizes.inputRadius,
+                      backgroundColor: colors.surfaceInput,
+                      borderColor: isDark ? colors.borderStrong : '#E2E8F0',
+                    },
+                    passwordError ? { borderColor: isDark ? colors.danger : '#FCA5A5', backgroundColor: isDark ? colors.dangerBg : '#FFF5F5' } : null,
                   ]}
                 >
                   <View style={s.inputIconWrap}>
                     <Icon
                       name="lock-outline"
                       size={18}
-                      color="#94A3B8"
+                      color={colors.textMuted}
                     />
                   </View>
                   <TextInput
                     style={[
                       s.input,
-                      { height: sizes.inputHeight, fontSize: sizes.inputFontSize },
+                      { height: sizes.inputHeight, fontSize: sizes.inputFontSize, color: colors.textPrimary },
                     ]}
                     placeholder="Saisissez votre mot de passe"
-                    placeholderTextColor="#B0BEC5"
+                    placeholderTextColor={colors.textMuted}
                     ref={inputRef}
                     onChangeText={handlePasswordChange}
                     secureTextEntry={!passwordVisible}
@@ -485,7 +501,7 @@ export const LoginScreen: React.FC = () => {
                     <Icon
                       name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
                       size={sizes.eyeIconSize}
-                      color={passwordVisible ? '#4F46E5' : '#94A3B8'}
+                      color={passwordVisible ? colors.primaryDark : colors.textMuted}
                     />
                   </TouchableOpacity>
                 </View>
@@ -508,7 +524,7 @@ export const LoginScreen: React.FC = () => {
                 disabled={!isFormValid || inputDisabled}
                 style={[
                   s.submitWrap,
-                  { height: sizes.buttonHeight, borderRadius: sizes.inputRadius },
+                  { height: sizes.buttonHeight, borderRadius: sizes.inputRadius, shadowColor: colors.primaryDark },
                 ]}
               >
                 <LinearGradient
@@ -516,8 +532,8 @@ export const LoginScreen: React.FC = () => {
                     success
                       ? ['#10B981', '#059669']
                       : isFormValid
-                        ? ['#4F46E5', '#4338CA']
-                        : ['#E2E8F0', '#E2E8F0']
+                        ? [colors.primaryDark, isDark ? '#3730A3' : '#4338CA']
+                        : isDark ? [colors.surfaceElevated, colors.surfaceElevated] : ['#E2E8F0', '#E2E8F0']
                   }
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
@@ -573,13 +589,13 @@ export const LoginScreen: React.FC = () => {
 
           {/* ===== FOOTER ===== */}
           <View style={s.footer}>
-            <View style={s.footerBadge}>
-              <Icon name="lock-outline" size={12} color="#94A3B8" />
-              <Text style={[s.footerText, { fontSize: fs(11) }]}>
+            <View style={[s.footerBadge, { backgroundColor: isDark ? colors.surfaceElevated : '#F1F5F9' }]}>
+              <Icon name="lock-outline" size={12} color={colors.textMuted} />
+              <Text style={[s.footerText, { fontSize: fs(11), color: colors.textMuted }]}>
                 Données protégées et chiffrées
               </Text>
             </View>
-            <Text style={[s.versionText, { fontSize: fs(11) }]}>
+            <Text style={[s.versionText, { fontSize: fs(11), color: isDark ? colors.textMuted : '#CBD5E1' }]}>
               Version {APP_CONFIG.version}
             </Text>
           </View>
@@ -601,7 +617,7 @@ export const LoginScreen: React.FC = () => {
 
 // ==================== STYLES ====================
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFD' },
+  container: { flex: 1 },
   kv: { flex: 1 },
   scroll: { flexGrow: 1, alignItems: 'center' },
 
@@ -619,7 +635,6 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,
     shadowRadius: 28,
@@ -629,14 +644,12 @@ const s = StyleSheet.create({
   // Title
   title: {
     fontWeight: '800',
-    color: '#1E293B',
     letterSpacing: -0.8,
     textAlign: 'center',
     marginBottom: 6,
   },
   subtitle: {
     fontWeight: '600',
-    color: '#94A3B8',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
     textAlign: 'center',
@@ -654,21 +667,16 @@ const s = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#CBD5E1',
   },
   instructionText: {
     fontWeight: '500',
-    color: '#94A3B8',
     letterSpacing: 0.2,
   },
 
   // Card
   cardOuter: { width: '100%', marginBottom: 28 },
   card: {
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#F1F5F9',
-    shadowColor: '#64748B',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
     shadowRadius: 32,
@@ -688,18 +696,15 @@ const s = StyleSheet.create({
   },
   secureText: {
     fontWeight: '700',
-    color: '#1E293B',
     letterSpacing: 0.1,
   },
   secureSubtext: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#94A3B8',
     marginTop: 1,
   },
   cardDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
     marginBottom: 24,
   },
 
@@ -707,16 +712,13 @@ const s = StyleSheet.create({
   fieldWrap: { marginBottom: 24 },
   label: {
     fontWeight: '700',
-    color: '#64748B',
     letterSpacing: 1,
     marginBottom: 10,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
     paddingRight: 4,
   },
   inputIconWrap: {
@@ -725,21 +727,14 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   inputRowFocused: {
-    borderColor: '#4F46E5',
-    backgroundColor: '#FAFAFE',
-    shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 4,
   },
-  inputRowError: {
-    borderColor: '#FCA5A5',
-    backgroundColor: '#FFF5F5',
-  },
+  inputRowError: {},
   input: {
     flex: 1,
-    color: '#1E293B',
     paddingVertical: 0,
     fontWeight: '500',
     letterSpacing: 0.3,
@@ -793,7 +788,6 @@ const s = StyleSheet.create({
   submitWrap: {
     width: '100%',
     overflow: 'hidden',
-    shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
@@ -828,17 +822,14 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F1F5F9',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
   },
   footerText: {
-    color: '#94A3B8',
     fontWeight: '500',
   },
   versionText: {
-    color: '#CBD5E1',
     fontWeight: '500',
     letterSpacing: 0.5,
   },

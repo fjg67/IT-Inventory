@@ -37,6 +37,7 @@ import {
   TermsSection as TermsSectionData,
 } from '@/constants/termsContent';
 import { useResponsive } from '../../utils/responsive';
+import { useTheme } from '@/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -60,6 +61,7 @@ interface SectionProps {
 
 const CollapsibleSection: React.FC<SectionProps> = React.memo(
   ({ number, section, defaultExpanded, onLayout }) => {
+    const { colors, isDark } = useTheme();
     const [expanded, setExpanded] = useState(defaultExpanded);
     const rotation = useSharedValue(defaultExpanded ? 1 : 0);
 
@@ -78,7 +80,7 @@ const CollapsibleSection: React.FC<SectionProps> = React.memo(
     }, [expanded, rotation]);
 
     return (
-      <View style={styles.sectionCard} onLayout={onLayout}>
+      <View style={[styles.sectionCard, { backgroundColor: colors.surface }]} onLayout={onLayout}>
         {/* Section Header */}
         <TouchableOpacity
           style={styles.sectionHeader}
@@ -86,17 +88,17 @@ const CollapsibleSection: React.FC<SectionProps> = React.memo(
           activeOpacity={0.7}
         >
           <View style={styles.sectionTitleRow}>
-            <View style={styles.sectionNumberBadge}>
-              <Text style={styles.sectionNumberText}>{number}</Text>
+            <View style={[styles.sectionNumberBadge, { backgroundColor: isDark ? colors.primaryGlow : 'rgba(37, 99, 235, 0.08)' }]}>
+              <Text style={[styles.sectionNumberText, { color: colors.secondary }]}>{number}</Text>
             </View>
             <View style={styles.sectionTitleContainer}>
-              <Text style={styles.sectionTitle} numberOfLines={2}>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]} numberOfLines={2}>
                 {section.title}
               </Text>
             </View>
           </View>
           <Animated.View style={chevronStyle}>
-            <Icon name="chevron-down" size={22} color="#9CA3AF" />
+            <Icon name="chevron-down" size={22} color={colors.textMuted} />
           </Animated.View>
         </TouchableOpacity>
 
@@ -106,13 +108,14 @@ const CollapsibleSection: React.FC<SectionProps> = React.memo(
             entering={FadeIn.duration(250)}
             style={styles.sectionContent}
           >
-            <View style={styles.sectionDivider} />
+            <View style={[styles.sectionDivider, { backgroundColor: colors.divider }]} />
             {section.content.split('\n\n').map((paragraph, idx) => (
               <Text
                 key={idx}
                 style={[
                   styles.sectionText,
-                  paragraph.endsWith(':') && styles.sectionTextBold,
+                  { color: colors.textSecondary },
+                  paragraph.endsWith(':') && [styles.sectionTextBold, { color: colors.textPrimary }],
                   paragraph.startsWith('•') && styles.sectionTextBullet,
                 ]}
               >
@@ -132,6 +135,7 @@ export const TermsScreen: React.FC = () => {
   const route = useRoute<any>();
   const requireAcceptance = route.params?.requireAcceptance ?? false;
   const { isTablet, contentMaxWidth } = useResponsive();
+  const { colors, isDark } = useTheme();
 
   const scrollViewRef = useRef<ScrollView>(null);
   const sectionPositions = useRef<Record<string, number>>({});
@@ -193,7 +197,7 @@ export const TermsScreen: React.FC = () => {
 
   // ==================== RENDER ====================
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="#2563EB" />
 
       {/* ===== HEADER PREMIUM ===== */}
@@ -252,7 +256,7 @@ export const TermsScreen: React.FC = () => {
         {/* ===== TABLE DES MATIERES ===== */}
         <Animated.View
           entering={FadeInUp.delay(100).duration(400)}
-          style={styles.tocCard}
+          style={[styles.tocCard, { backgroundColor: colors.surface }]}
         >
           {/* TOC Header */}
           <TouchableOpacity
@@ -261,13 +265,13 @@ export const TermsScreen: React.FC = () => {
             activeOpacity={0.7}
           >
             <View style={styles.tocHeaderLeft}>
-              <View style={styles.tocIconCircle}>
-                <Icon name="format-list-numbered" size={18} color="#2563EB" />
+              <View style={[styles.tocIconCircle, { backgroundColor: isDark ? colors.primaryGlow : 'rgba(37, 99, 235, 0.08)' }]}>
+                <Icon name="format-list-numbered" size={18} color={colors.secondary} />
               </View>
-              <Text style={styles.tocTitle}>Table des matières</Text>
+              <Text style={[styles.tocTitle, { color: colors.textPrimary }]}>Table des matières</Text>
             </View>
             <Animated.View style={tocChevronStyle}>
-              <Icon name="chevron-down" size={22} color="#9CA3AF" />
+              <Icon name="chevron-down" size={22} color={colors.textMuted} />
             </Animated.View>
           </TouchableOpacity>
 
@@ -279,18 +283,18 @@ export const TermsScreen: React.FC = () => {
                   key={section.id}
                   style={[
                     styles.tocItem,
-                    index < TERMS_SECTIONS.length - 1 && styles.tocItemBorder,
+                    index < TERMS_SECTIONS.length - 1 && [styles.tocItemBorder, { borderBottomColor: colors.divider }],
                   ]}
                   onPress={() => scrollToSection(section.id)}
                   activeOpacity={0.6}
                 >
                   <View style={styles.tocItemLeft}>
-                    <View style={styles.tocItemDot}>
-                      <Text style={styles.tocItemNumber}>{index + 1}</Text>
+                    <View style={[styles.tocItemDot, { backgroundColor: isDark ? colors.primaryGlow : 'rgba(37, 99, 235, 0.08)' }]}>
+                      <Text style={[styles.tocItemNumber, { color: colors.secondary }]}>{index + 1}</Text>
                     </View>
-                    <Text style={styles.tocItemTitle}>{section.title}</Text>
+                    <Text style={[styles.tocItemTitle, { color: colors.textSecondary }]}>{section.title}</Text>
                   </View>
-                  <Icon name="chevron-right" size={16} color="#D1D5DB" />
+                  <Icon name="chevron-right" size={16} color={colors.textMuted} />
                 </TouchableOpacity>
               ))}
             </Animated.View>
@@ -318,12 +322,12 @@ export const TermsScreen: React.FC = () => {
           style={styles.footerInfo}
         >
           <View style={styles.footerInfoRow}>
-            <Icon name="information-outline" size={16} color="#9CA3AF" />
-            <Text style={styles.footerInfoText}>
+            <Icon name="information-outline" size={16} color={colors.textMuted} />
+            <Text style={[styles.footerInfoText, { color: colors.textMuted }]}>
               IT-Inventory — Version {TERMS_VERSION}
             </Text>
           </View>
-          <Text style={styles.footerInfoSubtext}>
+          <Text style={[styles.footerInfoSubtext, { color: colors.textMuted }]}>
             © {new Date().getFullYear()} IT-Inventory SAS. Tous droits réservés.
           </Text>
         </Animated.View>
@@ -336,7 +340,7 @@ export const TermsScreen: React.FC = () => {
       {requireAcceptance && (
         <Animated.View
           entering={FadeInDown.delay(500).duration(400)}
-          style={styles.acceptFooter}
+          style={[styles.acceptFooter, { backgroundColor: colors.surface }]}
         >
           <View style={styles.acceptFooterInner}>
             {/* Checkbox */}
@@ -348,6 +352,7 @@ export const TermsScreen: React.FC = () => {
               <View
                 style={[
                   styles.checkbox,
+                  { borderColor: colors.borderStrong, backgroundColor: colors.surfaceInput },
                   accepted && styles.checkboxChecked,
                 ]}
               >
@@ -362,7 +367,7 @@ export const TermsScreen: React.FC = () => {
                   </Animated.View>
                 )}
               </View>
-              <Text style={styles.checkboxLabel}>
+              <Text style={[styles.checkboxLabel, { color: colors.textPrimary }]}>
                 J'ai lu et j'accepte les conditions d'utilisation
               </Text>
             </TouchableOpacity>
@@ -405,7 +410,6 @@ const styles = StyleSheet.create({
   // === Container ===
   container: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
   },
 
   // === Header ===
@@ -515,7 +519,6 @@ const styles = StyleSheet.create({
   tocCard: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     overflow: 'hidden',
     ...Platform.select({
@@ -543,14 +546,12 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(37, 99, 235, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   tocTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
   },
   tocItem: {
     flexDirection: 'row',
@@ -561,7 +562,6 @@ const styles = StyleSheet.create({
   },
   tocItemBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#F3F4F6',
   },
   tocItemLeft: {
     flexDirection: 'row',
@@ -573,19 +573,16 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: 'rgba(37, 99, 235, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   tocItemNumber: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#2563EB',
   },
   tocItemTitle: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
     flex: 1,
   },
 
@@ -593,7 +590,6 @@ const styles = StyleSheet.create({
   sectionCard: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     overflow: 'hidden',
     ...Platform.select({
@@ -623,14 +619,12 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: 'rgba(37, 99, 235, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   sectionNumberText: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#2563EB',
   },
   sectionTitleContainer: {
     flex: 1,
@@ -638,7 +632,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
     lineHeight: 22,
   },
   sectionContent: {
@@ -647,26 +640,22 @@ const styles = StyleSheet.create({
   },
   sectionDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#E5E7EB',
     marginBottom: 16,
   },
   sectionText: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#4B5563',
     lineHeight: 22,
     marginBottom: 10,
     textAlign: 'justify',
   },
   sectionTextBold: {
     fontWeight: '600',
-    color: '#1F2937',
     fontSize: 14.5,
     marginTop: 4,
   },
   sectionTextBullet: {
     paddingLeft: 4,
-    color: '#4B5563',
   },
 
   // === Footer Info ===
@@ -684,11 +673,9 @@ const styles = StyleSheet.create({
   footerInfoText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#9CA3AF',
   },
   footerInfoSubtext: {
     fontSize: 12,
-    color: '#D1D5DB',
     marginTop: 4,
   },
 
@@ -698,7 +685,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     ...Platform.select({
@@ -727,8 +713,6 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#F9FAFB',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 1,
@@ -747,7 +731,6 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
     lineHeight: 22,
     flex: 1,
   },

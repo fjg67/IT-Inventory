@@ -3,14 +3,14 @@
 // ============================================
 
 import React from 'react';
-import { StatusBar, LogBox, StyleSheet } from 'react-native';
+import { LogBox, StyleSheet } from 'react-native';
 import { Provider } from 'react-redux';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { store } from '@/store';
 import { AppNavigator } from '@/navigation';
-import { colors } from '@/constants/theme';
+import { ThemeProvider } from '@/theme';
 
 // Ignorer certains warnings non critiques en développement
 if (__DEV__) {
@@ -22,18 +22,15 @@ if (__DEV__) {
 
 const App: React.FC = () => {
   return (
-    <Provider store={store}>
-      <GestureHandlerRootView style={styles.container}>
-        <SafeAreaProvider>
-          <StatusBar
-            barStyle="dark-content"
-            backgroundColor={colors.background}
-            translucent={false}
-          />
-          <AppNavigator />
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    </Provider>
+    <ThemeProvider>
+      <Provider store={store}>
+        <GestureHandlerRootView style={styles.container}>
+          <SafeAreaProvider>
+            <AppNavigator />
+          </SafeAreaProvider>
+        </GestureHandlerRootView>
+      </Provider>
+    </ThemeProvider>
   );
 };
 

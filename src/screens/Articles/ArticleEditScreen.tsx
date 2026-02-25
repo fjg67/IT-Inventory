@@ -43,6 +43,7 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { Camera, useCameraDevices, useCodeScanner, useCameraPermission } from 'react-native-vision-camera';
 import { uploadArticleImage, isRemoteUrl } from '@/services/imageUploadService';
 import { useResponsive } from '@/utils/responsive';
+import { useTheme } from '@/theme';
 
 const REF_SCAN_CODE_TYPES = [
   'ean-13', 'ean-8', 'upc-a', 'upc-e', 'code-128', 'code-39', 'code-93',
@@ -55,6 +56,8 @@ export const ArticleEditScreen: React.FC = () => {
   const route = useRoute<any>();
   const dispatch = useAppDispatch();
   const { isTablet, contentMaxWidth } = useResponsive();
+  const { colors, isDark, theme } = useTheme();
+  const { gradients } = theme;
 
   const { articleId, famille: familleParam } = route.params || {};
   const isEditing = !!articleId;
@@ -610,21 +613,21 @@ export const ArticleEditScreen: React.FC = () => {
   // ===== Loading =====
   if (isLoading) {
     return (
-      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
-        <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={{ marginTop: 12, color: '#6B7280', fontSize: 14 }}>Chargement...</Text>
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 12, color: colors.textSecondary, fontSize: 14 }}>Chargement...</Text>
       </View>
     );
   }
 
   // ==================== RENDER ====================
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1E3A8A" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* ===== IMMERSIVE HEADER ===== */}
       <LinearGradient
-        colors={['#1E3A8A', '#1E40AF', '#2563EB']}
+        colors={gradients.primaryHorizontal}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -669,27 +672,28 @@ export const ArticleEditScreen: React.FC = () => {
           {/* ===== SECTION: INFORMATIONS PRINCIPALES ===== */}
           <Animated.View entering={FadeInUp.delay(50).springify()} style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
-              <View style={styles.sectionIconWrap}>
-                <Icon name="information-outline" size={18} color="#3B82F6" />
+              <View style={[styles.sectionIconWrap, { backgroundColor: colors.primaryGlow }]}>
+                <Icon name="information-outline" size={18} color={colors.primary} />
               </View>
-              <Text style={styles.sectionTitle}>Informations principales</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Informations principales</Text>
             </View>
-            <View style={styles.sectionCard}>
+            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
 
             {/* --- REFERENCE --- */}
             <View style={styles.fieldGroup}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Référence</Text>
-                <Text style={styles.required}>*</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Référence</Text>
+                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
               </View>
               <View style={[
                 styles.inputBox,
+                { backgroundColor: colors.surface, borderColor: colors.borderMedium },
                 refStatus === 'available' && reference.length >= 2 && styles.inputBoxSuccess,
               ]}>
                 <TextInput
-                  style={styles.inputText}
+                  style={[styles.inputText, { color: colors.textPrimary }]}
                   placeholder="REF-123..."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textMuted}
                   value={reference}
                   onChangeText={handleReferenceChange}
                   autoCapitalize="characters"
@@ -711,25 +715,25 @@ export const ArticleEditScreen: React.FC = () => {
                         setShowScanRefModal(true);
                       }}
                     >
-                      <View style={[styles.inlineBtnCircle, { backgroundColor: 'rgba(37,99,235,0.08)' }]}>
-                        <Icon name="barcode-scan" size={18} color="#2563EB" />
+                      <View style={[styles.inlineBtnCircle, { backgroundColor: colors.primaryGlow }]}>
+                        <Icon name="barcode-scan" size={18} color={colors.primary} />
                       </View>
                     </TouchableOpacity>
                   )}
                   {refStatus === 'checking' && (
-                    <ActivityIndicator size="small" color="#2563EB" style={{ marginLeft: 6 }} />
+                    <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 6 }} />
                   )}
                   {refStatus === 'available' && reference.length >= 2 && (
                     <Animated.View entering={ZoomIn.duration(200)}>
-                      <Icon name="check-circle" size={20} color="#10B981" style={{ marginLeft: 6 }} />
+                      <Icon name="check-circle" size={20} color={colors.success} style={{ marginLeft: 6 }} />
                     </Animated.View>
                   )}
                 </View>
               </View>
               {refStatus === 'available' && reference.length >= 2 && (
                 <Animated.View entering={FadeIn.duration(200)} style={styles.validationMsg}>
-                  <Icon name="check" size={13} color="#10B981" />
-                  <Text style={[styles.validationText, { color: '#10B981' }]}>Référence valide</Text>
+                  <Icon name="check" size={13} color={colors.success} />
+                  <Text style={[styles.validationText, { color: colors.success }]}>Référence valide</Text>
                 </Animated.View>
               )}
             </View>
@@ -737,24 +741,25 @@ export const ArticleEditScreen: React.FC = () => {
             {/* --- NOM --- */}
             <View style={styles.fieldGroup}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Nom</Text>
-                <Text style={styles.required}>*</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Nom</Text>
+                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
               </View>
               <View style={[
                 styles.inputBox,
+                { backgroundColor: colors.surface, borderColor: colors.borderMedium },
                 nom.length >= 2 && styles.inputBoxSuccess,
               ]}>
                 <TextInput
-                  style={styles.inputText}
+                  style={[styles.inputText, { color: colors.textPrimary }]}
                   placeholder="Désignation de l'article"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textMuted}
                   value={nom}
                   onChangeText={setNom}
                   maxLength={100}
                 />
                 {nom.length >= 2 && (
                   <Animated.View entering={ZoomIn.duration(200)}>
-                    <Icon name="check-circle" size={20} color="#10B981" />
+                    <Icon name="check-circle" size={20} color={colors.success} />
                   </Animated.View>
                 )}
               </View>
@@ -763,30 +768,30 @@ export const ArticleEditScreen: React.FC = () => {
             {/* Code Famille */}
             <View style={[styles.fieldGroup, { marginTop: 16 }]}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Code Famille</Text>
-                <Text style={styles.required}>*</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Code Famille</Text>
+                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
               </View>
               <TouchableOpacity
-                style={styles.pickerBtn}
+                style={[styles.pickerBtn, { backgroundColor: colors.surface, borderColor: colors.borderMedium }]}
                 activeOpacity={0.7}
                 onPress={() => { Vibration.vibrate(10); setShowFamilleModal(true); }}
               >
-                <Icon name="tag-outline" size={20} color={codeFamille ? '#2563EB' : '#9CA3AF'} />
-                <Text style={[styles.pickerText, codeFamille && styles.pickerTextSelected]}>
+                <Icon name="tag-outline" size={20} color={codeFamille ? colors.primary : colors.textMuted} />
+                <Text style={[styles.pickerText, { color: colors.textMuted }, codeFamille && { color: colors.textPrimary, fontWeight: '600' }]}>
                   {codeFamille ? `Famille ${codeFamille}` : 'Aucun code famille'}
                 </Text>
-                <Icon name="chevron-down" size={20} color="#9CA3AF" />
+                <Icon name="chevron-down" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
             {/* Famille */}
             <View style={[styles.fieldGroup, { marginTop: 16 }]}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Famille</Text>
-                <Text style={styles.required}>*</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Famille</Text>
+                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
               </View>
               <TouchableOpacity
-                style={styles.pickerBtn}
+                style={[styles.pickerBtn, { backgroundColor: colors.surface, borderColor: colors.borderMedium }]}
                 activeOpacity={0.7}
                 onPress={() => { Vibration.vibrate(10); setShowFamilleTypeModal(true); }}
               >
@@ -803,12 +808,12 @@ export const ArticleEditScreen: React.FC = () => {
                     />
                   </View>
                 ) : (
-                  <Icon name="shape-outline" size={20} color="#9CA3AF" />
+                  <Icon name="shape-outline" size={20} color={colors.textMuted} />
                 )}
-                <Text style={[styles.pickerText, famille && styles.pickerTextSelected]}>
+                <Text style={[styles.pickerText, { color: colors.textMuted }, famille && { color: colors.textPrimary, fontWeight: '600' }]}>
                   {famille || 'Sélectionner une famille'}
                 </Text>
-                <Icon name="chevron-down" size={20} color="#9CA3AF" />
+                <Icon name="chevron-down" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
             </View>
@@ -820,18 +825,18 @@ export const ArticleEditScreen: React.FC = () => {
               <View style={[styles.sectionIconWrap, { backgroundColor: 'rgba(139,92,246,0.1)' }]}>
                 <Icon name="shape-outline" size={18} color="#8B5CF6" />
               </View>
-              <Text style={styles.sectionTitle}>Classification</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Classification</Text>
             </View>
-            <View style={styles.sectionCard}>
+            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
 
             {/* Type */}
             <View style={styles.fieldGroup}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Type</Text>
-                <Text style={styles.required}>*</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Type</Text>
+                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
               </View>
               <TouchableOpacity
-                style={styles.pickerBtn}
+                style={[styles.pickerBtn, { backgroundColor: colors.surface, borderColor: colors.borderMedium }]}
                 activeOpacity={0.7}
                 onPress={() => { Vibration.vibrate(10); setShowTypeModal(true); }}
               >
@@ -848,23 +853,23 @@ export const ArticleEditScreen: React.FC = () => {
                     />
                   </View>
                 ) : (
-                  <Icon name="format-list-bulleted-type" size={20} color="#9CA3AF" />
+                  <Icon name="format-list-bulleted-type" size={20} color={colors.textMuted} />
                 )}
-                <Text style={[styles.pickerText, typeArticle && styles.pickerTextSelected]}>
+                <Text style={[styles.pickerText, { color: colors.textMuted }, typeArticle && { color: colors.textPrimary, fontWeight: '600' }]}>
                   {typeArticle || 'Sélectionner un type'}
                 </Text>
-                <Icon name="chevron-down" size={20} color="#9CA3AF" />
+                <Icon name="chevron-down" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
             {/* Sous-type */}
             <View style={[styles.fieldGroup, { marginTop: 16 }]}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Sous-type</Text>
-                <Text style={styles.required}>*</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Sous-type</Text>
+                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
               </View>
               <TouchableOpacity
-                style={styles.pickerBtn}
+                style={[styles.pickerBtn, { backgroundColor: colors.surface, borderColor: colors.borderMedium }]}
                 activeOpacity={0.7}
                 onPress={() => { Vibration.vibrate(10); setShowSousTypeModal(true); }}
               >
@@ -881,23 +886,23 @@ export const ArticleEditScreen: React.FC = () => {
                     />
                   </View>
                 ) : (
-                  <Icon name="tag-text-outline" size={20} color="#9CA3AF" />
+                  <Icon name="tag-text-outline" size={20} color={colors.textMuted} />
                 )}
-                <Text style={[styles.pickerText, sousType && styles.pickerTextSelected]}>
+                <Text style={[styles.pickerText, { color: colors.textMuted }, sousType && { color: colors.textPrimary, fontWeight: '600' }]}>
                   {sousType || 'Sélectionner un sous-type'}
                 </Text>
-                <Icon name="chevron-down" size={20} color="#9CA3AF" />
+                <Icon name="chevron-down" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
             {/* Marque */}
             <View style={[styles.fieldGroup, { marginTop: 16 }]}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Marque</Text>
-                <Text style={styles.required}>*</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Marque</Text>
+                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
               </View>
               <TouchableOpacity
-                style={styles.pickerBtn}
+                style={[styles.pickerBtn, { backgroundColor: colors.surface, borderColor: colors.borderMedium }]}
                 activeOpacity={0.7}
                 onPress={() => { Vibration.vibrate(10); setShowMarqueModal(true); }}
               >
@@ -915,12 +920,12 @@ export const ArticleEditScreen: React.FC = () => {
                     </Text>
                   </View>
                 ) : (
-                  <Icon name="domain" size={20} color="#9CA3AF" />
+                  <Icon name="domain" size={20} color={colors.textMuted} />
                 )}
-                <Text style={[styles.pickerText, marque && styles.pickerTextSelected]}>
+                <Text style={[styles.pickerText, { color: colors.textMuted }, marque && { color: colors.textPrimary, fontWeight: '600' }]}>
                   {marque || 'Sélectionner une marque'}
                 </Text>
-                <Icon name="chevron-down" size={20} color="#9CA3AF" />
+                <Icon name="chevron-down" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
@@ -928,15 +933,15 @@ export const ArticleEditScreen: React.FC = () => {
             {!isEditing && sites.length > 1 && (
               <View style={[styles.fieldGroup, { marginTop: 16 }]}>
                 <View style={styles.labelRow}>
-                  <Text style={styles.label}>Site</Text>
-                  <Text style={styles.required}>*</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>Site</Text>
+                  <Text style={[styles.required, { color: colors.danger }]}>*</Text>
                 </View>
                 {sites.map((site) => {
                   const checked = selectedSiteIds.includes(site.id);
                   return (
                     <TouchableOpacity
                       key={site.id}
-                      style={[styles.siteItem, checked && styles.siteItemChecked]}
+                      style={[styles.siteItem, { backgroundColor: colors.surface, borderColor: colors.borderMedium }, checked && styles.siteItemChecked]}
                       activeOpacity={0.7}
                       onPress={() => {
                         Vibration.vibrate(10);
@@ -949,11 +954,11 @@ export const ArticleEditScreen: React.FC = () => {
                         )}
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.siteText, checked && styles.siteTextChecked]}>
+                        <Text style={[styles.siteText, { color: colors.textPrimary }, checked && styles.siteTextChecked]}>
                           {site.nom}
                         </Text>
                         {site.adresse ? (
-                          <Text style={styles.siteAddr}>{site.adresse}</Text>
+                          <Text style={[styles.siteAddr, { color: colors.textMuted }]}>{site.adresse}</Text>
                         ) : null}
                       </View>
                       {checked && (
@@ -970,11 +975,11 @@ export const ArticleEditScreen: React.FC = () => {
             {/* Emplacement */}
             <View style={[styles.fieldGroup, { marginTop: 16 }]}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Emplacement</Text>
-                <Text style={styles.required}>*</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Emplacement</Text>
+                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
               </View>
               <TouchableOpacity
-                style={[styles.pickerBtn, emplacement && { borderColor: (EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.color || '#E5E7EB') + '40' }]}
+                style={[styles.pickerBtn, { backgroundColor: colors.surface, borderColor: colors.borderMedium }, emplacement && { borderColor: (EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.color || '#E5E7EB') + '40' }]}
                 activeOpacity={0.7}
                 onPress={() => { Vibration.vibrate(10); setShowEmplacementModal(true); }}
               >
@@ -991,10 +996,10 @@ export const ArticleEditScreen: React.FC = () => {
                     />
                   </View>
                 ) : (
-                  <Icon name="map-marker-outline" size={20} color="#9CA3AF" />
+                  <Icon name="map-marker-outline" size={20} color={colors.textMuted} />
                 )}
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.pickerText, emplacement && styles.pickerTextSelected]}>
+                  <Text style={[styles.pickerText, { color: colors.textMuted }, emplacement && { color: colors.textPrimary, fontWeight: '600' }]}>
                     {emplacement || 'Sélectionner un emplacement'}
                   </Text>
                   {emplacement && (
@@ -1003,7 +1008,7 @@ export const ArticleEditScreen: React.FC = () => {
                     </Text>
                   )}
                 </View>
-                <Icon name="chevron-down" size={20} color="#9CA3AF" />
+                <Icon name="chevron-down" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
             </View>
@@ -1013,27 +1018,27 @@ export const ArticleEditScreen: React.FC = () => {
           <Animated.View entering={FadeInUp.delay(250).springify()} style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
               <View style={[styles.sectionIconWrap, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
-                <Icon name="package-variant" size={18} color="#10B981" />
+                <Icon name="package-variant" size={18} color={colors.success} />
               </View>
-              <Text style={styles.sectionTitle}>Stock</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Stock</Text>
             </View>
-            <View style={styles.sectionCard}>
+            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
             <View style={styles.stockRow}>
               {/* Stock Actuel */}
-              <View style={styles.stockCard}>
+              <View style={[styles.stockCard, { backgroundColor: colors.surface }]}>
                 <LinearGradient
                   colors={['rgba(59, 130, 246, 0.10)', 'rgba(59, 130, 246, 0.03)']}
                   style={styles.stockCardGradient}
                 >
                   <View style={[styles.stockCardIcon, { backgroundColor: 'rgba(37,99,235,0.15)' }]}>
-                    <Icon name="package-variant" size={24} color="#2563EB" />
+                    <Icon name="package-variant" size={24} color={colors.primary} />
                   </View>
-                  <Text style={styles.stockCardLabel}>Stock actuel</Text>
-                  <View style={styles.stockCardInputBox}>
+                  <Text style={[styles.stockCardLabel, { color: colors.textSecondary }]}>Stock actuel</Text>
+                  <View style={[styles.stockCardInputBox, { borderColor: colors.borderSubtle }]}>
                     <TextInput
-                      style={styles.stockCardInput}
+                      style={[styles.stockCardInput, { color: colors.textPrimary }]}
                       placeholder="0"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={colors.textMuted}
                       value={stockActuel}
                       onChangeText={setStockActuel}
                       keyboardType="numeric"
@@ -1044,20 +1049,20 @@ export const ArticleEditScreen: React.FC = () => {
               </View>
 
               {/* Seuil d'alerte */}
-              <View style={styles.stockCard}>
+              <View style={[styles.stockCard, { backgroundColor: colors.surface }]}>
                 <LinearGradient
                   colors={['rgba(245, 158, 11, 0.10)', 'rgba(245, 158, 11, 0.03)']}
                   style={styles.stockCardGradient}
                 >
                   <View style={[styles.stockCardIcon, { backgroundColor: 'rgba(245,158,11,0.15)' }]}>
-                    <Icon name="bell-alert-outline" size={24} color="#F59E0B" />
+                    <Icon name="bell-alert-outline" size={24} color={colors.warning} />
                   </View>
-                  <Text style={styles.stockCardLabel}>Seuil d'alerte</Text>
+                  <Text style={[styles.stockCardLabel, { color: colors.textSecondary }]}>Seuil d'alerte</Text>
                   <View style={[styles.stockCardInputBox, { borderColor: '#FDE68A' }]}>
                     <TextInput
-                      style={styles.stockCardInput}
+                      style={[styles.stockCardInput, { color: colors.textPrimary }]}
                       placeholder="5"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={colors.textMuted}
                       value={stockMini}
                       onChangeText={setStockMini}
                       keyboardType="numeric"
@@ -1070,8 +1075,8 @@ export const ArticleEditScreen: React.FC = () => {
 
             {/* Info hint */}
             <View style={styles.stockHint}>
-              <Icon name="information-outline" size={14} color="#9CA3AF" />
-              <Text style={styles.stockHintText}>
+              <Icon name="information-outline" size={14} color={colors.textMuted} />
+              <Text style={[styles.stockHintText, { color: colors.textSecondary }]}>
                 Une alerte sera affichée si le stock descend sous le seuil
               </Text>
             </View>
@@ -1082,25 +1087,25 @@ export const ArticleEditScreen: React.FC = () => {
           <Animated.View entering={FadeInUp.delay(350).springify()} style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
               <View style={[styles.sectionIconWrap, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
-                <Icon name="text-box-outline" size={18} color="#F59E0B" />
+                <Icon name="text-box-outline" size={18} color={colors.warning} />
               </View>
-              <Text style={styles.sectionTitle}>Informations complémentaires</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Informations complémentaires</Text>
             </View>
-            <View style={styles.sectionCard}>
+            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Description (optionnel)</Text>
-              <View style={styles.textareaBox}>
+              <Text style={[styles.label, { color: colors.textPrimary }]}>Description (optionnel)</Text>
+              <View style={[styles.textareaBox, { backgroundColor: colors.surface, borderColor: colors.borderMedium }]}>
                 <TextInput
-                  style={styles.textarea}
+                  style={[styles.textarea, { color: colors.textPrimary }]}
                   placeholder="Détails supplémentaires..."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textMuted}
                   value={description}
                   onChangeText={setDescription}
                   multiline
                   maxLength={200}
                 />
-                <Text style={styles.charCount}>{description.length}/200</Text>
+                <Text style={[styles.charCount, { color: colors.textMuted }]}>{description.length}/200</Text>
               </View>
             </View>
             </View>
@@ -1112,9 +1117,9 @@ export const ArticleEditScreen: React.FC = () => {
               <View style={[styles.sectionIconWrap, { backgroundColor: 'rgba(236,72,153,0.1)' }]}>
                 <Icon name="camera-outline" size={18} color="#EC4899" />
               </View>
-              <Text style={styles.sectionTitle}>Photo</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Photo</Text>
             </View>
-            <View style={styles.sectionCard}>
+            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
 
             {!photoUri ? (
               /* Empty state */
@@ -1126,8 +1131,8 @@ export const ArticleEditScreen: React.FC = () => {
                   <View style={styles.photoEmptyIcon}>
                     <Icon name="camera-plus-outline" size={40} color="#EC4899" />
                   </View>
-                  <Text style={styles.photoEmptyTitle}>Ajouter une photo</Text>
-                  <Text style={styles.photoEmptySubtitle}>Prenez ou choisissez une photo de l'article</Text>
+                  <Text style={[styles.photoEmptyTitle, { color: colors.textPrimary }]}>Ajouter une photo</Text>
+                  <Text style={[styles.photoEmptySubtitle, { color: colors.textSecondary }]}>Prenez ou choisissez une photo de l'article</Text>
 
                   <View style={styles.photoButtons}>
                     <TouchableOpacity style={styles.photoBtnCamera} activeOpacity={0.7} onPress={handleTakePhoto}>
@@ -1137,9 +1142,9 @@ export const ArticleEditScreen: React.FC = () => {
                       </LinearGradient>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.photoBtnGallery} activeOpacity={0.7} onPress={handlePickGallery}>
-                      <Icon name="image-multiple-outline" size={20} color="#374151" />
-                      <Text style={styles.photoBtnGalleryText}>Galerie</Text>
+                    <TouchableOpacity style={[styles.photoBtnGallery, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]} activeOpacity={0.7} onPress={handlePickGallery}>
+                      <Icon name="image-multiple-outline" size={20} color={colors.textPrimary} />
+                      <Text style={[styles.photoBtnGalleryText, { color: colors.textPrimary }]}>Galerie</Text>
                     </TouchableOpacity>
                   </View>
                 </LinearGradient>
@@ -1147,25 +1152,25 @@ export const ArticleEditScreen: React.FC = () => {
             ) : (
               /* Preview */
               <Animated.View entering={ZoomIn.duration(300)}>
-                <View style={styles.photoPreview}>
+                <View style={[styles.photoPreview, { backgroundColor: colors.surfaceInput, borderColor: colors.borderSubtle }]}>
                   <Image source={{ uri: photoUri }} style={styles.photoImage} resizeMode="cover" />
 
                   {/* Remove button */}
                   <TouchableOpacity style={styles.photoRemoveBtn} onPress={handleRemovePhoto} activeOpacity={0.7}>
-                    <View style={styles.photoRemoveBg}>
-                      <Icon name="close" size={16} color="#EF4444" />
+                    <View style={[styles.photoRemoveBg, { backgroundColor: colors.surface }]}>
+                      <Icon name="close" size={16} color={colors.danger} />
                     </View>
                   </TouchableOpacity>
 
                   {/* Change button */}
                   <View style={styles.photoChangeRow}>
-                    <TouchableOpacity style={styles.photoChangeBtn} activeOpacity={0.7} onPress={handleTakePhoto}>
-                      <Icon name="camera" size={16} color="#2563EB" />
-                      <Text style={styles.photoChangeText}>Reprendre</Text>
+                    <TouchableOpacity style={[styles.photoChangeBtn, { backgroundColor: colors.primaryGlow, borderColor: colors.borderSubtle }]} activeOpacity={0.7} onPress={handleTakePhoto}>
+                      <Icon name="camera" size={16} color={colors.primary} />
+                      <Text style={[styles.photoChangeText, { color: colors.primary }]}>Reprendre</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.photoChangeBtn} activeOpacity={0.7} onPress={handlePickGallery}>
-                      <Icon name="image-multiple-outline" size={16} color="#2563EB" />
-                      <Text style={styles.photoChangeText}>Galerie</Text>
+                    <TouchableOpacity style={[styles.photoChangeBtn, { backgroundColor: colors.primaryGlow, borderColor: colors.borderSubtle }]} activeOpacity={0.7} onPress={handlePickGallery}>
+                      <Icon name="image-multiple-outline" size={16} color={colors.primary} />
+                      <Text style={[styles.photoChangeText, { color: colors.primary }]}>Galerie</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1181,7 +1186,7 @@ export const ArticleEditScreen: React.FC = () => {
 
       {/* ===== STICKY SUBMIT ===== */}
       <LinearGradient
-        colors={['rgba(248,250,252,0)', 'rgba(248,250,252,0.95)', '#F8FAFC']}
+        colors={[isDark ? 'rgba(6,9,15,0)' : 'rgba(248,250,252,0)', isDark ? 'rgba(6,9,15,0.95)' : 'rgba(248,250,252,0.95)', colors.background]}
         style={styles.stickyBottom}
         pointerEvents="box-none"
       >

@@ -20,7 +20,8 @@ import { showAlert } from '@/store/slices/uiSlice';
 import { articleRepository, stockRepository, mouvementRepository } from '@/database';
 import { Header, Card, Input, Button, Badge, Loading } from '@/components';
 import { validateTransfertForm } from '@/utils';
-import { colors, spacing, typography, borderRadius } from '@/constants/theme';
+import { spacing, typography, borderRadius } from '@/constants/theme';
+import { useTheme } from '@/theme';
 import { Article, TransfertForm, StockSite } from '@/types';
 import { SUCCESS_MESSAGES, ERROR_MESSAGES } from '@/constants';
 import { useResponsive } from '@/utils/responsive';
@@ -30,6 +31,7 @@ export const TransfertFormScreen: React.FC = () => {
   const route = useRoute<any>();
   const dispatch = useAppDispatch();
   const { isTablet, contentMaxWidth } = useResponsive();
+  const { colors, isDark } = useTheme();
   
   const siteActif = useAppSelector((state) => state.site.siteActif);
   const technicien = useAppSelector((state) => state.auth.currentTechnicien);
@@ -143,7 +145,7 @@ export const TransfertFormScreen: React.FC = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <Header 
           title="Transfert inter-sites" 
           leftIcon={<Text>←</Text>} 
@@ -157,7 +159,7 @@ export const TransfertFormScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <Header
         title="Transfert inter-sites"
         leftIcon={<Text>←</Text>}
@@ -172,11 +174,11 @@ export const TransfertFormScreen: React.FC = () => {
           {/* Article sélectionné */}
           {article ? (
             <Card style={styles.articleCard}>
-              <Text style={styles.articleNom}>{article.nom}</Text>
-              <Text style={styles.articleRef}>{article.reference}</Text>
+              <Text style={[styles.articleNom, { color: colors.textPrimary }]}>{article.nom}</Text>
+              <Text style={[styles.articleRef, { color: colors.textSecondary }]}>{article.reference}</Text>
               
               <View style={styles.stockInfo}>
-                <Text style={styles.stockLabel}>Stock sur {getSiteName(siteDepartId)}:</Text>
+                <Text style={[styles.stockLabel, { color: colors.textSecondary }]}>Stock sur {getSiteName(siteDepartId)}:</Text>
                 <Badge
                   label={`${stockDepart?.quantiteActuelle ?? 0} ${article.unite}`}
                   variant={
@@ -188,12 +190,12 @@ export const TransfertFormScreen: React.FC = () => {
                 />
               </View>
               {errors.articleId && (
-                <Text style={styles.errorText}>{errors.articleId}</Text>
+                <Text style={[styles.errorText, { color: colors.danger }]}>{errors.articleId}</Text>
               )}
             </Card>
           ) : (
-            <Card style={styles.noArticleCard}>
-              <Text style={styles.noArticleText}>
+            <Card style={[styles.noArticleCard, { backgroundColor: colors.background, borderColor: colors.borderSubtle }]}>
+              <Text style={[styles.noArticleText, { color: colors.textSecondary }]}>
                 Veuillez sélectionner un article pour effectuer un transfert
               </Text>
               <Button
@@ -207,15 +209,15 @@ export const TransfertFormScreen: React.FC = () => {
 
           {/* Icône de transfert */}
           <View style={styles.transferIcon}>
-            <View style={styles.transferArrow}>
-              <Text style={styles.transferArrowText}>↓</Text>
+            <View style={[styles.transferArrow, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.transferArrowText, { color: colors.textOnPrimary }]}>↓</Text>
             </View>
           </View>
 
           {/* Site de départ */}
           <View style={styles.siteSection}>
-            <Text style={styles.siteLabel}>Site de départ</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.siteLabel, { color: colors.textPrimary }]}>Site de départ</Text>
+            <View style={[styles.pickerContainer, { borderColor: colors.borderSubtle, backgroundColor: colors.surface }]}>
               <Picker
                 selectedValue={siteDepartId}
                 onValueChange={(value: number | null) => setSiteDepartId(value)}
@@ -228,14 +230,14 @@ export const TransfertFormScreen: React.FC = () => {
               </Picker>
             </View>
             {errors.siteDepartId && (
-              <Text style={styles.errorText}>{errors.siteDepartId}</Text>
+              <Text style={[styles.errorText, { color: colors.danger }]}>{errors.siteDepartId}</Text>
             )}
           </View>
 
           {/* Site de destination */}
           <View style={styles.siteSection}>
-            <Text style={styles.siteLabel}>Site de destination</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.siteLabel, { color: colors.textPrimary }]}>Site de destination</Text>
+            <View style={[styles.pickerContainer, { borderColor: colors.borderSubtle, backgroundColor: colors.surface }]}>
               <Picker
                 selectedValue={siteArriveeId}
                 onValueChange={(value: number | null) => setSiteArriveeId(value)}
@@ -249,7 +251,7 @@ export const TransfertFormScreen: React.FC = () => {
               </Picker>
             </View>
             {errors.siteArriveeId && (
-              <Text style={styles.errorText}>{errors.siteArriveeId}</Text>
+              <Text style={[styles.errorText, { color: colors.danger }]}>{errors.siteArriveeId}</Text>
             )}
           </View>
 
@@ -275,23 +277,23 @@ export const TransfertFormScreen: React.FC = () => {
 
           {/* Résumé */}
           {article && siteDepartId && siteArriveeId && (
-            <Card style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Résumé du transfert</Text>
+            <Card style={[styles.summaryCard, { backgroundColor: colors.primary + '10' }]}>
+              <Text style={[styles.summaryTitle, { color: colors.primary }]}>Résumé du transfert</Text>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Article:</Text>
-                <Text style={styles.summaryValue}>{article.nom}</Text>
+                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Article:</Text>
+                <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{article.nom}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>De:</Text>
-                <Text style={styles.summaryValue}>{getSiteName(siteDepartId)}</Text>
+                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>De:</Text>
+                <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{getSiteName(siteDepartId)}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Vers:</Text>
-                <Text style={styles.summaryValue}>{getSiteName(siteArriveeId)}</Text>
+                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Vers:</Text>
+                <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>{getSiteName(siteArriveeId)}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Quantité:</Text>
-                <Text style={styles.summaryValue}>
+                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Quantité:</Text>
+                <Text style={[styles.summaryValue, { color: colors.textPrimary }]}>
                   {quantite} {article.unite}
                 </Text>
               </View>
@@ -317,7 +319,6 @@ export const TransfertFormScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -335,11 +336,9 @@ const styles = StyleSheet.create({
   },
   articleNom: {
     ...typography.h4,
-    color: colors.text.primary,
   },
   articleRef: {
     ...typography.caption,
-    color: colors.text.secondary,
     marginTop: 2,
   },
   stockInfo: {
@@ -349,19 +348,15 @@ const styles = StyleSheet.create({
   },
   stockLabel: {
     ...typography.body,
-    color: colors.text.secondary,
     marginRight: spacing.sm,
   },
   noArticleCard: {
     alignItems: 'center',
     padding: spacing.xl,
-    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.border,
   },
   noArticleText: {
     ...typography.body,
-    color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: spacing.md,
   },
@@ -373,12 +368,10 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   transferArrowText: {
-    color: colors.text.inverse,
     fontSize: 24,
   },
   siteSection: {
@@ -387,26 +380,21 @@ const styles = StyleSheet.create({
   siteLabel: {
     ...typography.caption,
     fontWeight: '600',
-    color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.surface,
     overflow: 'hidden',
   },
   picker: {
     height: 50,
   },
   summaryCard: {
-    backgroundColor: colors.primary + '10',
     marginVertical: spacing.md,
   },
   summaryTitle: {
     ...typography.bodyBold,
-    color: colors.primary,
     marginBottom: spacing.sm,
   },
   summaryRow: {
@@ -416,15 +404,12 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     ...typography.body,
-    color: colors.text.secondary,
   },
   summaryValue: {
     ...typography.bodyBold,
-    color: colors.text.primary,
   },
   errorText: {
     ...typography.small,
-    color: colors.error,
     marginTop: spacing.xs,
   },
   submitButton: {

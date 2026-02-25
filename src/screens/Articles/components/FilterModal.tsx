@@ -12,12 +12,12 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import {
-  premiumColors,
   premiumTypography,
   premiumShadows,
   premiumSpacing,
   premiumBorderRadius,
 } from '../../../constants/premiumTheme';
+import { useTheme } from '@/theme';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 
 export interface FilterOption {
@@ -44,6 +44,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 }) => {
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
+  const { colors } = useTheme();
 
   const handleSelect = useCallback(
     (value: string | number | null) => {
@@ -58,25 +59,26 @@ const FilterModal: React.FC<FilterModalProps> = ({
     const isSelected = item.id === selectedValue;
     return (
       <TouchableOpacity
-        style={[styles.option, isSelected && styles.optionSelected]}
+        style={[styles.option, isSelected && { backgroundColor: colors.primary + '08' }]}
         onPress={() => handleSelect(item.id)}
         activeOpacity={0.7}
       >
         <Icon
           name={isSelected ? 'radiobox-marked' : 'radiobox-blank'}
           size={22}
-          color={isSelected ? premiumColors.primary.base : premiumColors.text.tertiary}
+          color={isSelected ? colors.primary : colors.textMuted}
         />
         <Text
           style={[
             styles.optionLabel,
-            isSelected && styles.optionLabelSelected,
+            { color: colors.textPrimary },
+            isSelected && { color: colors.primary, fontWeight: '600' },
           ]}
         >
           {item.label}
         </Text>
         {isSelected && (
-          <Icon name="check" size={18} color={premiumColors.primary.base} />
+          <Icon name="check" size={18} color={colors.primary} />
         )}
       </TouchableOpacity>
     );
@@ -94,12 +96,12 @@ const FilterModal: React.FC<FilterModalProps> = ({
         activeOpacity={1}
         onPress={onClose}
       >
-        <View style={[styles.sheet, tablet && { maxWidth: 540, width: '100%' }]} onStartShouldSetResponder={() => true}>
+        <View style={[styles.sheet, { backgroundColor: colors.surface }, tablet && { maxWidth: 540, width: '100%' }]} onStartShouldSetResponder={() => true}>
           {/* Handle */}
-          <View style={styles.handle} />
+          <View style={[styles.handle, { backgroundColor: colors.borderSubtle }]} />
 
           {/* Title */}
-          <Text style={styles.title}>{title}</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
 
           {/* Options list */}
           <FlatList
@@ -112,11 +114,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           {/* Bouton fermer */}
           <TouchableOpacity
-            style={styles.closeButton}
+            style={[styles.closeButton, { backgroundColor: colors.borderSubtle }]}
             onPress={onClose}
             activeOpacity={0.7}
           >
-            <Text style={styles.closeText}>Fermer</Text>
+            <Text style={[styles.closeText, { color: colors.textSecondary }]}>Fermer</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -131,7 +133,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: premiumColors.surface,
     borderTopLeftRadius: premiumBorderRadius.xxl,
     borderTopRightRadius: premiumBorderRadius.xxl,
     paddingTop: premiumSpacing.md,
@@ -143,13 +144,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: premiumColors.border,
     alignSelf: 'center',
     marginBottom: premiumSpacing.lg,
   },
   title: {
     ...premiumTypography.h3,
-    color: premiumColors.text.primary,
     paddingHorizontal: premiumSpacing.xl,
     marginBottom: premiumSpacing.lg,
   },
@@ -164,17 +163,9 @@ const styles = StyleSheet.create({
     borderRadius: premiumBorderRadius.md,
     gap: premiumSpacing.md,
   },
-  optionSelected: {
-    backgroundColor: premiumColors.primary.base + '08',
-  },
   optionLabel: {
     ...premiumTypography.body,
-    color: premiumColors.text.primary,
     flex: 1,
-  },
-  optionLabelSelected: {
-    color: premiumColors.primary.base,
-    fontWeight: '600',
   },
   closeButton: {
     marginTop: premiumSpacing.lg,
@@ -182,11 +173,9 @@ const styles = StyleSheet.create({
     paddingVertical: premiumSpacing.md,
     alignItems: 'center',
     borderRadius: premiumBorderRadius.md,
-    backgroundColor: premiumColors.borderLight,
   },
   closeText: {
     ...premiumTypography.bodyMedium,
-    color: premiumColors.text.secondary,
   },
 });
 

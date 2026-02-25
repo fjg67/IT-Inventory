@@ -3,7 +3,7 @@
 // ============================================
 
 import React, { useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Text, StyleSheet } from 'react-native';
@@ -36,6 +36,7 @@ import {
   KitScreen,
 } from '@/screens';
 import { colors, typography } from '@/constants/theme';
+import { useTheme } from '@/theme';
 import PremiumTabBar from '@/components/navigation/PremiumTabBar';
 
 import {
@@ -254,12 +255,27 @@ export const AppNavigator: React.FC = () => {
 
   console.log(`[AppNavigator] Render: isInitializing=${isInitializing}, authLoading=${authLoading}`);
 
+  const { colors: themeColors, isDark } = useTheme();
+
+  const navigationTheme = {
+    ...(isDark ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+      primary: themeColors.primary,
+      background: themeColors.backgroundBase,
+      card: themeColors.surface,
+      text: themeColors.textPrimary,
+      border: themeColors.borderSubtle,
+      notification: themeColors.danger,
+    },
+  };
+
   if (isInitializing) {
     return <FullScreenLoading message="Chargement de l'application..." />;
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <RootStack.Navigator
         screenOptions={{ headerShown: false }}
         initialRouteName={isAuthenticated ? undefined : redirectToTechnicianChoiceAfterLogout ? 'Auth' : onboardingSeen ? 'Login' : 'Onboarding'}
