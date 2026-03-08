@@ -7,11 +7,6 @@ import {
   Vibration,
   useWindowDimensions,
 } from 'react-native';
-import Animated, {
-  FadeInDown,
-  FadeInUp,
-  SlideInRight,
-} from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
@@ -53,6 +48,7 @@ interface MiniStatProps {
   label: string;
   configKey: 'total' | 'stockOK' | 'alertes';
   index: number;
+  onPress?: () => void;
 }
 
 const MiniStatCard: React.FC<MiniStatProps> = ({
@@ -60,18 +56,20 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
   label,
   configKey,
   index,
+  onPress,
 }) => {
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
   const cfg = STAT_CONFIGS[configKey];
 
   return (
-    <Animated.View
-      entering={SlideInRight.delay(200 + index * 100)
-        .duration(500)
-        .springify()
-        .damping(18)}
+    <TouchableOpacity
       style={miniStyles.wrapper}
+      activeOpacity={0.7}
+      onPress={() => {
+        Vibration.vibrate(10);
+        onPress?.();
+      }}
     >
       <View style={miniStyles.card}>
         {/* Glow accent line at top */}
@@ -118,7 +116,7 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
           {label}
         </Text>
       </View>
-    </Animated.View>
+    </TouchableOpacity>
   );
 };
 
@@ -188,6 +186,9 @@ interface PremiumArticleHeaderProps {
   alertes: number;
   onAdd: () => void;
   onBack?: () => void;
+  onTotalPress?: () => void;
+  onStockOKPress?: () => void;
+  onAlertesPress?: () => void;
 }
 
 const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
@@ -196,13 +197,16 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
   alertes,
   onAdd,
   onBack,
+  onTotalPress,
+  onStockOKPress,
+  onAlertesPress,
 }) => {
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
   const { colors, gradients } = useTheme();
 
   return (
-    <Animated.View entering={FadeInDown.duration(400)}>
+    <View>
       <LinearGradient
         colors={['#4338CA', '#6366F1', '#4F46E5']}
         start={{ x: 0, y: 0 }}
@@ -237,8 +241,7 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
         <View style={styles.titleGlow} />
 
         {/* Top Row */}
-        <Animated.View
-          entering={FadeInUp.delay(100).duration(350)}
+        <View
           style={styles.topRow}
         >
           {onBack ? (
@@ -263,19 +266,29 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
           )}
 
           <View style={styles.titleContainer}>
-            <Text
-              style={[
-                styles.title,
-                tablet && { fontSize: 30 },
-              ]}
-            >
-              Articles
-            </Text>
-            <View style={styles.titleUnderline} />
+            {/* Glow behind title */}
+            <View style={styles.titleGlowCircle} />
+            <View style={styles.titleRow}>
+              <Icon name="cube-outline" size={tablet ? 22 : 18} color="rgba(255,255,255,0.7)" />
+              <Text
+                style={[
+                  styles.title,
+                  tablet && { fontSize: 30 },
+                ]}
+              >
+                Articles
+              </Text>
+            </View>
+            <LinearGradient
+              colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.5)', 'rgba(255,255,255,0)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.titleUnderline}
+            />
           </View>
 
           <View style={styles.iconButton} />
-        </Animated.View>
+        </View>
 
         {/* Mini Stats */}
         <View
@@ -289,22 +302,25 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
             label="Total"
             configKey="total"
             index={0}
+            onPress={onTotalPress}
           />
           <MiniStatCard
             value={stockOK}
             label="Stock OK"
             configKey="stockOK"
             index={1}
+            onPress={onStockOKPress}
           />
           <MiniStatCard
             value={alertes}
             label="Alertes"
             configKey="alertes"
             index={2}
+            onPress={onAlertesPress}
           />
         </View>
       </LinearGradient>
-    </Animated.View>
+    </View>
   );
 };
 
@@ -356,18 +372,34 @@ const styles = StyleSheet.create({
   titleContainer: {
     alignItems: 'center',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  titleGlowCircle: {
+    position: 'absolute',
+    top: -18,
+    width: 120,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(167, 139, 250, 0.25)',
+  },
   title: {
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: -0.5,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(167, 139, 250, 0.6)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 12,
   },
   titleUnderline: {
-    width: 32,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    marginTop: 6,
+    width: 80,
+    height: 2.5,
+    borderRadius: 2,
+    marginTop: 8,
   },
   statsRow: {
     flexDirection: 'row',

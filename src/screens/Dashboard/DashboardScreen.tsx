@@ -16,7 +16,6 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
 } from 'react-native';
-import Animated, { FadeInUp, SlideInRight } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -26,7 +25,6 @@ import { articleRepository, mouvementRepository } from '@/database';
 import { DashboardStats, MouvementType } from '@/types';
 import {
   premiumSpacing,
-  premiumAnimation,
 } from '@/constants/premiumTheme';
 import { useTheme } from '@/theme';
 import { useResponsive } from '@/utils/responsive';
@@ -41,7 +39,7 @@ import PremiumMouvementCard from './components/PremiumMouvementCard';
 import PremiumEmptyState from './components/PremiumEmptyState';
 import SkeletonLoader from './components/SkeletonLoader';
 
-const STAGGER = premiumAnimation.staggerDelay;
+
 
 export const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -191,9 +189,7 @@ export const DashboardScreen: React.FC = () => {
         <ScanButtonXXL onPress={handleScan} />
 
         {/* ===== CARDS STATISTIQUES ===== */}
-        <Animated.View
-          entering={SlideInRight.delay(STAGGER * 2).springify().damping(18)}
-        >
+        <View>
           <View style={[styles.statsGrid, isTablet && styles.statsGridTablet]}>
             <GlassStatCard
               icon="package-variant-closed"
@@ -257,11 +253,10 @@ export const DashboardScreen: React.FC = () => {
             fullWidth
             onPress={() => navigation.navigate('Mouvements')}
           />
-        </Animated.View>
+        </View>
 
         {/* ===== ACTIONS RAPIDES ===== */}
-        <Animated.View
-          entering={SlideInRight.delay(STAGGER * 3).springify().damping(18)}
+        <View
           style={styles.actionsSection}
         >
           <SectionHeader title="Actions rapides" accentColor="#6366F1" />
@@ -301,11 +296,10 @@ export const DashboardScreen: React.FC = () => {
               onPress={() => navigation.navigate('Settings')}
             />
           </View>
-        </Animated.View>
+        </View>
 
         {/* ===== DERNIERS MOUVEMENTS ===== */}
-        <Animated.View
-          entering={SlideInRight.delay(STAGGER * 4).springify().damping(18)}
+        <View
           style={styles.mouvementsSection}
         >
           <SectionHeader
@@ -320,11 +314,8 @@ export const DashboardScreen: React.FC = () => {
           ) : stats.derniersMovements.length > 0 ? (
             <View style={isTablet ? styles.mouvementsGridTablet : undefined}>
               {stats.derniersMovements.map((mouvement, index) => (
-                <Animated.View
+                <View
                   key={mouvement.id}
-                  entering={SlideInRight.delay(
-                    STAGGER * 4 + index * STAGGER,
-                  ).springify().damping(18)}
                   style={isTablet ? styles.mouvementCardTablet : undefined}
                 >
                   <PremiumMouvementCard
@@ -340,7 +331,7 @@ export const DashboardScreen: React.FC = () => {
                         : undefined,
                     }}
                   />
-                </Animated.View>
+                </View>
               ))}
             </View>
           ) : (
@@ -352,7 +343,7 @@ export const DashboardScreen: React.FC = () => {
               onActionPress={handleScan}
             />
           )}
-        </Animated.View>
+        </View>
 
         {/* Espacement bas pour la tab bar */}
         <View style={styles.bottomSpacer} />

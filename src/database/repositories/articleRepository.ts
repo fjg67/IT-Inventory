@@ -23,6 +23,7 @@ interface ArticleRow {
   category: string | null;
   codeFamille: string | null;
   articleType: string | null;
+  sousType: string | null;
   brand: string | null;
   model: string | null;
   barcode: string | null;
@@ -45,6 +46,7 @@ function mapRowToArticle(row: ArticleRow): Article {
     codeFamille: row.codeFamille ?? undefined,
     famille: row.category ?? undefined,
     typeArticle: row.articleType ?? undefined,
+    sousType: row.sousType ?? undefined,
     marque: row.brand ?? undefined,
     emplacement: row.emplacement ?? undefined,
     stockMini: row.minStock ?? 0,
@@ -137,11 +139,12 @@ export const articleRepository = {
       const q = `%${filters.searchQuery}%`;
       query = query.or(`reference.ilike.${q},name.ilike.${q}`);
     }
-    if (filters.codeFamille) query = query.eq('codeFamille', filters.codeFamille);
-    if (filters.famille) query = query.eq('category', filters.famille);
-    if (filters.typeArticle) query = query.eq('articleType', filters.typeArticle);
-    if (filters.marque) query = query.eq('brand', filters.marque);
-    if (filters.emplacement) query = query.eq('emplacement', filters.emplacement);
+    if (filters.codeFamille && filters.codeFamille.length > 0) query = query.in('codeFamille', filters.codeFamille);
+    if (filters.famille && filters.famille.length > 0) query = query.in('category', filters.famille);
+    if (filters.typeArticle && filters.typeArticle.length > 0) query = query.in('articleType', filters.typeArticle);
+    if (filters.sousType && filters.sousType.length > 0) query = query.in('sousType', filters.sousType);
+    if (filters.marque && filters.marque.length > 0) query = query.in('brand', filters.marque);
+    if (filters.emplacement && filters.emplacement.length > 0) query = query.in('emplacement', filters.emplacement);
 
     const { data: articles, error } = await query.order('name');
     if (error) throw new Error(error.message);
@@ -311,6 +314,24 @@ export const articleRepository = {
       if ((stockMap.get(a.id) ?? 0) < (a.minStock ?? 0)) count++;
     }
     return count;
+  },
+
+  async getDistinctEmplacements(siteId: string | number): Promise<string[]> {
+    const stockMap = await getStockMapForSite(siteId);
+    const articleIds = Array.from(stockMap.keys());
+    if (articleIds.length === 0) return [];
+    const supabase = getSupabaseClient();
+    const { data } = await supabase
+      .from(tables.articles)
+      .select('emplacement')
+      .eq('isArchived', false)
+      .in('id', articleIds)
+      .not('emplacement', 'is', null);
+    const set = new Set<string>();
+    for (const row of data ?? []) {
+      if (row.emplacement) set.add(row.emplacement);
+    }
+    return Array.from(set).sort();
   },
 };
 

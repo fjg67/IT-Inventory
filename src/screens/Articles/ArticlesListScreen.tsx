@@ -39,7 +39,6 @@ import {
   TYPE_OPTIONS,
   SOUS_TYPE_OPTIONS,
   MARQUE_OPTIONS,
-  EMPLACEMENT_OPTIONS,
 } from '@/constants/articleFilterOptions';
 
 export const ArticlesListScreen: React.FC = () => {
@@ -84,14 +83,21 @@ export const ArticlesListScreen: React.FC = () => {
   const [filtersSheetVisible, setFiltersSheetVisible] = useState(false);
   const [activeFilterModal, setActiveFilterModal] = useState<ArticleFilterKey | null>(null);
 
+  // Emplacements dynamiques du site actif
+  const [siteEmplacements, setSiteEmplacements] = useState<string[]>([]);
+
   // ===== LOAD STATS =====
   const loadStats = useCallback(async () => {
     if (!siteActif) return;
     try {
-      const allResult = await articleRepository.findAll(siteActif.id, 0);
-      const lowStock = await articleRepository.countLowStock(siteActif.id);
+      const [allResult, lowStock, emplacements] = await Promise.all([
+        articleRepository.findAll(siteActif.id, 0),
+        articleRepository.countLowStock(siteActif.id),
+        articleRepository.getDistinctEmplacements(siteActif.id),
+      ]);
       setTotalArticles(allResult.total);
       setAlertes(lowStock);
+      setSiteEmplacements(emplacements);
     } catch (error) {
       console.error('Erreur chargement stats:', error);
     }
@@ -139,12 +145,12 @@ export const ArticlesListScreen: React.FC = () => {
         const hasFilter =
           f.searchQuery ||
           f.stockFaible ||
-          !!f.codeFamille ||
-          !!f.famille ||
-          !!f.typeArticle ||
-          !!f.sousType ||
-          !!f.marque ||
-          !!f.emplacement;
+          (f.codeFamille && f.codeFamille.length > 0) ||
+          (f.famille && f.famille.length > 0) ||
+          (f.typeArticle && f.typeArticle.length > 0) ||
+          (f.sousType && f.sousType.length > 0) ||
+          (f.marque && f.marque.length > 0) ||
+          (f.emplacement && f.emplacement.length > 0);
         if (hasFilter) {
           result = await articleRepository.search(
             siteActif.id,
@@ -242,19 +248,19 @@ export const ArticlesListScreen: React.FC = () => {
     () =>
       filters.stockFaible ||
       searchQuery.length > 0 ||
-      !!filters.codeFamille ||
-      !!filters.famille ||
-      !!filters.typeArticle ||
-      !!filters.sousType ||
-      !!filters.marque ||
-      !!filters.emplacement,
+      (filters.codeFamille && filters.codeFamille.length > 0) ||
+      (filters.famille && filters.famille.length > 0) ||
+      (filters.typeArticle && filters.typeArticle.length > 0) ||
+      (filters.sousType && filters.sousType.length > 0) ||
+      (filters.marque && filters.marque.length > 0) ||
+      (filters.emplacement && filters.emplacement.length > 0),
     [filters, searchQuery],
   );
 
   const activeFiltersCount = useMemo(
     () =>
       [filters.codeFamille, filters.famille, filters.typeArticle, filters.sousType, filters.marque, filters.emplacement].filter(
-        Boolean,
+        (v) => v && v.length > 0,
       ).length,
     [filters],
   );
@@ -275,8 +281,8 @@ export const ArticlesListScreen: React.FC = () => {
     setSortBy('nom');
   }, []);
 
-  const handleFilterSelect = useCallback((key: ArticleFilterKey, value: string | null) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+  const handleFilterSelect = useCallback((key: ArticleFilterKey, values: string[]) => {
+    setFilters((prev) => ({ ...prev, [key]: values.length > 0 ? values : null }));
     setActiveFilterModal(null);
     setFiltersSheetVisible(true);
   }, []);
@@ -290,9 +296,9 @@ export const ArticlesListScreen: React.FC = () => {
       typeArticle: toOptions(TYPE_OPTIONS),
       sousType: toOptions(SOUS_TYPE_OPTIONS),
       marque: toOptions(MARQUE_OPTIONS),
-      emplacement: toOptions(EMPLACEMENT_OPTIONS),
+      emplacement: [{ id: null, label: 'Tous' }, ...siteEmplacements.map((e) => ({ id: e, label: e }))],
     };
-  }, []);
+  }, [siteEmplacements]);
 
   const activeFilterModalConfig = useMemo(() => {
     if (!activeFilterModal) return null;
@@ -308,7 +314,7 @@ export const ArticlesListScreen: React.FC = () => {
       key: activeFilterModal,
       title: titles[activeFilterModal],
       options: filterOptionsByKey[activeFilterModal],
-      selectedValue: filters[activeFilterModal] ?? null,
+      selectedValues: filters[activeFilterModal] ?? [],
     };
   }, [activeFilterModal, filterOptionsByKey, filters]);
 
@@ -447,6 +453,15 @@ export const ArticlesListScreen: React.FC = () => {
         stockOK={stockOK}
         alertes={alertes}
         onAdd={handleAdd}
+        onTotalPress={resetFilters}
+        onStockOKPress={() => {
+          if (filters.stockFaible) {
+            setFilters(prev => ({ ...prev, stockFaible: false }));
+          }
+        }}
+        onAlertesPress={() => {
+          setFilters(prev => ({ ...prev, stockFaible: !prev.stockFaible }));
+        }}
       />
 
       {/* Search Bar */}
@@ -474,6 +489,7 @@ export const ArticlesListScreen: React.FC = () => {
       />
 
       {/* Articles List */}
+      <View style={styles.listContainer}>
       {isLoading ? (
         <SkeletonArticleList count={6} />
       ) : (
@@ -482,6 +498,7 @@ export const ArticlesListScreen: React.FC = () => {
           keyExtractor={item => item.id.toString()}
           renderItem={renderArticle}
           numColumns={numColumns}
+          estimatedItemSize={140}
           contentContainerStyle={[
             styles.listContent,
             contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const } : {},
@@ -501,6 +518,7 @@ export const ArticlesListScreen: React.FC = () => {
           }
         />
       )}
+      </View>
 
       {/* FAB Multi-Action */}
       <FABMultiAction onScan={handleScan} onAdd={handleAdd} />
@@ -527,9 +545,10 @@ export const ArticlesListScreen: React.FC = () => {
           visible={!!activeFilterModal}
           title={activeFilterModalConfig.title}
           options={activeFilterModalConfig.options}
-          selectedValue={activeFilterModalConfig.selectedValue}
-          onSelect={(value) =>
-            handleFilterSelect(activeFilterModalConfig.key, value as string | null)
+          multiSelect
+          selectedValues={activeFilterModalConfig.selectedValues as string[]}
+          onSelectMulti={(values) =>
+            handleFilterSelect(activeFilterModalConfig.key, values)
           }
           onClose={() => {
             setActiveFilterModal(null);
@@ -551,6 +570,9 @@ export const ArticlesListScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  listContainer: {
     flex: 1,
   },
   searchWrapper: {

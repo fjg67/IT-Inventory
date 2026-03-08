@@ -44,7 +44,7 @@ const ROWS: FilterRowConfig[] = [
 
 interface ArticlesFilterSheetProps {
   visible: boolean;
-  filterValues: Partial<Record<ArticleFilterKey, string | null>>;
+  filterValues: Partial<Record<ArticleFilterKey, string[] | null>>;
   onClose: () => void;
   onSelectRow: (key: ArticleFilterKey) => void;
 }
@@ -94,8 +94,8 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
           >
             {ROWS.map((row) => {
               const value = filterValues[row.key];
-              const displayValue = value && value.trim() ? value : 'Tous';
-              const isSet = !!(value && value.trim());
+              const displayValue = value && value.length > 0 ? value.join(', ') : 'Tous';
+              const isSet = !!(value && value.length > 0);
               return (
                 <TouchableOpacity
                   key={row.key}

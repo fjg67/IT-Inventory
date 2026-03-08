@@ -1,5 +1,6 @@
 /**
  * Génère les icônes Android et iOS à partir de src/assets/images/logo.png
+ * Le bleu remplit entièrement l'icône (pas de bordure blanche).
  * Usage: node scripts/generate-app-icon.js
  * Prérequis: npm install --save-dev jimp
  */
@@ -9,6 +10,9 @@ const fs = require('fs');
 
 const ROOT = path.resolve(__dirname, '..');
 const LOGO_SRC = path.join(ROOT, 'src', 'assets', 'images', 'logo.png');
+
+// Couleur de fond bleue (indigo #4F46E5)
+const BG_COLOR = 0x4F46E5FF;
 
 // Android: mipmap-densité -> taille en px
 const ANDROID_SIZES = [
@@ -22,6 +26,18 @@ const ANDROID_SIZES = [
 // iOS: tailles requises pour AppIcon.appiconset
 const IOS_SIZES = [40, 58, 60, 80, 87, 120, 180, 1024];
 const IOS_APPICON_SET = path.join(ROOT, 'ios', 'StockProApp', 'Images.xcassets', 'AppIcon.appiconset');
+
+/**
+ * Crée une icône : fond bleu plein + logo centré (occupe 65% de la taille)
+ */
+async function createIcon(Jimp, logo, size) {
+  const bg = new Jimp(size, size, BG_COLOR);
+  const logoSize = Math.round(size * 0.65);
+  const resizedLogo = logo.clone().resize(logoSize, logoSize);
+  const offset = Math.round((size - logoSize) / 2);
+  bg.composite(resizedLogo, offset, offset);
+  return bg;
+}
 
 async function main() {
   if (!fs.existsSync(LOGO_SRC)) {
@@ -40,23 +56,41 @@ async function main() {
   console.log('Lecture du logo...');
   const logo = await Jimp.read(LOGO_SRC);
 
-  // Android
+  // Android - icônes classiques
   const androidRes = path.join(ROOT, 'android', 'app', 'src', 'main', 'res');
   for (const { folder, size } of ANDROID_SIZES) {
     const dir = path.join(androidRes, folder);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    const resized = logo.clone().resize(size, size);
-    await resized.writeAsync(path.join(dir, 'ic_launcher.png'));
-    await resized.writeAsync(path.join(dir, 'ic_launcher_round.png'));
+    const icon = await createIcon(Jimp, logo, size);
+    await icon.writeAsync(path.join(dir, 'ic_launcher.png'));
+    await icon.writeAsync(path.join(dir, 'ic_launcher_round.png'));
     console.log('Android', folder, size + 'x' + size);
+  }
+
+  // Android - adaptive icon layers (fond bleu uni + foreground = logo)
+  for (const { folder, size } of ANDROID_SIZES) {
+    const dir = path.join(androidRes, folder);
+    // Background : bleu uni
+    const bgLayer = new Jimp(size, size, BG_COLOR);
+    await bgLayer.writeAsync(path.join(dir, 'ic_launcher_background.png'));
+    // Foreground : logo centré sur fond transparent
+    const fgLayer = new Jimp(size, size, 0x00000000);
+    const logoSize = Math.round(size * 0.65);
+    const resizedLogo = logo.clone().resize(logoSize, logoSize);
+    const offset = Math.round((size - logoSize) / 2);
+    fgLayer.composite(resizedLogo, offset, offset);
+    await fgLayer.writeAsync(path.join(dir, 'ic_launcher_foreground.png'));
+    // Monochrome : même que foreground
+    await fgLayer.writeAsync(path.join(dir, 'ic_launcher_monochrome.png'));
+    console.log('Android adaptive', folder, size + 'x' + size);
   }
 
   // iOS
   if (!fs.existsSync(IOS_APPICON_SET)) fs.mkdirSync(IOS_APPICON_SET, { recursive: true });
   for (const size of IOS_SIZES) {
-    const resized = logo.clone().resize(size, size);
+    const icon = await createIcon(Jimp, logo, size);
     const filename = `icon-${size}.png`;
-    await resized.writeAsync(path.join(IOS_APPICON_SET, filename));
+    await icon.writeAsync(path.join(IOS_APPICON_SET, filename));
     console.log('iOS', filename);
   }
 

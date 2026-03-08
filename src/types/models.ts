@@ -179,12 +179,12 @@ export interface ArticleFilters {
   categorieId?: string | number | null;
   stockFaible: boolean;
   searchQuery: string;
-  codeFamille?: string | null;
-  famille?: string | null;
-  typeArticle?: string | null;
-  sousType?: string | null;
-  marque?: string | null;
-  emplacement?: string | null;
+  codeFamille?: string[] | null;
+  famille?: string[] | null;
+  typeArticle?: string[] | null;
+  sousType?: string[] | null;
+  marque?: string[] | null;
+  emplacement?: string[] | null;
 }
 
 export interface ExportOptions {

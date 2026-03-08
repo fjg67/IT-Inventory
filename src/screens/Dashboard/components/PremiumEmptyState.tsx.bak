@@ -1,0 +1,108 @@
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { isTablet as checkIsTablet } from '../../../utils/responsive';
+import {
+  premiumSpacing,
+  premiumBorderRadius,
+} from '../../../constants/premiumTheme';
+import { useTheme } from '@/theme';
+
+interface PremiumEmptyStateProps {
+  /** Nom de l'icône MaterialCommunityIcons */
+  icon: string;
+  /** Titre principal */
+  title: string;
+  /** Sous-titre descriptif */
+  subtitle: string;
+  /** Label du bouton d'action (optionnel) */
+  actionLabel?: string;
+  /** Callback du bouton d'action */
+  onActionPress?: () => void;
+}
+
+/**
+ * État vide élégant avec icône, texte et action optionnelle
+ */
+const PremiumEmptyState: React.FC<PremiumEmptyStateProps> = ({
+  icon,
+  title,
+  subtitle,
+  actionLabel,
+  onActionPress,
+}) => {
+  const { width } = useWindowDimensions();
+  const { colors } = useTheme();
+  const tablet = checkIsTablet(width);
+
+  return (
+    <View style={[styles.container, tablet && { paddingVertical: premiumSpacing.xxxl + 8, paddingHorizontal: premiumSpacing.xxxl }]}>
+      {/* Icône grande centrée */}
+      <View style={[styles.iconContainer, tablet && { width: 104, height: 104, borderRadius: 52, marginBottom: premiumSpacing.xl }]}>
+        <Icon
+          name={icon}
+          size={tablet ? 68 : 56}
+          color={colors.textMuted}
+        />
+      </View>
+
+      <Text style={[styles.title, tablet && { fontSize: 20 }]}>{title}</Text>
+      <Text style={[styles.subtitle, tablet && { fontSize: 15, lineHeight: 22 }]}>{subtitle}</Text>
+
+      {/* Bouton d'action optionnel */}
+      {actionLabel && onActionPress && (
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: colors.primaryGlow }, tablet && { paddingHorizontal: premiumSpacing.xxxl, paddingVertical: premiumSpacing.md }]}
+          onPress={() => {
+            Vibration.vibrate(10);
+            onActionPress();
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.actionLabel, { color: colors.primary }, tablet && { fontSize: 15 }]}>{actionLabel}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    paddingVertical: premiumSpacing.xxxl,
+    paddingHorizontal: premiumSpacing.xxl,
+    borderRadius: premiumBorderRadius.xl,
+    borderWidth: 1,
+  },
+  iconContainer: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: premiumSpacing.lg,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: premiumSpacing.xs,
+  },
+  subtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  actionButton: {
+    marginTop: premiumSpacing.lg,
+    paddingHorizontal: premiumSpacing.xxl,
+    paddingVertical: premiumSpacing.sm,
+    borderRadius: premiumBorderRadius.full,
+  },
+  actionLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+});
+
+export default PremiumEmptyState;

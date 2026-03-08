@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
 import Animated, {
-  FadeIn,
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
@@ -91,7 +90,7 @@ const ArticleEmptyState: React.FC<ArticleEmptyStateProps> = ({
   }));
 
   return (
-    <Animated.View entering={FadeIn.duration(500)} style={styles.container}>
+    <Animated.View style={styles.container}>
       {/* Icône flottante */}
       <Animated.View style={[styles.iconWrapper, floatStyle]}>
         <View style={[styles.iconCircle, { backgroundColor: colors.primary + '10' }, tablet && { width: 140, height: 140, borderRadius: 70 }]}>

@@ -17,7 +17,7 @@ import { setNetworkState, setSupabaseReachable } from '@/store/slices/networkSli
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { preferencesService } from '@/services/preferencesService';
 
-import { FullScreenLoading } from '@/components';
+import { FullScreenLoading, NoConnectionScreen } from '@/components';
 import {
   AuthScreen,
   LoginScreen,
@@ -171,6 +171,7 @@ const MainNavigator: React.FC = () => (
 export const AppNavigator: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isAuthenticated, isLoading: authLoading, redirectToTechnicianChoiceAfterLogout } = useAppSelector((state) => state.auth);
+  const { isConnected, isInternetReachable } = useAppSelector((state) => state.network);
 
   const [isInitializing, setIsInitializing] = React.useState(true);
   const [onboardingSeen, setOnboardingSeen] = React.useState(false);
@@ -272,6 +273,11 @@ export const AppNavigator: React.FC = () => {
 
   if (isInitializing) {
     return <FullScreenLoading message="Chargement de l'application..." />;
+  }
+
+  // Pas de connexion internet → écran offline
+  if (!isConnected || !isInternetReachable) {
+    return <NoConnectionScreen />;
   }
 
   return (

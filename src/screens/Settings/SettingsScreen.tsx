@@ -22,8 +22,6 @@ import {
 } from 'react-native';
 import Animated, {
   FadeInUp,
-  FadeInDown,
-  SlideInRight,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -289,7 +287,7 @@ export const SettingsScreen: React.FC = () => {
         }
       >
         {/* ===== HEADER PREMIUM ===== */}
-        <Animated.View entering={FadeInDown.duration(500)}>
+        <View>
           <LinearGradient
             colors={['#4338CA', '#6366F1', '#4F46E5']}
             start={{ x: 0, y: 0 }}
@@ -351,10 +349,10 @@ export const SettingsScreen: React.FC = () => {
             {/* Accent underline */}
             <View style={styles.headerUnderline} />
           </LinearGradient>
-        </Animated.View>
+        </View>
 
         {/* ===== SECTION PROFIL ===== */}
-        <Animated.View entering={SlideInRight.delay(100).springify().damping(18)}>
+        <View>
           <View style={styles.sectionHeaderRow}>
             <View style={[styles.sectionAccentBar, { backgroundColor: colors.primary }]} />
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>PROFIL</Text>
@@ -388,10 +386,10 @@ export const SettingsScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
-        </Animated.View>
+        </View>
 
         {/* ===== SECTION SITE ===== */}
-        <Animated.View entering={SlideInRight.delay(180).springify().damping(18)}>
+        <View>
           <View style={styles.sectionHeaderRow}>
             <View style={[styles.sectionAccentBar, { backgroundColor: '#10B981' }]} />
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>SITE ACTIF</Text>
@@ -429,10 +427,10 @@ export const SettingsScreen: React.FC = () => {
               </View>
             </View>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
 
         {/* ===== SECTION APPARENCE ===== */}
-        <Animated.View entering={SlideInRight.delay(260).springify().damping(18)}>
+        <View>
           <View style={styles.sectionHeaderRow}>
             <View style={[styles.sectionAccentBar, { backgroundColor: '#8B5CF6' }]} />
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>APPARENCE</Text>
@@ -489,10 +487,10 @@ export const SettingsScreen: React.FC = () => {
               Le mode «Auto» suit les réglages système.
             </Text>
           </View>
-        </Animated.View>
+        </View>
 
         {/* ===== SECTION RGPD ===== */}
-        <Animated.View entering={SlideInRight.delay(340).springify().damping(18)}>
+        <View>
           <View style={styles.sectionHeaderRow}>
             <View style={[styles.sectionAccentBar, { backgroundColor: '#F59E0B' }]} />
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>DONNÉES PERSONNELLES</Text>
@@ -560,10 +558,10 @@ export const SettingsScreen: React.FC = () => {
               </View>
             </View>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
 
         {/* ===== SECTION À PROPOS ===== */}
-        <Animated.View entering={SlideInRight.delay(420).springify().damping(18)}>
+        <View>
           <View style={styles.sectionHeaderRow}>
             <View style={[styles.sectionAccentBar, { backgroundColor: '#06B6D4' }]} />
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>À PROPOS</Text>
@@ -699,11 +697,11 @@ export const SettingsScreen: React.FC = () => {
               </View>
             </View>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
 
         {/* ===== DEV TOOLS ===== */}
         {__DEV__ && (
-          <Animated.View entering={FadeInUp.delay(500).duration(400)}>
+          <View>
             <View style={styles.sectionHeaderRow}>
               <View style={[styles.sectionAccentBar, { backgroundColor: '#EF4444' }]} />
               <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>DÉVELOPPEMENT</Text>
@@ -736,7 +734,7 @@ export const SettingsScreen: React.FC = () => {
                 </View>
               </View>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
         )}
 
         {/* ===== BOUTON DÉCONNEXION ===== */}

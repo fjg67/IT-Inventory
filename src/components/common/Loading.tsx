@@ -248,7 +248,7 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message })
 
           {/* App name */}
           <Animated.View entering={FadeInUp.delay(400).duration(600)}>
-            <Text style={splashStyles.appName}>StockPro</Text>
+            <Text style={splashStyles.appName}>IT-Inventory</Text>
             <Text style={splashStyles.appTagline}>Gestion de stock intelligente</Text>
           </Animated.View>
 

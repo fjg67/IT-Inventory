@@ -15,6 +15,15 @@ import {
 import { APP_CONFIG, ERROR_MESSAGES } from '@/constants';
 import { stockRepository } from './stockRepository';
 
+/** Generate a simple UUID v4 (text) for StockMovement rows */
+function generateId(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 /**
  * Supabase StockMovement table columns:
  * id (text), type (MovementType), quantity (int4), reason (text),
@@ -248,9 +257,11 @@ export const mouvementRepository = {
     }
 
     const supabase = getSupabaseClient();
+    const newId = generateId();
     const { data: inserted, error: errInsert } = await supabase
       .from(tables.mouvements)
       .insert({
+        id: newId,
         articleId: data.articleId,
         fromSiteId: data.siteId,
         type: mapAppTypeToDb(data.type),
@@ -282,6 +293,7 @@ export const mouvementRepository = {
     const supabase = getSupabaseClient();
     await supabase.from(tables.mouvements).insert([
       {
+        id: generateId(),
         articleId: data.articleId,
         fromSiteId: data.siteDepartId,
         type: 'TRANSFER',
@@ -291,6 +303,7 @@ export const mouvementRepository = {
         reason: data.commentaire ?? null,
       },
       {
+        id: generateId(),
         articleId: data.articleId,
         fromSiteId: data.siteArriveeId,
         type: 'TRANSFER',

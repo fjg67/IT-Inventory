@@ -33,7 +33,6 @@ import { useResponsive } from '@/utils/responsive';
 import { useTheme } from '@/theme';
 import {
   premiumSpacing,
-  premiumAnimation,
 } from '@/constants/premiumTheme';
 
 // ==================== HELPERS ====================
@@ -67,7 +66,6 @@ const groupMouvementsByDate = (mouvements: Mouvement[]): { label: string; date: 
 // ==================== TYPES FILTER ====================
 type QuickTypeFilter = 'all' | 'entree' | 'sortie' | 'ajustement' | 'transfert';
 
-const STAGGER = premiumAnimation.staggerDelay;
 
 // ==================== MAIN SCREEN ====================
 export const MouvementsListScreen: React.FC = () => {
@@ -194,7 +192,7 @@ export const MouvementsListScreen: React.FC = () => {
         }
       >
         {/* ===== HEADER ===== */}
-        <Animated.View entering={SlideInRight.springify().damping(18)} style={styles.headerWrap}>
+        <View style={styles.headerWrap}>
           <View style={[styles.header, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
             {/* Accent strip */}
             <LinearGradient
@@ -258,7 +256,7 @@ export const MouvementsListScreen: React.FC = () => {
               ))}
             </View>
           </View>
-        </Animated.View>
+        </View>
 
         {/* ===== SEARCH BAR (collapsible) ===== */}
         {showSearch && (
@@ -285,7 +283,7 @@ export const MouvementsListScreen: React.FC = () => {
         )}
 
         {/* ===== QUICK FILTERS ===== */}
-        <Animated.View entering={SlideInRight.delay(STAGGER).springify().damping(18)}>
+        <View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -339,14 +337,14 @@ export const MouvementsListScreen: React.FC = () => {
               </TouchableOpacity>
             )}
           </ScrollView>
-        </Animated.View>
+        </View>
 
         {/* ===== CONTENT ===== */}
         {isLoading ? (
           /* Skeleton */
           <View style={styles.skeletonContainer}>
             {[0, 1, 2, 3, 4].map(i => (
-              <Animated.View key={i} entering={FadeIn.delay(i * 100).duration(400)}>
+              <View key={i}>
                 <View style={[styles.skeletonCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
                   <View style={[styles.skeletonDot, { backgroundColor: colors.skeleton }]} />
                   <View style={{ flex: 1 }}>
@@ -355,12 +353,12 @@ export const MouvementsListScreen: React.FC = () => {
                     <View style={[styles.skeletonLine, { width: '55%', marginTop: 8, backgroundColor: colors.skeleton }]} />
                   </View>
                 </View>
-              </Animated.View>
+              </View>
             ))}
           </View>
         ) : filteredMouvements.length === 0 ? (
           /* Empty state */
-          <Animated.View entering={SlideInRight.delay(STAGGER * 2).springify().damping(18)} style={styles.emptyContainer}>
+          <View style={styles.emptyContainer}>
             <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
               {/* Mesh */}
               <View style={[styles.meshDot, { width: 80, height: 80, top: -16, right: -16, backgroundColor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.04)', borderRadius: 999 }]} />
@@ -413,29 +411,27 @@ export const MouvementsListScreen: React.FC = () => {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-          </Animated.View>
+          </View>
         ) : (
           /* Timeline list */
           <View style={styles.timelineContainer}>
-            {groupedMouvements.map((group, gIdx) => (
+            {groupedMouvements.map((group) => (
               <View key={group.date.toISOString()}>
                 {/* Date header */}
-                <Animated.View
-                  entering={SlideInRight.delay(STAGGER * 2 + gIdx * 60).springify().damping(18)}
+                <View
                   style={styles.dateHeaderRow}
                 >
                   <View style={[styles.dateAccentBar, { backgroundColor: '#6366F1' }]} />
                   <Text style={[styles.dateHeaderText, { color: colors.textSecondary }]}>{group.label}</Text>
                   <View style={[styles.dateLineAfter, { backgroundColor: colors.borderSubtle }]} />
-                </Animated.View>
+                </View>
 
                 {/* Mouvements */}
-                {group.items.map((mouvement, mIdx) => {
+                {group.items.map((mouvement) => {
                   const cfg = getTypeConfig(mouvement.type);
                   return (
-                    <Animated.View
+                    <View
                       key={mouvement.id}
-                      entering={SlideInRight.delay(STAGGER * 2 + gIdx * 60 + mIdx * 40).springify().damping(18)}
                     >
                       <TouchableOpacity
                         style={[styles.mouvCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle, shadowColor: cfg.color }]}
@@ -472,9 +468,12 @@ export const MouvementsListScreen: React.FC = () => {
                               <Text style={[styles.mouvArticleName, { color: colors.textPrimary }]} numberOfLines={1}>
                                 {mouvement.article?.nom || 'Article inconnu'}
                               </Text>
-                              <Text style={[styles.mouvRef, { color: colors.textMuted }]} numberOfLines={1}>
-                                {mouvement.article?.reference || 'N/A'}
-                              </Text>
+                              <View style={[styles.mouvRefBadge, { backgroundColor: isDark ? colors.borderSubtle : '#F1F5F9' }]}>
+                                <Icon name="barcode" size={12} color={colors.textMuted} />
+                                <Text style={[styles.mouvRef, { color: colors.textMuted }]} numberOfLines={1}>
+                                  {mouvement.article?.reference || 'N/A'}
+                                </Text>
+                              </View>
                             </View>
                             <Text style={[styles.mouvQty, { color: cfg.color }]}>
                               {cfg.prefix}{Math.abs(mouvement.quantite)}
@@ -501,7 +500,7 @@ export const MouvementsListScreen: React.FC = () => {
 
                         <Icon name="chevron-right" size={16} color={colors.borderMedium} style={{ marginLeft: 4 }} />
                       </TouchableOpacity>
-                    </Animated.View>
+                    </View>
                   );
                 })}
               </View>
@@ -1069,8 +1068,18 @@ const styles = StyleSheet.create({
   },
   mouvRef: {
     fontSize: 11,
-    fontWeight: '400',
-    marginTop: 1,
+    fontWeight: '500',
+    letterSpacing: 0.3,
+  },
+  mouvRefBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    marginTop: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   mouvQty: {
     fontSize: 15,
