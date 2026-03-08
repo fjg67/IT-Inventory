@@ -3,7 +3,7 @@
 // IT-Inventory Application
 // ============================================
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,14 @@ import {
 } from 'react-native';
 import Animated, {
   FadeInUp,
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  Easing,
+  interpolate,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -62,6 +70,276 @@ const SITE_VISUALS: Record<string, { icon: string; gradient: [string, string]; e
 const getSiteVisual = (nom: string) => {
   return SITE_VISUALS[nom] || { icon: 'map-marker', gradient: ['#6B7280', '#4B5563'] as [string, string], emoji: '?' };
 };
+
+// ==================== SETTINGS HEADER BANNER ====================
+const SettingsHeaderBanner: React.FC<{
+  initials: string;
+  technicien: any;
+  avatarGradient: [string, string] | string[];
+  isDark: boolean;
+}> = ({ initials, technicien, avatarGradient, isDark }) => {
+  const glowAnim = useSharedValue(0);
+
+  useEffect(() => {
+    glowAnim.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      false,
+    );
+  }, [glowAnim]);
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(glowAnim.value, [0, 1], [0.3, 0.7]),
+    transform: [{ scale: interpolate(glowAnim.value, [0, 1], [1, 1.12]) }],
+  }));
+
+  const dotPulse = useAnimatedStyle(() => ({
+    opacity: interpolate(glowAnim.value, [0, 1], [0.6, 1]),
+    transform: [{ scale: interpolate(glowAnim.value, [0, 1], [0.9, 1.15]) }],
+  }));
+
+  const fullName = technicien
+    ? `${technicien.prenom || ''} ${technicien.nom || ''}`.trim()
+    : 'Utilisateur';
+
+  return (
+    <Animated.View entering={FadeInDown.duration(500).springify()}>
+      <LinearGradient
+        colors={isDark
+          ? ['#0F0A2E', '#1A1145', '#2D1B69', '#1E1250']
+          : ['#312E81', '#4338CA', '#6366F1', '#7C3AED']
+        }
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={headerStyles.header}
+      >
+        {/* Decorative background */}
+        <View style={StyleSheet.absoluteFill}>
+          <View style={headerStyles.orbTopRight}>
+            <LinearGradient
+              colors={['rgba(139, 92, 246, 0.3)', 'rgba(99, 102, 241, 0.05)']}
+              style={StyleSheet.absoluteFill}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            />
+          </View>
+          <View style={headerStyles.orbBottomLeft}>
+            <LinearGradient
+              colors={['rgba(167, 139, 250, 0.2)', 'transparent']}
+              style={StyleSheet.absoluteFill}
+            />
+          </View>
+          <View style={headerStyles.lightStreak} />
+          {[
+            { top: 14, right: 28, s: 3, o: 0.2 },
+            { top: 32, right: 65, s: 2.5, o: 0.12 },
+            { top: 55, left: 22, s: 3, o: 0.15 },
+            { top: 20, left: 55, s: 2, o: 0.1 },
+            { bottom: 28, right: 42, s: 2, o: 0.12 },
+            { bottom: 14, left: 38, s: 2.5, o: 0.14 },
+            { top: 42, right: 18, s: 2, o: 0.1 },
+            { bottom: 45, left: 62, s: 3, o: 0.08 },
+          ].map((d, i) => (
+            <View
+              key={i}
+              style={{
+                position: 'absolute',
+                top: (d as any).top,
+                bottom: (d as any).bottom,
+                left: (d as any).left,
+                right: (d as any).right,
+                width: d.s,
+                height: d.s,
+                borderRadius: d.s,
+                backgroundColor: `rgba(255,255,255,${d.o})`,
+              }}
+            />
+          ))}
+        </View>
+
+        {/* Avatar with animated glow */}
+        <View style={headerStyles.avatarWrap}>
+          <Animated.View style={[headerStyles.avatarGlow, glowStyle]} />
+          <View style={headerStyles.avatarBorder}>
+            <LinearGradient
+              colors={avatarGradient as [string, string]}
+              style={headerStyles.avatar}
+            >
+              <Text style={headerStyles.avatarText}>{initials}</Text>
+            </LinearGradient>
+          </View>
+          <Animated.View style={[headerStyles.onlineDot, dotPulse]}>
+            <View style={headerStyles.onlineDotInner} />
+          </Animated.View>
+        </View>
+
+        {/* Name */}
+        <Text style={headerStyles.name}>{initials}</Text>
+
+        {/* Role */}
+        <View style={headerStyles.roleRow}>
+          <View style={headerStyles.roleDot} />
+          <Text style={headerStyles.roleText}>Technicien</Text>
+        </View>
+
+        {/* Status badge */}
+        <LinearGradient
+          colors={['rgba(16,185,129,0.22)', 'rgba(16,185,129,0.08)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={headerStyles.badge}
+        >
+          <Icon name="shield-check" size={13} color="#6EE7B7" />
+          <Text style={headerStyles.badgeText}>Compte Actif</Text>
+        </LinearGradient>
+      </LinearGradient>
+    </Animated.View>
+  );
+};
+
+const headerStyles = StyleSheet.create({
+  header: {
+    paddingTop: 52,
+    paddingBottom: 32,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    shadowColor: '#4338CA',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 14,
+    overflow: 'hidden',
+  },
+  orbTopRight: {
+    position: 'absolute',
+    top: -50,
+    right: -40,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    overflow: 'hidden',
+  },
+  orbBottomLeft: {
+    position: 'absolute',
+    bottom: -30,
+    left: -20,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    overflow: 'hidden',
+  },
+  lightStreak: {
+    position: 'absolute',
+    top: '45%',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  avatarWrap: {
+    marginBottom: 16,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarGlow: {
+    position: 'absolute',
+    width: 108,
+    height: 108,
+    borderRadius: 30,
+    backgroundColor: 'rgba(167, 139, 250, 0.25)',
+  },
+  avatarBorder: {
+    padding: 3,
+    borderRadius: 26,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  avatarText: {
+    fontSize: 30,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(16, 185, 129, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  onlineDotInner: {
+    width: 11,
+    height: 11,
+    borderRadius: 5.5,
+    backgroundColor: '#10B981',
+    borderWidth: 2,
+    borderColor: '#312E81',
+  },
+  name: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+    marginBottom: 6,
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  roleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 16,
+  },
+  roleDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#34D399',
+  },
+  roleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.3,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.2)',
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6EE7B7',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+});
 
 // ==================== SETTINGS SCREEN ====================
 export const SettingsScreen: React.FC = () => {
@@ -287,69 +565,12 @@ export const SettingsScreen: React.FC = () => {
         }
       >
         {/* ===== HEADER PREMIUM ===== */}
-        <View>
-          <LinearGradient
-            colors={['#4338CA', '#6366F1', '#4F46E5']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.header}
-          >
-            {/* Mesh decorative dots */}
-            {[
-              { top: 14, right: 28, s: 5, o: 0.14 },
-              { top: 32, right: 65, s: 3, o: 0.10 },
-              { top: 55, left: 22, s: 6, o: 0.12 },
-              { top: 20, left: 55, s: 3, o: 0.08 },
-              { bottom: 28, right: 42, s: 4, o: 0.11 },
-              { bottom: 14, left: 38, s: 4, o: 0.13 },
-              { top: 42, right: 18, s: 3, o: 0.09 },
-              { bottom: 45, left: 62, s: 5, o: 0.07 },
-            ].map((d, i) => (
-              <View
-                key={i}
-                style={{
-                  position: 'absolute',
-                  top: d.top,
-                  bottom: d.bottom,
-                  left: d.left,
-                  right: d.right,
-                  width: d.s,
-                  height: d.s,
-                  borderRadius: d.s / 2,
-                  backgroundColor: `rgba(255,255,255,${d.o})`,
-                }}
-              />
-            ))}
-
-            {/* Avatar with glow ring */}
-            <View style={styles.avatarGlowRing}>
-              <LinearGradient
-                colors={avatarGradient}
-                style={styles.headerAvatar}
-              >
-                <Text style={styles.headerAvatarText}>{initials}</Text>
-              </LinearGradient>
-            </View>
-
-            {/* Name & Role */}
-            <Text style={styles.headerName}>{initials}</Text>
-            <View style={styles.headerRoleRow}>
-              <View style={styles.headerRoleDot} />
-              <Text style={styles.headerMatricule}>Technicien</Text>
-            </View>
-
-            {/* Glass badge */}
-            <View style={styles.headerBadge}>
-              <View style={styles.badgeIconPill}>
-                <Icon name="lightning-bolt" size={11} color="#FBBF24" />
-              </View>
-              <Text style={styles.headerBadgeText}>Compte Actif</Text>
-            </View>
-
-            {/* Accent underline */}
-            <View style={styles.headerUnderline} />
-          </LinearGradient>
-        </View>
+        <SettingsHeaderBanner
+          initials={initials}
+          technicien={technicien}
+          avatarGradient={avatarGradient}
+          isDark={isDark}
+        />
 
         {/* ===== SECTION PROFIL ===== */}
         <View>
@@ -394,10 +615,8 @@ export const SettingsScreen: React.FC = () => {
             <View style={[styles.sectionAccentBar, { backgroundColor: '#10B981' }]} />
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>SITE ACTIF</Text>
           </View>
-          <TouchableOpacity
+          <View
             style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}
-            activeOpacity={0.7}
-            onPress={handleChangeSite}
           >
             <LinearGradient
               colors={siteActif ? getSiteVisual(siteActif.nom).gradient : ['#6B7280', '#4B5563']}
@@ -420,13 +639,9 @@ export const SettingsScreen: React.FC = () => {
               </View>
               <View style={styles.cardTextCol}>
                 <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{siteActif?.nom ?? 'Non sélectionné'}</Text>
-                <Text style={[styles.cardHint, { color: colors.textMuted }]}>Appuyez pour changer</Text>
-              </View>
-              <View style={[styles.chevronPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
-                <Icon name="chevron-right" size={18} color={colors.textMuted} />
               </View>
             </View>
-          </TouchableOpacity>
+          </View>
         </View>
 
         {/* ===== SECTION APPARENCE ===== */}
@@ -1063,105 +1278,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
 
-  // ===== HEADER =====
-  header: {
-    paddingTop: 52,
-    paddingBottom: 32,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    shadowColor: '#4338CA',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 12,
-    overflow: 'hidden',
-  },
-  avatarGlowRing: {
-    width: 92,
-    height: 92,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.15)',
-    marginBottom: 14,
-  },
-  headerAvatar: {
-    width: 78,
-    height: 78,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2.5,
-    borderColor: 'rgba(255,255,255,0.25)',
-  },
-  headerAvatarText: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
-  },
-  headerName: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.3,
-    marginBottom: 4,
-  },
-  headerRoleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 14,
-  },
-  headerRoleDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#34D399',
-  },
-  headerMatricule: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.7)',
-    letterSpacing: 0.3,
-  },
-  headerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    gap: 7,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  badgeIconPill: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    backgroundColor: 'rgba(251,191,36,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  headerUnderline: {
-    width: 40,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginTop: 16,
-  },
+  // ===== HEADER ===== (styles moved to SettingsHeaderBanner component)
 
   // ===== SECTIONS =====
   sectionHeaderRow: {

@@ -18,6 +18,7 @@ import { getSupabaseClient, tables } from '@/api/supabase';
 import { preferencesService } from '@/services/preferencesService';
 
 import { FullScreenLoading, NoConnectionScreen } from '@/components';
+import { useAutoLogout } from '@/hooks/useAutoLogout';
 import {
   AuthScreen,
   LoginScreen,
@@ -257,6 +258,8 @@ export const AppNavigator: React.FC = () => {
 
   console.log(`[AppNavigator] Render: isInitializing=${isInitializing}, authLoading=${authLoading}`);
 
+  const { resetInactivityTimer } = useAutoLogout();
+
   const { colors: themeColors, isDark } = useTheme();
 
   const navigationTheme = {
@@ -282,6 +285,13 @@ export const AppNavigator: React.FC = () => {
   }
 
   return (
+    <View
+      style={{flex: 1}}
+      onStartShouldSetResponderCapture={() => {
+        resetInactivityTimer();
+        return false;
+      }}
+    >
     <NavigationContainer theme={navigationTheme}>
       <RootStack.Navigator
         screenOptions={{ headerShown: false }}
@@ -307,6 +317,7 @@ export const AppNavigator: React.FC = () => {
         )}
       </RootStack.Navigator>
     </NavigationContainer>
+    </View>
   );
 };
 
