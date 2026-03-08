@@ -46,7 +46,7 @@ export interface Technicien {
   sitePrincipalId?: string | number;
   sitePrincipal?: Site;
   actif: boolean;
-  dateCreation: Date;
+  dateCreation: Date | string;
 }
 
 export interface Categorie {

@@ -896,27 +896,33 @@ export const SettingsScreen: React.FC = () => {
             <TouchableWithoutFeedback onPress={() => {}}>
               <View style={[styles.siteModalSheet, { backgroundColor: colors.surface }, isTablet && { maxWidth: 540, width: '90%', borderRadius: 28 }]}>
                 {/* Handle */}
-                <View style={[styles.siteModalHandle, { backgroundColor: colors.textMuted }]} />
+                <View style={[styles.siteModalHandle, { backgroundColor: colors.textMuted + '40' }]} />
 
-                {/* Header */}
-                <View style={styles.siteModalHeader}>
-                  <View>
-                    <Text style={[styles.siteModalTitle, { color: colors.textPrimary }]}>Changer de site</Text>
-                    <Text style={[styles.siteModalSubtitle, { color: colors.textSecondary }]}>
-                      Sélectionnez votre espace de travail
-                    </Text>
+                {/* Hero header with gradient */}
+                <LinearGradient
+                  colors={['#6366F1', '#8B5CF6']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.siteModalHero}
+                >
+                  <View style={styles.siteModalHeroIcon}>
+                    <Icon name="map-marker-radius-outline" size={28} color="#FFF" />
                   </View>
-                  <TouchableOpacity
-                    style={[styles.siteModalClose, { backgroundColor: colors.surfaceInput }]}
-                    onPress={() => {
-                      Vibration.vibrate(10);
-                      setSiteModalVisible(false);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Icon name="close" size={20} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                </View>
+                  <Text style={styles.siteModalHeroTitle}>Changer de site</Text>
+                  <Text style={styles.siteModalHeroSub}>Sélectionnez votre espace de travail</Text>
+                </LinearGradient>
+
+                {/* Close button floating */}
+                <TouchableOpacity
+                  style={[styles.siteModalCloseFloat]}
+                  onPress={() => {
+                    Vibration.vibrate(10);
+                    setSiteModalVisible(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="close" size={18} color="#FFF" />
+                </TouchableOpacity>
 
                 {/* Site cards */}
                 <View style={styles.siteModalList}>
@@ -926,34 +932,42 @@ export const SettingsScreen: React.FC = () => {
                     return (
                       <Animated.View
                         key={site.id}
-                        entering={FadeInUp.delay(index * 80).duration(300)}
+                        entering={FadeInUp.delay(index * 100).duration(350)}
                       >
                         <TouchableOpacity
                           style={[
                             styles.siteCard,
-                            { backgroundColor: colors.surfaceInput, borderColor: colors.borderSubtle },
-                            isActive && { backgroundColor: colors.successBg, borderColor: colors.success, borderWidth: 2 },
+                            { backgroundColor: colors.surfaceInput, borderColor: 'transparent' },
+                            isActive && { backgroundColor: '#6366F1' + '12', borderColor: '#6366F1' },
                           ]}
                           activeOpacity={0.7}
                           onPress={() => handleSelectSite(site.id as number)}
                         >
                           <LinearGradient
-                            colors={visual.gradient}
+                            colors={isActive ? ['#6366F1', '#8B5CF6'] : visual.gradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
                             style={styles.siteCardIcon}
                           >
-                            <Icon name={visual.icon} size={24} color="#FFF" />
+                            <Icon name={visual.icon} size={22} color="#FFF" />
                           </LinearGradient>
 
                           <View style={styles.siteCardInfo}>
-                            <Text style={[styles.siteCardName, { color: colors.textPrimary }]}>{site.nom}</Text>
+                            <Text style={[styles.siteCardName, { color: isActive ? '#6366F1' : colors.textPrimary }]}>{site.nom}</Text>
+                            <Text style={[styles.siteCardStatus, { color: isActive ? '#6366F1' : colors.textMuted }]}>
+                              {isActive ? 'Site actif' : 'Appuyez pour sélectionner'}
+                            </Text>
                           </View>
 
                           {isActive ? (
-                            <View style={styles.siteActiveBadge}>
-                              <Icon name="check-circle" size={22} color={colors.success} />
-                            </View>
+                            <LinearGradient
+                              colors={['#6366F1', '#8B5CF6']}
+                              style={styles.siteCheckBadge}
+                            >
+                              <Icon name="check" size={16} color="#FFF" />
+                            </LinearGradient>
                           ) : (
-                            <View style={[styles.siteRadio, { borderColor: colors.textMuted }]} />
+                            <View style={[styles.siteRadio, { borderColor: colors.textMuted + '50' }]} />
                           )}
                         </TouchableOpacity>
                       </Animated.View>
@@ -961,9 +975,11 @@ export const SettingsScreen: React.FC = () => {
                   })}
                 </View>
 
-                {/* Info */}
-                <View style={styles.siteModalFooter}>
-                  <Icon name="information-outline" size={16} color={colors.textMuted} />
+                {/* Footer info */}
+                <View style={[styles.siteModalFooter, { backgroundColor: colors.surfaceInput }]}>
+                  <View style={styles.siteFooterIconWrap}>
+                    <Icon name="information-outline" size={14} color="#6366F1" />
+                  </View>
                   <Text style={[styles.siteModalFooterText, { color: colors.textMuted }]}>
                     Le site sélectionné détermine le stock affiché
                   </Text>
@@ -1631,9 +1647,10 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 28,
-    elevation: 20,
+    shadowOpacity: 0.15,
+    shadowRadius: 30,
+    elevation: 24,
+    overflow: 'hidden',
   },
   siteModalHandle: {
     width: 40,
@@ -1641,55 +1658,69 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 12,
-    marginBottom: 20,
+    marginBottom: 0,
+    zIndex: 10,
   },
-  siteModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+  siteModalHero: {
+    paddingTop: 24,
+    paddingBottom: 28,
     paddingHorizontal: 24,
-    marginBottom: 20,
+    alignItems: 'center',
   },
-  siteModalTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    marginBottom: 4,
-    letterSpacing: -0.3,
-  },
-  siteModalSubtitle: {
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: 0.1,
-  },
-  siteModalClose: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+  siteModalHeroIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 14,
+  },
+  siteModalHeroTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: -0.3,
+    marginBottom: 4,
+  },
+  siteModalHeroSub: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.1,
+  },
+  siteModalCloseFloat: {
+    position: 'absolute',
+    top: 52,
+    right: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
   },
   siteModalList: {
     paddingHorizontal: 20,
-    gap: 10,
+    paddingTop: 20,
+    gap: 12,
   },
   siteCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1.5,
   },
-  siteCardActive: {
-    borderWidth: 2,
-  },
   siteCardIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
@@ -1701,36 +1732,56 @@ const styles = StyleSheet.create({
   siteCardName: {
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 2,
     letterSpacing: -0.2,
+    marginBottom: 2,
   },
-  siteCardAddr: {
-    fontSize: 13,
+  siteCardStatus: {
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0.1,
   },
-  siteActiveBadge: {
-    width: 32,
-    height: 32,
+  siteCheckBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   siteRadio: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    marginRight: 5,
+    marginRight: 3,
   },
   siteModalFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    marginTop: 16,
-    gap: 6,
+    marginHorizontal: 20,
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    gap: 8,
+  },
+  siteFooterIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    backgroundColor: '#6366F1' + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   siteModalFooterText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
+    flex: 1,
   },
 });
 

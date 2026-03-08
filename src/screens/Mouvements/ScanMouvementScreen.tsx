@@ -41,6 +41,7 @@ import {
   type CodeType,
 } from 'react-native-vision-camera';
 import { useAppSelector, useAppDispatch } from '@/store';
+import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { clearScannedArticle, clearLastBarcode, setBarcode, addToHistoryAndSave, loadScanHistory, persistScanHistory, ScanHistoryItem } from '@/store/slices/scanSlice';
 import { useBarcodeScanner } from '@/modules/DataWedgeModule';
 import { articleRepository } from '@/database';
@@ -156,6 +157,7 @@ export const ScanMouvementScreen: React.FC = () => {
   const device = devices.find(d => d.position === 'back') ?? devices.find(d => d.position === 'front') ?? devices[0];
 
   const siteActif = useAppSelector(state => state.site.siteActif);
+  const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const { lastBarcode, isScanning, history } = useAppSelector(state => state.scan);
 
   const [article, setArticle] = useState<Article | null>(null);
@@ -299,7 +301,7 @@ export const ScanMouvementScreen: React.FC = () => {
 
   // ===== Search article on scan =====
   const searchArticle = useCallback(async (barcode: string) => {
-    if (!siteActif) {
+    if (!effectiveSiteId) {
       console.warn('[Scan] Pas de site actif, recherche impossible');
       isProcessingRef.current = false;
       return;
@@ -310,7 +312,7 @@ export const ScanMouvementScreen: React.FC = () => {
 
     try {
       console.log('[Scan] Recherche article pour code-barres:', barcode);
-      const result = await articleRepository.findByReference(barcode, siteActif.id);
+      const result = await articleRepository.findByReference(barcode, effectiveSiteId);
       if (result) {
         console.log('[Scan] Article trouvé:', result.nom);
         setArticle(result);

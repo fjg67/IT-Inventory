@@ -26,6 +26,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAppSelector } from '@/store';
+import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { mouvementRepository } from '@/database';
 import { formatTimeParis, formatRelativeDateParis, formatDateTimeParis } from '@/utils/dateUtils';
 import { Mouvement } from '@/types';
@@ -70,7 +71,7 @@ type QuickTypeFilter = 'all' | 'entree' | 'sortie' | 'ajustement' | 'transfert';
 // ==================== MAIN SCREEN ====================
 export const MouvementsListScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const siteActif = useAppSelector(state => state.site.siteActif);
+  const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const { isTablet, contentMaxWidth } = useResponsive();
   const { colors, isDark } = useTheme();
 
@@ -93,7 +94,7 @@ export const MouvementsListScreen: React.FC = () => {
   const loadMouvements = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
-      const result = await mouvementRepository.findAll(siteActif?.id, 0, 50);
+      const result = await mouvementRepository.findAll(effectiveSiteId ?? undefined, 0, 50);
       setMouvements(result.data);
     } catch (error) {
       console.error('Erreur chargement mouvements:', error);
@@ -101,11 +102,11 @@ export const MouvementsListScreen: React.FC = () => {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [siteActif]);
+  }, [effectiveSiteId]);
 
   useEffect(() => {
     loadMouvements();
-  }, [siteActif, loadMouvements]);
+  }, [effectiveSiteId, loadMouvements]);
 
   useFocusEffect(
     useCallback(() => {
@@ -491,7 +492,7 @@ export const MouvementsListScreen: React.FC = () => {
                               </Text>
                               {mouvement.technicien && (
                                 <Text style={[styles.mouvMetaText, { color: colors.textMuted }]}>
-                                  {' · '}{mouvement.technicien.prenom?.charAt(0)}{mouvement.technicien.nom?.charAt(0)}
+                                  {' · '}{`${mouvement.technicien.nom || mouvement.technicien.prenom || ''}`.trim().split(/\s+/).map(w => w.charAt(0)).join('').toUpperCase()}
                                 </Text>
                               )}
                             </View>
@@ -578,115 +579,113 @@ export const MouvementsListScreen: React.FC = () => {
 
                 {selectedMouvement && (() => {
                   const cfg = getTypeConfig(selectedMouvement.type);
+                  const qtyDisplay = `${cfg.prefix}${Math.abs(selectedMouvement.quantite)}`;
                   return (
                     <>
-                      {/* Header */}
-                      <View style={styles.detailHeader}>
-                        <View style={styles.detailHeaderLeft}>
-                          <LinearGradient colors={['#4338CA', '#6366F1']} style={styles.detailHeaderIcon}>
-                            <Icon name="file-document-outline" size={18} color="#FFF" />
-                          </LinearGradient>
-                          <Text style={[styles.detailTitle, { color: colors.textPrimary }]}>Détails du mouvement</Text>
-                        </View>
-                        <TouchableOpacity
-                          style={[styles.detailClose, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}
-                          onPress={() => {
-                            Vibration.vibrate(10);
-                            setSelectedMouvement(null);
-                          }}
-                        >
-                          <Icon name="close" size={18} color={colors.textMuted} />
-                        </TouchableOpacity>
-                      </View>
-
-                      {/* Type badge */}
-                      <View style={[styles.detailTypeBadgeWrap, { backgroundColor: isDark ? `${cfg.color}18` : `${cfg.color}0A`, borderColor: colors.borderSubtle }]}>
-                        <LinearGradient colors={cfg.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.detailTypeIconPill}>
-                          <Icon name={cfg.icon} size={24} color="#FFF" />
-                        </LinearGradient>
-                        <View>
-                          <Text style={[styles.detailTypeLabel, { color: cfg.color }]}>{cfg.label}</Text>
-                          <Text style={[styles.detailTypeQty, { color: colors.textMuted }]}>
-                            {cfg.prefix}{Math.abs(selectedMouvement.quantite)} unités
-                          </Text>
-                        </View>
-                      </View>
-
-                      {/* Info rows */}
-                      <View style={[styles.detailDivider, { backgroundColor: colors.borderSubtle }]} />
-
-                      <View style={styles.detailRow}>
-                        <View style={styles.detailRowIconWrap}>
-                          <Icon name="package-variant-closed" size={15} color={colors.textMuted} />
-                        </View>
-                        <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Article</Text>
-                        <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                          <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{selectedMouvement.article?.nom || 'N/A'}</Text>
-                          <Text style={[styles.detailValueSub, { color: colors.textMuted }]}>{selectedMouvement.article?.reference || ''}</Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.detailRow}>
-                        <View style={styles.detailRowIconWrap}>
-                          <Icon name="counter" size={15} color={colors.textMuted} />
-                        </View>
-                        <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Quantité</Text>
-                        <Text style={[styles.detailValue, { color: cfg.color, fontWeight: '800' }]}>
-                          {cfg.prefix}{Math.abs(selectedMouvement.quantite)} unités
-                        </Text>
-                      </View>
-
-                      <View style={styles.detailRow}>
-                        <View style={styles.detailRowIconWrap}>
-                          <Icon name="arrow-collapse-left" size={15} color={colors.textMuted} />
-                        </View>
-                        <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Stock avant</Text>
-                        <Text style={[styles.detailValue, { color: colors.textPrimary }]}>{selectedMouvement.stockAvant}</Text>
-                      </View>
-
-                      <View style={styles.detailRow}>
-                        <View style={styles.detailRowIconWrap}>
-                          <Icon name="arrow-collapse-right" size={15} color={colors.textMuted} />
-                        </View>
-                        <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Stock après</Text>
-                        <Text style={[styles.detailValue, { color: colors.textPrimary, fontWeight: '800' }]}>{selectedMouvement.stockApres}</Text>
-                      </View>
-
-                      <View style={[styles.detailDivider, { backgroundColor: colors.borderSubtle }]} />
-
-                      <View style={styles.detailRow}>
-                        <View style={styles.detailRowIconWrap}>
-                          <Icon name="account-outline" size={15} color={colors.textMuted} />
-                        </View>
-                        <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Technicien</Text>
-                        <Text style={[styles.detailValue, { color: colors.textPrimary }]}>
-                          {selectedMouvement.technicien
-                            ? `${selectedMouvement.technicien.prenom || ''} ${selectedMouvement.technicien.nom || ''}`.trim()
-                            : 'N/A'}
-                        </Text>
-                      </View>
-
-                      <View style={styles.detailRow}>
-                        <View style={styles.detailRowIconWrap}>
-                          <Icon name="calendar-outline" size={15} color={colors.textMuted} />
-                        </View>
-                        <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Date</Text>
-                        <Text style={[styles.detailValue, { color: colors.textPrimary }]}>
-                          {formatDateTimeParis(selectedMouvement.dateMouvement)}
-                        </Text>
-                      </View>
-
-                      {selectedMouvement.commentaire ? (
-                        <View style={styles.detailRow}>
-                          <View style={styles.detailRowIconWrap}>
-                            <Icon name="comment-outline" size={15} color={colors.textMuted} />
+                      {/* ===== HERO HEADER with gradient ===== */}
+                      <LinearGradient
+                        colors={cfg.gradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.detailHero}
+                      >
+                        <View style={styles.detailHeroTop}>
+                          <View style={styles.detailHeroIconWrap}>
+                            <Icon name={cfg.icon} size={28} color="#FFF" />
                           </View>
-                          <Text style={[styles.detailLabel, { color: colors.textMuted }]}>Commentaire</Text>
-                          <Text style={[styles.detailValue, { color: colors.textPrimary, flex: 1, textAlign: 'right' }]}>
-                            {selectedMouvement.commentaire}
+                          <TouchableOpacity
+                            style={styles.detailHeroClose}
+                            onPress={() => {
+                              Vibration.vibrate(10);
+                              setSelectedMouvement(null);
+                            }}
+                          >
+                            <Icon name="close" size={18} color="rgba(255,255,255,0.8)" />
+                          </TouchableOpacity>
+                        </View>
+                        <Text style={styles.detailHeroType}>{cfg.label}</Text>
+                        <Text style={styles.detailHeroQty}>{qtyDisplay} unités</Text>
+                        <View style={styles.detailHeroArticle}>
+                          <Icon name="package-variant-closed" size={14} color="rgba(255,255,255,0.7)" />
+                          <Text style={styles.detailHeroArticleName} numberOfLines={1}>
+                            {selectedMouvement.article?.nom || 'Article inconnu'}
                           </Text>
                         </View>
-                      ) : null}
+                        <View style={styles.detailHeroRefBadge}>
+                          <Text style={styles.detailHeroRefText}>
+                            {selectedMouvement.article?.reference || '—'}
+                          </Text>
+                        </View>
+                      </LinearGradient>
+
+                      {/* ===== STOCK EVOLUTION CARD ===== */}
+                      <View style={[styles.detailStockCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)', borderColor: colors.borderSubtle }]}>
+                        <View style={styles.detailStockCol}>
+                          <Text style={[styles.detailStockNum, { color: colors.textMuted }]}>{selectedMouvement.stockAvant}</Text>
+                          <Text style={[styles.detailStockCaption, { color: colors.textMuted }]}>Avant</Text>
+                        </View>
+                        <View style={[styles.detailStockArrow, { backgroundColor: cfg.color + '18' }]}>
+                          <Icon name="arrow-right" size={18} color={cfg.color} />
+                        </View>
+                        <View style={styles.detailStockCol}>
+                          <Text style={[styles.detailStockNum, { color: cfg.color }]}>{selectedMouvement.stockApres}</Text>
+                          <Text style={[styles.detailStockCaption, { color: colors.textMuted }]}>Après</Text>
+                        </View>
+                        <View style={[styles.detailStockDelta, { backgroundColor: cfg.color + '14' }]}>
+                          <Text style={[styles.detailStockDeltaText, { color: cfg.color }]}>{qtyDisplay}</Text>
+                        </View>
+                      </View>
+
+                      {/* ===== INFO ROWS ===== */}
+                      <View style={[styles.detailInfoCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#FFF', borderColor: colors.borderSubtle }]}>
+                        <View style={styles.detailInfoRow}>
+                          <View style={[styles.detailInfoIconCircle, { backgroundColor: '#6366F1' + '14' }]}>
+                            <Icon name="account-outline" size={16} color="#6366F1" />
+                          </View>
+                          <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Technicien</Text>
+                          <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={1}>
+                            {selectedMouvement.technicien
+                              ? `${selectedMouvement.technicien.nom || selectedMouvement.technicien.prenom || ''}`.trim().split(/\s+/).map(w => w.charAt(0)).join('').toUpperCase()
+                              : 'N/A'}
+                          </Text>
+                        </View>
+
+                        <View style={[styles.detailInfoSep, { backgroundColor: colors.borderSubtle }]} />
+
+                        <View style={styles.detailInfoRow}>
+                          <View style={[styles.detailInfoIconCircle, { backgroundColor: '#F59E0B' + '14' }]}>
+                            <Icon name="calendar-clock-outline" size={16} color="#F59E0B" />
+                          </View>
+                          <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Date</Text>
+                          <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]}>
+                            {formatDateTimeParis(selectedMouvement.dateMouvement)}
+                          </Text>
+                        </View>
+
+                        {selectedMouvement.commentaire ? (
+                          <>
+                            <View style={[styles.detailInfoSep, { backgroundColor: colors.borderSubtle }]} />
+                            <View style={styles.detailInfoRow}>
+                              <View style={[styles.detailInfoIconCircle, { backgroundColor: '#10B981' + '14' }]}>
+                                <Icon name="comment-text-outline" size={16} color="#10B981" />
+                              </View>
+                              <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Note</Text>
+                              <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={3}>
+                                {selectedMouvement.commentaire}
+                              </Text>
+                            </View>
+                          </>
+                        ) : null}
+                      </View>
+
+                      {/* ===== CLOSE BUTTON ===== */}
+                      <TouchableOpacity
+                        style={[styles.detailCloseBtn, { borderColor: colors.borderSubtle }]}
+                        onPress={() => { Vibration.vibrate(10); setSelectedMouvement(null); }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.detailCloseBtnText, { color: colors.textSecondary }]}>Fermer</Text>
+                      </TouchableOpacity>
                     </>
                   );
                 })()}
@@ -1190,11 +1189,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   detailSheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 22,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingBottom: 32,
-    maxHeight: '80%',
+    maxHeight: '85%',
+    overflow: 'hidden',
   },
   detailHandle: {
     width: 40,
@@ -1202,94 +1201,173 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 12,
+    marginBottom: 8,
+  },
+  // Hero gradient header
+  detailHero: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     marginBottom: 16,
   },
-  detailHeader: {
+  detailHeroTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  detailHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  detailHeaderIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  detailTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  detailClose: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  detailTypeBadgeWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  detailTypeIconPill: {
+  detailHeroIconWrap: {
     width: 48,
     height: 48,
-    borderRadius: 15,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  detailTypeLabel: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  detailTypeQty: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginTop: 1,
-  },
-  detailDivider: {
-    height: 1,
-    marginVertical: 8,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 10,
-    gap: 8,
-  },
-  detailRowIconWrap: {
-    width: 24,
+  detailHeroClose: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
-    marginTop: 1,
+    justifyContent: 'center',
   },
-  detailLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    width: 80,
-  },
-  detailValue: {
+  detailHeroType: {
     fontSize: 14,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.8)',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  detailHeroQty: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#FFF',
+    letterSpacing: -1,
+    marginBottom: 12,
+  },
+  detailHeroArticle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  detailHeroArticleName: {
+    fontSize: 15,
     fontWeight: '600',
-    textAlign: 'right',
+    color: '#FFF',
     flex: 1,
   },
-  detailValueSub: {
+  detailHeroRefBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  detailHeroRefText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.9)',
+    letterSpacing: 0.5,
+  },
+  // Stock evolution card
+  detailStockCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 22,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 12,
+    gap: 12,
+  },
+  detailStockCol: {
+    alignItems: 'center',
+    minWidth: 60,
+  },
+  detailStockNum: {
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  detailStockCaption: {
     fontSize: 11,
-    textAlign: 'right',
+    fontWeight: '600',
     marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailStockArrow: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailStockDelta: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    marginLeft: 4,
+  },
+  detailStockDeltaText: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+  // Info card
+  detailInfoCard: {
+    marginHorizontal: 22,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 4,
+    marginBottom: 16,
+  },
+  detailInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 10,
+  },
+  detailInfoIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailInfoLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    width: 78,
+  },
+  detailInfoValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'right',
+  },
+  detailInfoSep: {
+    height: 1,
+    marginHorizontal: 16,
+  },
+  // Close button
+  detailCloseBtn: {
+    marginHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    alignItems: 'center',
+  },
+  detailCloseBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
 

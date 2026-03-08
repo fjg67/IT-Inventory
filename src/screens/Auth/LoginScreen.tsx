@@ -608,7 +608,7 @@ export const LoginScreen: React.FC = () => {
         userName={loggedUserName}
         onAnimationComplete={() => {
           setShowSuccessOverlay(false);
-          navigation.replace('Auth', { rememberMe: true });
+          navigation.replace('SiteSelection', { rememberMe: true });
         }}
       />
     </View>

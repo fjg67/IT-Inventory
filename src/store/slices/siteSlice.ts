@@ -7,12 +7,16 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Site } from '@/types';
 import { siteRepository } from '@/database';
+import { findChildSites } from '@/database/repositories/siteRepository';
 
 const SITE_STORAGE_KEY = '@it-inventory/site';
 
 interface SiteState {
   siteActif: Site | null;
   sitesDisponibles: Site[];
+  childSites: Site[];
+  /** null = "Tous" (agrégé parent), sinon ID du sous-site spécifique */
+  selectedSubSiteId: string | number | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -20,6 +24,8 @@ interface SiteState {
 const initialState: SiteState = {
   siteActif: null,
   sitesDisponibles: [],
+  childSites: [],
+  selectedSubSiteId: null,
   isLoading: true,
   error: null,
 };
@@ -59,6 +65,13 @@ export const selectSite = createAsyncThunk(
   },
 );
 
+export const loadChildSites = createAsyncThunk(
+  'site/loadChildSites',
+  async (parentSiteId: string | number) => {
+    return await findChildSites(parentSiteId);
+  },
+);
+
 // Slice
 const siteSlice = createSlice({
   name: 'site',
@@ -67,8 +80,13 @@ const siteSlice = createSlice({
     setSiteActif: (state, action: PayloadAction<Site>) => {
       state.siteActif = action.payload;
     },
+    setSelectedSubSite: (state, action: PayloadAction<string | number | null>) => {
+      state.selectedSubSiteId = action.payload;
+    },
     clearSite: (state) => {
       state.siteActif = null;
+      state.childSites = [];
+      state.selectedSubSiteId = null;
     },
     clearError: (state) => {
       state.error = null;
@@ -116,13 +134,27 @@ const siteSlice = createSlice({
       .addCase(selectSite.fulfilled, (state, action) => {
         state.isLoading = false;
         state.siteActif = action.payload;
+        state.childSites = [];
+        state.selectedSubSiteId = null;
       })
       .addCase(selectSite.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message ?? 'Erreur de sélection';
       });
+
+    // Load child sites
+    builder
+      .addCase(loadChildSites.fulfilled, (state, action) => {
+        state.childSites = action.payload;
+      });
   },
 });
 
-export const { setSiteActif, clearSite, clearError } = siteSlice.actions;
+export const { setSiteActif, setSelectedSubSite, clearSite, clearError } = siteSlice.actions;
+
+/** Sélecteur : ID effectif (sous-site sélectionné ou site parent) */
+export const selectEffectiveSiteId = (state: { site: SiteState }) => {
+  return state.site.selectedSubSiteId ?? state.site.siteActif?.id ?? null;
+};
+
 export default siteSlice.reducer;

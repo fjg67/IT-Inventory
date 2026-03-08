@@ -22,6 +22,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 
 import { useAppSelector } from '@/store';
+import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { stockRepository, mouvementRepository } from '@/database';
 import { KIT_DEFINITIONS, KitDefinition, KitArticle } from '@/constants/kitDefinitions';
@@ -63,6 +64,7 @@ interface ConfirmModalState {
 export const KitScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const siteActif = useAppSelector((state) => state.site.siteActif);
+  const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const technicien = useAppSelector((state) => state.auth.currentTechnicien);
   const { isTablet, contentMaxWidth } = useResponsive();
   const { colors, isDark } = useTheme();
@@ -121,7 +123,7 @@ export const KitScreen: React.FC = () => {
 
           const article = articles[0];
           // Vérifier le stock sur le site actif
-          const stockActuel = await stockRepository.getQuantite(article.id, siteActif.id);
+          const stockActuel = await stockRepository.getQuantite(article.id, effectiveSiteId!);
 
           resolvedArticles.push({
             kitArticle,
@@ -161,7 +163,7 @@ export const KitScreen: React.FC = () => {
       });
       setLoadingKit(false);
     },
-    [siteActif],
+    [effectiveSiteId],
   );
 
   // ===== Toggle sélection d'un article =====
@@ -215,7 +217,7 @@ export const KitScreen: React.FC = () => {
           await mouvementRepository.create(
             {
               articleId: resolved.articleId,
-              siteId: siteActif.id,
+              siteId: effectiveSiteId!,
               type: 'sortie',
               quantite: resolved.kitArticle.quantite,
               commentaire: `Sortie Kit : ${kitAvailability.kit.nom}`,

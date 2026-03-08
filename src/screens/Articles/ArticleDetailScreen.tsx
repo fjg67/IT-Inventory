@@ -26,6 +26,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useAppSelector } from '@/store';
+import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { articleRepository, mouvementRepository, stockRepository } from '@/database';
 import { formatTimeParis, formatRelativeDateParis } from '@/utils/dateUtils';
 import { exportArticleDetail } from '@/utils/csv';
@@ -75,6 +76,7 @@ export const ArticleDetailScreen: React.FC = () => {
   const route = useRoute<any>();
   const { articleId } = route.params;
   const siteActif = useAppSelector(state => state.site.siteActif);
+  const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const { isTablet, contentMaxWidth } = useResponsive();
   const { colors, isDark, theme } = useTheme();
   const { gradients } = theme;
@@ -85,12 +87,12 @@ export const ArticleDetailScreen: React.FC = () => {
   const [exporting, setExporting] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!articleId || !siteActif) return;
+    if (!articleId || !effectiveSiteId) return;
     setIsLoading(true);
     try {
       const [art, hist] = await Promise.all([
-        articleRepository.findById(articleId, siteActif.id),
-        mouvementRepository.findByArticle(articleId, siteActif.id, 10),
+        articleRepository.findById(articleId, effectiveSiteId),
+        mouvementRepository.findByArticle(articleId, effectiveSiteId, 10),
       ]);
       setArticle(art);
       setHistorique(hist);
@@ -99,7 +101,7 @@ export const ArticleDetailScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [articleId, siteActif]);
+  }, [articleId, effectiveSiteId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -179,7 +181,7 @@ export const ArticleDetailScreen: React.FC = () => {
         <LinearGradient colors={gradient} style={styles.header}>
           {/* Back + Edit */}
           <View style={styles.headerNav}>
-            <TouchableOpacity style={styles.navBtn} onPress={() => { Vibration.vibrate(10); navigation.goBack(); }}>
+            <TouchableOpacity style={styles.navBtn} onPress={() => { Vibration.vibrate(10); navigation.navigate('ArticlesList'); }}>
               <Icon name="arrow-left" size={22} color={colors.textOnPrimary} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.navBtn} onPress={handleEdit}>

@@ -21,6 +21,7 @@ import { FullScreenLoading, NoConnectionScreen } from '@/components';
 import {
   AuthScreen,
   LoginScreen,
+  SiteSelectionScreen,
   DashboardScreen,
   ArticlesListScreen,
   ArticleDetailScreen,
@@ -284,21 +285,23 @@ export const AppNavigator: React.FC = () => {
     <NavigationContainer theme={navigationTheme}>
       <RootStack.Navigator
         screenOptions={{ headerShown: false }}
-        initialRouteName={isAuthenticated ? undefined : redirectToTechnicianChoiceAfterLogout ? 'Auth' : onboardingSeen ? 'Login' : 'Onboarding'}
+        initialRouteName={isAuthenticated ? undefined : redirectToTechnicianChoiceAfterLogout ? 'SiteSelection' : onboardingSeen ? 'Login' : 'Onboarding'}
       >
         {isAuthenticated ? (
           <RootStack.Screen name="Main" component={MainNavigator} />
         ) : onboardingSeen ? (
-          // Onboarding déjà vu → page de connexion puis sélection technicien
+          // Onboarding déjà vu → connexion → site → technicien
           <>
             <RootStack.Screen name="Login" component={LoginScreen} />
+            <RootStack.Screen name="SiteSelection" component={SiteSelectionScreen} />
             <RootStack.Screen name="Auth" component={AuthScreen} />
           </>
         ) : (
-          // Premier lancement → onboarding puis connexion
+          // Premier lancement → onboarding → connexion → site → technicien
           <>
             <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
             <RootStack.Screen name="Login" component={LoginScreen} />
+            <RootStack.Screen name="SiteSelection" component={SiteSelectionScreen} />
             <RootStack.Screen name="Auth" component={AuthScreen} />
           </>
         )}

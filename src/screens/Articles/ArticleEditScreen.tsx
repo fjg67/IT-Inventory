@@ -37,6 +37,7 @@ import { syncService } from '@/api/sync.service';
 import { supabase, tables } from '@/api/supabase';
 import { showAlert } from '@/store/slices/uiSlice';
 import { clearScannedArticle } from '@/store/slices/scanSlice';
+import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { ArticleForm, Site } from '@/types';
 import debounce from 'lodash/debounce';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
@@ -63,6 +64,18 @@ export const ArticleEditScreen: React.FC = () => {
   const isEditing = !!articleId;
   const { lastBarcode } = useAppSelector(state => state.scan);
   const siteActif = useAppSelector(state => state.site.siteActif);
+  const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
+  const childSites = useAppSelector(state => state.site.childSites);
+  const selectedSubSiteId = useAppSelector(state => state.site.selectedSubSiteId);
+
+  // Quand il y a des sous-sites et qu'aucun n'est choisi, on doit cibler un sous-site précis pour l'écriture
+  const hasChildSites = childSites.length > 0;
+  const [localTargetSiteId, setLocalTargetSiteId] = useState<string | null>(null);
+  const writeSiteId = useMemo(() => {
+    if (!hasChildSites) return effectiveSiteId; // Pas de sous-sites
+    if (selectedSubSiteId) return selectedSubSiteId; // Sous-site déjà choisi dans le Dashboard
+    return localTargetSiteId ?? childSites[0]?.id ?? effectiveSiteId;
+  }, [hasChildSites, selectedSubSiteId, localTargetSiteId, childSites, effectiveSiteId]);
 
   // ===== Data =====
   const [sites, setSites] = useState<Site[]>([]);
@@ -339,6 +352,7 @@ export const ArticleEditScreen: React.FC = () => {
     }
 
     // En mode création, tous les champs sont obligatoires
+    const isSiege = siteActif?.nom === 'Siège Strasbourg';
     return (
       baseValid &&
       codeFamille != null &&
@@ -346,9 +360,9 @@ export const ArticleEditScreen: React.FC = () => {
       typeArticle != null &&
       sousType != null &&
       marque != null &&
-      emplacement != null
+      (!isSiege || emplacement != null)
     );
-  }, [reference, nom, stockMini, codeFamille, famille, typeArticle, sousType, marque, emplacement, isEditing]);
+  }, [reference, nom, stockMini, codeFamille, famille, typeArticle, sousType, marque, emplacement, isEditing, siteActif]);
 
   // Réinitialiser l'emplacement si les sites changent et qu'il n'est plus compatible
   useEffect(() => {
@@ -393,7 +407,7 @@ export const ArticleEditScreen: React.FC = () => {
       }
 
       if (isEditing && articleId) {
-        const article = await articleRepository.findById(articleId, siteActif?.id);
+        const article = await articleRepository.findById(articleId, writeSiteId);
         if (article) {
           setReference(article.reference);
           setNom(article.nom);
@@ -419,9 +433,18 @@ export const ArticleEditScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [articleId, isEditing, lastBarcode, loadRefOptions, navigation, siteActif]);
+  }, [articleId, isEditing, lastBarcode, loadRefOptions, navigation, writeSiteId]);
 
   useEffect(() => { loadInitialData(); }, [loadInitialData]);
+
+  // Recharger le stock quand le sous-site sélectionné change
+  useEffect(() => {
+    if (isEditing && articleId && writeSiteId) {
+      articleRepository.findById(articleId, writeSiteId).then(result => {
+        if (result) setStockActuel((result.quantiteActuelle ?? 0).toString());
+      }).catch(() => {});
+    }
+  }, [writeSiteId]);
 
   useEffect(() => {
     if (lastBarcode && !isEditing) {
@@ -552,19 +575,19 @@ export const ArticleEditScreen: React.FC = () => {
         await articleRepository.update(articleId, data);
         console.log('[ArticleEdit] Article mis à jour sur Supabase (id:', articleId, ')');
 
-        // Mettre à jour le stock actuel sur le site actif (upsert pour créer si absent)
-        if (siteActif) {
+        // Mettre à jour le stock actuel sur le site cible
+        if (writeSiteId) {
           const newQty = parseInt(stockActuel, 10) || 0;
-          await stockRepository.createOrUpdate(articleId, siteActif.id, newQty);
-          console.log('[ArticleEdit] Stock mis à jour sur Supabase:', newQty, 'site:', siteActif.id);
+          await stockRepository.createOrUpdate(articleId, writeSiteId, newQty);
+          console.log('[ArticleEdit] Stock mis à jour sur Supabase:', newQty, 'site:', writeSiteId);
         }
       } else {
         const newArticleId = await articleRepository.create(data);
 
-        // Créer le stock initial sur chaque site sélectionné
+        // Créer le stock initial sur le site effectif (sous-site sélectionné ou site parent)
         const qtyInitiale = parseInt(stockActuel, 10) || 0;
-        for (const siteId of selectedSiteIds) {
-          await stockRepository.createOrUpdate(newArticleId, siteId, qtyInitiale);
+        if (writeSiteId) {
+          await stockRepository.createOrUpdate(newArticleId, writeSiteId, qtyInitiale);
         }
 
         // Sync directe vers Supabase (insert)
@@ -592,9 +615,9 @@ export const ArticleEditScreen: React.FC = () => {
 
       setTimeout(() => {
         setShowSuccess(false);
-        if (isEditing && articleId) {
-          // Naviguer vers la page de détail de l'article mis à jour
-          navigation.replace('ArticleDetail', { articleId });
+        if (isEditing) {
+          // Retourner à la liste des articles après mise à jour
+          navigation.navigate('ArticlesList');
         } else {
           navigation.goBack();
         }
@@ -627,7 +650,7 @@ export const ArticleEditScreen: React.FC = () => {
 
       {/* ===== IMMERSIVE HEADER ===== */}
       <LinearGradient
-        colors={gradients.primaryHorizontal}
+        colors={isEditing ? ['#6366F1', '#8B5CF6', '#A78BFA'] : ['#3B82F6', '#6366F1', '#8B5CF6']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -638,6 +661,7 @@ export const ArticleEditScreen: React.FC = () => {
         <View style={styles.headerDeco3} />
         <View style={styles.headerDeco4} />
         <View style={styles.headerDeco5} />
+        <View style={styles.headerDeco6} />
 
         <View style={styles.headerRow}>
           <TouchableOpacity
@@ -646,7 +670,14 @@ export const ArticleEditScreen: React.FC = () => {
           >
             <Icon name="arrow-left" size={20} color="#FFF" />
           </TouchableOpacity>
+
           <View style={styles.headerCenter}>
+            <View style={styles.headerBadge}>
+              <View style={styles.headerBadgeDot} />
+              <Text style={styles.headerBadgeText}>
+                {isEditing ? 'ÉDITION' : 'CRÉATION'}
+              </Text>
+            </View>
             <Text style={styles.headerTitle}>
               {isEditing ? 'Modifier l\'article' : 'Nouvel Article'}
             </Text>
@@ -654,8 +685,14 @@ export const ArticleEditScreen: React.FC = () => {
               {isEditing ? 'Mise à jour des informations' : 'Ajouter au stock IT'}
             </Text>
           </View>
+
           <View style={styles.headerIconWrap}>
-            <Icon name={isEditing ? 'pencil-outline' : 'plus-circle-outline'} size={22} color="rgba(255,255,255,0.7)" />
+            <LinearGradient
+              colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.05)']}
+              style={styles.headerIconGradient}
+            >
+              <Icon name={isEditing ? 'pencil-outline' : 'plus-circle-outline'} size={24} color="#FFF" />
+            </LinearGradient>
           </View>
         </View>
       </LinearGradient>
@@ -930,49 +967,34 @@ export const ArticleEditScreen: React.FC = () => {
             </View>
 
             {/* Site */}
-            {!isEditing && sites.length > 1 && (
+            {!isEditing && siteActif && (
               <View style={[styles.fieldGroup, { marginTop: 16 }]}>
                 <View style={styles.labelRow}>
                   <Text style={[styles.label, { color: colors.textPrimary }]}>Site</Text>
-                  <Text style={[styles.required, { color: colors.danger }]}>*</Text>
                 </View>
-                {sites.map((site) => {
-                  const checked = selectedSiteIds.includes(site.id);
-                  return (
-                    <TouchableOpacity
-                      key={site.id}
-                      style={[styles.siteItem, { backgroundColor: colors.surface, borderColor: colors.borderMedium }, checked && styles.siteItemChecked]}
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        Vibration.vibrate(10);
-                        setSelectedSiteIds([site.id]);
-                      }}
-                    >
-                      <View style={[styles.radioOuter, checked && styles.radioOuterSelected]}>
-                        {checked && (
-                          <Animated.View entering={ZoomIn.springify()} style={styles.radioInner} />
-                        )}
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.siteText, { color: colors.textPrimary }, checked && styles.siteTextChecked]}>
-                          {site.nom}
-                        </Text>
-                        {site.adresse ? (
-                          <Text style={[styles.siteAddr, { color: colors.textMuted }]}>{site.adresse}</Text>
-                        ) : null}
-                      </View>
-                      {checked && (
-                        <Animated.View entering={ZoomIn.duration(200)}>
-                          <Icon name="check-circle" size={22} color="#3B82F6" />
-                        </Animated.View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+                <View
+                  style={[styles.siteItem, { backgroundColor: colors.surface, borderColor: '#3B82F6' + '40' }, styles.siteItemChecked]}
+                >
+                  <View style={[styles.radioOuter, styles.radioOuterSelected]}>
+                    <Animated.View entering={ZoomIn.springify()} style={styles.radioInner} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.siteText, { color: colors.textPrimary }, styles.siteTextChecked]}>
+                      {siteActif.nom}
+                    </Text>
+                    {siteActif.adresse ? (
+                      <Text style={[styles.siteAddr, { color: colors.textMuted }]}>{siteActif.adresse}</Text>
+                    ) : null}
+                  </View>
+                  <Animated.View entering={ZoomIn.duration(200)}>
+                    <Icon name="check-circle" size={22} color="#3B82F6" />
+                  </Animated.View>
+                </View>
               </View>
             )}
 
-            {/* Emplacement */}
+            {/* Emplacement — only for Siège Strasbourg */}
+            {siteActif?.nom === 'Siège Strasbourg' && (
             <View style={[styles.fieldGroup, { marginTop: 16 }]}>
               <View style={styles.labelRow}>
                 <Text style={[styles.label, { color: colors.textPrimary }]}>Emplacement</Text>
@@ -1011,8 +1033,48 @@ export const ArticleEditScreen: React.FC = () => {
                 <Icon name="chevron-down" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
+            )}
             </View>
           </Animated.View>
+
+          {/* ===== SECTION: SOUS-SITE (si "Tous" sélectionné) ===== */}
+          {hasChildSites && !selectedSubSiteId && (
+            <Animated.View entering={FadeInUp.delay(230).springify()} style={styles.sectionWrap}>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.sectionIconWrap, { backgroundColor: 'rgba(79,70,229,0.1)' }]}>
+                  <Icon name="warehouse" size={18} color={colors.primary} />
+                </View>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Stock concerné</Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, paddingHorizontal: 4 }}>
+                {childSites.map(site => {
+                  const selected = String(site.id) === String(localTargetSiteId ?? childSites[0]?.id);
+                  return (
+                    <TouchableOpacity
+                      key={String(site.id)}
+                      onPress={() => { setLocalTargetSiteId(String(site.id)); Vibration.vibrate(10); }}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 12,
+                        paddingHorizontal: 10,
+                        borderRadius: 12,
+                        borderWidth: 1.5,
+                        borderColor: selected ? colors.primary : colors.borderSubtle,
+                        backgroundColor: selected ? colors.primaryGlow : colors.surface,
+                        alignItems: 'center',
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Icon name="warehouse" size={18} color={selected ? colors.primary : colors.textMuted} />
+                      <Text style={{ color: selected ? colors.primary : colors.textSecondary, fontWeight: selected ? '700' : '500', fontSize: 12, marginTop: 4, textAlign: 'center' }} numberOfLines={1}>
+                        {site.nom}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </Animated.View>
+          )}
 
           {/* ===== SECTION: STOCK ===== */}
           <Animated.View entering={FadeInUp.delay(250).springify()} style={styles.sectionWrap}>
@@ -2227,8 +2289,8 @@ const styles = StyleSheet.create({
 
   // ===== PREMIUM HEADER =====
   header: {
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 44) + 10 : 54,
-    paddingBottom: 24,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 44) + 12 : 54,
+    paddingBottom: 28,
     paddingHorizontal: 20,
     overflow: 'hidden',
   },
@@ -2238,90 +2300,129 @@ const styles = StyleSheet.create({
   },
   headerDeco1: {
     position: 'absolute',
-    top: -40,
-    right: -30,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    top: -50,
+    right: -40,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   headerDeco2: {
     position: 'absolute',
-    bottom: -50,
-    left: -40,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    bottom: -60,
+    left: -50,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   headerDeco3: {
     position: 'absolute',
-    top: 20,
-    left: '40%' as any,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    top: 30,
+    left: '35%' as any,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   headerDeco4: {
     position: 'absolute',
     top: -10,
-    right: 60,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    right: 80,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.10)',
   },
   headerDeco5: {
     position: 'absolute',
-    bottom: 10,
-    right: 40,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    bottom: 15,
+    right: 50,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  headerDeco6: {
+    position: 'absolute',
+    top: 50,
+    left: 30,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
   backBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   headerCenter: {
     flex: 1,
     marginLeft: 16,
   },
+  headerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginBottom: 6,
+    gap: 5,
+  },
+  headerBadgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4ADE80',
+  },
+  headerBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.9)',
+    letterSpacing: 1,
+  },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   headerSubtitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: 'rgba(191,219,254,0.8)',
-    marginTop: 3,
-    letterSpacing: 0.3,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 4,
+    letterSpacing: 0.2,
   },
   headerIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    marginLeft: 8,
+  },
+  headerIconGradient: {
+    width: 48,
+    height: 48,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   // ===== PREMIUM SECTIONS =====

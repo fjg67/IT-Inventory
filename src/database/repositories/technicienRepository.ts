@@ -11,6 +11,7 @@ interface TechnicienRow {
   technicianId: string | null;
   name: string;
   password?: string;
+  siteId?: string | null;
 }
 
 function mapRowToTechnicien(row: TechnicienRow): Technicien {
@@ -23,8 +24,9 @@ function mapRowToTechnicien(row: TechnicienRow): Technicien {
     nom: nom || prenom, // If single word, use it as nom
     prenom: nom ? prenom : '', // Only set prenom if we have both parts
     matricule: row.technicianId ?? undefined,
+    sitePrincipalId: row.siteId ?? undefined,
     actif: true,
-    dateCreation: new Date(),
+    dateCreation: new Date().toISOString(),
   };
 }
 
@@ -33,7 +35,19 @@ export const technicienRepository = {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from(tables.techniciens)
-      .select('id, technicianId, name')
+      .select('id, technicianId, name, siteId')
+      .neq('technicianId', 'administrateur')
+      .order('name');
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(mapRowToTechnicien);
+  },
+
+  async findBySite(siteId: string | number): Promise<Technicien[]> {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from(tables.techniciens)
+      .select('id, technicianId, name, siteId')
+      .eq('siteId', siteId)
       .neq('technicianId', 'administrateur')
       .order('name');
     if (error) throw new Error(error.message);
@@ -44,7 +58,7 @@ export const technicienRepository = {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from(tables.techniciens)
-      .select('id, technicianId, name')
+      .select('id, technicianId, name, siteId')
       .eq('id', id)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -55,21 +69,25 @@ export const technicienRepository = {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from(tables.techniciens)
-      .select('id, technicianId, name')
+      .select('id, technicianId, name, siteId')
       .eq('technicianId', matricule)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return data ? mapRowToTechnicien(data) : null;
   },
 
-  async create(data: Omit<Technicien, 'id' | 'dateCreation' | 'actif'>): Promise<number> {
+  async create(data: Omit<Technicien, 'id' | 'dateCreation' | 'actif'>, siteId?: string | number): Promise<number> {
     const supabase = getSupabaseClient();
+    const insertData: Record<string, unknown> = {
+      name: data.nom,
+      technicianId: data.matricule ?? null,
+    };
+    if (siteId != null) {
+      insertData.siteId = String(siteId);
+    }
     const { data: inserted, error } = await supabase
       .from(tables.techniciens)
-      .insert({
-        name: data.nom,
-        technicianId: data.matricule ?? null,
-      })
+      .insert(insertData)
       .select('id')
       .single();
     if (error) throw new Error(error.message);

@@ -6,6 +6,7 @@
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { Article, ArticleForm, ArticleFilters, SyncStatus, PaginatedResult } from '@/types';
 import { APP_CONFIG } from '@/constants';
+import { getEffectiveSiteIds } from './siteRepository';
 
 /**
  * Supabase Article table columns:
@@ -61,14 +62,16 @@ function mapRowToArticle(row: ArticleRow): Article {
 }
 
 async function getStockMapForSite(siteId: string | number): Promise<Map<string, number>> {
+  const siteIds = await getEffectiveSiteIds(siteId);
   const supabase = getSupabaseClient();
   const { data } = await supabase
     .from(tables.stocksSites)
     .select('articleId, quantity')
-    .eq('siteId', siteId);
+    .in('siteId', siteIds);
   const map = new Map<string, number>();
   for (const row of data ?? []) {
-    map.set(row.articleId, row.quantity ?? 0);
+    // Aggregate quantities across sub-sites
+    map.set(row.articleId, (map.get(row.articleId) ?? 0) + (row.quantity ?? 0));
   }
   return map;
 }
@@ -120,13 +123,14 @@ export const articleRepository = {
       .select('*')
       .eq('isArchived', false);
 
+    const siteIds = await getEffectiveSiteIds(siteId);
     const { data: stockRows } = await supabase
       .from(tables.stocksSites)
       .select('articleId, quantity')
-      .eq('siteId', siteId);
+      .in('siteId', siteIds);
     const stockMap = new Map<string, number>();
     for (const row of stockRows ?? []) {
-      stockMap.set(row.articleId, row.quantity ?? 0);
+      stockMap.set(row.articleId, (stockMap.get(row.articleId) ?? 0) + (row.quantity ?? 0));
     }
     const articleIds = Array.from(stockMap.keys());
     if (articleIds.length === 0) {
@@ -181,13 +185,13 @@ export const articleRepository = {
     if (!data) return null;
     let quantite: number | undefined;
     if (siteId != null) {
-      const { data: stock } = await supabase
+      const siteIds = await getEffectiveSiteIds(siteId);
+      const { data: stockRows } = await supabase
         .from(tables.stocksSites)
         .select('quantity')
         .eq('articleId', id)
-        .eq('siteId', siteId)
-        .maybeSingle();
-      quantite = stock?.quantity ?? 0;
+        .in('siteId', siteIds);
+      quantite = (stockRows ?? []).reduce((sum, r) => sum + (r.quantity ?? 0), 0);
     }
     return mapRowToArticle({ ...data, quantite_actuelle: quantite } as ArticleRow);
   },
@@ -205,13 +209,13 @@ export const articleRepository = {
     const data = rows[0];
     let quantite: number | undefined;
     if (siteId != null) {
-      const { data: stock } = await supabase
+      const siteIds = await getEffectiveSiteIds(siteId);
+      const { data: stockRows } = await supabase
         .from(tables.stocksSites)
         .select('quantity')
         .eq('articleId', (data as ArticleRow).id)
-        .eq('siteId', siteId)
-        .maybeSingle();
-      quantite = stock?.quantity ?? 0;
+        .in('siteId', siteIds);
+      quantite = (stockRows ?? []).reduce((sum, r) => sum + (r.quantity ?? 0), 0);
     }
     return mapRowToArticle({ ...data, quantite_actuelle: quantite } as ArticleRow);
   },

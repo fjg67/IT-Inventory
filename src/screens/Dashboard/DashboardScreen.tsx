@@ -17,10 +17,11 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAppSelector, useAppDispatch } from '@/store';
-import { selectSite, loadSites } from '@/store/slices/siteSlice';
+import { selectSite, loadSites, loadChildSites, setSelectedSubSite, selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { articleRepository, mouvementRepository } from '@/database';
 import { DashboardStats, MouvementType } from '@/types';
 import {
@@ -57,6 +58,11 @@ export const DashboardScreen: React.FC = () => {
   const sitesDisponibles = useAppSelector((state) => state.site.sitesDisponibles);
   const [showSiteModal, setShowSiteModal] = useState(false);
 
+  // Sous-sites depuis Redux
+  const childSites = useAppSelector((state) => state.site.childSites);
+  const selectedSubSiteId = useAppSelector((state) => state.site.selectedSubSiteId);
+  const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
+
   // State local
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -71,17 +77,17 @@ export const DashboardScreen: React.FC = () => {
 
   // Chargement des statistiques et des données pour les sparklines
   const loadStats = useCallback(async () => {
-    if (!siteActif) return;
+    if (!effectiveSiteId) return;
 
     setLoading(true);
     try {
       const [articles, alertes, mouvementsJour, derniersMouvements, countsPerDay] =
         await Promise.all([
-          articleRepository.findAll(siteActif.id),
-          articleRepository.countLowStock(siteActif.id),
-          mouvementRepository.countToday(siteActif.id),
-          mouvementRepository.findRecent(siteActif.id, 5),
-          mouvementRepository.getCountPerDayLast7(siteActif.id),
+          articleRepository.findAll(effectiveSiteId),
+          articleRepository.countLowStock(effectiveSiteId),
+          mouvementRepository.countToday(effectiveSiteId),
+          mouvementRepository.findRecent(effectiveSiteId, 5),
+          mouvementRepository.getCountPerDayLast7(effectiveSiteId),
         ]);
 
       setMouvementsParJour(countsPerDay.length >= 2 ? countsPerDay : [0, 0]);
@@ -98,13 +104,20 @@ export const DashboardScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [siteActif]);
+  }, [effectiveSiteId]);
 
   useFocusEffect(
     useCallback(() => {
       loadStats();
     }, [loadStats]),
   );
+
+  // Charger les sous-sites quand le site actif change
+  useEffect(() => {
+    if (siteActif) {
+      dispatch(loadChildSites(siteActif.id));
+    }
+  }, [siteActif, dispatch]);
 
   useEffect(() => {
     dispatch(loadSites());
@@ -187,6 +200,71 @@ export const DashboardScreen: React.FC = () => {
 
         {/* ===== BOUTON SCAN XXL ===== */}
         <ScanButtonXXL onPress={handleScan} />
+
+        {/* ===== TOGGLE SOUS-SITES ===== */}
+        {childSites.length > 1 && (
+          <View style={styles.subSiteToggleContainer}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => { Vibration.vibrate(10); dispatch(setSelectedSubSite(null)); }}
+              style={[
+                styles.subSiteTab,
+                { borderColor: isDark ? colors.borderSubtle : '#E2E8F0' },
+                selectedSubSiteId === null && {
+                  backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
+                  borderColor: colors.primary,
+                },
+              ]}
+            >
+              <Icon
+                name="select-all"
+                size={16}
+                color={selectedSubSiteId === null ? colors.primary : colors.textMuted}
+              />
+              <Text style={[
+                styles.subSiteTabText,
+                { color: selectedSubSiteId === null ? colors.primary : colors.textSecondary },
+                selectedSubSiteId === null && styles.subSiteTabTextActive,
+              ]}>
+                Tous
+              </Text>
+            </TouchableOpacity>
+            {childSites.map((child) => {
+              const isSelected = selectedSubSiteId === child.id;
+              const icon = child.nom.includes('5') ? 'numeric-5-circle-outline'
+                : child.nom.includes('8') ? 'numeric-8-circle-outline'
+                : 'warehouse';
+              return (
+                <TouchableOpacity
+                  key={String(child.id)}
+                  activeOpacity={0.7}
+                  onPress={() => { Vibration.vibrate(10); dispatch(setSelectedSubSite(child.id)); }}
+                  style={[
+                    styles.subSiteTab,
+                    { borderColor: isDark ? colors.borderSubtle : '#E2E8F0' },
+                    isSelected && {
+                      backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
+                      borderColor: colors.primary,
+                    },
+                  ]}
+                >
+                  <Icon
+                    name={icon}
+                    size={16}
+                    color={isSelected ? colors.primary : colors.textMuted}
+                  />
+                  <Text style={[
+                    styles.subSiteTabText,
+                    { color: isSelected ? colors.primary : colors.textSecondary },
+                    isSelected && styles.subSiteTabTextActive,
+                  ]}>
+                    {child.nom}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
         {/* ===== CARDS STATISTIQUES ===== */}
         <View>
@@ -352,59 +430,106 @@ export const DashboardScreen: React.FC = () => {
       {/* ===== MODAL SÉLECTION SITE ===== */}
       <Modal visible={showSiteModal} transparent animationType="slide" onRequestClose={() => setShowSiteModal(false)}>
         <TouchableWithoutFeedback onPress={() => setShowSiteModal(false)}>
-          <View style={[styles.siteModalOverlay, { backgroundColor: colors.modalOverlay }]}>
+          <View style={[styles.siteModalOverlay, { backgroundColor: colors.modalOverlay }, isTablet && { justifyContent: 'center' as const, alignItems: 'center' as const }]}>
             <TouchableWithoutFeedback>
               <View style={[styles.siteModalSheet, { backgroundColor: colors.surface }, isTablet && styles.siteModalSheetTablet]}>
-                <View style={[styles.siteModalHandle, { backgroundColor: colors.borderMedium }]} />
-                <View style={styles.siteModalTitleRow}>
-                  <LinearGradient colors={['#4338CA', '#6366F1']} style={styles.siteModalIconWrap}>
-                    <Icon name="map-marker-radius-outline" size={18} color="#FFF" />
-                  </LinearGradient>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.siteModalTitle, { color: colors.textPrimary }]}>Changer de site</Text>
-                    <Text style={[styles.siteModalSubtitle, { color: colors.textMuted }]}>
-                      Sélectionnez le site de stockage
-                    </Text>
+                {/* Handle */}
+                <View style={[styles.siteModalHandle, { backgroundColor: colors.textMuted + '40' }]} />
+
+                {/* Hero header */}
+                <LinearGradient
+                  colors={['#6366F1', '#8B5CF6']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.siteModalHero}
+                >
+                  <View style={styles.siteModalHeroIcon}>
+                    <Icon name="map-marker-radius-outline" size={28} color="#FFF" />
                   </View>
+                  <Text style={styles.siteModalHeroTitle}>Changer de site</Text>
+                  <Text style={styles.siteModalHeroSub}>Sélectionnez le site de stockage</Text>
+                </LinearGradient>
+
+                {/* Close button floating */}
+                <TouchableOpacity
+                  style={styles.siteModalCloseFloat}
+                  onPress={() => {
+                    Vibration.vibrate(10);
+                    setShowSiteModal(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="close" size={18} color="#FFF" />
+                </TouchableOpacity>
+
+                {/* Site cards */}
+                <View style={styles.siteModalList}>
+                  {sitesDisponibles.map((site, index) => {
+                    const isActive = siteActif?.id === site.id;
+                    const siteIcons: Record<string, { icon: string; colors: [string, string] }> = {
+                      'Stock 5ième': { icon: 'office-building', colors: ['#3B82F6', '#2563EB'] },
+                      'Stock 8ième': { icon: 'office-building-marker', colors: ['#8B5CF6', '#6366F1'] },
+                      'Stock Epinal': { icon: 'warehouse', colors: ['#10B981', '#059669'] },
+                    };
+                    const cfg = siteIcons[site.nom] || { icon: 'map-marker', colors: ['#6B7280', '#4B5563'] as [string, string] };
+
+                    return (
+                      <Animated.View
+                        key={site.id}
+                        entering={FadeInUp.delay(index * 100).duration(350)}
+                      >
+                        <TouchableOpacity
+                          style={[
+                            styles.siteCard,
+                            { backgroundColor: colors.surfaceInput, borderColor: 'transparent' },
+                            isActive && { backgroundColor: '#6366F1' + '12', borderColor: '#6366F1' },
+                          ]}
+                          activeOpacity={0.7}
+                          onPress={() => handleSelectSite(site.id as number)}
+                        >
+                          <LinearGradient
+                            colors={isActive ? ['#6366F1', '#8B5CF6'] : cfg.colors}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.siteIcon}
+                          >
+                            <Icon name={cfg.icon} size={22} color="#FFF" />
+                          </LinearGradient>
+
+                          <View style={styles.siteInfo}>
+                            <Text style={[styles.siteName, { color: isActive ? '#6366F1' : colors.textPrimary }]}>
+                              {site.nom}
+                            </Text>
+                            <Text style={[styles.siteStatus, { color: isActive ? '#6366F1' : colors.textMuted }]}>
+                              {isActive ? 'Site actif' : 'Appuyez pour sélectionner'}
+                            </Text>
+                          </View>
+
+                          {isActive ? (
+                            <LinearGradient
+                              colors={['#6366F1', '#8B5CF6']}
+                              style={styles.siteCheckBadge}
+                            >
+                              <Icon name="check" size={16} color="#FFF" />
+                            </LinearGradient>
+                          ) : (
+                            <View style={[styles.siteRadio, { borderColor: colors.textMuted + '50' }]} />
+                          )}
+                        </TouchableOpacity>
+                      </Animated.View>
+                    );
+                  })}
                 </View>
 
-                {sitesDisponibles.map((site) => {
-                  const isActive = siteActif?.id === site.id;
-                  const siteIcons: Record<string, { icon: string; colors: string[] }> = {
-                    'Stock 5ième': { icon: 'office-building', colors: ['#3B82F6', '#2563EB'] },
-                    'Stock 8ième': { icon: 'office-building-marker', colors: ['#8B5CF6', '#6366F1'] },
-                    'Stock Epinal': { icon: 'warehouse', colors: ['#10B981', '#059669'] },
-                  };
-                  const cfg = siteIcons[site.nom] || { icon: 'map-marker', colors: ['#6B7280', '#4B5563'] };
-
-                  return (
-                    <TouchableOpacity
-                      key={site.id}
-                      style={[
-                        styles.siteCard,
-                        { backgroundColor: colors.surfaceGlass, borderColor: colors.borderSubtle },
-                        isActive && { borderColor: colors.primaryGlow, backgroundColor: colors.primaryGlow },
-                      ]}
-                      activeOpacity={0.7}
-                      onPress={() => handleSelectSite(site.id as number)}
-                    >
-                      <LinearGradient
-                        colors={cfg.colors}
-                        style={styles.siteIcon}
-                      >
-                        <Icon name={cfg.icon} size={22} color="#FFF" />
-                      </LinearGradient>
-                      <View style={styles.siteInfo}>
-                        <Text style={[styles.siteName, { color: colors.textPrimary }, isActive && { color: colors.primary }]}>
-                          {site.nom}
-                        </Text>
-                      </View>
-                      {isActive && (
-                        <Icon name="check-circle" size={22} color={colors.primary} />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+                {/* Footer info */}
+                <View style={[styles.siteModalFooter, { backgroundColor: colors.surfaceInput }]}>
+                  <View style={styles.siteFooterIconWrap}>
+                    <Icon name="information-outline" size={14} color="#6366F1" />
+                  </View>
+                  <Text style={[styles.siteModalFooterText, { color: colors.textMuted }]}>
+                    Le site sélectionné détermine le stock affiché
+                  </Text>
+                </View>
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -457,22 +582,53 @@ const styles = StyleSheet.create({
     height: 24,
   },
 
+  // ===== SUB-SITE TOGGLE =====
+  subSiteToggleContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: premiumSpacing.md,
+    marginTop: 4,
+  },
+  subSiteTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  subSiteTabText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  subSiteTabTextActive: {
+    fontWeight: '700',
+  },
+
   // ===== SITE MODAL =====
   siteModalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
   },
   siteModalSheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingBottom: 36,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 30,
+    elevation: 24,
+    overflow: 'hidden',
   },
   siteModalSheetTablet: {
     maxWidth: 540,
     alignSelf: 'center',
     width: '90%',
-    borderRadius: 24,
+    borderRadius: 28,
     marginBottom: 40,
   },
   siteModalHandle: {
@@ -481,56 +637,130 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 12,
-    marginBottom: 18,
+    marginBottom: 0,
+    zIndex: 10,
   },
-  siteModalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  siteModalSubtitle: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  siteModalTitleRow: {
-    flexDirection: 'row',
+  siteModalHero: {
+    paddingTop: 24,
+    paddingBottom: 28,
+    paddingHorizontal: 24,
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
   },
-  siteModalIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+  siteModalHeroIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 14,
+  },
+  siteModalHeroTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: -0.3,
+    marginBottom: 4,
+  },
+  siteModalHeroSub: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.1,
+  },
+  siteModalCloseFloat: {
+    position: 'absolute',
+    top: 52,
+    right: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  siteModalList: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    gap: 12,
   },
   siteCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 14,
-    marginBottom: 10,
+    borderRadius: 20,
     borderWidth: 1.5,
     gap: 14,
   },
   siteIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   siteInfo: {
     flex: 1,
   },
   siteName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    marginBottom: 2,
   },
-  siteAddr: {
+  siteStatus: {
     fontSize: 12,
-    marginTop: 2,
+    fontWeight: '500',
+    letterSpacing: 0.1,
+  },
+  siteCheckBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  siteRadio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    marginRight: 3,
+  },
+  siteModalFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    gap: 8,
+  },
+  siteFooterIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    backgroundColor: '#6366F1' + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  siteModalFooterText: {
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0.1,
+    flex: 1,
   },
 });
 

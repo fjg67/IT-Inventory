@@ -27,9 +27,51 @@ function mapRowToSite(row: SiteRow): Site {
     nom: row.name,
     adresse: row.address ?? undefined,
     actif: Boolean(row.isActive),
-    dateCreation: new Date(row.createdAt),
+    dateCreation: row.createdAt,
     syncStatus: SyncStatus.SYNCED,
   };
+}
+
+// ---- Cache des sous-sites (parentSiteId) ----
+let _childSiteCache: Record<string, { ids: string[]; ts: number }> = {};
+const CHILD_CACHE_TTL = 5 * 60 * 1000; // 5 min
+
+/**
+ * Renvoie les IDs des sous-sites rattachés à un site parent.
+ * Si le site n'a pas de sous-sites, renvoie [siteId] lui-même.
+ * Résultat mis en cache 5 min.
+ */
+export async function getEffectiveSiteIds(siteId: string | number): Promise<string[]> {
+  const key = String(siteId);
+  const cached = _childSiteCache[key];
+  if (cached && Date.now() - cached.ts < CHILD_CACHE_TTL) {
+    return cached.ids;
+  }
+  const supabase = getSupabaseClient();
+  const { data } = await supabase
+    .from(tables.sites)
+    .select('id')
+    .eq('parentSiteId', key);
+  const ids = data && data.length > 0 ? data.map((s: any) => s.id) : [key];
+  _childSiteCache[key] = { ids, ts: Date.now() };
+  return ids;
+}
+
+/** Invalider le cache (ex. après changement de site) */
+export function clearEffectiveSiteIdsCache() {
+  _childSiteCache = {};
+}
+
+/** Renvoie les sous-sites (objets Site complets) d'un site parent */
+export async function findChildSites(parentSiteId: string | number): Promise<Site[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from(tables.sites)
+    .select('*')
+    .eq('parentSiteId', String(parentSiteId))
+    .order('name');
+  if (error) return [];
+  return (data ?? []).map(mapRowToSite);
 }
 
 export const siteRepository = {
@@ -39,6 +81,7 @@ export const siteRepository = {
       .from(tables.sites)
       .select('*')
       .eq('isActive', true)
+      .is('parentSiteId', null)
       .order('name');
     if (error) throw new Error(error.message);
     return (data ?? []).map(mapRowToSite);

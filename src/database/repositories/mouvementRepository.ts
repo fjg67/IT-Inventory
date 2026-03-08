@@ -14,6 +14,7 @@ import {
 } from '@/types';
 import { APP_CONFIG, ERROR_MESSAGES } from '@/constants';
 import { stockRepository } from './stockRepository';
+import { getEffectiveSiteIds } from './siteRepository';
 
 /** Generate a simple UUID v4 (text) for StockMovement rows */
 function generateId(): string {
@@ -74,15 +75,15 @@ function mapAppTypeToDb(appType: string): string {
   return APP_TYPE_TO_DB[appType] ?? appType;
 }
 
-function mapRowToMouvement(row: MouvementRow): Mouvement {
+function mapRowToMouvement(row: MouvementRow, stockAvant = 0, stockApres = 0): Mouvement {
   return {
     id: row.id as any,
     articleId: row.articleId as any,
     siteId: row.fromSiteId as any,
     type: mapDbTypeToApp(row.type),
     quantite: row.quantity,
-    stockAvant: 0,
-    stockApres: 0,
+    stockAvant,
+    stockApres,
     technicienId: row.userId as any,
     dateMouvement: new Date(row.createdAt),
     commentaire: row.reason ?? undefined,
@@ -153,9 +154,92 @@ async function enrichWithRelations(rows: MouvementRow[]): Promise<MouvementRow[]
   }));
 }
 
+/**
+ * Compute stockAvant / stockApres for a list of enriched rows.
+ * Fetches current stock per article+site, then walks backwards (newest→oldest)
+ * to calculate the stock level at each movement.
+ */
+async function computeStockLevels(rows: MouvementRow[]): Promise<Mouvement[]> {
+  if (rows.length === 0) return [];
+  const supabase = getSupabaseClient();
+
+  // Collect unique article+site pairs
+  const pairs = new Map<string, { articleId: string; siteId: string }>();
+  for (const r of rows) {
+    const key = `${r.articleId}|${r.fromSiteId}`;
+    if (!pairs.has(key)) pairs.set(key, { articleId: r.articleId, siteId: r.fromSiteId });
+  }
+
+  // Fetch current stock for each pair
+  const stockMap = new Map<string, number>();
+  const pairArr = [...pairs.values()];
+  if (pairArr.length > 0) {
+    const articleIds = [...new Set(pairArr.map(p => p.articleId))];
+    const siteIds = [...new Set(pairArr.map(p => p.siteId))];
+    const { data } = await supabase
+      .from(tables.stocksSites)
+      .select('articleId, siteId, quantity')
+      .in('articleId', articleIds)
+      .in('siteId', siteIds);
+    for (const s of (data ?? []) as any[]) {
+      stockMap.set(`${s.articleId}|${s.siteId}`, s.quantity ?? 0);
+    }
+  }
+
+  // Group rows by article+site (rows are already sorted newest→oldest)
+  const groups = new Map<string, MouvementRow[]>();
+  for (const r of rows) {
+    const key = `${r.articleId}|${r.fromSiteId}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(r);
+  }
+
+  // For movements not in our page window, we need to account for newer movements
+  // that happened after our newest row but are not in the list.
+  // We fetch the sum of quantities for each article+site after the newest movement in our list.
+  // Actually, simpler: current stock IS the stock after the very latest movement ever.
+  // We walk newest→oldest: stockApres of newest = currentStock, stockAvant = stockApres - quantity, etc.
+  // But our page may not start at the very latest movement. We need to subtract movements newer than our page.
+
+  // For each group, fetch sum of quantities of movements newer than the newest in our list
+  const stockAfterMap = new Map<string, number>();
+  for (const [key, groupRows] of groups) {
+    const { articleId, siteId } = pairs.get(key)!;
+    const newestDate = groupRows[0].createdAt; // first = newest (desc order)
+    const currentStock = stockMap.get(key) ?? 0;
+
+    const { data: newerData } = await supabase
+      .from(tables.mouvements)
+      .select('quantity')
+      .eq('articleId', articleId)
+      .eq('fromSiteId', siteId)
+      .gt('createdAt', newestDate);
+
+    const newerSum = (newerData ?? []).reduce((sum: number, m: any) => sum + (m.quantity ?? 0), 0);
+    stockAfterMap.set(key, currentStock - newerSum);
+  }
+
+  // Build result: walk newest→oldest per group, compute stockAvant/stockApres
+  const resultMap = new Map<string, { stockAvant: number; stockApres: number }>();
+  for (const [key, groupRows] of groups) {
+    let running = stockAfterMap.get(key) ?? 0;
+    for (const r of groupRows) {
+      const stockApres = running;
+      const stockAvant = running - r.quantity;
+      resultMap.set(r.id, { stockAvant, stockApres });
+      running = stockAvant;
+    }
+  }
+
+  return rows.map(r => {
+    const levels = resultMap.get(r.id) ?? { stockAvant: 0, stockApres: 0 };
+    return mapRowToMouvement(r, levels.stockAvant, levels.stockApres);
+  });
+}
+
 export const mouvementRepository = {
   async findAll(
-    _siteId?: string | number,
+    siteId?: string | number,
     page = 0,
     limit = APP_CONFIG.pagination.defaultLimit,
   ): Promise<PaginatedResult<Mouvement>> {
@@ -163,19 +247,23 @@ export const mouvementRepository = {
     const from = page * limit;
     const to = from + limit - 1;
 
-    // No site filter — show all movements (like web "Tous les sites")
     let query = supabase
       .from(tables.mouvements)
       .select('*', { count: 'exact' })
       .order('createdAt', { ascending: false })
       .range(from, to);
 
+    if (siteId) {
+      const siteIds = await getEffectiveSiteIds(siteId);
+      query = query.in('fromSiteId', siteIds);
+    }
+
     const { data, error, count } = await query;
     if (error) throw new Error(error.message);
     const total = count ?? 0;
     const enriched = await enrichWithRelations((data ?? []) as MouvementRow[]);
     return {
-      data: enriched.map(mapRowToMouvement),
+      data: await computeStockLevels(enriched),
       total,
       page,
       limit,
@@ -189,56 +277,72 @@ export const mouvementRepository = {
     limit = 20,
   ): Promise<Mouvement[]> {
     const supabase = getSupabaseClient();
+    const siteIds = await getEffectiveSiteIds(siteId);
     const { data, error } = await supabase
       .from(tables.mouvements)
       .select('*')
       .eq('articleId', articleId)
-      .eq('fromSiteId', siteId)
+      .in('fromSiteId', siteIds)
       .order('createdAt', { ascending: false })
       .limit(limit);
     if (error) throw new Error(error.message);
     const enriched = await enrichWithRelations((data ?? []) as MouvementRow[]);
-    return enriched.map(mapRowToMouvement);
+    return computeStockLevels(enriched);
   },
 
-  async findRecent(_siteId?: string | number, limit = 10): Promise<Mouvement[]> {
+  async findRecent(siteId?: string | number, limit = 10): Promise<Mouvement[]> {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+    let query = supabase
       .from(tables.mouvements)
       .select('*')
       .order('createdAt', { ascending: false })
       .limit(limit);
+    if (siteId != null) {
+      const siteIds = await getEffectiveSiteIds(siteId);
+      query = query.in('fromSiteId', siteIds);
+    }
+    const { data, error } = await query;
     if (error) throw new Error(error.message);
     const enriched = await enrichWithRelations((data ?? []) as MouvementRow[]);
-    return enriched.map(mapRowToMouvement);
+    return computeStockLevels(enriched);
   },
 
-  async findToday(_siteId?: string | number): Promise<Mouvement[]> {
+  async findToday(siteId?: string | number): Promise<Mouvement[]> {
     const supabase = getSupabaseClient();
     const today = new Date().toISOString().slice(0, 10);
     const start = `${today}T00:00:00.000Z`;
     const end = `${today}T23:59:59.999Z`;
-    const { data, error } = await supabase
+    let query = supabase
       .from(tables.mouvements)
       .select('*')
       .gte('createdAt', start)
       .lte('createdAt', end)
       .order('createdAt', { ascending: false });
+    if (siteId != null) {
+      const siteIds = await getEffectiveSiteIds(siteId);
+      query = query.in('fromSiteId', siteIds);
+    }
+    const { data, error } = await query;
     if (error) throw new Error(error.message);
     const enriched = await enrichWithRelations((data ?? []) as MouvementRow[]);
-    return enriched.map(mapRowToMouvement);
+    return computeStockLevels(enriched);
   },
 
-  async countToday(_siteId?: string | number): Promise<number> {
+  async countToday(siteId?: string | number): Promise<number> {
     const supabase = getSupabaseClient();
     const today = new Date().toISOString().slice(0, 10);
     const start = `${today}T00:00:00.000Z`;
     const end = `${today}T23:59:59.999Z`;
-    const { count, error } = await supabase
+    let query = supabase
       .from(tables.mouvements)
       .select('*', { count: 'exact', head: true })
       .gte('createdAt', start)
       .lte('createdAt', end);
+    if (siteId != null) {
+      const siteIds = await getEffectiveSiteIds(siteId);
+      query = query.in('fromSiteId', siteIds);
+    }
+    const { count, error } = await query;
     if (error) throw new Error(error.message);
     return count ?? 0;
   },
@@ -337,7 +441,7 @@ export const mouvementRepository = {
     const total = count ?? 0;
     const enriched = await enrichWithRelations((data ?? []) as MouvementRow[]);
     return {
-      data: enriched.map(mapRowToMouvement),
+      data: await computeStockLevels(enriched),
       total,
       page,
       limit,
@@ -352,10 +456,12 @@ export const mouvementRepository = {
     const supabase = getSupabaseClient();
     const now = new Date();
     const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6, 0, 0, 0, 0);
+    const siteIds = await getEffectiveSiteIds(siteId);
 
     const { data, error } = await supabase
       .from(tables.mouvements)
       .select('createdAt')
+      .in('fromSiteId', siteIds)
       .gte('createdAt', startDate.toISOString())
       .order('createdAt', { ascending: true });
 

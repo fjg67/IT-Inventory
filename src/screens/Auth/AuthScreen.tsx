@@ -33,7 +33,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useRoute } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { loadTechniciens, loginTechnicien, createTechnicien } from '@/store/slices/authSlice';
+import { loadTechniciens, loadTechniciensBySite, loginTechnicien, createTechnicien } from '@/store/slices/authSlice';
 import { FullScreenLoading } from '@/components';
 import { Technicien } from '@/types';
 import { useResponsive } from '@/utils/responsive';
@@ -89,9 +89,11 @@ export const AuthScreen: React.FC = () => {
   const route = useRoute();
   const { isTablet } = useResponsive();
   const { colors, isDark } = useTheme();
-  const params = (route.params ?? {}) as { rememberMe?: boolean };
+  const params = (route.params ?? {}) as { rememberMe?: boolean; siteId?: string | number };
   const rememberMe = params.rememberMe ?? true;
+  const siteId = params.siteId;
   const { techniciens, isLoading, error } = useAppSelector(state => state.auth);
+  const siteActif = useAppSelector(state => state.site.siteActif);
 
   // Modal state
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -129,8 +131,12 @@ export const AuthScreen: React.FC = () => {
   );
 
   useEffect(() => {
-    dispatch(loadTechniciens());
-  }, [dispatch]);
+    if (siteId) {
+      dispatch(loadTechniciensBySite(siteId));
+    } else {
+      dispatch(loadTechniciens());
+    }
+  }, [dispatch, siteId]);
 
   const handleSelectTechnicien = useCallback(
     async (technicien: Technicien) => {
@@ -154,6 +160,7 @@ export const AuthScreen: React.FC = () => {
           nom: newNom.trim(),
           prenom: newPrenom.trim(),
           matricule: newMatricule.trim() || undefined,
+          siteId: siteId,
         }),
       ).unwrap();
 
@@ -237,7 +244,7 @@ export const AuthScreen: React.FC = () => {
           Créez votre premier profil{'\n'}technicien pour commencer
         </Text>
         <TouchableOpacity
-          style={styles.emptyCta}
+          style={[styles.emptyCta, { shadowColor: isDark ? '#000' : '#4F46E5' }]}
           onPress={() => {
             Vibration.vibrate(15);
             setIsModalVisible(true);
@@ -245,10 +252,19 @@ export const AuthScreen: React.FC = () => {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={[colors.primaryDark, isDark ? '#3730A3' : '#4338CA']}
+            colors={['#6366F1', '#4F46E5', '#4338CA']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.emptyCtaGradient}
           >
-            <Icon name="plus" size={20} color="#FFF" />
-            <Text style={styles.emptyCtaText}>Créer un profil</Text>
+            <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="account-plus" size={20} color="#FFF" />
+            </View>
+            <View>
+              <Text style={styles.emptyCtaText}>Créer un profil</Text>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '500' }}>Commencez maintenant</Text>
+            </View>
+            <Icon name="arrow-right" size={20} color="rgba(255,255,255,0.8)" style={{ marginLeft: 8 }} />
           </LinearGradient>
         </TouchableOpacity>
       </Animated.View>
@@ -347,6 +363,15 @@ export const AuthScreen: React.FC = () => {
           <Text style={[styles.tagline, { color: colors.textMuted }]}>Gestion de stock IT</Text>
         </Animated.View>
 
+        {siteActif && (
+          <Animated.View entering={FadeInUp.delay(720).duration(400)}>
+            <View style={[styles.siteBadge, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : '#EEF2FF', borderColor: isDark ? 'rgba(99,102,241,0.25)' : '#C7D2FE' }]}>
+              <Icon name="map-marker" size={14} color={isDark ? '#818CF8' : '#6366F1'} />
+              <Text style={[styles.siteBadgeText, { color: isDark ? '#A5B4FC' : '#4F46E5' }]}>{siteActif.nom}</Text>
+            </View>
+          </Animated.View>
+        )}
+
         <Animated.View entering={ZoomIn.delay(800).duration(400)}>
           <LinearGradient
             colors={['transparent', isDark ? colors.primaryGlow : '#C7D2FE', 'transparent']}
@@ -427,7 +452,7 @@ export const AuthScreen: React.FC = () => {
                   <>
                     {/* Header */}
                     <View style={styles.modalHeader}>
-                      <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Nouveau Profil</Text>
+                      <View style={{ flex: 1 }} />
                       <TouchableOpacity
                         onPress={() => {
                           Vibration.vibrate(10);
@@ -440,9 +465,19 @@ export const AuthScreen: React.FC = () => {
                       </TouchableOpacity>
                     </View>
 
-                    <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-                      Remplissez les informations ci-dessous pour créer un nouveau profil technicien.
-                    </Text>
+                    {/* Icon + Title centered */}
+                    <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                      <LinearGradient
+                        colors={['#6366F1', '#4F46E5']}
+                        style={{ width: 60, height: 60, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 14, shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}
+                      >
+                        <Icon name="account-plus" size={28} color="#FFF" />
+                      </LinearGradient>
+                      <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Nouveau Profil</Text>
+                      <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+                        Créez votre profil technicien
+                      </Text>
+                    </View>
 
                     {/* Input Prénom */}
                     <View style={styles.inputGroup}>
@@ -460,6 +495,7 @@ export const AuthScreen: React.FC = () => {
                           },
                         ]}
                       >
+                        <Icon name="account-outline" size={18} color={prenomFocused ? '#6366F1' : colors.textMuted} style={{ marginRight: 10 }} />
                         <TextInput
                           style={[styles.input, { color: colors.textPrimary }]}
                           placeholder="Ex: Jean"
@@ -499,6 +535,7 @@ export const AuthScreen: React.FC = () => {
                           },
                         ]}
                       >
+                        <Icon name="badge-account-horizontal-outline" size={18} color={nomFocused ? '#6366F1' : colors.textMuted} style={{ marginRight: 10 }} />
                         <TextInput
                           style={[styles.input, { color: colors.textPrimary }]}
                           placeholder="Ex: Dupont"
@@ -525,7 +562,8 @@ export const AuthScreen: React.FC = () => {
                     {/* Input Matricule */}
                     <View style={styles.inputGroup}>
                       <View style={styles.labelRow}>
-                        <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Matricule (Optionnel)</Text>
+                        <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Matricule</Text>
+                        <Text style={[styles.optionalTag, { color: colors.textMuted }]}>  Optionnel</Text>
                       </View>
                       <View
                         style={[
@@ -537,6 +575,7 @@ export const AuthScreen: React.FC = () => {
                           },
                         ]}
                       >
+                        <Icon name="identifier" size={18} color={matriculeFocused ? '#6366F1' : colors.textMuted} style={{ marginRight: 10 }} />
                         <TextInput
                           style={[styles.input, { color: colors.textPrimary }]}
                           placeholder="Ex: T-12345"
@@ -579,7 +618,7 @@ export const AuthScreen: React.FC = () => {
                         <LinearGradient
                           colors={
                             isFormValid && !isCreating
-                              ? [colors.secondary, isDark ? '#1E40AF' : '#2563EB']
+                              ? ['#6366F1', '#4F46E5']
                               : isDark ? [colors.surfaceElevated, colors.surfaceElevated] : ['#94A3B8', '#64748B']
                           }
                           style={styles.submitBtnGradient}
@@ -590,7 +629,10 @@ export const AuthScreen: React.FC = () => {
                               <Text style={styles.submitBtnText}>Création...</Text>
                             </>
                           ) : (
-                            <Text style={styles.submitBtnText}>Créer</Text>
+                            <>
+                              <Icon name="check" size={20} color="#FFF" />
+                              <Text style={styles.submitBtnText}>Créer le profil</Text>
+                            </>
                           )}
                         </LinearGradient>
                       </TouchableOpacity>
@@ -652,7 +694,21 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 1,
     textTransform: 'uppercase',
-    marginBottom: 16,
+    marginBottom: 10,
+  },
+  siteBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  siteBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   separator: {
     width: 160,
@@ -779,25 +835,27 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   emptyCta: {
-    borderRadius: 14,
+    borderRadius: 18,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+    marginHorizontal: 8,
   },
   emptyCtaGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    gap: 8,
-    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    gap: 12,
+    borderRadius: 18,
   },
   emptyCtaText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
 
   // Add button
@@ -880,13 +938,15 @@ const styles = StyleSheet.create({
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 0,
   },
   modalTitle: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    marginBottom: 6,
   },
   closeBtn: {
     width: 36,
@@ -896,14 +956,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 24,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    fontWeight: '500',
   },
 
   // Inputs
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   labelRow: {
     flexDirection: 'row',
@@ -917,12 +978,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  optionalTag: {
+    fontSize: 12,
+    fontWeight: '500',
+    fontStyle: 'italic',
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 14,
-    height: 50,
+    height: 52,
   },
   input: {
     flex: 1,
@@ -943,35 +1009,42 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     flex: 1,
-    height: 50,
-    borderRadius: 12,
+    height: 52,
+    borderRadius: 14,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelBtnText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   submitBtn: {
     flex: 2,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
   },
   submitBtnDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   submitBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 50,
-    borderRadius: 12,
+    height: 52,
+    borderRadius: 14,
     gap: 8,
   },
   submitBtnText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 

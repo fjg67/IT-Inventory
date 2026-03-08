@@ -16,6 +16,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { debounce } from 'lodash';
 import { useAppSelector } from '@/store';
+import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { articleRepository } from '@/database';
 import { Article, ArticleFilters, PaginatedResult } from '@/types';
 import { APP_CONFIG } from '@/constants';
@@ -45,6 +46,7 @@ export const ArticlesListScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const siteActif = useAppSelector((state) => state.site.siteActif);
+  const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const { isTablet, contentMaxWidth, rv } = useResponsive();
   const { colors, isDark } = useTheme();
   const numColumns = rv({ phone: 1, tablet: 2 });
@@ -88,12 +90,12 @@ export const ArticlesListScreen: React.FC = () => {
 
   // ===== LOAD STATS =====
   const loadStats = useCallback(async () => {
-    if (!siteActif) return;
+    if (!effectiveSiteId) return;
     try {
       const [allResult, lowStock, emplacements] = await Promise.all([
-        articleRepository.findAll(siteActif.id, 0),
-        articleRepository.countLowStock(siteActif.id),
-        articleRepository.getDistinctEmplacements(siteActif.id),
+        articleRepository.findAll(effectiveSiteId, 0),
+        articleRepository.countLowStock(effectiveSiteId),
+        articleRepository.getDistinctEmplacements(effectiveSiteId),
       ]);
       setTotalArticles(allResult.total);
       setAlertes(lowStock);
@@ -101,7 +103,7 @@ export const ArticlesListScreen: React.FC = () => {
     } catch (error) {
       console.error('Erreur chargement stats:', error);
     }
-  }, [siteActif]);
+  }, [effectiveSiteId]);
 
   useEffect(() => {
     loadStats();
@@ -123,7 +125,7 @@ export const ArticlesListScreen: React.FC = () => {
 
   const loadArticles = useCallback(
     async (resetList = false, silent = false) => {
-      if (!siteActif) {
+      if (!effectiveSiteId) {
         if (!silent) setIsLoading(false);
         return;
       }
@@ -153,12 +155,12 @@ export const ArticlesListScreen: React.FC = () => {
           (f.emplacement && f.emplacement.length > 0);
         if (hasFilter) {
           result = await articleRepository.search(
-            siteActif.id,
+            effectiveSiteId,
             f,
             currentPage,
           );
         } else {
-          result = await articleRepository.findAll(siteActif.id, currentPage);
+          result = await articleRepository.findAll(effectiveSiteId, currentPage);
         }
 
         if (resetList) {
@@ -182,7 +184,7 @@ export const ArticlesListScreen: React.FC = () => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [siteActif],
+    [effectiveSiteId],
   );
 
   // Reload when filters change
@@ -191,13 +193,13 @@ export const ArticlesListScreen: React.FC = () => {
     setPage(0);
     setHasMore(true);
     loadArticles(true);
-  }, [filters, siteActif, loadArticles]);
+  }, [filters, effectiveSiteId, loadArticles]);
 
   // Recharger articles et stats à chaque retour sur l'écran (données toujours à jour)
   const isFirstFocus = useRef(true);
   useFocusEffect(
     useCallback(() => {
-      if (!siteActif) return;
+      if (!effectiveSiteId) return;
       if (isFirstFocus.current) {
         isFirstFocus.current = false;
         return;
@@ -207,7 +209,7 @@ export const ArticlesListScreen: React.FC = () => {
       setPage(0);
       setHasMore(true);
       loadArticles(true, true);
-    }, [siteActif, loadStats, loadArticles]),
+    }, [effectiveSiteId, loadStats, loadArticles]),
   );
 
   // ===== SEARCH =====

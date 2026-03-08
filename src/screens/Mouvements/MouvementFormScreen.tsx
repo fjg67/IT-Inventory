@@ -43,6 +43,7 @@ import {
   useCameraPermission,
 } from 'react-native-vision-camera';
 import { useAppSelector, useAppDispatch } from '@/store';
+import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { clearScannedArticle } from '@/store/slices/scanSlice';
 import { showAlert } from '@/store/slices/uiSlice';
 import { mouvementRepository, articleRepository } from '@/database';
@@ -104,7 +105,18 @@ export const MouvementFormScreen: React.FC = () => {
   const { colors, gradients, isDark } = useTheme();
 
   const siteActif = useAppSelector(state => state.site.siteActif);
+  const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
+  const childSites = useAppSelector(state => state.site.childSites);
+  const selectedSubSiteId = useAppSelector(state => state.site.selectedSubSiteId);
   const technicien = useAppSelector(state => state.auth.currentTechnicien);
+
+  // Site cible pour le mouvement : sous-site spécifique ou premier enfant si "Tous"
+  const [localTargetSiteId, setLocalTargetSiteId] = useState<string | null>(null);
+  const targetSiteId = useMemo(() => {
+    if (childSites.length === 0) return effectiveSiteId; // Pas de sous-sites, on utilise le site actif
+    if (selectedSubSiteId) return selectedSubSiteId; // Sous-site sélectionné explicitement
+    return localTargetSiteId ?? childSites[0]?.id ?? effectiveSiteId; // Sinon le local ou le premier enfant
+  }, [childSites, selectedSubSiteId, localTargetSiteId, effectiveSiteId]);
   const { scannedArticle, isScanning } = useAppSelector(state => state.scan);
 
   // Camera / Scanner
@@ -156,6 +168,15 @@ export const MouvementFormScreen: React.FC = () => {
 
 
 
+  // ===== Recharger le stock quand le site cible change =====
+  useEffect(() => {
+    if (article && targetSiteId) {
+      articleRepository.findById(article.id, targetSiteId).then(result => {
+        if (result) setArticle(result);
+      }).catch(() => {});
+    }
+  }, [targetSiteId]);
+
   // ===== Computed =====
   const stockActuel = article?.quantiteActuelle ?? 0;
   const nouveauStock = useMemo(() => {
@@ -184,16 +205,16 @@ export const MouvementFormScreen: React.FC = () => {
 
   // ===== Load article =====
   const loadArticle = useCallback(async (articleId: number) => {
-    if (!siteActif) return;
-    const result = await articleRepository.findById(articleId, siteActif.id);
+    if (!targetSiteId) return;
+    const result = await articleRepository.findById(articleId, targetSiteId);
     if (result) setArticle(result);
-  }, [siteActif]);
+  }, [targetSiteId]);
 
   useEffect(() => {
-    if (initialArticleId && siteActif) {
+    if (initialArticleId && targetSiteId) {
       loadArticle(initialArticleId).catch(() => {});
     }
-  }, [initialArticleId, siteActif, loadArticle]);
+  }, [initialArticleId, targetSiteId, loadArticle]);
 
   useEffect(() => {
     if (scannedArticle) setArticle(scannedArticle);
@@ -203,14 +224,14 @@ export const MouvementFormScreen: React.FC = () => {
   const debouncedSearch = useMemo(
     () =>
       debounce(async (query: string) => {
-        if (!siteActif || query.length < 2) {
+        if (!effectiveSiteId || query.length < 2) {
           setSuggestions([]);
           setSearching(false);
           return;
         }
         setSearching(true);
         try {
-          const result = await articleRepository.search(siteActif.id, { searchQuery: query, stockFaible: false }, 0, 8);
+          const result = await articleRepository.search(effectiveSiteId, { searchQuery: query, stockFaible: false }, 0, 8);
           setSuggestions(result.data);
         } catch {
           setSuggestions([]);
@@ -218,7 +239,7 @@ export const MouvementFormScreen: React.FC = () => {
           setSearching(false);
         }
       }, 350),
-    [siteActif],
+    [effectiveSiteId],
   );
 
   const handleSearchChange = (text: string) => {
@@ -235,8 +256,8 @@ export const MouvementFormScreen: React.FC = () => {
   };
 
   const searchByBarcode = async () => {
-    if (!barcodeInput.trim() || !siteActif) return;
-    const result = await articleRepository.findByReference(barcodeInput.trim(), siteActif.id);
+    if (!barcodeInput.trim() || !effectiveSiteId) return;
+    const result = await articleRepository.findByReference(barcodeInput.trim(), effectiveSiteId);
     if (result) {
       setArticle(result);
       setBarcodeInput('');
@@ -249,14 +270,14 @@ export const MouvementFormScreen: React.FC = () => {
 
   // ===== Camera code scanner =====
   const handleScannedBarcode = useCallback(async (barcode: string) => {
-    if (!siteActif) {
+    if (!effectiveSiteId) {
       console.warn('[MouvementForm] Pas de site actif, recherche impossible');
       return;
     }
     console.log('[MouvementForm] Recherche article pour:', barcode);
     setBarcodeInput(barcode);
     try {
-      const result = await articleRepository.findByReference(barcode, siteActif.id);
+      const result = await articleRepository.findByReference(barcode, effectiveSiteId);
       if (result) {
         console.log('[MouvementForm] Article trouvé:', result.nom);
         setArticle(result);
@@ -265,7 +286,7 @@ export const MouvementFormScreen: React.FC = () => {
         setErrors({});
       } else {
         // Essayer une recherche plus large
-        const searchResult = await articleRepository.search(siteActif.id, { searchQuery: barcode, stockFaible: false }, 0, 5);
+        const searchResult = await articleRepository.search(effectiveSiteId, { searchQuery: barcode, stockFaible: false }, 0, 5);
         if (searchResult.data.length === 1) {
           setArticle(searchResult.data[0]);
           setBarcodeInput('');
@@ -375,8 +396,8 @@ export const MouvementFormScreen: React.FC = () => {
   const handleSubmit = async () => {
     if (!article) return;
     
-    if (!siteActif) {
-      Alert.alert('Site manquant', 'Aucun site sélectionné. Veuillez sélectionner un site.');
+    if (!targetSiteId) {
+      Alert.alert('Site manquant', 'Veuillez sélectionner un stock cible.');
       return;
     }
 
@@ -390,7 +411,7 @@ export const MouvementFormScreen: React.FC = () => {
     try {
       const data: MouvementStockForm = {
         articleId: article.id,
-        siteId: siteActif.id,
+        siteId: targetSiteId!,
         type,
         quantite,
         commentaire: commentaire.trim() || undefined,
@@ -616,6 +637,42 @@ export const MouvementFormScreen: React.FC = () => {
           {/* ===== SECTIONS VISIBLES UNIQUEMENT SI ARTICLE SÉLECTIONNÉ ===== */}
           {article && (
           <>
+          {/* ===== 3.5 SITE SELECTOR (sous-sites) ===== */}
+          {childSites.length > 0 && !selectedSubSiteId && (
+            <Animated.View entering={FadeInUp.delay(50).duration(400)} style={{ marginBottom: 16 }}>
+              <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Stock concerné <Text style={{ color: colors.danger }}>*</Text></Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                {childSites.map(site => {
+                  const selected = String(site.id) === String(targetSiteId);
+                  return (
+                    <TouchableOpacity
+                      key={String(site.id)}
+                      onPress={() => { setLocalTargetSiteId(String(site.id)); Vibration.vibrate(10); }}
+                      style={[
+                        {
+                          flex: 1,
+                          paddingVertical: 12,
+                          paddingHorizontal: 10,
+                          borderRadius: 12,
+                          borderWidth: 1.5,
+                          borderColor: selected ? colors.primary : colors.borderSubtle,
+                          backgroundColor: selected ? colors.primaryGlow : colors.surface,
+                          alignItems: 'center',
+                        },
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <Icon name="warehouse" size={18} color={selected ? colors.primary : colors.textMuted} />
+                      <Text style={{ color: selected ? colors.primary : colors.textSecondary, fontWeight: selected ? '700' : '500', fontSize: 12, marginTop: 4, textAlign: 'center' }} numberOfLines={1}>
+                        {site.nom}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </Animated.View>
+          )}
+
           {/* ===== 4. TYPE SELECTOR ===== */}
           <Animated.View entering={FadeInUp.delay(100).duration(400)}>
             <View style={styles.typeSectionHeader}>

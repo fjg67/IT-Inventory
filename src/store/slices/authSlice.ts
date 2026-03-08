@@ -50,6 +50,13 @@ export const loadTechniciens = createAsyncThunk(
   },
 );
 
+export const loadTechniciensBySite = createAsyncThunk(
+  'auth/loadTechniciensBySite',
+  async (siteId: string | number) => {
+    return await technicienRepository.findBySite(siteId);
+  },
+);
+
 export const loginTechnicien = createAsyncThunk(
   'auth/loginTechnicien',
   async (payload: { technicienId: string | number; persist?: boolean }) => {
@@ -77,9 +84,13 @@ export const logoutTechnicien = createAsyncThunk(
 
 export const createTechnicien = createAsyncThunk(
   'auth/createTechnicien',
-  async (data: { nom: string; prenom: string; matricule?: string }, { dispatch }) => {
-    await technicienRepository.create(data);
-    dispatch(loadTechniciens());
+  async (data: { nom: string; prenom: string; matricule?: string; siteId?: string | number }, { dispatch }) => {
+    await technicienRepository.create(data, data.siteId);
+    if (data.siteId) {
+      dispatch(loadTechniciensBySite(data.siteId));
+    } else {
+      dispatch(loadTechniciens());
+    }
   },
 );
 
@@ -131,6 +142,20 @@ const authSlice = createSlice({
         state.techniciens = action.payload;
       })
       .addCase(loadTechniciens.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message ?? 'Erreur de chargement';
+      });
+
+    // Load techniciens by site
+    builder
+      .addCase(loadTechniciensBySite.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(loadTechniciensBySite.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.techniciens = action.payload;
+      })
+      .addCase(loadTechniciensBySite.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message ?? 'Erreur de chargement';
       });
