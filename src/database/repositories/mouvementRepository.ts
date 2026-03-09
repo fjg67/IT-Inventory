@@ -43,6 +43,8 @@ interface MouvementRow {
   reason: string | null;
   Article?: { reference: string; name: string } | null;
   User?: { name: string } | null;
+  FromSite?: { name: string } | null;
+  ToSite?: { name: string } | null;
 }
 
 // Mapping DB types (ENTRY/EXIT/ADJUSTMENT/TRANSFER) <-> App types (entree/sortie/ajustement/transfert_*)
@@ -89,6 +91,28 @@ function mapRowToMouvement(row: MouvementRow, stockAvant = 0, stockApres = 0): M
     commentaire: row.reason ?? undefined,
     transfertVersSiteId: (row.toSiteId ?? undefined) as any,
     syncStatus: SyncStatus.SYNCED,
+    site: row.FromSite
+      ? {
+          id: row.fromSiteId as any,
+          nom: row.FromSite.name,
+          adresse: '',
+          actif: true,
+          dateCreation: new Date(),
+          dateModification: new Date(),
+          syncStatus: SyncStatus.SYNCED,
+        }
+      : undefined,
+    transfertVersSite: row.ToSite
+      ? {
+          id: (row.toSiteId ?? '') as any,
+          nom: row.ToSite.name,
+          adresse: '',
+          actif: true,
+          dateCreation: new Date(),
+          dateModification: new Date(),
+          syncStatus: SyncStatus.SYNCED,
+        }
+      : undefined,
     article: row.Article
       ? {
           id: row.articleId as any,
@@ -125,14 +149,21 @@ async function enrichWithRelations(rows: MouvementRow[]): Promise<MouvementRow[]
   // Collect unique IDs
   const articleIds = [...new Set(rows.map(r => r.articleId).filter(Boolean))];
   const userIds = [...new Set(rows.map(r => r.userId).filter(Boolean))];
+  const siteIds = [...new Set([
+    ...rows.map(r => r.fromSiteId).filter(Boolean),
+    ...rows.map(r => r.toSiteId).filter((v): v is string => !!v),
+  ])];
 
-  // Fetch articles and users in parallel
-  const [articlesRes, usersRes] = await Promise.all([
+  // Fetch articles, users and sites in parallel
+  const [articlesRes, usersRes, sitesRes] = await Promise.all([
     articleIds.length > 0
       ? supabase.from(tables.articles).select('id, reference, name').in('id', articleIds)
       : Promise.resolve({ data: [] }),
     userIds.length > 0
       ? supabase.from(tables.techniciens).select('id, name').in('id', userIds)
+      : Promise.resolve({ data: [] }),
+    siteIds.length > 0
+      ? supabase.from(tables.sites).select('id, name').in('id', siteIds)
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -146,11 +177,18 @@ async function enrichWithRelations(rows: MouvementRow[]): Promise<MouvementRow[]
     userMap.set(u.id, { name: u.name });
   }
 
+  const siteMap = new Map<string, { name: string }>();
+  for (const s of (sitesRes.data ?? []) as any[]) {
+    siteMap.set(s.id, { name: s.name });
+  }
+
   // Attach to rows
   return rows.map(r => ({
     ...r,
     Article: articleMap.get(r.articleId) ?? null,
     User: userMap.get(r.userId) ?? null,
+    FromSite: siteMap.get(r.fromSiteId) ?? null,
+    ToSite: r.toSiteId ? siteMap.get(r.toSiteId) ?? null : null,
   }));
 }
 

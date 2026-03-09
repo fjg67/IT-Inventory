@@ -151,9 +151,10 @@ export const MouvementsListScreen: React.FC = () => {
   const stats = useMemo(() => {
     return {
       total: mouvements.length,
-      entrees: mouvements.filter(m => m.type === 'entree' || m.type === 'transfert_arrivee').length,
-      sorties: mouvements.filter(m => m.type === 'sortie' || m.type === 'transfert_depart').length,
+      entrees: mouvements.filter(m => m.type === 'entree').length,
+      sorties: mouvements.filter(m => m.type === 'sortie').length,
       ajustements: mouvements.filter(m => m.type === 'ajustement').length,
+      transferts: mouvements.filter(m => m.type === 'transfert_depart' || m.type === 'transfert_arrivee').length,
     };
   }, [mouvements]);
 
@@ -243,6 +244,7 @@ export const MouvementsListScreen: React.FC = () => {
                 { label: 'Entrées', value: stats.entrees, prefix: '+', color: '#10B981', gradient: ['#10B981', '#059669'] as [string, string] },
                 { label: 'Sorties', value: stats.sorties, prefix: '-', color: '#EF4444', gradient: ['#EF4444', '#DC2626'] as [string, string] },
                 { label: 'Ajustements', value: stats.ajustements, prefix: '+', color: '#F59E0B', gradient: ['#F59E0B', '#D97706'] as [string, string] },
+                { label: 'Transferts', value: stats.transferts, prefix: '↔', color: '#8B5CF6', gradient: ['#8B5CF6', '#6D28D9'] as [string, string] },
               ].map((stat, i) => (
                 <View key={i} style={[styles.miniStatCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)', borderColor: colors.borderSubtle }]}>
                   <LinearGradient
@@ -486,6 +488,14 @@ export const MouvementsListScreen: React.FC = () => {
                               <View style={[styles.mouvTypeDot, { backgroundColor: cfg.color }]} />
                               <Text style={[styles.mouvTypeBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
                             </View>
+                            {(mouvement.type === 'transfert_depart' || mouvement.type === 'transfert_arrivee') && (
+                              <View style={styles.mouvTransferRoute}>
+                                <Icon name="map-marker-outline" size={11} color={colors.textMuted} />
+                                <Text style={[styles.mouvTransferRouteText, { color: colors.textMuted }]} numberOfLines={1}>
+                                  {mouvement.site?.nom ?? '?'} → {mouvement.transfertVersSite?.nom ?? '?'}
+                                </Text>
+                              </View>
+                            )}
                             <View style={styles.mouvMeta}>
                               <Text style={[styles.mouvMetaText, { color: colors.textMuted }]}>
                                 {formatTime(new Date(mouvement.dateMouvement))}
@@ -531,6 +541,14 @@ export const MouvementsListScreen: React.FC = () => {
             {
               icon: 'arrow-down-bold', label: 'Sortie', gradient: ['#EF4444', '#DC2626'] as [string, string],
               onPress: () => { Vibration.vibrate(10); setFabOpen(false); navigation.navigate('MouvementForm', { type: 'sortie' }); },
+            },
+            {
+              icon: 'swap-vertical', label: 'Ajustement', gradient: ['#F59E0B', '#D97706'] as [string, string],
+              onPress: () => { Vibration.vibrate(10); setFabOpen(false); navigation.navigate('MouvementForm', { type: 'ajustement' }); },
+            },
+            {
+              icon: 'swap-horizontal', label: 'Transfert', gradient: ['#8B5CF6', '#6D28D9'] as [string, string],
+              onPress: () => { Vibration.vibrate(10); setFabOpen(false); navigation.navigate('TransfertForm'); },
             },
           ].map((item, idx) => (
             <Animated.View key={item.label} entering={FadeInUp.delay(idx * 60).duration(250)}>
@@ -661,6 +679,21 @@ export const MouvementsListScreen: React.FC = () => {
                             {formatDateTimeParis(selectedMouvement.dateMouvement)}
                           </Text>
                         </View>
+
+                        {(selectedMouvement.type === 'transfert_depart' || selectedMouvement.type === 'transfert_arrivee') && (
+                          <>
+                            <View style={[styles.detailInfoSep, { backgroundColor: colors.borderSubtle }]} />
+                            <View style={styles.detailInfoRow}>
+                              <View style={[styles.detailInfoIconCircle, { backgroundColor: '#8B5CF6' + '14' }]}>
+                                <Icon name="swap-horizontal" size={16} color="#8B5CF6" />
+                              </View>
+                              <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Transfert</Text>
+                              <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={2}>
+                                {selectedMouvement.site?.nom ?? '?'} → {selectedMouvement.transfertVersSite?.nom ?? '?'}
+                              </Text>
+                            </View>
+                          </>
+                        )}
 
                         {selectedMouvement.commentaire ? (
                           <>
@@ -1115,6 +1148,17 @@ const styles = StyleSheet.create({
   mouvMetaText: {
     fontSize: 11,
     fontWeight: '400',
+  },
+  mouvTransferRoute: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginLeft: 6,
+  },
+  mouvTransferRouteText: {
+    fontSize: 10,
+    fontWeight: '500',
+    maxWidth: 140,
   },
 
   // ===== FAB =====

@@ -15,6 +15,7 @@ interface SiteRow {
   id: string;
   name: string;
   address: string | null;
+  edsNumber: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -23,9 +24,10 @@ interface SiteRow {
 function mapRowToSite(row: SiteRow): Site {
   return {
     id: row.id as any,
-    code: row.id, // no separate code column, use id
+    code: row.id,
     nom: row.name,
     adresse: row.address ?? undefined,
+    edsNumber: row.edsNumber ?? undefined,
     actif: Boolean(row.isActive),
     dateCreation: row.createdAt,
     syncStatus: SyncStatus.SYNCED,
@@ -135,6 +137,7 @@ export const siteRepository = {
       .insert({
         name: data.nom,
         address: data.adresse ?? null,
+        edsNumber: data.edsNumber ?? null,
         isActive: data.actif,
       })
       .select('id')
@@ -148,6 +151,7 @@ export const siteRepository = {
     const payload: Record<string, unknown> = {};
     if (data.nom !== undefined) payload.name = data.nom;
     if (data.adresse !== undefined) payload.address = data.adresse ?? null;
+    if (data.edsNumber !== undefined) payload.edsNumber = data.edsNumber ?? null;
     if (data.actif !== undefined) payload.isActive = data.actif;
     if (Object.keys(payload).length === 0) return;
     const { error } = await supabase.from(tables.sites).update(payload).eq('id', id);

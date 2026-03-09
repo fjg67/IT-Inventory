@@ -368,10 +368,10 @@ export const DashboardScreen: React.FC = () => {
               onPress={() => navigation.navigate('Articles')}
             />
             <QuickActionButton
-              icon="cog-outline"
-              iconGradient={['#94A3B8', '#64748B']}
-              label="Réglages"
-              onPress={() => navigation.navigate('Settings')}
+              icon="swap-horizontal"
+              iconGradient={['#3B82F6', '#6366F1']}
+              label="Transfert"
+              onPress={() => navigation.navigate('Mouvements', { screen: 'TransfertForm' })}
             />
           </View>
         </View>

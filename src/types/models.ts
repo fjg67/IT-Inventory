@@ -33,6 +33,7 @@ export interface Site {
   code: string;
   nom: string;
   adresse?: string;
+  edsNumber?: string;
   actif: boolean;
   dateCreation: Date;
   syncStatus: SyncStatus;

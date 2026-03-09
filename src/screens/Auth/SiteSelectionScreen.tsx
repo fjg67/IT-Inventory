@@ -99,6 +99,7 @@ export const SiteSelectionScreen: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSiteName, setNewSiteName] = useState('');
   const [newSiteAddress, setNewSiteAddress] = useState('');
+  const [newEdsNumber, setNewEdsNumber] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
   const [parentSiteId, setParentSiteId] = useState<string | number | null>(null);
@@ -108,17 +109,19 @@ export const SiteSelectionScreen: React.FC = () => {
     if (!name) return;
     setIsCreating(true);
     try {
-      const newId = await siteRepository.create({ nom: name, code: name, adresse: newSiteAddress.trim() || undefined, actif: true });
+      const newId = await siteRepository.create({ nom: name, code: name, adresse: newSiteAddress.trim() || undefined, edsNumber: newEdsNumber.trim() || undefined, actif: true });
       if (branch === 'agences' && newId) {
         // Agences: après création, sélectionner et naviguer directement
         await dispatch(loadSites());
         await dispatch(selectSite(newId));
         setNewSiteName('');
         setNewSiteAddress('');
+        setNewEdsNumber('');
         navigation.navigate('Auth', { rememberMe, siteId: newId });
       } else {
         setNewSiteName('');
         setNewSiteAddress('');
+        setNewEdsNumber('');
         setShowAddModal(false);
         dispatch(loadSites());
       }
@@ -127,7 +130,7 @@ export const SiteSelectionScreen: React.FC = () => {
     } finally {
       setIsCreating(false);
     }
-  }, [newSiteName, newSiteAddress, dispatch, branch, navigation, rememberMe]);
+  }, [newSiteName, newSiteAddress, newEdsNumber, dispatch, branch, navigation, rememberMe]);
 
   // Floating animation for the location pin
   const pinFloat = useSharedValue(0);
@@ -348,12 +351,12 @@ export const SiteSelectionScreen: React.FC = () => {
               Nouvelle agence
             </Text>
             <Text style={[styles.agenceFormSubtitle, { color: colors.textMuted }]}>
-              Saisissez le nom de votre agence pour la créer
+              Saisissez les informations de votre agence Crédit Agricole
             </Text>
 
-            {/* Nom */}
+            {/* Nom de l'agence CA */}
             <View style={styles.agenceFieldWrap}>
-              <Text style={[styles.agenceFieldLabel, { color: colors.textSecondary }]}>Nom de l'agence *</Text>
+              <Text style={[styles.agenceFieldLabel, { color: colors.textSecondary }]}>Nom de l'agence CA *</Text>
               <View style={[
                 styles.agenceFieldInput,
                 { backgroundColor: isDark ? colors.surfaceElevated : '#F8FAFC', borderColor: isDark ? colors.borderSubtle : '#E2E8F0' },
@@ -361,7 +364,7 @@ export const SiteSelectionScreen: React.FC = () => {
                 <Icon name="domain" size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
                 <TextInput
                   style={[styles.agenceFieldText, { color: colors.textPrimary }]}
-                  placeholder="Ex: Lyon, Bordeaux, Nantes..."
+                  placeholder="Ex: Strasbourg, Colmar, Mulhouse..."
                   placeholderTextColor={colors.textMuted}
                   value={newSiteName}
                   onChangeText={setNewSiteName}
@@ -370,29 +373,31 @@ export const SiteSelectionScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* Adresse optionnelle */}
+            {/* Numéro EDS */}
             <View style={styles.agenceFieldWrap}>
-              <Text style={[styles.agenceFieldLabel, { color: colors.textSecondary }]}>Adresse (optionnel)</Text>
+              <Text style={[styles.agenceFieldLabel, { color: colors.textSecondary }]}>Numéro EDS *</Text>
               <View style={[
                 styles.agenceFieldInput,
                 { backgroundColor: isDark ? colors.surfaceElevated : '#F8FAFC', borderColor: isDark ? colors.borderSubtle : '#E2E8F0' },
               ]}>
-                <Icon name="map-marker-outline" size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
+                <Icon name="identifier" size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
                 <TextInput
                   style={[styles.agenceFieldText, { color: colors.textPrimary }]}
-                  placeholder="Ex: 12 rue de la Paix"
+                  placeholder="Ex: 123"
                   placeholderTextColor={colors.textMuted}
-                  value={newSiteAddress}
-                  onChangeText={setNewSiteAddress}
+                  value={newEdsNumber}
+                  onChangeText={(t) => setNewEdsNumber(t.replace(/[^0-9]/g, '').slice(0, 3))}
+                  keyboardType="numeric"
+                  maxLength={3}
                 />
               </View>
             </View>
 
             {/* Bouton créer */}
             <TouchableOpacity
-              style={[styles.agenceCreateBtn, !newSiteName.trim() && { opacity: 0.5 }]}
+              style={[styles.agenceCreateBtn, (!newSiteName.trim() || !newEdsNumber.trim()) && { opacity: 0.5 }]}
               onPress={handleAddSite}
-              disabled={!newSiteName.trim() || isCreating}
+              disabled={!newSiteName.trim() || !newEdsNumber.trim() || isCreating}
               activeOpacity={0.7}
             >
               <LinearGradient

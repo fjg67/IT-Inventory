@@ -14,6 +14,9 @@ UPDATE "Site" SET "name" = 'Siège Strasbourg' WHERE "name" = 'Strasbourg';
 -- 2. Ajouter la colonne parentSiteId à la table Site (si elle n'existe pas)
 ALTER TABLE "Site" ADD COLUMN IF NOT EXISTS "parentSiteId" TEXT REFERENCES "Site"("id");
 
+-- 2b. Ajouter la colonne edsNumber à la table Site (si elle n'existe pas)
+ALTER TABLE "Site" ADD COLUMN IF NOT EXISTS "edsNumber" TEXT;
+
 -- 3. Ajouter la colonne siteId à la table User (si elle n'existe pas)
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "siteId" TEXT REFERENCES "Site"("id");
 
