@@ -74,6 +74,24 @@ export async function findChildSites(parentSiteId: string | number): Promise<Sit
   return (data ?? []).map(mapRowToSite);
 }
 
+/** Renvoie les sites frères (même parent) d'un site donné, ou ses enfants s'il est parent */
+export async function findSiblingsOrChildren(siteId: string | number): Promise<Site[]> {
+  const supabase = getSupabaseClient();
+  // D'abord, chercher le parentSiteId du site actuel
+  const { data: current } = await supabase
+    .from(tables.sites)
+    .select('parentSiteId')
+    .eq('id', String(siteId))
+    .maybeSingle();
+
+  if (current?.parentSiteId) {
+    // Le site est un sous-site → charger les frères (enfants du même parent)
+    return findChildSites(current.parentSiteId);
+  }
+  // Le site est un parent → charger ses enfants
+  return findChildSites(siteId);
+}
+
 export const siteRepository = {
   async findAll(): Promise<Site[]> {
     const supabase = getSupabaseClient();

@@ -70,12 +70,14 @@ export const ArticleEditScreen: React.FC = () => {
 
   // Quand il y a des sous-sites et qu'aucun n'est choisi, on doit cibler un sous-site précis pour l'écriture
   const hasChildSites = childSites.length > 0;
-  const [localTargetSiteId, setLocalTargetSiteId] = useState<string | null>(null);
+  const [localTargetSiteId, setLocalTargetSiteId] = useState<string | null>(
+    siteActif?.id != null ? String(siteActif.id) : null,
+  );
   const writeSiteId = useMemo(() => {
     if (!hasChildSites) return effectiveSiteId; // Pas de sous-sites
     if (selectedSubSiteId) return selectedSubSiteId; // Sous-site déjà choisi dans le Dashboard
-    return localTargetSiteId ?? childSites[0]?.id ?? effectiveSiteId;
-  }, [hasChildSites, selectedSubSiteId, localTargetSiteId, childSites, effectiveSiteId]);
+    return localTargetSiteId ?? effectiveSiteId;
+  }, [hasChildSites, selectedSubSiteId, localTargetSiteId, effectiveSiteId]);
 
   // ===== Data =====
   const [sites, setSites] = useState<Site[]>([]);
@@ -1048,7 +1050,7 @@ export const ArticleEditScreen: React.FC = () => {
               </View>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, paddingHorizontal: 4 }}>
                 {childSites.map(site => {
-                  const selected = String(site.id) === String(localTargetSiteId ?? childSites[0]?.id);
+                  const selected = String(site.id) === String(localTargetSiteId ?? siteActif?.id);
                   return (
                     <TouchableOpacity
                       key={String(site.id)}

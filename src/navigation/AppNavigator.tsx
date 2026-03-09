@@ -21,6 +21,8 @@ import { FullScreenLoading, NoConnectionScreen } from '@/components';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
 import {
   AuthScreen,
+  BranchSelectionScreen,
+  ForceUpdateScreen,
   LoginScreen,
   SiteSelectionScreen,
   DashboardScreen,
@@ -39,6 +41,7 @@ import {
 } from '@/screens';
 import { colors, typography } from '@/constants/theme';
 import { useTheme } from '@/theme';
+import { checkAppVersion, VersionCheckResult } from '@/services/versionService';
 import PremiumTabBar from '@/components/navigation/PremiumTabBar';
 
 import {
@@ -177,6 +180,7 @@ export const AppNavigator: React.FC = () => {
 
   const [isInitializing, setIsInitializing] = React.useState(true);
   const [onboardingSeen, setOnboardingSeen] = React.useState(false);
+  const [forceUpdate, setForceUpdate] = React.useState<VersionCheckResult | null>(null);
 
   // Réseau : écouter NetInfo et vérifier l'accès Supabase
   useEffect(() => {
@@ -232,6 +236,12 @@ export const AppNavigator: React.FC = () => {
         ]);
         console.log('[AppNavigator] Stored data loaded');
 
+        // Vérifier la version minimum
+        const versionResult = await checkAppVersion();
+        if (versionResult.updateRequired) {
+          setForceUpdate(versionResult);
+        }
+
         const onboardingDone = await AsyncStorage.getItem('@it-inventory/onboarding_seen');
         if (onboardingDone === 'true') {
           setOnboardingSeen(true);
@@ -279,6 +289,11 @@ export const AppNavigator: React.FC = () => {
     return <FullScreenLoading message="Chargement de l'application..." />;
   }
 
+  // Version trop ancienne → écran de mise à jour obligatoire
+  if (forceUpdate?.updateRequired) {
+    return <ForceUpdateScreen minVersion={forceUpdate.minVersion} />;
+  }
+
   // Pas de connexion internet → écran offline
   if (!isConnected || !isInternetReachable) {
     return <NoConnectionScreen />;
@@ -300,17 +315,19 @@ export const AppNavigator: React.FC = () => {
         {isAuthenticated ? (
           <RootStack.Screen name="Main" component={MainNavigator} />
         ) : onboardingSeen ? (
-          // Onboarding déjà vu → connexion → site → technicien
+          // Onboarding déjà vu → connexion → branche → site → technicien
           <>
             <RootStack.Screen name="Login" component={LoginScreen} />
+            <RootStack.Screen name="BranchSelection" component={BranchSelectionScreen} />
             <RootStack.Screen name="SiteSelection" component={SiteSelectionScreen} />
             <RootStack.Screen name="Auth" component={AuthScreen} />
           </>
         ) : (
-          // Premier lancement → onboarding → connexion → site → technicien
+          // Premier lancement → onboarding → connexion → branche → site → technicien
           <>
             <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
             <RootStack.Screen name="Login" component={LoginScreen} />
+            <RootStack.Screen name="BranchSelection" component={BranchSelectionScreen} />
             <RootStack.Screen name="SiteSelection" component={SiteSelectionScreen} />
             <RootStack.Screen name="Auth" component={AuthScreen} />
           </>

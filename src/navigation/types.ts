@@ -8,8 +8,9 @@ import { NavigatorScreenParams } from '@react-navigation/native';
 export type RootStackParamList = {
   Onboarding: undefined;
   Login: undefined;
-  SiteSelection: { rememberMe?: boolean };
-  Auth: { rememberMe?: boolean; siteId?: string | number };
+  BranchSelection: { rememberMe?: boolean };
+  SiteSelection: { rememberMe?: boolean; branch?: string };
+  Auth: { rememberMe?: boolean; siteId?: string | number; parentSiteId?: string | number };
   Main: NavigatorScreenParams<MainTabParamList>;
 };
 

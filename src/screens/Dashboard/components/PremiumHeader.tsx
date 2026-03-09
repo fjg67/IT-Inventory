@@ -74,7 +74,7 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
   syncPendingCount: _syncPendingCount = 0,
   isConnected: _isConnected,
   supabaseReachable: _supabaseReachable = false,
-  onSiteChange: _onSiteChange,
+  onSiteChange,
 }) => {
   const dispatch = useAppDispatch();
   const { isTablet, fs } = useResponsive();
@@ -282,8 +282,15 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
               {initials}
             </Text>
 
-            {/* Site pill */}
-            <View style={styles.sitePill}>
+            {/* Site pill – cliquable pour changer de site */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                Vibration.vibrate(10);
+                onSiteChange();
+              }}
+              style={styles.sitePill}
+            >
               <LinearGradient
                 colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.08)']}
                 start={{ x: 0, y: 0 }}
@@ -296,8 +303,9 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
                 <Text style={styles.siteName} numberOfLines={1}>
                   {site?.name ?? 'Aucun site'}
                 </Text>
+                <Icon name="chevron-down" size={12} color="rgba(255,255,255,0.7)" />
               </LinearGradient>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Right badge: Compte actif */}

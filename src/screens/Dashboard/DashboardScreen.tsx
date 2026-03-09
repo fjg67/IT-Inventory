@@ -21,7 +21,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAppSelector, useAppDispatch } from '@/store';
-import { selectSite, loadSites, loadChildSites, setSelectedSubSite, selectEffectiveSiteId } from '@/store/slices/siteSlice';
+import { selectSite, loadSites, loadSiblingSites, setSelectedSubSite, selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { articleRepository, mouvementRepository } from '@/database';
 import { DashboardStats, MouvementType } from '@/types';
 import {
@@ -56,10 +56,10 @@ export const DashboardScreen: React.FC = () => {
   );
 
   const sitesDisponibles = useAppSelector((state) => state.site.sitesDisponibles);
+  const childSites = useAppSelector((state) => state.site.childSites);
   const [showSiteModal, setShowSiteModal] = useState(false);
 
   // Sous-sites depuis Redux
-  const childSites = useAppSelector((state) => state.site.childSites);
   const selectedSubSiteId = useAppSelector((state) => state.site.selectedSubSiteId);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
 
@@ -115,7 +115,7 @@ export const DashboardScreen: React.FC = () => {
   // Charger les sous-sites quand le site actif change
   useEffect(() => {
     if (siteActif) {
-      dispatch(loadChildSites(siteActif.id));
+      dispatch(loadSiblingSites(siteActif.id));
     }
   }, [siteActif, dispatch]);
 
@@ -201,8 +201,8 @@ export const DashboardScreen: React.FC = () => {
         {/* ===== BOUTON SCAN XXL ===== */}
         <ScanButtonXXL onPress={handleScan} />
 
-        {/* ===== TOGGLE SOUS-SITES ===== */}
-        {childSites.length > 1 && (
+        {/* Toggle sous-sites supprimé – changement de site via la bannière */}
+        {false && childSites.length > 1 && (
           <View style={styles.subSiteToggleContainer}>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -464,12 +464,13 @@ export const DashboardScreen: React.FC = () => {
 
                 {/* Site cards */}
                 <View style={styles.siteModalList}>
-                  {sitesDisponibles.map((site, index) => {
+                  {(childSites.length > 0 ? childSites : sitesDisponibles).map((site, index) => {
                     const isActive = siteActif?.id === site.id;
                     const siteIcons: Record<string, { icon: string; colors: [string, string] }> = {
-                      'Stock 5ième': { icon: 'office-building', colors: ['#3B82F6', '#2563EB'] },
-                      'Stock 8ième': { icon: 'office-building-marker', colors: ['#8B5CF6', '#6366F1'] },
-                      'Stock Epinal': { icon: 'warehouse', colors: ['#10B981', '#059669'] },
+                      'Stock 5ème': { icon: 'archive-outline', colors: ['#6366F1', '#4F46E5'] },
+                      'Stock 8ème': { icon: 'archive-outline', colors: ['#F59E0B', '#D97706'] },
+                      'Epinal': { icon: 'pine-tree', colors: ['#10B981', '#059669'] },
+                      'TCS': { icon: 'tools', colors: ['#EF4444', '#DC2626'] },
                     };
                     const cfg = siteIcons[site.nom] || { icon: 'map-marker', colors: ['#6B7280', '#4B5563'] as [string, string] };
 

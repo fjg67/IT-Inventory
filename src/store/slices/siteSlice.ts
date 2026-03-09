@@ -7,7 +7,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Site } from '@/types';
 import { siteRepository } from '@/database';
-import { findChildSites } from '@/database/repositories/siteRepository';
+import { findChildSites, findSiblingsOrChildren } from '@/database/repositories/siteRepository';
 
 const SITE_STORAGE_KEY = '@it-inventory/site';
 
@@ -69,6 +69,13 @@ export const loadChildSites = createAsyncThunk(
   'site/loadChildSites',
   async (parentSiteId: string | number) => {
     return await findChildSites(parentSiteId);
+  },
+);
+
+export const loadSiblingSites = createAsyncThunk(
+  'site/loadSiblingSites',
+  async (siteId: string | number) => {
+    return await findSiblingsOrChildren(siteId);
   },
 );
 
@@ -145,6 +152,9 @@ const siteSlice = createSlice({
     // Load child sites
     builder
       .addCase(loadChildSites.fulfilled, (state, action) => {
+        state.childSites = action.payload;
+      })
+      .addCase(loadSiblingSites.fulfilled, (state, action) => {
         state.childSites = action.payload;
       });
   },

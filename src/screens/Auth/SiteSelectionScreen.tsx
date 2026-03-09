@@ -36,7 +36,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { loadSites, selectSite } from '@/store/slices/siteSlice';
+import { loadSites, selectSite, loadChildSites } from '@/store/slices/siteSlice';
 import { FullScreenLoading } from '@/components';
 import { siteRepository } from '@/database';
 import { Site } from '@/types';
@@ -49,6 +49,9 @@ const SITE_CONFIGS: Record<string, { icon: string; gradient: [string, string]; e
   strasbourg: { icon: 'city-variant-outline', gradient: ['#3B82F6', '#1D4ED8'], emoji: '🏛️' },
   'siège': { icon: 'city-variant-outline', gradient: ['#3B82F6', '#1D4ED8'], emoji: '🏛️' },
   epinal: { icon: 'pine-tree', gradient: ['#10B981', '#059669'], emoji: '🌲' },
+  'stock 5': { icon: 'archive-outline', gradient: ['#6366F1', '#4F46E5'], emoji: '📦' },
+  'stock 8': { icon: 'archive-outline', gradient: ['#F59E0B', '#D97706'], emoji: '📦' },
+  tcs: { icon: 'tools', gradient: ['#EF4444', '#DC2626'], emoji: '🛠️' },
 };
 
 const DEFAULT_CONFIG = { icon: 'map-marker-outline', gradient: ['#8B5CF6', '#6D28D9'] as [string, string], emoji: '📍' };
@@ -83,10 +86,14 @@ export const SiteSelectionScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { colors, isDark } = useTheme();
-  const params = (route.params ?? {}) as { rememberMe?: boolean };
+  const params = (route.params ?? {}) as { rememberMe?: boolean; branch?: string };
   const rememberMe = params.rememberMe ?? true;
+  const branch = params.branch;
 
-  const { sitesDisponibles, isLoading } = useAppSelector(state => state.site);
+  const { sitesDisponibles, childSites, isLoading } = useAppSelector(state => state.site);
+
+  // For strasbourg branch, show child sites from DB; otherwise show top-level sites
+  const displaySites = branch === 'strasbourg' ? childSites : sitesDisponibles;
 
   // Add site modal state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -94,22 +101,33 @@ export const SiteSelectionScreen: React.FC = () => {
   const [newSiteAddress, setNewSiteAddress] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
+  const [parentSiteId, setParentSiteId] = useState<string | number | null>(null);
+
   const handleAddSite = useCallback(async () => {
     const name = newSiteName.trim();
     if (!name) return;
     setIsCreating(true);
     try {
-      await siteRepository.create({ nom: name, code: name, adresse: newSiteAddress.trim() || undefined, actif: true });
-      setNewSiteName('');
-      setNewSiteAddress('');
-      setShowAddModal(false);
-      dispatch(loadSites());
+      const newId = await siteRepository.create({ nom: name, code: name, adresse: newSiteAddress.trim() || undefined, actif: true });
+      if (branch === 'agences' && newId) {
+        // Agences: après création, sélectionner et naviguer directement
+        await dispatch(loadSites());
+        await dispatch(selectSite(newId));
+        setNewSiteName('');
+        setNewSiteAddress('');
+        navigation.navigate('Auth', { rememberMe, siteId: newId });
+      } else {
+        setNewSiteName('');
+        setNewSiteAddress('');
+        setShowAddModal(false);
+        dispatch(loadSites());
+      }
     } catch (e) {
       console.error('[SiteSelection] Erreur création site:', e);
     } finally {
       setIsCreating(false);
     }
-  }, [newSiteName, newSiteAddress, dispatch]);
+  }, [newSiteName, newSiteAddress, dispatch, branch, navigation, rememberMe]);
 
   // Floating animation for the location pin
   const pinFloat = useSharedValue(0);
@@ -130,16 +148,32 @@ export const SiteSelectionScreen: React.FC = () => {
   }));
 
   useEffect(() => {
-    dispatch(loadSites());
-  }, [dispatch]);
+    dispatch(loadSites()).then((result) => {
+      // If strasbourg branch, find the parent site and load its children
+      if (branch === 'strasbourg' && result.payload) {
+        const sites = result.payload as Site[];
+        const parent = sites.find(s =>
+          s.nom.toLowerCase().includes('strasbourg') || s.nom.toLowerCase().includes('siège'),
+        );
+        if (parent) {
+          setParentSiteId(parent.id);
+          dispatch(loadChildSites(parent.id));
+        }
+      }
+    });
+  }, [dispatch, branch]);
 
   const handleSelectSite = useCallback(
     async (site: Site) => {
       Vibration.vibrate(10);
       await dispatch(selectSite(site.id));
-      navigation.navigate('Auth', { rememberMe, siteId: site.id });
+      navigation.navigate('Auth', {
+        rememberMe,
+        siteId: site.id,
+        ...(parentSiteId ? { parentSiteId } : {}),
+      });
     },
-    [dispatch, navigation, rememberMe],
+    [dispatch, navigation, rememberMe, parentSiteId],
   );
 
   const renderSiteCard = useCallback(
@@ -285,42 +319,134 @@ export const SiteSelectionScreen: React.FC = () => {
           <Icon name="map-marker" size={16} color={isDark ? '#818CF8' : '#6366F1'} />
         </Animated.View>
         <Text style={[styles.instruction, { color: colors.textSecondary }]}>
-          Sélectionnez votre site de travail
+          {branch === 'agences' ? 'Créez votre agence' : 'Sélectionnez votre site de travail'}
         </Text>
         <Animated.View style={pinStyle}>
           <Icon name="map-marker" size={16} color={isDark ? '#818CF8' : '#6366F1'} />
         </Animated.View>
       </Animated.View>
 
-      {/* Sites list */}
-      <FlatList
-        data={sitesDisponibles}
-        keyExtractor={item => item.id.toString()}
-        renderItem={renderSiteCard}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <Animated.View entering={FadeIn.delay(1000).duration(600)} style={styles.emptyContainer}>
-            <View
-              style={[
-                styles.emptyIconCircle,
-                {
-                  backgroundColor: isDark ? 'rgba(99,102,241,0.1)' : '#EEF2FF',
-                  borderColor: isDark ? 'rgba(99,102,241,0.2)' : '#E0E7FF',
-                },
-              ]}
+      {/* ===== MODE AGENCES : formulaire de création inline ===== */}
+      {branch === 'agences' ? (
+        <Animated.View entering={FadeInUp.delay(800).duration(500)} style={styles.agenceFormWrap}>
+          <View style={[
+            styles.agenceFormCard,
+            {
+              backgroundColor: isDark ? colors.surfaceElevated : '#FFFFFF',
+              borderColor: isDark ? colors.borderSubtle : '#E8ECF4',
+              shadowColor: isDark ? '#000' : '#64748B',
+            },
+          ]}>
+            <LinearGradient
+              colors={['#10B981', '#059669']}
+              style={styles.agenceFormIcon}
             >
-              <Icon name="map-marker-off-outline" size={48} color={colors.primaryDark} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Aucun site disponible</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              Contactez l'administrateur pour{'\n'}ajouter des sites
-            </Text>
-          </Animated.View>
-        }
-      />
+              <Icon name="office-building-marker-outline" size={28} color="#FFF" />
+            </LinearGradient>
 
-      {/* Add site button */}
+            <Text style={[styles.agenceFormTitle, { color: colors.textPrimary }]}>
+              Nouvelle agence
+            </Text>
+            <Text style={[styles.agenceFormSubtitle, { color: colors.textMuted }]}>
+              Saisissez le nom de votre agence pour la créer
+            </Text>
+
+            {/* Nom */}
+            <View style={styles.agenceFieldWrap}>
+              <Text style={[styles.agenceFieldLabel, { color: colors.textSecondary }]}>Nom de l'agence *</Text>
+              <View style={[
+                styles.agenceFieldInput,
+                { backgroundColor: isDark ? colors.surfaceElevated : '#F8FAFC', borderColor: isDark ? colors.borderSubtle : '#E2E8F0' },
+              ]}>
+                <Icon name="domain" size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
+                <TextInput
+                  style={[styles.agenceFieldText, { color: colors.textPrimary }]}
+                  placeholder="Ex: Lyon, Bordeaux, Nantes..."
+                  placeholderTextColor={colors.textMuted}
+                  value={newSiteName}
+                  onChangeText={setNewSiteName}
+                  autoFocus
+                />
+              </View>
+            </View>
+
+            {/* Adresse optionnelle */}
+            <View style={styles.agenceFieldWrap}>
+              <Text style={[styles.agenceFieldLabel, { color: colors.textSecondary }]}>Adresse (optionnel)</Text>
+              <View style={[
+                styles.agenceFieldInput,
+                { backgroundColor: isDark ? colors.surfaceElevated : '#F8FAFC', borderColor: isDark ? colors.borderSubtle : '#E2E8F0' },
+              ]}>
+                <Icon name="map-marker-outline" size={18} color={colors.textMuted} style={{ marginRight: 10 }} />
+                <TextInput
+                  style={[styles.agenceFieldText, { color: colors.textPrimary }]}
+                  placeholder="Ex: 12 rue de la Paix"
+                  placeholderTextColor={colors.textMuted}
+                  value={newSiteAddress}
+                  onChangeText={setNewSiteAddress}
+                />
+              </View>
+            </View>
+
+            {/* Bouton créer */}
+            <TouchableOpacity
+              style={[styles.agenceCreateBtn, !newSiteName.trim() && { opacity: 0.5 }]}
+              onPress={handleAddSite}
+              disabled={!newSiteName.trim() || isCreating}
+              activeOpacity={0.7}
+            >
+              <LinearGradient
+                colors={['#10B981', '#059669']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.agenceCreateBtnGradient}
+              >
+                {isCreating ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Icon name="plus-circle-outline" size={20} color="#FFF" />
+                    <Text style={styles.agenceCreateBtnText}>Créer l'agence</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      ) : (
+        <>
+        {/* Sites list */}
+        <FlatList
+          data={displaySites}
+          keyExtractor={item => item.id.toString()}
+          renderItem={renderSiteCard}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Animated.View entering={FadeIn.delay(1000).duration(600)} style={styles.emptyContainer}>
+              <View
+                style={[
+                  styles.emptyIconCircle,
+                  {
+                    backgroundColor: isDark ? 'rgba(99,102,241,0.1)' : '#EEF2FF',
+                    borderColor: isDark ? 'rgba(99,102,241,0.2)' : '#E0E7FF',
+                  },
+                ]}
+              >
+                <Icon name="map-marker-off-outline" size={48} color={colors.primaryDark} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Aucun site disponible</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                Contactez l'administrateur pour{'\n'}ajouter des sites
+              </Text>
+            </Animated.View>
+          }
+        />
+        </>
+      )}
+
+      {/* Add site button (only for non-branch mode) */}
+      {!branch && (
       <Animated.View entering={FadeInUp.delay(1100).duration(400)} style={styles.addBtnWrap}>
         <TouchableOpacity
           activeOpacity={0.7}
@@ -341,9 +467,10 @@ export const SiteSelectionScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
       </Animated.View>
+      )}
 
-      {/* Add site modal */}
-      <Modal visible={showAddModal} transparent animationType="fade" onRequestClose={() => setShowAddModal(false)}>
+      {/* Add site modal (non-agences) */}
+      <Modal visible={showAddModal && branch !== 'agences'} transparent animationType="fade" onRequestClose={() => setShowAddModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
           <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowAddModal(false)}>
             <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[
@@ -742,5 +869,84 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
     letterSpacing: 0.5,
+  },
+
+  // Agence form
+  agenceFormWrap: {
+    flex: 1,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+  },
+  agenceFormCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  agenceFormIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  agenceFormTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    marginBottom: 4,
+  },
+  agenceFormSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  agenceFieldWrap: {
+    width: '100%',
+    marginBottom: 14,
+  },
+  agenceFieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 6,
+    marginLeft: 2,
+  },
+  agenceFieldInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    height: 48,
+  },
+  agenceFieldText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  agenceCreateBtn: {
+    width: '100%',
+    marginTop: 6,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  agenceCreateBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+  },
+  agenceCreateBtnText: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });

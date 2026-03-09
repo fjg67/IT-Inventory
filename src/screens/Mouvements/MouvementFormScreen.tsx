@@ -110,12 +110,14 @@ export const MouvementFormScreen: React.FC = () => {
   const selectedSubSiteId = useAppSelector(state => state.site.selectedSubSiteId);
   const technicien = useAppSelector(state => state.auth.currentTechnicien);
 
-  // Site cible pour le mouvement : sous-site spécifique ou premier enfant si "Tous"
-  const [localTargetSiteId, setLocalTargetSiteId] = useState<string | null>(null);
+  // Site cible pour le mouvement : sous-site spécifique ou site actif par défaut
+  const [localTargetSiteId, setLocalTargetSiteId] = useState<string | null>(
+    siteActif?.id != null ? String(siteActif.id) : null,
+  );
   const targetSiteId = useMemo(() => {
     if (childSites.length === 0) return effectiveSiteId; // Pas de sous-sites, on utilise le site actif
     if (selectedSubSiteId) return selectedSubSiteId; // Sous-site sélectionné explicitement
-    return localTargetSiteId ?? childSites[0]?.id ?? effectiveSiteId; // Sinon le local ou le premier enfant
+    return localTargetSiteId ?? effectiveSiteId; // Sinon le local ou le site actif
   }, [childSites, selectedSubSiteId, localTargetSiteId, effectiveSiteId]);
   const { scannedArticle, isScanning } = useAppSelector(state => state.scan);
 

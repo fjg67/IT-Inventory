@@ -89,9 +89,10 @@ export const AuthScreen: React.FC = () => {
   const route = useRoute();
   const { isTablet } = useResponsive();
   const { colors, isDark } = useTheme();
-  const params = (route.params ?? {}) as { rememberMe?: boolean; siteId?: string | number };
+  const params = (route.params ?? {}) as { rememberMe?: boolean; siteId?: string | number; parentSiteId?: string | number };
   const rememberMe = params.rememberMe ?? true;
   const siteId = params.siteId;
+  const parentSiteId = params.parentSiteId;
   const { techniciens, isLoading, error } = useAppSelector(state => state.auth);
   const siteActif = useAppSelector(state => state.site.siteActif);
 
@@ -131,12 +132,14 @@ export const AuthScreen: React.FC = () => {
   );
 
   useEffect(() => {
-    if (siteId) {
-      dispatch(loadTechniciensBySite(siteId));
+    // If parentSiteId is set, load technicians from the parent site (shared across all sub-sites)
+    const effectiveSiteId = parentSiteId || siteId;
+    if (effectiveSiteId) {
+      dispatch(loadTechniciensBySite(effectiveSiteId));
     } else {
       dispatch(loadTechniciens());
     }
-  }, [dispatch, siteId]);
+  }, [dispatch, siteId, parentSiteId]);
 
   const handleSelectTechnicien = useCallback(
     async (technicien: Technicien) => {
