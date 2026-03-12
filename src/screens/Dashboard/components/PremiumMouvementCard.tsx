@@ -123,26 +123,31 @@ const PremiumMouvementCard: React.FC<PremiumMouvementCardProps> = ({
       >
         <View style={[
           styles.container,
-          { backgroundColor: colors.surface, borderColor: colors.borderSubtle, shadowColor: accentColor },
+          {
+            backgroundColor: colors.surface,
+            borderColor: isDark ? colors.borderSubtle : colors.borderMedium,
+          },
           tablet && { padding: premiumSpacing.lg },
         ]}>
-          {/* Left accent strip */}
+          {/* Left gradient accent bar */}
           <LinearGradient
             colors={typeConfig.gradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
-            style={styles.accentStrip}
+            style={styles.accentBar}
           />
 
-          {/* Gradient icon pill */}
-          <View style={[styles.iconShadow, { shadowColor: accentColor }]}>
+          {/* Icon in white frosted circle over gradient */}
+          <View style={[styles.iconOuter, { shadowColor: accentColor }]}>
             <LinearGradient
               colors={typeConfig.gradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={[styles.iconPill, tablet && { width: 46, height: 46, borderRadius: 14 }]}
+              style={[styles.iconGradientBg, tablet && { width: 48, height: 48, borderRadius: 16 }]}
             >
-              <Icon name={typeConfig.icon} size={tablet ? 22 : 19} color="#FFF" />
+              <View style={styles.iconInnerCircle}>
+                <Icon name={typeConfig.icon} size={tablet ? 20 : 18} color={accentColor} />
+              </View>
             </LinearGradient>
           </View>
 
@@ -152,13 +157,21 @@ const PremiumMouvementCard: React.FC<PremiumMouvementCardProps> = ({
               <Text style={[styles.articleName, { color: colors.textPrimary }, tablet && { fontSize: 16 }]} numberOfLines={1}>
                 {mouvement.articleNom ?? 'Article'}
               </Text>
-              <Text style={[styles.quantity, { color: accentColor }, tablet && { fontSize: 14 }]}>
-                {typeConfig.sign}{Math.abs(mouvement.quantite)}
-              </Text>
+              {/* Quantity badge with gradient bg */}
+              <LinearGradient
+                colors={typeConfig.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.qtyBadge}
+              >
+                <Text style={[styles.quantity, tablet && { fontSize: 13 }]}>
+                  {typeConfig.sign}{Math.abs(mouvement.quantite)}
+                </Text>
+              </LinearGradient>
             </View>
 
             <View style={styles.bottomRow}>
-              <View style={[styles.typeBadge, { backgroundColor: isDark ? `${accentColor}20` : `${accentColor}12` }]}>
+              <View style={[styles.typeBadge, { backgroundColor: isDark ? `${accentColor}15` : `${accentColor}0A` }]}>
                 <View style={[styles.typeDot, { backgroundColor: accentColor }]} />
                 <Text style={[styles.typeBadgeText, { color: accentColor }, tablet && { fontSize: 12 }]}>
                   {typeConfig.label}
@@ -166,7 +179,7 @@ const PremiumMouvementCard: React.FC<PremiumMouvementCardProps> = ({
               </View>
               <Text style={[styles.info, { color: colors.textMuted }, tablet && { fontSize: 12 }]}>
                 {relativeTime}
-                {mouvement.technicienNom ? ` • ${mouvement.technicienNom.split(' ').map(w => w[0]).join('.').toUpperCase()}.` : ''}
+                {mouvement.technicienNom ? ` · ${mouvement.technicienNom.split(' ').map(w => w[0]).join('.').toUpperCase()}.` : ''}
               </Text>
             </View>
           </View>
@@ -180,37 +193,46 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 14,
-    paddingLeft: 18,
-    marginBottom: premiumSpacing.sm,
+    paddingLeft: 20,
+    marginBottom: premiumSpacing.sm + 2,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  accentStrip: {
+  accentBar: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: 3,
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
+    width: 4.5,
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
   },
-  iconShadow: {
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+  iconOuter: {
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
     marginRight: 12,
   },
-  iconPill: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
+  iconGradientBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconInnerCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -221,19 +243,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 7,
   },
   articleName: {
     fontSize: 14,
     fontWeight: '700',
     flex: 1,
-    marginRight: 8,
+    marginRight: 10,
     letterSpacing: -0.2,
   },
+  qtyBadge: {
+    paddingHorizontal: 11,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
   quantity: {
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: -0.3,
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+    color: '#FFFFFF',
   },
   bottomRow: {
     flexDirection: 'row',
@@ -245,7 +273,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 7,
+    borderRadius: 8,
     gap: 4,
   },
   typeDot: {
@@ -255,12 +283,12 @@ const styles = StyleSheet.create({
   },
   typeBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.1,
   },
   info: {
     fontSize: 11,
-    fontWeight: '400',
+    fontWeight: '500',
     flex: 1,
   },
 });

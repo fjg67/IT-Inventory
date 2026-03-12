@@ -33,11 +33,12 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useRoute } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { loadTechniciens, loadTechniciensBySite, loginTechnicien, createTechnicien } from '@/store/slices/authSlice';
+import { loadTechniciens, loadTechniciensBySite, loginTechnicien } from '@/store/slices/authSlice';
 import { FullScreenLoading } from '@/components';
 import { Technicien } from '@/types';
 import { useResponsive } from '@/utils/responsive';
 import { useTheme } from '@/theme';
+import { SUPABASE_CONFIG } from '@/constants/config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -101,6 +102,7 @@ export const AuthScreen: React.FC = () => {
   const [newPrenom, setNewPrenom] = useState('');
   const [newNom, setNewNom] = useState('');
   const [newMatricule, setNewMatricule] = useState('');
+  const [newRole, setNewRole] = useState<'TECHNICIAN' | 'superviseur'>('TECHNICIAN');
   const [isCreating, setIsCreating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -158,14 +160,144 @@ export const AuthScreen: React.FC = () => {
 
     setIsCreating(true);
     try {
-      await dispatch(
-        createTechnicien({
-          nom: newNom.trim(),
-          prenom: newPrenom.trim(),
-          matricule: newMatricule.trim() || undefined,
-          siteId: siteId,
+      const siteName = siteActif?.nom ?? 'Non défini';
+      const roleLabel = newRole === 'superviseur' ? 'Superviseur' : 'Technicien';
+      const matriculeText = newMatricule.trim() || 'Non renseigné';
+      const prenomTrimmed = newPrenom.trim();
+      const nomTrimmed = newNom.trim();
+
+      const emailSubject = `[IT-Inventory] Demande de création de profil – ${prenomTrimmed} ${nomTrimmed}`;
+
+      const roleBg = newRole === 'superviseur' ? '#FEF3C7' : '#EEF2FF';
+      const roleColor = newRole === 'superviseur' ? '#92400E' : '#4338CA';
+      const roleIcon = newRole === 'superviseur' ? '👑' : '🔧';
+      const initials = `${prenomTrimmed.charAt(0)}${nomTrimmed.charAt(0)}`.toUpperCase();
+
+      const emailHtml = `
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#EEEDF5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <div style="max-width:580px;margin:0 auto;padding:32px 16px;">
+
+    <!-- HEADER GRADIENT -->
+    <div style="background:linear-gradient(135deg,#4338CA 0%,#6366F1 50%,#818CF8 100%);border-radius:20px 20px 0 0;padding:40px 32px 48px 32px;text-align:center;position:relative;">
+      <div style="position:absolute;top:16px;right:24px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.08);"></div>
+      <div style="position:absolute;bottom:-8px;left:32px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.06);"></div>
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.15);margin:0 auto 16px auto;display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:24px;line-height:56px;">📋</span>
+      </div>
+      <h1 style="color:#FFFFFF;font-size:22px;font-weight:700;margin:0 0 6px 0;letter-spacing:-0.3px;">Nouvelle demande de profil</h1>
+      <p style="color:rgba(255,255,255,0.7);font-size:13px;margin:0;font-weight:500;">IT-Inventory · ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+    </div>
+
+    <!-- AVATAR CARD -->
+    <div style="background:#FFFFFF;margin-top:-20px;margin-left:24px;margin-right:24px;border-radius:16px;padding:20px;text-align:center;box-shadow:0 4px 24px rgba(67,56,202,0.12);position:relative;z-index:2;">
+      <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#818CF8);margin:0 auto 12px auto;line-height:64px;text-align:center;">
+        <span style="color:#FFFFFF;font-size:24px;font-weight:700;letter-spacing:1px;">${initials}</span>
+      </div>
+      <p style="margin:0 0 2px 0;font-size:18px;font-weight:700;color:#111827;">${prenomTrimmed} ${nomTrimmed}</p>
+      <p style="margin:0;font-size:13px;color:#9CA3AF;">Demande en attente de validation</p>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div style="background:#FFFFFF;border-radius:0 0 20px 20px;padding:28px 32px 32px 32px;">
+
+      <p style="color:#6B7280;font-size:13px;margin:0 0 24px 0;text-align:center;line-height:1.5;">Une nouvelle demande de création de profil a été soumise depuis l'application mobile.</p>
+
+      <!-- INFO ROWS -->
+      <div style="background:#F9FAFB;border-radius:14px;padding:4px 0;overflow:hidden;">
+
+        <div style="display:flex;padding:14px 20px;border-bottom:1px solid #F3F4F6;">
+          <table style="width:100%;border-collapse:collapse;"><tr>
+            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,#EEF2FF,#E0E7FF);border-radius:10px;text-align:center;line-height:36px;font-size:16px;">👤</span></td>
+            <td style="vertical-align:middle;padding-left:12px;">
+              <p style="margin:0;font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Prénom</p>
+              <p style="margin:2px 0 0 0;font-size:15px;color:#111827;font-weight:600;">${prenomTrimmed}</p>
+            </td>
+          </tr></table>
+        </div>
+
+        <div style="display:flex;padding:14px 20px;border-bottom:1px solid #F3F4F6;">
+          <table style="width:100%;border-collapse:collapse;"><tr>
+            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,#EEF2FF,#E0E7FF);border-radius:10px;text-align:center;line-height:36px;font-size:16px;">📛</span></td>
+            <td style="vertical-align:middle;padding-left:12px;">
+              <p style="margin:0;font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Nom</p>
+              <p style="margin:2px 0 0 0;font-size:15px;color:#111827;font-weight:600;">${nomTrimmed}</p>
+            </td>
+          </tr></table>
+        </div>
+
+        <div style="display:flex;padding:14px 20px;border-bottom:1px solid #F3F4F6;">
+          <table style="width:100%;border-collapse:collapse;"><tr>
+            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,#EEF2FF,#E0E7FF);border-radius:10px;text-align:center;line-height:36px;font-size:16px;">🔢</span></td>
+            <td style="vertical-align:middle;padding-left:12px;">
+              <p style="margin:0;font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Matricule</p>
+              <p style="margin:2px 0 0 0;font-size:15px;color:#111827;font-weight:600;font-family:'SF Mono',Menlo,monospace;">${matriculeText}</p>
+            </td>
+          </tr></table>
+        </div>
+
+        <div style="display:flex;padding:14px 20px;border-bottom:1px solid #F3F4F6;">
+          <table style="width:100%;border-collapse:collapse;"><tr>
+            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,${newRole === 'superviseur' ? '#FEF9C3,#FEF3C7' : '#EEF2FF,#E0E7FF'});border-radius:10px;text-align:center;line-height:36px;font-size:16px;">${roleIcon}</span></td>
+            <td style="vertical-align:middle;padding-left:12px;">
+              <p style="margin:0;font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Rôle demandé</p>
+              <p style="margin:4px 0 0 0;"><span style="display:inline-block;background:${roleBg};color:${roleColor};padding:4px 14px;border-radius:20px;font-size:13px;font-weight:700;">${roleLabel}</span></p>
+            </td>
+          </tr></table>
+        </div>
+
+        <div style="display:flex;padding:14px 20px;">
+          <table style="width:100%;border-collapse:collapse;"><tr>
+            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,#ECFDF5,#D1FAE5);border-radius:10px;text-align:center;line-height:36px;font-size:16px;">📍</span></td>
+            <td style="vertical-align:middle;padding-left:12px;">
+              <p style="margin:0;font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Site</p>
+              <p style="margin:2px 0 0 0;font-size:15px;color:#111827;font-weight:600;">${siteName}</p>
+            </td>
+          </tr></table>
+        </div>
+
+      </div>
+
+      <!-- ACTION BOX -->
+      <div style="margin-top:24px;background:linear-gradient(135deg,#EEF2FF,#E0E7FF);border-radius:14px;padding:20px;text-align:center;border:1px solid #C7D2FE;">
+        <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:#4338CA;">⚡ Action requise</p>
+        <p style="margin:0;font-size:13px;color:#6366F1;line-height:1.5;">Merci de créer ce profil dans la base de données Supabase.</p>
+      </div>
+
+      <!-- FOOTER -->
+      <div style="margin-top:28px;padding-top:20px;border-top:1px solid #F3F4F6;text-align:center;">
+        <p style="color:#C4C4C4;font-size:11px;margin:0 0 4px 0;">Envoyé automatiquement par</p>
+        <p style="color:#9CA3AF;font-size:12px;font-weight:600;margin:0;">📱 IT-Inventory v1.8</p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+      const url = `${SUPABASE_CONFIG.url}/functions/v1/send-stock-alert-email`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${SUPABASE_CONFIG.anonKey}`,
+        },
+        body: JSON.stringify({
+          to: 'florian.jove.garcia@gmail.com',
+          subject: emailSubject,
+          htmlContent: emailHtml,
         }),
-      ).unwrap();
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.error('Edge Function error:', errData);
+        Alert.alert('Erreur', 'Impossible d\'envoyer la demande. Réessayez plus tard.');
+        setIsCreating(false);
+        return;
+      }
 
       Vibration.vibrate(20);
       setShowSuccess(true);
@@ -176,20 +308,22 @@ export const AuthScreen: React.FC = () => {
         setNewPrenom('');
         setNewNom('');
         setNewMatricule('');
-      }, 1500);
+        setNewRole('TECHNICIAN');
+      }, 2000);
     } catch (err) {
-      Alert.alert('Erreur', 'Impossible de créer le technicien.');
+      Alert.alert('Erreur', 'Impossible d\'envoyer la demande.');
       console.error(err);
     } finally {
       setIsCreating(false);
     }
-  }, [dispatch, isFormValid, newNom, newPrenom, newMatricule]);
+  }, [isFormValid, newNom, newPrenom, newMatricule, newRole, siteActif]);
 
   const closeModal = useCallback(() => {
     setIsModalVisible(false);
     setNewPrenom('');
     setNewNom('');
     setNewMatricule('');
+    setNewRole('TECHNICIAN');
     setPrenomFocused(false);
     setNomFocused(false);
     setMatriculeFocused(false);
@@ -221,9 +355,19 @@ export const AuthScreen: React.FC = () => {
               <Text style={[styles.profileName, { color: colors.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">
                 {getInitials(item)}
               </Text>
-              <Text style={[styles.profileMatricule, { color: colors.textMuted }]} numberOfLines={1} ellipsizeMode="tail">
-                Technicien
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                <LinearGradient
+                  colors={item.role === 'superviseur' ? ['#F59E0B', '#D97706'] : ['#6366F1', '#4F46E5']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, gap: 4 }}
+                >
+                  <Icon name={item.role === 'superviseur' ? 'eye-outline' : 'wrench-outline'} size={11} color="#FFF" />
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFF', letterSpacing: 0.2 }}>
+                    {item.role === 'superviseur' ? 'Superviseur' : 'Technicien'}
+                  </Text>
+                </LinearGradient>
+              </View>
             </View>
 
             <View style={styles.profileChevron}>
@@ -446,9 +590,10 @@ export const AuthScreen: React.FC = () => {
                   /* ===== SUCCESS STATE ===== */
                   <Animated.View entering={ZoomIn.springify()} style={styles.successContainer}>
                     <View style={styles.successCircle}>
-                      <Icon name="check" size={44} color="#FFF" />
+                      <Icon name="email-check-outline" size={44} color="#FFF" />
                     </View>
-                    <Text style={[styles.successText, { color: colors.success }]}>Profil créé avec succès !</Text>
+                    <Text style={[styles.successText, { color: colors.success }]}>Demande envoyée !</Text>
+                    <Text style={[styles.successSubtext, { color: colors.textSecondary }]}>Votre demande sera traitée sous peu</Text>
                   </Animated.View>
                 ) : (
                   /* ===== FORM ===== */
@@ -474,11 +619,11 @@ export const AuthScreen: React.FC = () => {
                         colors={['#6366F1', '#4F46E5']}
                         style={{ width: 60, height: 60, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 14, shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}
                       >
-                        <Icon name="account-plus" size={28} color="#FFF" />
+                        <Icon name="account-plus-outline" size={28} color="#FFF" />
                       </LinearGradient>
-                      <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Nouveau Profil</Text>
+                      <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Demander un profil</Text>
                       <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-                        Créez votre profil technicien
+                        Remplissez vos informations pour demander un accès
                       </Text>
                     </View>
 
@@ -593,6 +738,65 @@ export const AuthScreen: React.FC = () => {
                       </View>
                     </View>
 
+                    {/* Role Selector */}
+                    <View style={styles.inputGroup}>
+                      <View style={styles.labelRow}>
+                        <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Rôle demandé</Text>
+                        <Text style={[styles.requiredStar, { color: colors.danger }]}> *</Text>
+                      </View>
+                      <View style={styles.roleRow}>
+                        <TouchableOpacity
+                          style={[
+                            styles.roleCard,
+                            { backgroundColor: colors.surfaceInput, borderColor: isDark ? colors.borderStrong : '#E2E8F0' },
+                            newRole === 'TECHNICIAN' && styles.roleCardActive,
+                          ]}
+                          onPress={() => { setNewRole('TECHNICIAN'); Vibration.vibrate(8); }}
+                          activeOpacity={0.7}
+                        >
+                          {newRole === 'TECHNICIAN' ? (
+                            <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.roleIconPill}>
+                              <View style={styles.roleIconInner}>
+                                <Icon name="wrench-outline" size={18} color="#6366F1" />
+                              </View>
+                            </LinearGradient>
+                          ) : (
+                            <View style={[styles.roleIconPlain, { backgroundColor: colors.background }]}>
+                              <Icon name="wrench-outline" size={18} color={colors.textMuted} />
+                            </View>
+                          )}
+                          <Text style={[styles.roleLabel, { color: newRole === 'TECHNICIAN' ? '#6366F1' : colors.textSecondary }]}>
+                            Technicien
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={[
+                            styles.roleCard,
+                            { backgroundColor: colors.surfaceInput, borderColor: isDark ? colors.borderStrong : '#E2E8F0' },
+                            newRole === 'superviseur' && styles.roleCardActiveSuperviseur,
+                          ]}
+                          onPress={() => { setNewRole('superviseur'); Vibration.vibrate(8); }}
+                          activeOpacity={0.7}
+                        >
+                          {newRole === 'superviseur' ? (
+                            <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.roleIconPill}>
+                              <View style={styles.roleIconInner}>
+                                <Icon name="shield-star-outline" size={18} color="#F59E0B" />
+                              </View>
+                            </LinearGradient>
+                          ) : (
+                            <View style={[styles.roleIconPlain, { backgroundColor: colors.background }]}>
+                              <Icon name="shield-star-outline" size={18} color={colors.textMuted} />
+                            </View>
+                          )}
+                          <Text style={[styles.roleLabel, { color: newRole === 'superviseur' ? '#D97706' : colors.textSecondary }]}>
+                            Superviseur
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
                     {/* Boutons */}
                     <View style={styles.modalButtons}>
                       <TouchableOpacity
@@ -629,12 +833,12 @@ export const AuthScreen: React.FC = () => {
                           {isCreating ? (
                             <>
                               <ActivityIndicator color="#FFF" size="small" />
-                              <Text style={styles.submitBtnText}>Création...</Text>
+                              <Text style={styles.submitBtnText}>Envoi...</Text>
                             </>
                           ) : (
                             <>
-                              <Icon name="check" size={20} color="#FFF" />
-                              <Text style={styles.submitBtnText}>Créer le profil</Text>
+                              <Icon name="send" size={20} color="#FFF" />
+                              <Text style={styles.submitBtnText}>Envoyer la demande</Text>
                             </>
                           )}
                         </LinearGradient>
@@ -1072,6 +1276,63 @@ const styles = StyleSheet.create({
   },
   successText: {
     fontSize: 18,
+    fontWeight: '700',
+  },
+  successSubtext: {
+    fontSize: 14,
+    fontWeight: '400',
+    marginTop: 6,
+  },
+
+  // Role selector
+  roleRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  roleCard: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    gap: 8,
+  },
+  roleCardActive: {
+    borderColor: '#6366F1',
+    borderWidth: 2,
+    backgroundColor: 'rgba(99,102,241,0.04)',
+  },
+  roleCardActiveSuperviseur: {
+    borderColor: '#F59E0B',
+    borderWidth: 2,
+    backgroundColor: 'rgba(245,158,11,0.04)',
+  },
+  roleIconPill: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 3,
+  },
+  roleIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleIconPlain: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleLabel: {
+    fontSize: 13,
     fontWeight: '600',
   },
 });

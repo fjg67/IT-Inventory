@@ -132,9 +132,19 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
               <Text style={[styles.technicienName, { color: colors.textPrimary }]}>
                 {initials}
               </Text>
-              <Text style={[styles.technicienRole, { color: colors.textMuted }]}>
-                Technicien
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
+                <LinearGradient
+                  colors={item.role === 'superviseur' ? ['#F59E0B', '#D97706'] : ['#6366F1', '#4F46E5']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, gap: 3 }}
+                >
+                  <Icon name={item.role === 'superviseur' ? 'eye-outline' : 'wrench-outline'} size={9} color="#FFF" />
+                  <Text style={{ fontSize: 9, fontWeight: '700', color: '#FFF', letterSpacing: 0.2 }}>
+                    {item.role === 'superviseur' ? 'Superviseur' : 'Technicien'}
+                  </Text>
+                </LinearGradient>
+              </View>
             </View>
             {isCurrent ? (
               <LinearGradient
@@ -187,11 +197,6 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
     );
   }, [glowAnim]);
 
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(glowAnim.value, [0, 1], [0.4, 0.8]),
-    transform: [{ scale: interpolate(glowAnim.value, [0, 1], [1, 1.15]) }],
-  }));
-
   const statusDotStyle = useAnimatedStyle(() => ({
     opacity: interpolate(glowAnim.value, [0, 1], [0.6, 1]),
     transform: [{ scale: interpolate(glowAnim.value, [0, 1], [0.9, 1.1]) }],
@@ -201,89 +206,25 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
     <>
     <Animated.View
       entering={FadeInDown.duration(600).springify()}
-      style={[styles.outerWrap, { borderColor: isDark ? 'rgba(99,102,241,0.25)' : 'rgba(99,102,241,0.15)' }]}
+      style={[styles.outerWrap, { backgroundColor: colors.surface, borderColor: isDark ? colors.borderSubtle : colors.borderMedium }]}
     >
+      {/* Left gradient accent bar */}
       <LinearGradient
-        colors={isDark
-          ? ['#0C0820', '#1A1050', '#2A1870', '#1A1050', '#0F0A2E']
-          : ['#1E1B6E', '#312E81', '#4338CA', '#6366F1', '#4F46E5']
-        }
+        colors={['#6366F1', '#4338CA']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.container}
-      >
-        {/* ===== Decorative background ===== */}
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          {/* Large orb top-right */}
-          <View style={[styles.orbLarge, { right: -40, top: -50 }]}>
-            <LinearGradient
-              colors={['rgba(167,139,250,0.35)', 'rgba(99,102,241,0.05)']}
-              style={StyleSheet.absoluteFill}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            />
-          </View>
-          {/* Medium orb center-left */}
-          <View style={[styles.orbMedium, { left: 20, top: -20 }]}>
-            <LinearGradient
-              colors={['rgba(124,58,237,0.2)', 'transparent']}
-              style={StyleSheet.absoluteFill}
-            />
-          </View>
-          {/* Small accent orb bottom-left */}
-          <View style={[styles.orbSmall, { left: -15, bottom: -15 }]}>
-            <LinearGradient
-              colors={['rgba(167,139,250,0.2)', 'transparent']}
-              style={StyleSheet.absoluteFill}
-            />
-          </View>
-          {/* Accent orb bottom-right */}
-          <View style={[styles.orbSmall, { right: 30, bottom: -10 }]}>
-            <LinearGradient
-              colors={['rgba(59,130,246,0.15)', 'transparent']}
-              style={StyleSheet.absoluteFill}
-            />
-          </View>
-          {/* Light streak */}
-          <View style={styles.lightStreak} />
-          <View style={styles.lightStreak2} />
-          {/* Dots texture */}
-          {[
-            { top: 14, right: 50, s: 3, o: 0.2 },
-            { top: 8, right: 100, s: 2, o: 0.12 },
-            { top: 30, right: 20, s: 2.5, o: 0.15 },
-            { top: 22, left: 85, s: 2, o: 0.1 },
-            { top: 6, left: 145, s: 3, o: 0.08 },
-            { bottom: 18, right: 65, s: 2, o: 0.1 },
-            { bottom: 10, left: 55, s: 2.5, o: 0.12 },
-            { bottom: 30, right: 110, s: 1.5, o: 0.08 },
-            { top: 40, left: 30, s: 1.5, o: 0.06 },
-          ].map((d, i) => (
-            <View
-              key={i}
-              style={{
-                position: 'absolute',
-                top: (d as any).top,
-                bottom: (d as any).bottom,
-                right: (d as any).right,
-                left: (d as any).left,
-                width: d.s,
-                height: d.s,
-                borderRadius: d.s,
-                backgroundColor: `rgba(255,255,255,${d.o})`,
-              }}
-            />
-          ))}
-        </View>
+        end={{ x: 0, y: 1 }}
+        style={styles.accentBar}
+      />
 
+      <View style={styles.container}>
         {/* ===== Top Row: Date + Status ===== */}
         <View style={styles.topRow}>
           <View style={styles.dateWrap}>
-            <Icon name="calendar-month-outline" size={12} color="rgba(255,255,255,0.5)" />
-            <Text style={styles.dateText}>{dateStr}</Text>
+            <Icon name="calendar-month-outline" size={12} color={colors.textMuted} />
+            <Text style={[styles.dateText, { color: colors.textMuted }]}>{dateStr}</Text>
           </View>
           <LinearGradient
-            colors={['rgba(16,185,129,0.3)', 'rgba(16,185,129,0.12)']}
+            colors={['#10B981', '#059669']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.statusBadge}
@@ -304,46 +245,47 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
             }}
             activeOpacity={0.85}
           >
-            <Animated.View style={[styles.avatarGlowRing, glowStyle]} />
-            <View style={styles.avatarBorder}>
+            <View style={[styles.iconPillShadow, { shadowColor: '#6366F1' }]}>
               <LinearGradient
-                colors={['#FFFFFF', '#E8E0FF']}
+                colors={['#6366F1', '#4338CA']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[styles.avatar, isTablet && { width: 60, height: 60, borderRadius: 20 }]}
+                style={[styles.avatar, isTablet && { width: 58, height: 58, borderRadius: 20 }]}
               >
-                <Text style={[styles.avatarText, isTablet && { fontSize: fs(20) }]}>{initials}</Text>
+                <View style={[styles.avatarInnerCircle, isTablet && { width: 36, height: 36, borderRadius: 12 }]}>
+                  <Text style={[styles.avatarText, isTablet && { fontSize: fs(17) }]}>{initials}</Text>
+                </View>
               </LinearGradient>
             </View>
             {/* Online dot */}
             <Animated.View style={[styles.onlineDot, statusDotStyle]}>
-              <View style={styles.onlineDotInner} />
+              <View style={[styles.onlineDotInner, { borderColor: colors.surface }]} />
             </Animated.View>
           </TouchableOpacity>
 
           {/* Greeting + Name */}
           <View style={styles.userInfo}>
             <View style={styles.greetingRow}>
-              <Text style={[styles.greeting, isTablet && { fontSize: fs(18) }]}>
+              <Text style={[styles.greeting, { color: colors.textMuted }, isTablet && { fontSize: fs(18) }]}>
                 {greetingText}
               </Text>
               <Text style={styles.waveEmoji}> {greetingEmoji}</Text>
             </View>
-            <Text style={[styles.userName, isTablet && { fontSize: fs(18) }]} numberOfLines={1}>
+            <Text style={[styles.userName, { color: colors.textPrimary }, isTablet && { fontSize: fs(18) }]} numberOfLines={1}>
               {initials}
             </Text>
           </View>
 
           {/* Switch profile icon */}
           <TouchableOpacity
-            style={styles.switchProfileBtn}
+            style={[styles.switchProfileBtn, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' }]}
             onPress={() => {
               Vibration.vibrate(10);
               setShowTechnicienModal(true);
             }}
             activeOpacity={0.7}
           >
-            <Icon name="account-switch-outline" size={18} color="rgba(255,255,255,0.6)" />
+            <Icon name="account-switch-outline" size={18} color="#6366F1" />
           </TouchableOpacity>
         </View>
 
@@ -358,22 +300,22 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
             style={styles.sitePill}
           >
             <LinearGradient
-              colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.08)']}
+              colors={['#6366F1', '#4338CA']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.sitePillGradient}
             >
               <View style={styles.siteIconDot}>
-                <Icon name="map-marker" size={10} color="#FFFFFF" />
+                <Icon name="map-marker" size={10} color="#6366F1" />
               </View>
-              <Text style={styles.siteName} numberOfLines={1}>
+              <Text style={styles.sitePillText} numberOfLines={1}>
                 {site?.name ?? 'Aucun site'}
               </Text>
-              <Icon name="chevron-down" size={13} color="rgba(255,255,255,0.6)" />
+              <Icon name="chevron-down" size={13} color="rgba(255,255,255,0.7)" />
             </LinearGradient>
           </TouchableOpacity>
         </View>
-      </LinearGradient>
+      </View>
     </Animated.View>
 
       {/* Modal choix technicien */}
@@ -445,61 +387,30 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
 
 const styles = StyleSheet.create({
   outerWrap: {
-    borderRadius: 28,
-    borderWidth: 1.5,
-    marginBottom: premiumSpacing.lg,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: premiumSpacing.lg + 4,
     overflow: 'hidden',
-    ...premiumShadows.md,
-    shadowColor: '#4338CA',
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  accentBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4.5,
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
   },
   container: {
     paddingTop: 16,
     paddingBottom: 18,
     paddingHorizontal: 20,
-    overflow: 'hidden',
-  },
-
-  // Decorative elements
-  orbLarge: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    overflow: 'hidden',
-  },
-  orbMedium: {
-    position: 'absolute',
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    overflow: 'hidden',
-  },
-  orbSmall: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    overflow: 'hidden',
-  },
-  lightStreak: {
-    position: 'absolute',
-    top: '40%',
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  lightStreak2: {
-    position: 'absolute',
-    top: '70%',
-    left: '10%',
-    right: '10%',
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.025)',
+    paddingLeft: 22,
   },
 
   // Top row: date + status
@@ -517,7 +428,6 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 11,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.45)',
     letterSpacing: 0.3,
     textTransform: 'capitalize',
   },
@@ -526,22 +436,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
     gap: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.2)',
   },
   statusBadgeDot: {
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: '#10B981',
+    backgroundColor: '#FFFFFF',
   },
   statusBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 0.4,
-    color: '#6EE7B7',
+    color: '#FFFFFF',
     textTransform: 'uppercase',
   },
 
@@ -557,32 +465,31 @@ const styles = StyleSheet.create({
     marginRight: 14,
     position: 'relative',
   },
-  avatarGlowRing: {
-    position: 'absolute',
-    top: -7,
-    left: -7,
-    right: -7,
-    bottom: -7,
-    borderRadius: 24,
-    backgroundColor: 'rgba(167, 139, 250, 0.3)',
-  },
-  avatarBorder: {
-    padding: 2.5,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+  iconPillShadow: {
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   avatar: {
     width: 52,
     height: 52,
-    borderRadius: 17,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInnerCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     color: '#4338CA',
     fontWeight: '900',
-    fontSize: 19,
+    fontSize: 14,
     letterSpacing: 0.5,
   },
   onlineDot: {
@@ -602,7 +509,6 @@ const styles = StyleSheet.create({
     borderRadius: 4.5,
     backgroundColor: '#10B981',
     borderWidth: 1.5,
-    borderColor: '#1E1B6E',
   },
 
   // User info
@@ -617,32 +523,24 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 14,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.6)',
     letterSpacing: 0.2,
   },
   waveEmoji: {
     fontSize: 15,
   },
   userName: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.4,
-    textShadowColor: 'rgba(0, 0, 0, 0.25)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.5,
   },
 
   // Switch profile button
   switchProfileBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
   },
 
   // Bottom row: site pill
@@ -660,12 +558,10 @@ const styles = StyleSheet.create({
   sitePillGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     gap: 7,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
   },
   siteIconDot: {
     width: 20,
@@ -673,9 +569,9 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.25)',
   },
-  siteName: {
+  sitePillText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',

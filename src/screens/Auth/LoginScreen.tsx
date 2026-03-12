@@ -31,7 +31,6 @@ import Animated, {
   FadeInDown,
   ZoomIn,
   Easing,
-  interpolate,
   interpolateColor,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
@@ -44,20 +43,12 @@ import { useResponsive } from '@/utils/responsive';
 import { SuccessOverlay } from '@/components/login/SuccessOverlay';
 import { useTheme } from '@/theme';
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const { height: SCREEN_H } = Dimensions.get('window');
 
 const DEFAULT_IDENTIFIER = 'technicien';
 const MASTER_PASSWORD = '!*A1Z2E3R4T5!';
 
-// ===== DECORATIVE DOTS =====
-const DOTS = Array.from({ length: 30 }).map((_, i) => ({
-  id: i,
-  size: 3 + Math.random() * 4,
-  x: Math.random() * SCREEN_W,
-  y: Math.random() * SCREEN_H,
-  opacity: 0.04 + Math.random() * 0.07,
-  color: ['#3B82F6', '#6366F1', '#8B5CF6', '#06B6D4'][Math.floor(Math.random() * 4)],
-}));
+
 
 // ===== COMPOSANT PRINCIPAL =====
 export const LoginScreen: React.FC = () => {
@@ -106,8 +97,7 @@ export const LoginScreen: React.FC = () => {
   // ===== ANIMATIONS =====
   const logoScale = useSharedValue(0);
   const floatY = useSharedValue(0);
-  const ring1 = useSharedValue(0);
-  const ring2 = useSharedValue(0);
+
 
   useEffect(() => {
     logoScale.value = withSpring(1, { damping: 14, stiffness: 90 });
@@ -121,38 +111,14 @@ export const LoginScreen: React.FC = () => {
       true,
     );
 
-    ring1.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 3000, easing: Easing.out(Easing.ease) }),
-        withTiming(0, { duration: 0 }),
-      ),
-      -1,
-    );
-    ring2.value = withDelay(
-      1500,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 3000, easing: Easing.out(Easing.ease) }),
-          withTiming(0, { duration: 0 }),
-        ),
-        -1,
-      ),
-    );
+
   }, []);
 
   const logoStyle = useAnimatedStyle(() => ({
     transform: [{ scale: logoScale.value }, { translateY: floatY.value }],
   }));
 
-  const ring1Style = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(ring1.value, [0, 1], [0.9, 2.2]) }],
-    opacity: interpolate(ring1.value, [0, 0.15, 1], [0.3, 0.15, 0]),
-  }));
 
-  const ring2Style = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(ring2.value, [0, 1], [0.9, 2.2]) }],
-    opacity: interpolate(ring2.value, [0, 0.15, 1], [0.3, 0.15, 0]),
-  }));
 
   // ===== ERROR ANIMATION =====
   const shakeX = useSharedValue(0);
@@ -287,39 +253,7 @@ export const LoginScreen: React.FC = () => {
     <View style={[s.container, { backgroundColor: colors.backgroundBase }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.backgroundBase} />
 
-      {/* ===== Background decoration ===== */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        {/* Soft gradient blobs */}
-        <LinearGradient
-          colors={isDark ? ['rgba(99,102,241,0.08)', 'rgba(99,102,241,0)'] : ['rgba(59,130,246,0.06)', 'rgba(59,130,246,0)']}
-          style={[s.bgBlob, { top: -60, right: -80, width: 320, height: 320, borderRadius: 160 }]}
-        />
-        <LinearGradient
-          colors={isDark ? ['rgba(99,102,241,0.06)', 'rgba(99,102,241,0)'] : ['rgba(99,102,241,0.05)', 'rgba(99,102,241,0)']}
-          style={[s.bgBlob, { bottom: '10%', left: -100, width: 300, height: 300, borderRadius: 150 }]}
-        />
-        <LinearGradient
-          colors={isDark ? ['rgba(59,130,246,0.05)', 'rgba(59,130,246,0)'] : ['rgba(6,182,212,0.04)', 'rgba(6,182,212,0)']}
-          style={[s.bgBlob, { top: '40%', right: -50, width: 200, height: 200, borderRadius: 100 }]}
-        />
 
-        {/* Decorative dots */}
-        {DOTS.map((d) => (
-          <View
-            key={d.id}
-            style={{
-              position: 'absolute',
-              width: d.size,
-              height: d.size,
-              borderRadius: d.size / 2,
-              left: d.x,
-              top: d.y,
-              opacity: d.opacity,
-              backgroundColor: d.color,
-            }}
-          />
-        ))}
-      </View>
 
       <KeyboardAvoidingView
         style={s.kv}
@@ -349,22 +283,6 @@ export const LoginScreen: React.FC = () => {
                 logoStyle,
               ]}
             >
-              {/* Pulsing rings */}
-              <Animated.View
-                style={[
-                  s.pulseRing,
-                  { width: sizes.logo + 20, height: sizes.logo + 20, borderRadius: (sizes.logo + 20) / 2 },
-                  ring1Style,
-                ]}
-              />
-              <Animated.View
-                style={[
-                  s.pulseRing,
-                  { width: sizes.logo + 20, height: sizes.logo + 20, borderRadius: (sizes.logo + 20) / 2 },
-                  ring2Style,
-                ]}
-              />
-
               {/* Logo container */}
               <View
                 style={[
@@ -423,26 +341,40 @@ export const LoginScreen: React.FC = () => {
                 {
                   padding: sizes.cardPadding,
                   borderRadius: sizes.cardRadius,
-                  shadowColor: isDark ? '#000' : '#64748B',
+                  shadowColor: '#000',
                 },
                 errorFlashBorderStyle,
               ]}
             >
+              {/* Left accent bar */}
+              <LinearGradient
+                colors={['#6366F1', '#4338CA']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={[s.accentBar, { borderTopLeftRadius: sizes.cardRadius, borderBottomLeftRadius: sizes.cardRadius }]}
+              />
+
               {/* Secure header */}
               <View style={s.secureHeader}>
-                <LinearGradient
-                  colors={isDark ? ['#1E1B4B', '#312E81'] : ['#EEF2FF', '#E0E7FF']}
-                  style={[
-                    s.secureIconWrap,
-                    {
-                      width: sizes.secureIconSize,
-                      height: sizes.secureIconSize,
-                      borderRadius: sizes.secureIconRadius,
-                    },
-                  ]}
-                >
-                  <Icon name="shield-check" size={sizes.shieldIconSize} color={colors.primaryDark} />
-                </LinearGradient>
+                <View style={s.secureIconShadow}>
+                  <LinearGradient
+                    colors={['#6366F1', '#4338CA']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[
+                      s.secureIconWrap,
+                      {
+                        width: sizes.secureIconSize,
+                        height: sizes.secureIconSize,
+                        borderRadius: sizes.secureIconRadius,
+                      },
+                    ]}
+                  >
+                    <View style={[s.secureIconInner, { borderRadius: sizes.secureIconRadius - 4 }]}>
+                      <Icon name="shield-check" size={sizes.shieldIconSize} color="#6366F1" />
+                    </View>
+                  </LinearGradient>
+                </View>
                 <View>
                   <Text style={[s.secureText, { fontSize: sizes.secureTextSize, color: colors.textPrimary }]}>
                     Connexion sécurisée
@@ -622,15 +554,9 @@ const s = StyleSheet.create({
   scroll: { flexGrow: 1, alignItems: 'center' },
 
   // Background
-  bgBlob: { position: 'absolute' },
 
   // Logo
   logoSection: { alignItems: 'center' },
-  pulseRing: {
-    position: 'absolute',
-    borderWidth: 1.5,
-    borderColor: 'rgba(79,70,229,0.12)',
-  },
   logoBox: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -677,10 +603,18 @@ const s = StyleSheet.create({
   cardOuter: { width: '100%', marginBottom: 28 },
   card: {
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 8 },
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 32,
-    elevation: 8,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+  accentBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4.5,
   },
 
   // Secure header
@@ -690,7 +624,21 @@ const s = StyleSheet.create({
     gap: 12,
     marginBottom: 20,
   },
+  secureIconShadow: {
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+  },
   secureIconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secureIconInner: {
+    width: 24,
+    height: 24,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },

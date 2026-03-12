@@ -21,6 +21,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAppSelector, useAppDispatch } from '@/store';
+import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { selectSite, loadSites, loadSiblingSites, setSelectedSubSite, selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { articleRepository, mouvementRepository } from '@/database';
 import { DashboardStats, MouvementType } from '@/types';
@@ -49,6 +50,7 @@ export const DashboardScreen: React.FC = () => {
   const { colors, gradients, isDark } = useTheme();
 
   // Store
+  const isSuperviseur = useAppSelector(selectIsSuperviseur);
   const technicien = useAppSelector((state) => state.auth.currentTechnicien);
   const siteActif = useAppSelector((state) => state.site.siteActif);
   const { isConnected, supabaseReachable, syncStatus, pendingCount } = useAppSelector(
@@ -199,7 +201,7 @@ export const DashboardScreen: React.FC = () => {
         />
 
         {/* ===== BOUTON SCAN XXL ===== */}
-        <ScanButtonXXL onPress={handleScan} />
+        {!isSuperviseur && <ScanButtonXXL onPress={handleScan} />}
 
         {/* Toggle sous-sites supprimé – changement de site via la bannière */}
         {false && childSites.length > 1 && (
@@ -339,40 +341,46 @@ export const DashboardScreen: React.FC = () => {
         >
           <SectionHeader title="Actions rapides" accentColor="#6366F1" />
           <View style={[styles.actionsRow, isTablet && styles.actionsRowTablet]}>
-            <QuickActionButton
-              icon="plus"
-              iconGradient={gradients.success}
-              label="Entrée"
-              onPress={() =>
-                navigation.navigate('Mouvements', {
-                  screen: 'MouvementForm',
-                  params: { type: 'entree' },
-                })
-              }
-            />
-            <QuickActionButton
-              icon="minus"
-              iconGradient={gradients.danger}
-              label="Sortie"
-              onPress={() =>
-                navigation.navigate('Mouvements', {
-                  screen: 'MouvementForm',
-                  params: { type: 'sortie' },
-                })
-              }
-            />
+            {!isSuperviseur && (
+              <QuickActionButton
+                icon="plus"
+                iconGradient={gradients.success}
+                label="Entrée"
+                onPress={() =>
+                  navigation.navigate('Mouvements', {
+                    screen: 'MouvementForm',
+                    params: { type: 'entree' },
+                  })
+                }
+              />
+            )}
+            {!isSuperviseur && (
+              <QuickActionButton
+                icon="minus"
+                iconGradient={gradients.danger}
+                label="Sortie"
+                onPress={() =>
+                  navigation.navigate('Mouvements', {
+                    screen: 'MouvementForm',
+                    params: { type: 'sortie' },
+                  })
+                }
+              />
+            )}
             <QuickActionButton
               icon="format-list-bulleted"
               iconGradient={gradients.primary}
               label="Articles"
               onPress={() => navigation.navigate('Articles')}
             />
-            <QuickActionButton
-              icon="swap-horizontal"
-              iconGradient={['#3B82F6', '#6366F1']}
-              label="Transfert"
-              onPress={() => navigation.navigate('Mouvements', { screen: 'TransfertForm' })}
-            />
+            {!isSuperviseur && (
+              <QuickActionButton
+                icon="swap-horizontal"
+                iconGradient={['#3B82F6', '#6366F1']}
+                label="Transfert"
+                onPress={() => navigation.navigate('Mouvements', { screen: 'TransfertForm' })}
+              />
+            )}
           </View>
         </View>
 
@@ -416,9 +424,9 @@ export const DashboardScreen: React.FC = () => {
             <PremiumEmptyState
               icon="package-variant"
               title="Aucun mouvement récent"
-              subtitle="Scannez un article pour enregistrer votre premier mouvement de stock"
-              actionLabel="Scanner maintenant"
-              onActionPress={handleScan}
+              subtitle={isSuperviseur ? "Aucun mouvement de stock enregistré pour le moment" : "Scannez un article pour enregistrer votre premier mouvement de stock"}
+              actionLabel={isSuperviseur ? undefined : "Scanner maintenant"}
+              onActionPress={isSuperviseur ? undefined : handleScan}
             />
           )}
         </View>
@@ -550,26 +558,26 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: 'row',
-    gap: premiumSpacing.md,
+    gap: premiumSpacing.md + 2,
     marginBottom: 0,
   },
   statsGridTablet: {
     gap: premiumSpacing.lg,
   },
   actionsSection: {
-    marginTop: premiumSpacing.xl,
+    marginTop: premiumSpacing.xl + 4,
   },
   actionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: premiumSpacing.sm,
+    gap: premiumSpacing.sm + 2,
   },
   actionsRowTablet: {
     gap: premiumSpacing.lg,
     justifyContent: 'flex-start',
   },
   mouvementsSection: {
-    marginTop: premiumSpacing.xxl,
+    marginTop: premiumSpacing.xxl + 4,
   },
   mouvementsGridTablet: {
     flexDirection: 'row',

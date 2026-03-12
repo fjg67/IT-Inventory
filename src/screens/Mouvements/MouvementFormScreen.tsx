@@ -456,18 +456,28 @@ export const MouvementFormScreen: React.FC = () => {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* ===== HEADER ===== */}
-      <Animated.View entering={FadeInDown.duration(400)} style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.borderSubtle }]}>
+      <LinearGradient
+        colors={['#4338CA', '#6366F1', '#818CF8']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        {/* Decorative orbs */}
+        <View style={styles.headerDeco1} />
+        <View style={styles.headerDeco2} />
+        <View style={styles.headerDeco3} />
+
         <View style={styles.headerTop}>
           <TouchableOpacity
-            style={[styles.backBtn, { backgroundColor: colors.background }]}
+            style={styles.backBtn}
             onPress={() => {
               Vibration.vibrate(10);
               navigation.goBack();
             }}
           >
-            <Icon name="arrow-left" size={22} color={colors.textPrimary} />
+            <Icon name="arrow-left" size={20} color="#FFF" />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Mouvement de stock</Text>
+          <Text style={styles.headerTitle}>Mouvement de stock</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -476,27 +486,39 @@ export const MouvementFormScreen: React.FC = () => {
           {['Article', 'Type', 'Détails'].map((step, i) => {
             const done = i < currentStep;
             const active = i === currentStep;
-            const dotBg = done ? colors.success : active ? colors.primary : colors.borderSubtle;
             return (
               <View key={step} style={styles.stepItem}>
                 <View style={styles.stepDotRow}>
-                  <View style={[styles.stepDot, { backgroundColor: dotBg }]}>
-                    {done && <Icon name="check" size={10} color="#FFF" />}
-                  </View>
+                  {done ? (
+                    <LinearGradient colors={['#34D399', '#10B981']} style={styles.stepDot}>
+                      <Icon name="check" size={10} color="#FFF" />
+                    </LinearGradient>
+                  ) : active ? (
+                    <LinearGradient colors={['#818CF8', '#6366F1']} style={styles.stepDot}>
+                      <View style={styles.stepDotActive} />
+                    </LinearGradient>
+                  ) : (
+                    <View style={[styles.stepDot, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+                  )}
                   {i < 2 && (
-                    <View style={[styles.stepLineTrack, { backgroundColor: colors.borderSubtle }]}>
-                      <View style={[styles.stepLineFill, { backgroundColor: colors.success, width: done ? '100%' : '0%' }]} />
+                    <View style={styles.stepLineTrack}>
+                      <View style={[styles.stepLineFill, { width: done ? '100%' : '0%' }]} />
                     </View>
                   )}
                 </View>
-                <Text style={[styles.stepLabel, { color: done ? colors.success : active ? colors.primary : colors.textMuted }]}>
+                <Text style={[
+                  styles.stepLabel,
+                  done && { color: '#34D399' },
+                  active && { color: '#FFF', fontWeight: '700' },
+                  !done && !active && { color: 'rgba(255,255,255,0.45)' },
+                ]}>
                   {step}
                 </Text>
               </View>
             );
           })}
         </View>
-      </Animated.View>
+      </LinearGradient>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -513,14 +535,18 @@ export const MouvementFormScreen: React.FC = () => {
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={handleScanPress}
-                style={[styles.scanZone, { borderColor: colors.primaryGlow }]}
+                style={styles.scanZone}
               >
                 <LinearGradient
-                  colors={[colors.primaryGlow, colors.primaryGlowStrong]}
+                  colors={['rgba(99,102,241,0.06)', 'rgba(99,102,241,0.02)']}
                   style={styles.scanGradient}
                 >
-                  <View style={[styles.scanIconCircle, { backgroundColor: colors.primaryGlow }]}>
-                    <Icon name="barcode-scan" size={40} color={colors.primary} />
+                  <View style={styles.scanIconPill}>
+                    <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.scanIconGrad}>
+                      <View style={styles.scanIconInner}>
+                        <Icon name="barcode-scan" size={32} color="#6366F1" />
+                      </View>
+                    </LinearGradient>
                   </View>
                   <Text style={[styles.scanTitle, { color: colors.primary }]}>
                     {isScanning ? 'Scan en cours...' : 'Appuyez pour scanner'}
@@ -540,7 +566,10 @@ export const MouvementFormScreen: React.FC = () => {
 
               {/* ===== 2. SEARCH ===== */}
               <View style={styles.searchSection}>
-                <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Code-barres / Référence</Text>
+                <View style={styles.searchLabelRow}>
+                  <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.searchLabelAccent} />
+                  <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Code-barres / Référence</Text>
+                </View>
                 <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
                   <Icon name="magnify" size={20} color={colors.textMuted} />
                   <TextInput
@@ -599,13 +628,18 @@ export const MouvementFormScreen: React.FC = () => {
           {article && (
             <Animated.View entering={ZoomIn.duration(350)} style={styles.articleSection}>
               <View style={styles.articleLabelRow}>
-                <Icon name="check-circle" size={18} color={colors.success} />
+                <LinearGradient colors={['#10B981', '#059669']} style={styles.articleLabelDot} />
                 <Text style={[styles.articleLabelText, { color: colors.success }]}>Article sélectionné</Text>
               </View>
-              <View style={[styles.articleCard, { backgroundColor: colors.surface, borderColor: colors.success, shadowColor: colors.success }]}>
+              <View style={[styles.articleCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+                <LinearGradient colors={['#10B981', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.articleCardStrip} />
                 <View style={styles.articleCardTop}>
-                  <View style={[styles.articleIconCircle, { backgroundColor: colors.primaryGlow }]}>
-                    <Icon name="package-variant-closed" size={22} color={colors.primary} />
+                  <View style={styles.articleIconPill}>
+                    <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.articleIconGrad}>
+                      <View style={styles.articleIconInner}>
+                        <Icon name="package-variant-closed" size={18} color="#6366F1" />
+                      </View>
+                    </LinearGradient>
                   </View>
                   <View style={styles.articleInfo}>
                     <Text style={[styles.articleRef, { color: colors.textSecondary }]}>{article.reference}</Text>
@@ -618,11 +652,11 @@ export const MouvementFormScreen: React.FC = () => {
                 <View style={styles.articleMeta}>
                   <View style={[
                     styles.stockBadge,
-                    { backgroundColor: stockActuel < (article.stockMini ?? 0) ? colors.dangerBg : colors.primaryGlow },
+                    { backgroundColor: stockActuel < (article.stockMini ?? 0) ? colors.dangerBg : 'rgba(99,102,241,0.08)' },
                   ]}>
                     <Text style={[
                       styles.stockBadgeText,
-                      { color: stockActuel < (article.stockMini ?? 0) ? colors.danger : colors.primary },
+                      { color: stockActuel < (article.stockMini ?? 0) ? colors.danger : '#6366F1' },
                     ]}>
                       Stock actuel : {stockActuel} {article.unite}
                     </Text>
@@ -642,8 +676,11 @@ export const MouvementFormScreen: React.FC = () => {
           {/* ===== 3.5 SITE SELECTOR (sous-sites) ===== */}
           {childSites.length > 0 && !selectedSubSiteId && (
             <Animated.View entering={FadeInUp.delay(50).duration(400)} style={{ marginBottom: 16 }}>
-              <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Stock concerné <Text style={{ color: colors.danger }}>*</Text></Text>
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+              <View style={styles.sectionLabelRow}>
+                <LinearGradient colors={['#4F46E5', '#4338CA']} style={styles.sectionLabelAccent} />
+                <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Stock concerné <Text style={{ color: colors.danger }}>*</Text></Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
                 {childSites.map(site => {
                   const selected = String(site.id) === String(targetSiteId);
                   return (
@@ -651,21 +688,22 @@ export const MouvementFormScreen: React.FC = () => {
                       key={String(site.id)}
                       onPress={() => { setLocalTargetSiteId(String(site.id)); Vibration.vibrate(10); }}
                       style={[
-                        {
-                          flex: 1,
-                          paddingVertical: 12,
-                          paddingHorizontal: 10,
-                          borderRadius: 12,
-                          borderWidth: 1.5,
-                          borderColor: selected ? colors.primary : colors.borderSubtle,
-                          backgroundColor: selected ? colors.primaryGlow : colors.surface,
-                          alignItems: 'center',
-                        },
+                        styles.siteCard,
+                        { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+                        selected && styles.siteCardSelected,
                       ]}
                       activeOpacity={0.7}
                     >
-                      <Icon name="warehouse" size={18} color={selected ? colors.primary : colors.textMuted} />
-                      <Text style={{ color: selected ? colors.primary : colors.textSecondary, fontWeight: selected ? '700' : '500', fontSize: 12, marginTop: 4, textAlign: 'center' }} numberOfLines={1}>
+                      {selected ? (
+                        <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.siteCardIconPill}>
+                          <View style={styles.siteCardIconInner}>
+                            <Icon name="warehouse" size={16} color="#6366F1" />
+                          </View>
+                        </LinearGradient>
+                      ) : (
+                        <Icon name="warehouse" size={18} color={colors.textMuted} />
+                      )}
+                      <Text style={[styles.siteCardText, { color: selected ? '#6366F1' : colors.textSecondary }, selected && { fontWeight: '700' }]} numberOfLines={1}>
                         {site.nom}
                       </Text>
                     </TouchableOpacity>
@@ -678,6 +716,7 @@ export const MouvementFormScreen: React.FC = () => {
           {/* ===== 4. TYPE SELECTOR ===== */}
           <Animated.View entering={FadeInUp.delay(100).duration(400)}>
             <View style={styles.typeSectionHeader}>
+              <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.sectionLabelAccent} />
               <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Type de mouvement</Text>
               <Text style={[styles.required, { color: colors.danger }]}>*</Text>
             </View>
@@ -691,7 +730,7 @@ export const MouvementFormScreen: React.FC = () => {
                     style={[
                       styles.typeCard,
                       { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
-                      selected && { backgroundColor: cfg.bgColor, borderColor: cfg.color },
+                      selected && { borderColor: cfg.color, borderWidth: 2 },
                     ]}
                     activeOpacity={0.75}
                     onPress={() => {
@@ -699,11 +738,17 @@ export const MouvementFormScreen: React.FC = () => {
                       Vibration.vibrate(12);
                     }}
                   >
-                    <Icon
-                      name={cfg.icon}
-                      size={30}
-                      color={selected ? cfg.color : colors.textMuted}
-                    />
+                    {selected ? (
+                      <LinearGradient colors={cfg.gradient} style={styles.typeIconPill}>
+                        <View style={styles.typeIconInner}>
+                          <Icon name={cfg.icon} size={22} color={cfg.color} />
+                        </View>
+                      </LinearGradient>
+                    ) : (
+                      <View style={[styles.typeIconPlain, { backgroundColor: colors.background }]}>
+                        <Icon name={cfg.icon} size={22} color={colors.textMuted} />
+                      </View>
+                    )}
                     <Text style={[styles.typeLabel, { color: colors.textSecondary }, selected && { color: cfg.color, fontWeight: '700' }]}>
                       {cfg.label}
                     </Text>
@@ -716,17 +761,23 @@ export const MouvementFormScreen: React.FC = () => {
           {/* ===== 5. QUANTITY STEPPER ===== */}
           <Animated.View entering={FadeInUp.delay(200).duration(400)}>
             <View style={styles.typeSectionHeader}>
+              <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.sectionLabelAccent} />
               <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Quantité</Text>
               <Text style={[styles.required, { color: colors.danger }]}>*</Text>
             </View>
             <View style={[styles.stepperRow, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
               <TouchableOpacity
-                style={[styles.qtyBtn, { backgroundColor: colors.dangerBg }]}
+                style={styles.qtyBtn}
                 onPress={handleDecrement}
                 disabled={quantite <= 1}
                 activeOpacity={0.7}
               >
-                <Icon name="minus" size={22} color={quantite <= 1 ? colors.borderSubtle : colors.danger} />
+                <LinearGradient
+                  colors={quantite <= 1 ? ['#E5E7EB', '#D1D5DB'] : ['#EF4444', '#DC2626']}
+                  style={styles.qtyBtnGrad}
+                >
+                  <Icon name="minus" size={20} color="#FFF" />
+                </LinearGradient>
               </TouchableOpacity>
 
               <TextInput
@@ -739,11 +790,16 @@ export const MouvementFormScreen: React.FC = () => {
               />
 
               <TouchableOpacity
-                style={[styles.qtyBtn, { backgroundColor: colors.successBg }]}
+                style={styles.qtyBtn}
                 onPress={handleIncrement}
                 activeOpacity={0.7}
               >
-                <Icon name="plus" size={22} color={colors.success} />
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  style={styles.qtyBtnGrad}
+                >
+                  <Icon name="plus" size={20} color="#FFF" />
+                </LinearGradient>
               </TouchableOpacity>
             </View>
 
@@ -761,13 +817,21 @@ export const MouvementFormScreen: React.FC = () => {
           {/* ===== 6. STOCK PREVIEW ===== */}
           {article && nouveauStock !== null && (
             <Animated.View entering={FadeInUp.delay(250).duration(400)}>
-              <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Aperçu du stock</Text>
-              <View style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: typeColor + '30' }]}>
+              <View style={styles.sectionLabelRow}>
+                <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.sectionLabelAccent} />
+                <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Aperçu du stock</Text>
+              </View>
+              <View style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+                <LinearGradient colors={[typeColor, typeColor + 'CC']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.previewCardStrip} />
                 <View style={styles.previewCol}>
                   <Text style={[styles.previewNumber, { color: colors.textPrimary }]}>{stockActuel}</Text>
                   <Text style={[styles.previewCaption, { color: colors.textMuted }]}>Stock actuel</Text>
                 </View>
-                <Icon name="arrow-right" size={22} color={colors.textMuted} />
+                <View style={styles.previewArrow}>
+                  <LinearGradient colors={[typeColor + '20', typeColor + '08']} style={styles.previewArrowBg}>
+                    <Icon name="arrow-right" size={20} color={typeColor} />
+                  </LinearGradient>
+                </View>
                 <View style={styles.previewCol}>
                   <Text style={[styles.previewNumber, { color: typeColor }]}>{nouveauStock}</Text>
                   <Text style={[styles.previewCaption, { color: colors.textMuted }]}>Nouveau stock</Text>
@@ -797,7 +861,10 @@ export const MouvementFormScreen: React.FC = () => {
           {/* ===== 7. OPTIONAL FIELDS ===== */}
           <Animated.View entering={FadeInUp.delay(300).duration(400)}>
             {/* Commentaire */}
-            <Text style={[styles.sectionLabel, { marginTop: 24, color: colors.textPrimary }]}>Commentaire (optionnel)</Text>
+            <View style={[styles.sectionLabelRow, { marginTop: 24 }]}>
+              <LinearGradient colors={['#64748B', '#475569']} style={styles.sectionLabelAccent} />
+              <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Commentaire (optionnel)</Text>
+            </View>
             <View style={[styles.textareaBox, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
               <TextInput
                 style={[styles.textarea, { color: colors.textPrimary }]}
@@ -937,27 +1004,59 @@ const styles = StyleSheet.create({
 
   // ===== HEADER =====
   header: {
-    paddingTop: 44,
-    paddingBottom: 12,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 44) + 8 : 54,
+    paddingBottom: 18,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
+    overflow: 'hidden',
+  },
+  headerDeco1: {
+    position: 'absolute',
+    top: -50,
+    right: -40,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  headerDeco2: {
+    position: 'absolute',
+    bottom: -40,
+    left: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  headerDeco3: {
+    position: 'absolute',
+    top: 20,
+    left: '40%' as any,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 18,
   },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
 
   // ===== STEPPER =====
@@ -976,26 +1075,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  stepDotActive: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FFF',
   },
   stepLineTrack: {
     flex: 1,
     height: 3,
     borderRadius: 1.5,
     marginLeft: 4,
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
   stepLineFill: {
     height: '100%',
     borderRadius: 1.5,
+    backgroundColor: '#34D399',
   },
   stepLabel: {
     fontSize: 11,
     fontWeight: '600',
-    marginTop: 4,
+    marginTop: 6,
+    color: 'rgba(255,255,255,0.5)',
   },
 
   // ===== SCAN ZONE =====
@@ -1005,27 +1113,41 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 2,
     borderStyle: 'dashed',
+    borderColor: 'rgba(99,102,241,0.2)',
   },
   scanGradient: {
-    paddingVertical: 36,
+    paddingVertical: 32,
     paddingHorizontal: 24,
     alignItems: 'center',
   },
-  scanIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  scanIconPill: {
+    marginBottom: 14,
+  },
+  scanIconGrad: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    padding: 4,
+  },
+  scanIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scanTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   scanSubtitle: {
     fontSize: 13,
     marginTop: 6,
+    fontWeight: '400',
   },
 
   // ===== OR =====
@@ -1048,17 +1170,39 @@ const styles = StyleSheet.create({
   searchSection: {
     marginBottom: 8,
   },
+  searchLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  searchLabelAccent: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
+  },
+  sectionLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  sectionLabelAccent: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
+  },
   sectionLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    height: 52,
-    paddingHorizontal: 14,
+    borderRadius: 16,
+    height: 54,
+    paddingHorizontal: 16,
     borderWidth: 1.5,
     gap: 10,
   },
@@ -1138,33 +1282,63 @@ const styles = StyleSheet.create({
   articleLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     marginBottom: 10,
+  },
+  articleLabelDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   articleLabelText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   articleCard: {
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
-    borderWidth: 2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
+    paddingLeft: 20,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
     elevation: 3,
+    overflow: 'hidden',
+    position: 'relative' as const,
+  },
+  articleCardStrip: {
+    position: 'absolute' as const,
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4.5,
+    borderTopLeftRadius: 18,
+    borderBottomLeftRadius: 18,
   },
   articleCardTop: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-  articleIconCircle: {
+  articleIconPill: {
+    marginRight: 12,
+  },
+  articleIconGrad: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    padding: 3,
+  },
+  articleIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   articleInfo: {
     flex: 1,
@@ -1214,7 +1388,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 24,
     marginBottom: 10,
-    gap: 4,
+    gap: 8,
   },
   required: {
     fontSize: 14,
@@ -1228,43 +1402,70 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 92,
-    borderRadius: 16,
-    borderWidth: 2,
+    height: 100,
+    borderRadius: 18,
+    borderWidth: 1.5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  typeIconPill: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 3,
+    marginBottom: 8,
+  },
+  typeIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeIconPlain: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   typeLabel: {
     fontSize: 13,
     fontWeight: '600',
-    marginTop: 8,
   },
 
   // ===== QUANTITY =====
   stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1.5,
-    height: 60,
+    height: 64,
     paddingHorizontal: 8,
+    gap: 4,
   },
-  qtyBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  qtyBtn: {},
+  qtyBtnGrad: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   qtyInput: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
     padding: 0,
+    letterSpacing: -0.5,
   },
 
   // ===== STOCK PREVIEW =====
@@ -1272,24 +1473,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
-    paddingVertical: 18,
+    borderRadius: 18,
+    paddingVertical: 22,
     paddingHorizontal: 20,
-    borderWidth: 1.5,
-    gap: 20,
+    paddingLeft: 24,
+    borderWidth: 1,
+    gap: 16,
     marginTop: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+    overflow: 'hidden',
+    position: 'relative' as const,
+  },
+  previewCardStrip: {
+    position: 'absolute' as const,
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4.5,
+    borderTopLeftRadius: 18,
+    borderBottomLeftRadius: 18,
   },
   previewCol: {
     alignItems: 'center',
+    flex: 1,
   },
   previewNumber: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
   previewCaption: {
     fontSize: 12,
     fontWeight: '500',
-    marginTop: 2,
+    marginTop: 4,
+  },
+  previewArrow: {},
+  previewArrowBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   warningBanner: {
     flexDirection: 'row',
@@ -1322,9 +1550,9 @@ const styles = StyleSheet.create({
 
   // ===== OPTIONAL FIELDS =====
   textareaBox: {
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1.5,
-    padding: 14,
+    padding: 16,
     minHeight: 88,
   },
   textarea: {
@@ -1332,6 +1560,7 @@ const styles = StyleSheet.create({
     padding: 0,
     textAlignVertical: 'top',
     minHeight: 50,
+    lineHeight: 20,
   },
   charCount: {
     fontSize: 11,
@@ -1343,25 +1572,62 @@ const styles = StyleSheet.create({
   // ===== SUBMIT =====
   submitTouchable: {
     marginTop: 32,
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 14,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 10,
   },
   submitGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 58,
-    borderRadius: 16,
+    height: 60,
+    borderRadius: 18,
     gap: 10,
   },
   submitText: {
     fontSize: 17,
     fontWeight: '700',
     color: '#FFF',
+    letterSpacing: 0.3,
+  },
+
+  // ===== SITE SELECTOR CARDS =====
+  siteCard: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    gap: 6,
+  },
+  siteCardSelected: {
+    borderColor: '#6366F1',
+    backgroundColor: 'rgba(99,102,241,0.04)',
+  },
+  siteCardIconPill: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
+  },
+  siteCardIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  siteCardText: {
+    fontWeight: '500',
+    fontSize: 12,
+    textAlign: 'center',
   },
 
   // ===== SUCCESS OVERLAY =====

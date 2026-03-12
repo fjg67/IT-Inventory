@@ -17,10 +17,7 @@ import Animated, {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 import {
-  premiumTypography,
-  premiumShadows,
   premiumSpacing,
-  premiumBorderRadius,
 } from '../../../constants/premiumTheme';
 import { useTheme } from '@/theme';
 
@@ -67,12 +64,10 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
       style={[
         styles.container,
         {
-          backgroundColor: isDark
-            ? 'rgba(255,255,255,0.04)'
-            : '#FFFFFF',
+          backgroundColor: colors.surface,
           borderColor: isFocused
             ? colors.primary + '60'
-            : colors.borderSubtle,
+            : isDark ? colors.borderSubtle : colors.borderMedium,
           shadowColor: isFocused
             ? colors.primary
             : '#000',

@@ -14,6 +14,7 @@ const RECIPIENT_EMAILS = [
   'Robert.LAMANDE-ext@ca-alsace-vosges.fr',
   'Olivier.KLOTZ-ext@ca-alsace-vosges.fr',
   'Florian.JOVEGARCIA-ext@ca-alsace-vosges.fr',
+  'guillaume.oudinot@ca-alsace-vosges.fr',
 ];
 
 // KV store key for J-1 comparison
@@ -92,7 +93,7 @@ async function fetchLowStockArticles(): Promise<AlertRow[]> {
   const stockRows = await supabaseQuery(
     'ArticleStock',
     'quantity,articleId,siteId,Article!inner(id,name,reference,emplacement,minStock,isArchived),Site!inner(name)',
-    'Article.isArchived=eq.false'
+    'Article.isArchived=is.false'
   );
 
   const alerts: AlertRow[] = [];
@@ -133,7 +134,9 @@ async function getPreviousCount(): Promise<number | null> {
   try {
     const rows = await supabaseQuery('app_metadata', 'value', `key=eq.${KV_PREV_KEY}`);
     if (rows.length > 0) return parseInt(rows[0].value, 10);
-  } catch { /* table may not exist yet, that's fine */ }
+  } catch (e) {
+    console.warn('[daily-stock-alert] getPreviousCount failed (table may not exist):', e);
+  }
   return null;
 }
 
@@ -414,6 +417,7 @@ serve(async (req) => {
 
   try {
     console.log('[daily-stock-alert] Démarrage du rapport quotidien...');
+    console.log(`[daily-stock-alert] SUPABASE_URL=${SUPABASE_URL ? 'SET' : 'MISSING'}, SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY ? 'SET' : 'MISSING'}, RESEND_API_KEY=${RESEND_API_KEY ? 'SET' : 'MISSING'}`);
 
     // 1. Récupérer les articles en alerte
     const alerts = await fetchLowStockArticles();
@@ -461,32 +465,44 @@ serve(async (req) => {
     const siteNames = alertsBySite.map((s) => s.siteNom).join(', ');
     const emailSubject = `📊 Rapport stock — ${alerts.length} alerte${alerts.length > 1 ? 's' : ''} (${siteNames})`;
 
-    // 5. Envoyer via Resend
-    const resendRes = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: 'IT-Inventory <noreply@it-inventory.fr>',
-        to: RECIPIENT_EMAILS,
-        subject: emailSubject,
-        html: emailHtml,
-      }),
-    });
+    // 5. Envoyer via Resend (individuellement pour masquer les destinataires)
+    const emailResults = [];
+    for (const recipient of RECIPIENT_EMAILS) {
+      const resendRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: 'IT-Inventory <noreply@it-inventory.fr>',
+          to: [recipient],
+          subject: emailSubject,
+          html: emailHtml,
+        }),
+      });
 
-    if (!resendRes.ok) {
-      const err = await resendRes.json();
-      console.error('[daily-stock-alert] Resend error:', err);
+      if (!resendRes.ok) {
+        const err = await resendRes.json();
+        console.error(`[daily-stock-alert] Resend error for ${recipient}:`, err);
+        emailResults.push({ recipient, success: false, error: err });
+      } else {
+        const result = await resendRes.json();
+        console.log(`[daily-stock-alert] Email envoyé à ${recipient}: ${result.id}`);
+        emailResults.push({ recipient, success: true, emailId: result.id });
+      }
+    }
+
+    const allFailed = emailResults.every((r) => !r.success);
+    if (allFailed) {
       return new Response(
-        JSON.stringify({ error: 'Échec envoi email', details: err }),
+        JSON.stringify({ error: 'Échec envoi email à tous les destinataires', details: emailResults }),
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
 
-    const result = await resendRes.json();
-    console.log(`[daily-stock-alert] Email envoyé avec succès: ${result.id}`);
+    const result = { id: emailResults.find((r) => r.success)?.emailId };
+    console.log(`[daily-stock-alert] Emails envoyés avec succès: ${emailResults.filter((r) => r.success).length}/${emailResults.length}`);
 
     return new Response(
       JSON.stringify({

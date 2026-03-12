@@ -68,6 +68,8 @@ export const tables = {
   stocksSites: 'ArticleStock',
   mouvements: 'StockMovement',
   journalModifications: 'AuditLog',
+  loginHistory: 'LoginHistory',
+  inventoryRecount: 'InventoryRecount',
 } as const;
 
 // Export du client

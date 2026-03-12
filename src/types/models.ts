@@ -48,6 +48,7 @@ export interface Technicien {
   sitePrincipal?: Site;
   actif: boolean;
   dateCreation: Date | string;
+  role?: 'technicien' | 'superviseur';
 }
 
 export interface Categorie {

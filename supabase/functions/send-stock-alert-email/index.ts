@@ -12,6 +12,7 @@ const RECIPIENT_EMAILS = [
   'Robert.LAMANDE-ext@ca-alsace-vosges.fr',
   'Olivier.KLOTZ-ext@ca-alsace-vosges.fr',
   'Florian.JOVEGARCIA-ext@ca-alsace-vosges.fr',
+  'guillaume.oudinot@ca-alsace-vosges.fr',
 ];
 
 interface ProductAlert {
@@ -25,6 +26,8 @@ interface RequestBody {
   // Nouveau format : HTML pré-construit côté app
   subject?: string;
   htmlContent?: string;
+  // Destinataire(s) personnalisé(s) (optionnel, sinon RECIPIENT_EMAILS)
+  to?: string | string[];
   // Ancien format : données brutes
   products?: ProductAlert[];
   siteNom?: string;
@@ -114,7 +117,12 @@ serve(async (req) => {
 
   try {
     const body: RequestBody = await req.json();
-    const { subject, htmlContent, products, siteNom } = body;
+    const { subject, htmlContent, products, siteNom, to } = body;
+
+    // Destinataires : champ 'to' si fourni, sinon liste par défaut
+    const recipients: string[] = to
+      ? (Array.isArray(to) ? to : [to])
+      : RECIPIENT_EMAILS;
 
     // Utiliser le HTML pré-construit si disponible, sinon fallback sur les données brutes
     let emailHtml: string;
@@ -135,33 +143,44 @@ serve(async (req) => {
       );
     }
 
-    // Envoi via Resend
-    const resendRes = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: 'IT-Inventory <noreply@it-inventory.fr>',
-        to: RECIPIENT_EMAILS,
-        subject: emailSubject,
-        html: emailHtml,
-      }),
-    });
+    // Envoi via Resend (individuellement pour masquer les destinataires)
+    const emailResults = [];
+    for (const recipient of recipients) {
+      const resendRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: 'IT-Inventory <noreply@it-inventory.fr>',
+          to: [recipient],
+          subject: emailSubject,
+          html: emailHtml,
+        }),
+      });
 
-    if (!resendRes.ok) {
-      const err = await resendRes.json();
-      console.error('Resend error:', err);
+      if (!resendRes.ok) {
+        const err = await resendRes.json();
+        console.error(`Resend error for ${recipient}:`, err);
+        emailResults.push({ recipient, success: false, error: err });
+      } else {
+        const res = await resendRes.json();
+        emailResults.push({ recipient, success: true, emailId: res.id });
+      }
+    }
+
+    const allFailed = emailResults.every((r) => !r.success);
+    if (allFailed) {
       return new Response(
-        JSON.stringify({ error: 'Échec envoi email', details: err }),
+        JSON.stringify({ error: 'Échec envoi email', details: emailResults }),
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
 
-    const result = await resendRes.json();
+    const result = emailResults.find((r) => r.success);
     return new Response(
-      JSON.stringify({ success: true, emailId: result.id }),
+      JSON.stringify({ success: true, emailId: result?.emailId, sent: emailResults.filter((r) => r.success).length }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     );
   } catch (e) {

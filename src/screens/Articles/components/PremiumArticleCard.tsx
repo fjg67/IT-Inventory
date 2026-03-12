@@ -17,9 +17,7 @@ import Animated, {
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
-  premiumShadows,
   premiumSpacing,
-  premiumBorderRadius,
   premiumAnimation,
 } from '../../../constants/premiumTheme';
 import { useTheme } from '@/theme';
@@ -126,31 +124,25 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
       return {
         gradient: ['#EF4444', '#DC2626'] as const,
         color: '#EF4444',
-        lightColor: isDark ? '#EF444420' : '#FEF2F2',
         icon: 'alert-circle' as const,
         label: 'Rupture',
-        accentColor: '#EF4444',
       };
     }
     if (qty <= mini) {
       return {
         gradient: ['#F59E0B', '#D97706'] as const,
         color: '#F59E0B',
-        lightColor: isDark ? '#F59E0B20' : '#FFFBEB',
         icon: 'alert-outline' as const,
         label: 'Stock faible',
-        accentColor: '#F59E0B',
       };
     }
     return {
       gradient: ['#10B981', '#059669'] as const,
       color: '#10B981',
-      lightColor: isDark ? '#10B98120' : '#ECFDF5',
       icon: 'check-circle-outline' as const,
       label: 'En stock',
-      accentColor: '#10B981',
     };
-  }, [article.quantiteActuelle, article.stockMini, isDark]);
+  }, [article.quantiteActuelle, article.stockMini]);
 
   // Date relative
   const relativeDate = useMemo(() => {
@@ -180,20 +172,20 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
           style={[
             styles.card,
             {
-              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF',
-              borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-              shadowColor: isDark ? '#000' : stockConfig.accentColor,
-              shadowOpacity: isDark ? 0.2 : 0.06,
+              backgroundColor: colors.surface,
+              borderColor: isDark ? colors.borderSubtle : colors.borderMedium,
+              shadowColor: '#000',
+              shadowOpacity: isDark ? 0.15 : 0.06,
             },
             tablet && { padding: premiumSpacing.lg },
           ]}
         >
-          {/* Accent strip left side */}
+          {/* Left accent bar */}
           <LinearGradient
             colors={[...stockConfig.gradient]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
-            style={styles.accentStrip}
+            style={styles.accentBar}
           />
 
           {/* Photo / Icon */}
@@ -216,15 +208,20 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                 />
               </View>
             ) : (
-              <View style={[
-                styles.iconContainer,
-                {
-                  backgroundColor: isDark ? 'rgba(99,102,241,0.1)' : '#EEF2FF',
-                  borderColor: isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.1)',
-                },
-                tablet && { width: 60, height: 60 },
-              ]}>
-                <Icon name="package-variant" size={tablet ? 28 : 22} color={colors.primary} />
+              <View style={[styles.iconShadow, { shadowColor: colors.primary }]}>
+                <LinearGradient
+                  colors={['#6366F1', '#4F46E5']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[
+                    styles.iconContainer,
+                    tablet && { width: 60, height: 60 },
+                  ]}
+                >
+                  <View style={[styles.iconInner, tablet && { width: 38, height: 38, borderRadius: 10 }]}>
+                    <Icon name="package-variant" size={tablet ? 22 : 18} color="#6366F1" />
+                  </View>
+                </LinearGradient>
               </View>
             )}
           </View>
@@ -366,24 +363,25 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
 
           {/* Stock indicator (right) */}
           <View style={styles.stockColumn}>
-            <View
+            <LinearGradient
+              colors={[...stockConfig.gradient]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
               style={[
                 styles.stockPill,
-                { backgroundColor: stockConfig.lightColor },
                 tablet && { paddingHorizontal: 12, paddingVertical: 8 },
               ]}
             >
-              <Icon name={stockConfig.icon} size={14} color={stockConfig.color} />
+              <Icon name={stockConfig.icon} size={14} color="#FFFFFF" />
               <Text
                 style={[
                   styles.stockValue,
-                  { color: stockConfig.color },
                   tablet && { fontSize: 18 },
                 ]}
               >
                 {article.quantiteActuelle ?? 0}
               </Text>
-            </View>
+            </LinearGradient>
             <Text
               style={[
                 styles.stockUnit,
@@ -417,14 +415,14 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  accentStrip: {
+  accentBar: {
     position: 'absolute',
     left: 0,
-    top: 8,
-    bottom: 8,
-    width: 3,
-    borderTopRightRadius: 2,
-    borderBottomRightRadius: 2,
+    top: 0,
+    bottom: 0,
+    width: 4.5,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
   },
   imageSection: {
     marginRight: 12,
@@ -444,11 +442,24 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 10,
   },
+  iconShadow: {
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+  },
   iconContainer: {
     width: 50,
     height: 50,
     borderRadius: 14,
-    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconInner: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -509,6 +520,7 @@ const styles = StyleSheet.create({
   stockValue: {
     fontSize: 16,
     fontWeight: '800',
+    color: '#FFFFFF',
     letterSpacing: -0.5,
   },
   stockUnit: {

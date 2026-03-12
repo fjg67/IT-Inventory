@@ -12,6 +12,7 @@ interface TechnicienRow {
   name: string;
   password?: string;
   siteId?: string | null;
+  role?: string | null;
 }
 
 function mapRowToTechnicien(row: TechnicienRow): Technicien {
@@ -27,6 +28,7 @@ function mapRowToTechnicien(row: TechnicienRow): Technicien {
     sitePrincipalId: row.siteId ?? undefined,
     actif: true,
     dateCreation: new Date().toISOString(),
+    role: (row.role === 'superviseur' ? 'superviseur' : 'technicien') as 'technicien' | 'superviseur',
   };
 }
 
@@ -35,7 +37,7 @@ export const technicienRepository = {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from(tables.techniciens)
-      .select('id, technicianId, name, siteId')
+      .select('id, technicianId, name, siteId, role')
       .neq('technicianId', 'administrateur')
       .order('name');
     if (error) throw new Error(error.message);
@@ -46,7 +48,7 @@ export const technicienRepository = {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from(tables.techniciens)
-      .select('id, technicianId, name, siteId')
+      .select('id, technicianId, name, siteId, role')
       .eq('siteId', siteId)
       .neq('technicianId', 'administrateur')
       .order('name');
@@ -58,7 +60,7 @@ export const technicienRepository = {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from(tables.techniciens)
-      .select('id, technicianId, name, siteId')
+      .select('id, technicianId, name, siteId, role')
       .eq('id', id)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -69,7 +71,7 @@ export const technicienRepository = {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from(tables.techniciens)
-      .select('id, technicianId, name, siteId')
+      .select('id, technicianId, name, siteId, role')
       .eq('technicianId', matricule)
       .maybeSingle();
     if (error) throw new Error(error.message);

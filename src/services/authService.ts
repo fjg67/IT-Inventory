@@ -8,6 +8,7 @@ import * as bcrypt from 'bcryptjs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { LoginAttempts } from '@/utils/loginAttempts';
+import { Platform } from 'react-native';
 
 const SESSION_KEY = '@it-inventory/auth';
 const USER_SESSION_KEY = '@it-inventory/user_session';
@@ -113,5 +114,26 @@ export const AuthService = {
 
   async clearSession(): Promise<void> {
     await AsyncStorage.removeItem(USER_SESSION_KEY);
+  },
+
+  async recordLogin(params: {
+    userId: string;
+    technicianId: string;
+    technicianName: string;
+    siteId?: string | number | null;
+  }): Promise<void> {
+    try {
+      const supabase = getSupabaseClient();
+      const deviceInfo = `${Platform.OS} ${Platform.Version}`;
+      await supabase.from(tables.loginHistory).insert({
+        userId: params.userId,
+        technicianId: params.technicianId,
+        technicianName: params.technicianName,
+        siteId: params.siteId || null,
+        deviceInfo,
+      });
+    } catch (e) {
+      console.error('[AuthService] recordLogin error:', e);
+    }
   },
 };

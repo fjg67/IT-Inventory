@@ -7,6 +7,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Technicien } from '@/types';
 import { technicienRepository } from '@/database';
+import { AuthService } from '@/services/authService';
 
 const AUTH_STORAGE_KEY = '@it-inventory/auth';
 
@@ -71,6 +72,15 @@ export const loginTechnicien = createAsyncThunk(
         JSON.stringify({ technicienId: technicien.id }),
       );
     }
+
+    // Enregistrer la connexion dans l'historique
+    AuthService.recordLogin({
+      userId: String(technicien.id),
+      technicianId: technicien.matricule || '',
+      technicianName: `${technicien.prenom} ${technicien.nom}`.trim(),
+      siteId: technicien.sitePrincipalId,
+    });
+
     return technicien;
   },
 );
@@ -192,3 +202,10 @@ const authSlice = createSlice({
 
 export const { selectTechnicien, logout, clearError, setRedirectToTechnicianChoiceAfterLogout } = authSlice.actions;
 export default authSlice.reducer;
+
+// ==================== SELECTORS ====================
+export const selectIsSuperviseur = (state: { auth: AuthState }): boolean =>
+  state.auth.currentTechnicien?.role === 'superviseur';
+
+export const selectCurrentRole = (state: { auth: AuthState }): string =>
+  state.auth.currentTechnicien?.role === 'superviseur' ? 'Superviseur' : 'Technicien';

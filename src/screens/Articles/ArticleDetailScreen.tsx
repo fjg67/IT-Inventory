@@ -26,6 +26,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useAppSelector } from '@/store';
+import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { articleRepository, mouvementRepository, stockRepository } from '@/database';
 import { formatTimeParis, formatRelativeDateParis } from '@/utils/dateUtils';
@@ -77,6 +78,7 @@ export const ArticleDetailScreen: React.FC = () => {
   const { articleId } = route.params;
   const siteActif = useAppSelector(state => state.site.siteActif);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
+  const isSuperviseur = useAppSelector(selectIsSuperviseur);
   const { isTablet, contentMaxWidth } = useResponsive();
   const { colors, isDark, theme } = useTheme();
   const { gradients } = theme;
@@ -116,7 +118,7 @@ export const ArticleDetailScreen: React.FC = () => {
   const gradient = useMemo(() => getGradient(article?.nom ?? 'A'), [article?.nom]);
 
   // Navigation
-  const handleMouvement = (type: 'entree' | 'sortie') => {
+  const handleMouvement = (type: 'entree' | 'sortie' | 'ajustement') => {
     Vibration.vibrate(10);
     navigation.navigate('Mouvements', { screen: 'MouvementForm', params: { articleId, type } });
   };
@@ -174,39 +176,45 @@ export const ArticleDetailScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: 40 }, isTablet && contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : undefined]}>
-        {/* ===== HEADER IMMERSIF ===== */}
+        {/* ===== HERO HEADER ===== */}
         <LinearGradient colors={gradient} style={styles.header}>
-          {/* Back + Edit */}
+          {/* Glass overlay for depth */}
+          <View style={styles.headerOverlay} />
+
+          {/* Nav */}
           <View style={styles.headerNav}>
             <TouchableOpacity style={styles.navBtn} onPress={() => { Vibration.vibrate(10); navigation.navigate('ArticlesList'); }}>
-              <Icon name="arrow-left" size={22} color={colors.textOnPrimary} />
+              <Icon name="arrow-left" size={22} color="#FFF" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.navBtn} onPress={handleEdit}>
-              <Icon name="pencil-outline" size={22} color={colors.textOnPrimary} />
-            </TouchableOpacity>
+            {!isSuperviseur && (
+              <TouchableOpacity style={styles.navBtn} onPress={handleEdit}>
+                <Icon name="pencil-outline" size={22} color="#FFF" />
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Photo / Avatar */}
           <Animated.View entering={ZoomIn.delay(150).duration(400)} style={styles.avatarWrapper}>
-            {article.photoUrl ? (
-              <Image source={{ uri: article.photoUrl }} style={[styles.avatarImg, { borderColor: colors.textOnPrimary }]} />
-            ) : (
-              <View style={[styles.avatarFallback, { borderColor: colors.textOnPrimary }]}>
-                <Text style={[styles.avatarText, { color: colors.textOnPrimary }]}>{getInitials(article.nom)}</Text>
-              </View>
-            )}
-            {/* Stock badge */}
+            <View style={styles.avatarGlow}>
+              {article.photoUrl ? (
+                <Image source={{ uri: article.photoUrl }} style={styles.avatarImg} />
+              ) : (
+                <View style={styles.avatarFallback}>
+                  <Text style={styles.avatarText}>{getInitials(article.nom)}</Text>
+                </View>
+              )}
+            </View>
+            {/* Stock status ring */}
             <View style={[styles.stockDot, {
-              backgroundColor: isCritical ? colors.danger : isLowStock ? colors.warning : colors.success,
-              borderColor: colors.surface,
+              backgroundColor: isCritical ? '#EF4444' : isLowStock ? '#F59E0B' : '#10B981',
             }]}>
               <Icon
                 name={isCritical ? 'close' : isLowStock ? 'alert' : 'check'}
-                size={14}
-                color={colors.textOnPrimary}
+                size={13}
+                color="#FFF"
               />
             </View>
           </Animated.View>
@@ -214,73 +222,81 @@ export const ArticleDetailScreen: React.FC = () => {
           {/* Ref + Name */}
           <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.headerInfo}>
             <View style={styles.refBadge}>
-              <Icon name="barcode" size={13} color="rgba(255,255,255,0.8)" />
+              <Icon name="barcode" size={12} color="rgba(255,255,255,0.85)" />
               <Text style={styles.refText}>{article.reference}</Text>
             </View>
-            <Text style={[styles.headerName, { color: colors.textOnPrimary }]} numberOfLines={2}>{article.nom}</Text>
+            <Text style={styles.headerName} numberOfLines={2}>{article.nom}</Text>
             {article.categorieNom ? (
               <View style={styles.catBadge}>
-                <Icon name="folder-outline" size={12} color="rgba(255,255,255,0.9)" />
+                <Icon name="folder-outline" size={11} color="rgba(255,255,255,0.9)" />
                 <Text style={styles.catText}>{article.categorieNom}</Text>
               </View>
             ) : null}
           </Animated.View>
         </LinearGradient>
 
-        {/* ===== QUICK STATS ===== */}
+        {/* ===== STAT CARDS (floating) ===== */}
         <Animated.View entering={FadeInUp.delay(200).duration(400)} style={styles.statsRow}>
-          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <View style={[styles.statIcon, { backgroundColor: colors.infoBg }]}>
-              <Icon name="package-variant" size={20} color={colors.secondary} />
+          {[
+            { icon: 'package-variant', gradient: ['#3B82F6', '#2563EB'], value: stockActuel, label: 'Stock actuel', valueColor: isCritical ? '#EF4444' : isLowStock ? '#F59E0B' : colors.textPrimary },
+            { icon: 'alert-circle-outline', gradient: ['#F59E0B', '#D97706'], value: article.stockMini, label: 'Stock mini', valueColor: colors.textPrimary },
+            { icon: 'swap-vertical', gradient: ['#8B5CF6', '#6D28D9'], value: historique.length, label: 'Mouvements', valueColor: colors.textPrimary },
+          ].map((stat, idx) => (
+            <View key={idx} style={[styles.statCard, { backgroundColor: colors.surface }]}>
+              <View style={styles.statIconWrap}>
+                <LinearGradient colors={stat.gradient} style={styles.statIconGrad}>
+                  <View style={styles.statIconInner}>
+                    <Icon name={stat.icon} size={16} color={stat.gradient[0]} />
+                  </View>
+                </LinearGradient>
+              </View>
+              <Text style={[styles.statValue, { color: stat.valueColor }]}>{stat.value}</Text>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>{stat.label}</Text>
             </View>
-            <Text style={[styles.statValue, {
-              color: isCritical ? colors.danger : isLowStock ? colors.warning : colors.textPrimary,
-            }]}>{stockActuel}</Text>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Stock actuel</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <View style={[styles.statIcon, { backgroundColor: colors.warningBg }]}>
-              <Icon name="alert-circle-outline" size={20} color={colors.warning} />
-            </View>
-            <Text style={[styles.statValue, { color: colors.textPrimary }]}>{article.stockMini}</Text>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Stock minimum</Text>
-          </View>
-          <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
-            <View style={[styles.statIcon, { backgroundColor: `${colors.mouvementTransfert}14` }]}>
-              <Icon name="swap-vertical" size={20} color={colors.mouvementTransfert} />
-            </View>
-            <Text style={[styles.statValue, { color: colors.textPrimary }]}>{historique.length}</Text>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Mouvements</Text>
-          </View>
+          ))}
         </Animated.View>
 
         {/* ===== ALERTE STOCK ===== */}
         {isLowStock && (
           <Animated.View entering={FadeIn.delay(400).duration(400)} style={styles.alertWrapper}>
-            <LinearGradient
-              colors={isCritical ? gradients.danger : gradients.warning}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-              style={styles.alertCard}
-            >
-              <Icon name={isCritical ? 'alert-octagon' : 'alert'} size={24} color={colors.textOnPrimary} />
+            <View style={[styles.alertCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+              <LinearGradient
+                colors={isCritical ? ['#EF4444', '#DC2626'] : ['#F59E0B', '#D97706']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={styles.alertAccentStrip}
+              />
+              <View style={styles.alertIconWrap}>
+                <LinearGradient
+                  colors={isCritical ? ['#EF4444', '#DC2626'] : ['#F59E0B', '#D97706']}
+                  style={styles.alertIconGrad}
+                >
+                  <View style={styles.alertIconInner}>
+                    <Icon name={isCritical ? 'alert-octagon' : 'alert'} size={18} color={isCritical ? '#EF4444' : '#F59E0B'} />
+                  </View>
+                </LinearGradient>
+              </View>
               <View style={styles.alertContent}>
-                <Text style={[styles.alertTitle, { color: colors.textOnPrimary }]}>
-                  {isCritical ? 'Stock critique !' : 'Stock inférieur au minimum'}
+                <Text style={[styles.alertTitle, { color: isCritical ? '#EF4444' : '#F59E0B' }]}>
+                  {isCritical ? 'Stock critique !' : 'Stock bas'}
                 </Text>
-                <Text style={styles.alertSub}>
+                <Text style={[styles.alertSub, { color: colors.textMuted }]}>
                   {isCritical
                     ? `Aucune unité en stock. Seuil : ${article.stockMini}`
-                    : `Il reste ${stockActuel} unité(s). Seuil : ${article.stockMini}`}
+                    : `Il reste ${stockActuel}/${article.stockMini} unité(s)`}
                 </Text>
               </View>
-            </LinearGradient>
+            </View>
           </Animated.View>
         )}
 
         {/* ===== INFORMATIONS ===== */}
         <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Informations</Text>
-          <View style={[styles.infoCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.sectionHeader}>
+            <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.sectionAccent} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Informations</Text>
+          </View>
+          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
             <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
               <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Référence</Text>
               <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{article.reference}</Text>
@@ -357,83 +373,113 @@ export const ArticleDetailScreen: React.FC = () => {
         {/* ===== EXPORT CSV ===== */}
         <Animated.View entering={FadeInUp.delay(350).duration(400)} style={styles.section}>
           <TouchableOpacity
-            style={styles.exportTouchable}
-            activeOpacity={0.85}
+            style={[styles.exportCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}
+            activeOpacity={0.8}
             onPress={handleExportCSV}
             disabled={exporting}
           >
             <LinearGradient
-              colors={gradients.primaryHorizontal}
+              colors={['#3B82F6', '#2563EB']}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.exportGradient}
-            >
-              {exporting ? (
-                <ActivityIndicator size="small" color={colors.textOnPrimary} />
-              ) : (
-                <>
-                  <View style={[styles.exportIconCircle, { backgroundColor: colors.surface }]}>
-                    <Icon name="file-download-outline" size={28} color={colors.secondary} />
+              end={{ x: 0, y: 1 }}
+              style={styles.exportAccentStrip}
+            />
+            <View style={styles.exportRow}>
+              <View style={styles.exportIconWrap}>
+                <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.exportIconGrad}>
+                  <View style={styles.exportIconInner}>
+                    {exporting ? (
+                      <ActivityIndicator size="small" color="#3B82F6" />
+                    ) : (
+                      <Icon name="file-download-outline" size={20} color="#3B82F6" />
+                    )}
                   </View>
-                  <View style={styles.exportTextWrap}>
-                    <Text style={[styles.exportTitle, { color: colors.textOnPrimary }]}>Exporter en CSV</Text>
-                    <Text style={styles.exportSub}>Fiche article + historique • Enregistré sur le téléphone</Text>
-                  </View>
-                </>
+                </LinearGradient>
+              </View>
+              <View style={styles.exportTextWrap}>
+                <Text style={[styles.exportTitle, { color: colors.textPrimary }]}>
+                  {exporting ? 'Export en cours...' : 'Exporter en CSV'}
+                </Text>
+                <Text style={[styles.exportSub, { color: colors.textMuted }]}>Fiche article + historique</Text>
+              </View>
+              {!exporting && (
+                <View style={[styles.exportChevron, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
+                  <Icon name="chevron-right" size={18} color={colors.textMuted} />
+                </View>
               )}
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </Animated.View>
 
         {/* ===== ACTIONS RAPIDES ===== */}
-        <Animated.View entering={FadeInUp.delay(400).duration(400)} style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Actions rapides</Text>
-          <View style={styles.actionsGrid}>
-            <TouchableOpacity style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]} activeOpacity={0.7} onPress={() => handleMouvement('entree')}>
-              <View style={[styles.actionIcon, { backgroundColor: colors.successBg }]}>
-                <Icon name="arrow-up-bold-circle-outline" size={28} color={colors.success} />
-              </View>
-              <Text style={[styles.actionLabel, { color: colors.success }]}>Entrée</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }, stockActuel === 0 && { opacity: 0.4 }]}
-              activeOpacity={0.7}
-              onPress={() => handleMouvement('sortie')}
-              disabled={stockActuel === 0}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: colors.dangerBg }]}>
-                <Icon name="arrow-down-bold-circle-outline" size={28} color={colors.danger} />
-              </View>
-              <Text style={[styles.actionLabel, { color: colors.danger }]}>Sortie</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]} activeOpacity={0.7} onPress={handleTransfert}>
-              <View style={[styles.actionIcon, { backgroundColor: `${colors.mouvementTransfert}1A` }]}>
-                <Icon name="swap-horizontal" size={28} color={colors.mouvementTransfert} />
-              </View>
-              <Text style={[styles.actionLabel, { color: colors.mouvementTransfert }]}>Transfert</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+        {!isSuperviseur && (
+          <Animated.View entering={FadeInUp.delay(400).duration(400)} style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <LinearGradient colors={['#10B981', '#059669']} style={styles.sectionAccent} />
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Actions rapides</Text>
+            </View>
+            <View style={styles.actionsGrid}>
+              {[
+                { icon: 'arrow-up-bold', label: 'Entrée', gradient: ['#10B981', '#059669'] as [string, string], onPress: () => handleMouvement('entree'), disabled: false },
+                { icon: 'arrow-down-bold', label: 'Sortie', gradient: ['#EF4444', '#DC2626'] as [string, string], onPress: () => handleMouvement('sortie'), disabled: stockActuel === 0 },
+                { icon: 'tune-vertical', label: 'Ajustement', gradient: ['#F59E0B', '#D97706'] as [string, string], onPress: () => handleMouvement('ajustement'), disabled: false },
+                { icon: 'swap-horizontal', label: 'Transfert', gradient: ['#8B5CF6', '#6D28D9'] as [string, string], onPress: handleTransfert, disabled: false },
+              ].map((action) => (
+                <TouchableOpacity
+                  key={action.label}
+                  style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }, action.disabled && { opacity: 0.4 }]}
+                  activeOpacity={0.7}
+                  onPress={action.onPress}
+                  disabled={action.disabled}
+                >
+                  <LinearGradient
+                    colors={action.gradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={styles.actionAccentStrip}
+                  />
+                  <View style={styles.actionIconWrap}>
+                    <LinearGradient colors={action.gradient} style={styles.actionIconGrad}>
+                      <View style={styles.actionIconInner}>
+                        <Icon name={action.icon} size={20} color={action.gradient[0]} />
+                      </View>
+                    </LinearGradient>
+                  </View>
+                  <Text style={[styles.actionLabel, { color: action.gradient[0] }]}>{action.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
+        )}
 
         {/* ===== HISTORIQUE ===== */}
         <Animated.View entering={FadeInUp.delay(500).duration(400)} style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
+          <View style={styles.sectionHeader}>
+            <LinearGradient colors={['#4338CA', '#6366F1']} style={styles.sectionAccent} />
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Historique</Text>
-            <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{historique.length} mouvement{historique.length !== 1 ? 's' : ''}</Text>
+            <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{historique.length}</Text>
           </View>
 
           {historique.length === 0 ? (
-            <View style={[styles.emptyHistory, { backgroundColor: colors.surface }]}>
-              <Icon name="chart-timeline-variant" size={48} color={colors.textMuted} />
+            <View style={[styles.emptyHistory, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+              <View style={styles.emptyIconWrap}>
+                <LinearGradient colors={['#94A3B8', '#64748B']} style={styles.emptyIconGrad}>
+                  <View style={styles.emptyIconInner}>
+                    <Icon name="chart-timeline-variant" size={24} color="#94A3B8" />
+                  </View>
+                </LinearGradient>
+              </View>
               <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Aucun mouvement</Text>
-              <Text style={[styles.emptySub, { color: colors.textMuted }]}>Les mouvements de cet article apparaîtront ici</Text>
+              <Text style={[styles.emptySub, { color: colors.textMuted }]}>L'historique apparaîtra ici</Text>
             </View>
           ) : (
             <View style={styles.timeline}>
               {historique.slice(0, 5).map((m, idx) => {
                 const cfg = TYPE_CFG[m.type] || TYPE_CFG.entree;
+                const gradientColors = cfg.color === '#10B981' ? ['#10B981', '#059669']
+                  : cfg.color === '#EF4444' ? ['#EF4444', '#DC2626']
+                  : cfg.color === '#F59E0B' ? ['#F59E0B', '#D97706']
+                  : ['#8B5CF6', '#6D28D9'];
                 return (
                   <Animated.View
                     key={m.id}
@@ -441,34 +487,48 @@ export const ArticleDetailScreen: React.FC = () => {
                     style={styles.tlItem}
                   >
                     <View style={styles.tlLeft}>
-                      <View style={[styles.tlDot, { backgroundColor: cfg.color, borderColor: colors.surface }]} />
+                      <LinearGradient colors={gradientColors} style={styles.tlDot}>
+                        <Icon name={cfg.icon} size={10} color="#FFF" />
+                      </LinearGradient>
                       {idx < Math.min(historique.length, 5) - 1 && (
-                        <View style={[styles.tlLine, { backgroundColor: cfg.color + '25' }]} />
+                        <View style={[styles.tlLine, { backgroundColor: cfg.color + '20' }]} />
                       )}
                     </View>
                     <View style={[styles.tlCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-                      <View style={styles.tlCardTop}>
-                        <View style={[styles.tlBadge, { backgroundColor: cfg.color + '12' }]}>
-                          <Icon name={cfg.icon} size={14} color={cfg.color} />
-                          <Text style={[styles.tlBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
+                      <LinearGradient
+                        colors={gradientColors}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 0, y: 1 }}
+                        style={styles.tlAccentStrip}
+                      />
+                      <View style={styles.tlCardContent}>
+                        <View style={styles.tlCardTop}>
+                          <LinearGradient
+                            colors={gradientColors}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.tlBadge}
+                          >
+                            <Text style={styles.tlBadgeText}>{cfg.label}</Text>
+                          </LinearGradient>
+                          <Text style={[styles.tlTime, { color: colors.textMuted }]}>{formatTime(new Date(m.dateMouvement))}</Text>
                         </View>
-                        <Text style={[styles.tlTime, { color: colors.textMuted }]}>{formatTime(new Date(m.dateMouvement))}</Text>
-                      </View>
-                      <Text style={[styles.tlQty, { color: cfg.color }]}>
-                        {cfg.prefix}{Math.abs(m.quantite)} unités
-                      </Text>
-                      <View style={styles.tlMeta}>
-                        <Text style={[styles.tlMetaText, { color: colors.textMuted }]}>
-                          {formatRelDate(new Date(m.dateMouvement))}
+                        <Text style={[styles.tlQty, { color: cfg.color }]}>
+                          {cfg.prefix}{Math.abs(m.quantite)} unité{Math.abs(m.quantite) > 1 ? 's' : ''}
                         </Text>
-                        {m.technicien && (
-                          <>
-                            <Text style={[styles.tlMetaSep, { color: colors.textMuted }]}>•</Text>
-                            <Text style={[styles.tlMetaText, { color: colors.textMuted }]}>
-                              {m.technicien.prenom} {m.technicien.nom?.charAt(0)}.
-                            </Text>
-                          </>
-                        )}
+                        <View style={styles.tlMeta}>
+                          <Text style={[styles.tlMetaText, { color: colors.textMuted }]}>
+                            {formatRelDate(new Date(m.dateMouvement))}
+                          </Text>
+                          {m.technicien && (
+                            <>
+                              <Text style={[styles.tlMetaSep, { color: colors.textMuted }]}>•</Text>
+                              <Text style={[styles.tlMetaText, { color: colors.textMuted }]}>
+                                {m.technicien.prenom} {m.technicien.nom?.charAt(0)}.
+                              </Text>
+                            </>
+                          )}
+                        </View>
                       </View>
                     </View>
                   </Animated.View>
@@ -489,95 +549,127 @@ const styles = StyleSheet.create({
   // ===== HEADER =====
   header: {
     paddingTop: 48,
-    paddingBottom: 28,
+    paddingBottom: 32,
     paddingHorizontal: 20,
     alignItems: 'center',
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: 'hidden',
+  },
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.08)',
   },
   headerNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    marginBottom: 16,
+    marginBottom: 18,
+    zIndex: 1,
   },
   navBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+  },
+  avatarWrapper: {
+    marginBottom: 18,
+    zIndex: 1,
+  },
+  avatarGlow: {
+    borderRadius: 28,
+    padding: 3,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    shadowColor: 'rgba(0,0,0,0.3)',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  avatarImg: {
+    width: 96,
+    height: 96,
+    borderRadius: 25,
+  },
+  avatarFallback: {
+    width: 96,
+    height: 96,
+    borderRadius: 25,
     backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarWrapper: {
-    marginBottom: 16,
-  },
-  avatarImg: {
-    width: 100,
-    height: 100,
-    borderRadius: 24,
-    borderWidth: 4,
-  },
-  avatarFallback: {
-    width: 100,
-    height: 100,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderWidth: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   avatarText: {
-    fontSize: 36,
-    fontWeight: '700',
+    fontSize: 34,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.95)',
   },
   stockDot: {
     position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 3,
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.9)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   headerInfo: {
     alignItems: 'center',
+    zIndex: 1,
   },
   refBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginBottom: 8,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   refText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: 'rgba(255,255,255,0.9)',
+    letterSpacing: 0.5,
   },
   headerName: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '800',
+    color: '#FFF',
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+    letterSpacing: -0.3,
   },
   catBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   catText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 11,
+    fontWeight: '600',
     color: 'rgba(255,255,255,0.85)',
   },
 
@@ -585,37 +677,54 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     marginHorizontal: 16,
-    marginTop: -20,
+    marginTop: -22,
     gap: 10,
   },
   statCard: {
     flex: 1,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
   },
-  statIcon: {
+  statIconWrap: {
+    marginBottom: 8,
+  },
+  statIconGrad: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    padding: 2,
+  },
+  statIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 9,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statValue: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
   statLabel: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 10,
+    fontWeight: '600',
     marginTop: 2,
     textAlign: 'center',
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
   },
 
   // ===== ALERT =====
@@ -623,68 +732,84 @@ const styles = StyleSheet.create({
   alertCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 14,
-    gap: 12,
-  },
-  alertContent: { flex: 1 },
-  alertTitle: { fontSize: 15, fontWeight: '700' },
-  alertSub: { fontSize: 13, color: 'rgba(255,255,255,0.9)', marginTop: 2 },
-
-  // ===== EXPORT CSV =====
-  exportTouchable: {
+    padding: 14,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  exportGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    gap: 16,
-    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  exportIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+  alertAccentStrip: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4.5,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  alertIconWrap: {
+    marginLeft: 8,
+    marginRight: 14,
+  },
+  alertIconGrad: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2.5,
+  },
+  alertIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  exportTextWrap: { flex: 1, justifyContent: 'center' },
-  exportTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  exportSub: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.9)',
-    marginTop: 2,
-    fontWeight: '500',
-  },
+  alertContent: { flex: 1 },
+  alertTitle: { fontSize: 14, fontWeight: '700' },
+  alertSub: { fontSize: 12, marginTop: 2 },
 
   // ===== SECTIONS =====
   section: { marginTop: 24, paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: 12 },
-  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionCount: { fontSize: 12, fontWeight: '500' },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 10,
+  },
+  sectionAccent: {
+    width: 4,
+    height: 20,
+    borderRadius: 2,
+  },
+  sectionTitle: { fontSize: 17, fontWeight: '700' },
+  sectionCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 'auto',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
 
   // ===== INFO CARD =====
   infoCard: {
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 4,
+    borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   infoRow: {
     flexDirection: 'row',
@@ -694,17 +819,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderBottomWidth: 1,
   },
-  infoLabel: { fontSize: 14, fontWeight: '500' },
-  infoValue: { fontSize: 14, fontWeight: '500' },
-  infoCatBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  infoCatText: { fontSize: 13, fontWeight: '600' },
+  infoLabel: { fontSize: 13, fontWeight: '500' },
+  infoValue: { fontSize: 14, fontWeight: '600' },
   infoTagBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -713,78 +829,195 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
-  infoTagText: { fontSize: 13, fontWeight: '600' },
+  infoTagText: { fontSize: 12, fontWeight: '700' },
 
-  // ===== ACTIONS =====
-  actionsGrid: { flexDirection: 'row', gap: 10 },
-  actionCard: {
-    flex: 1,
+  // ===== EXPORT =====
+  exportCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  exportAccentStrip: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4.5,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  exportRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingLeft: 18,
+    gap: 14,
+  },
+  exportIconWrap: {},
+  exportIconGrad: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 90,
+    padding: 2.5,
+  },
+  exportIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exportTextWrap: { flex: 1 },
+  exportTitle: { fontSize: 15, fontWeight: '700' },
+  exportSub: { fontSize: 12, marginTop: 2 },
+  exportChevron: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ===== ACTIONS =====
+  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  actionCard: {
+    width: '48%',
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  actionAccentStrip: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  actionIconWrap: {
+    marginBottom: 8,
+  },
+  actionIconGrad: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2.5,
+  },
+  actionIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionLabel: { fontSize: 13, fontWeight: '700' },
+
+  // ===== EMPTY =====
+  emptyHistory: {
+    alignItems: 'center',
+    paddingVertical: 36,
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  emptyIconWrap: { marginBottom: 12 },
+  emptyIconGrad: {
+    width: 56,
+    height: 56,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 3,
+  },
+  emptyIconInner: {
+    width: '100%',
+    height: '100%',
     borderRadius: 14,
-    borderWidth: 1.5,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: { fontSize: 15, fontWeight: '700' },
+  emptySub: { fontSize: 13, marginTop: 4 },
+
+  // ===== TIMELINE =====
+  timeline: { paddingLeft: 4 },
+  tlItem: { flexDirection: 'row', marginBottom: 6 },
+  tlLeft: { width: 28, alignItems: 'center' },
+  tlDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    marginTop: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  tlLine: { flex: 1, width: 2, borderRadius: 1, marginTop: 4 },
+  tlCard: {
+    flex: 1,
+    borderRadius: 14,
+    marginLeft: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 4,
     elevation: 1,
   },
-  actionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
+  tlAccentStrip: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3.5,
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
   },
-  actionLabel: { fontSize: 13, fontWeight: '600' },
-
-  // ===== EMPTY =====
-  emptyHistory: {
-    alignItems: 'center',
-    paddingVertical: 36,
-    borderRadius: 14,
-  },
-  emptyTitle: { fontSize: 15, fontWeight: '600', marginTop: 12 },
-  emptySub: { fontSize: 13, marginTop: 4 },
-
-  // ===== TIMELINE =====
-  timeline: { paddingLeft: 4 },
-  tlItem: { flexDirection: 'row', marginBottom: 4 },
-  tlLeft: { width: 24, alignItems: 'center' },
-  tlDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginTop: 14,
-    borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  tlLine: { flex: 1, width: 2, borderRadius: 1, marginTop: 2 },
-  tlCard: {
-    flex: 1,
-    borderRadius: 12,
+  tlCardContent: {
     padding: 12,
-    marginLeft: 8,
-    borderWidth: 1,
+    paddingLeft: 14,
   },
-  tlCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  tlCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   tlBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 9,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 7,
   },
-  tlBadgeText: { fontSize: 11, fontWeight: '600' },
+  tlBadgeText: { fontSize: 11, fontWeight: '700', color: '#FFF' },
   tlTime: { fontSize: 11 },
-  tlQty: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
+  tlQty: { fontSize: 16, fontWeight: '800', marginBottom: 4, letterSpacing: -0.3 },
   tlMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tlMetaText: { fontSize: 11 },
   tlMetaSep: { fontSize: 11 },

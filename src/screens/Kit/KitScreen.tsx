@@ -22,6 +22,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 
 import { useAppSelector } from '@/store';
+import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { stockRepository, mouvementRepository } from '@/database';
@@ -65,6 +66,7 @@ export const KitScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const siteActif = useAppSelector((state) => state.site.siteActif);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
+  const isSuperviseur = useAppSelector(selectIsSuperviseur);
   const technicien = useAppSelector((state) => state.auth.currentTechnicien);
   const { isTablet, contentMaxWidth } = useResponsive();
   const { colors, isDark } = useTheme();
@@ -446,6 +448,7 @@ export const KitScreen: React.FC = () => {
                 activeOpacity={0.85}
                 onPress={() => {
                   Vibration.vibrate(15);
+                  if (isSuperviseur) return;
                   if (isKitComplet) {
                     checkKitAvailability(kit);
                   } else {
@@ -747,7 +750,7 @@ export const KitScreen: React.FC = () => {
                 ) : null}
 
                 {/* Bouton de validation */}
-                {!loadingKit && kitAvailability && (
+                {!loadingKit && kitAvailability && !isSuperviseur && (
                   <View style={[styles.modalFooter, { borderTopColor: colors.borderSubtle }]}>
                     <TouchableOpacity
                       style={[

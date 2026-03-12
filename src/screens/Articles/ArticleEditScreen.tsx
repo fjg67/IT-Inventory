@@ -711,12 +711,18 @@ export const ArticleEditScreen: React.FC = () => {
           {/* ===== SECTION: INFORMATIONS PRINCIPALES ===== */}
           <Animated.View entering={FadeInUp.delay(50).springify()} style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIconWrap, { backgroundColor: colors.primaryGlow }]}>
-                <Icon name="information-outline" size={18} color={colors.primary} />
+              <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.sectionAccent} />
+              <View style={styles.sectionIconPill}>
+                <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.sectionIconGrad}>
+                  <View style={styles.sectionIconInner}>
+                    <Icon name="information-outline" size={15} color="#6366F1" />
+                  </View>
+                </LinearGradient>
               </View>
               <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Informations principales</Text>
             </View>
             <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+              <LinearGradient colors={['#6366F1', '#4F46E5']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
 
             {/* --- REFERENCE --- */}
             <View style={styles.fieldGroup}>
@@ -861,12 +867,18 @@ export const ArticleEditScreen: React.FC = () => {
           {/* ===== SECTION: CLASSIFICATION ===== */}
           <Animated.View entering={FadeInUp.delay(150).springify()} style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIconWrap, { backgroundColor: 'rgba(139,92,246,0.1)' }]}>
-                <Icon name="shape-outline" size={18} color="#8B5CF6" />
+              <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.sectionAccent} />
+              <View style={styles.sectionIconPill}>
+                <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.sectionIconGrad}>
+                  <View style={styles.sectionIconInner}>
+                    <Icon name="shape-outline" size={15} color="#8B5CF6" />
+                  </View>
+                </LinearGradient>
               </View>
               <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Classification</Text>
             </View>
             <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+              <LinearGradient colors={['#8B5CF6', '#7C3AED']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
 
             {/* Type */}
             <View style={styles.fieldGroup}>
@@ -1043,8 +1055,13 @@ export const ArticleEditScreen: React.FC = () => {
           {hasChildSites && !selectedSubSiteId && (
             <Animated.View entering={FadeInUp.delay(230).springify()} style={styles.sectionWrap}>
               <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIconWrap, { backgroundColor: 'rgba(79,70,229,0.1)' }]}>
-                  <Icon name="warehouse" size={18} color={colors.primary} />
+                <LinearGradient colors={['#4F46E5', '#4338CA']} style={styles.sectionAccent} />
+                <View style={styles.sectionIconPill}>
+                  <LinearGradient colors={['#4F46E5', '#4338CA']} style={styles.sectionIconGrad}>
+                    <View style={styles.sectionIconInner}>
+                      <Icon name="warehouse" size={15} color="#4F46E5" />
+                    </View>
+                  </LinearGradient>
                 </View>
                 <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Stock concerné</Text>
               </View>
@@ -1081,21 +1098,28 @@ export const ArticleEditScreen: React.FC = () => {
           {/* ===== SECTION: STOCK ===== */}
           <Animated.View entering={FadeInUp.delay(250).springify()} style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIconWrap, { backgroundColor: 'rgba(16,185,129,0.1)' }]}>
-                <Icon name="package-variant" size={18} color={colors.success} />
+              <LinearGradient colors={['#10B981', '#059669']} style={styles.sectionAccent} />
+              <View style={styles.sectionIconPill}>
+                <LinearGradient colors={['#10B981', '#059669']} style={styles.sectionIconGrad}>
+                  <View style={styles.sectionIconInner}>
+                    <Icon name="package-variant" size={15} color="#10B981" />
+                  </View>
+                </LinearGradient>
               </View>
               <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Stock</Text>
             </View>
             <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+              <LinearGradient colors={['#10B981', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
             <View style={styles.stockRow}>
               {/* Stock Actuel */}
-              <View style={[styles.stockCard, { backgroundColor: colors.surface }]}>
-                <LinearGradient
-                  colors={['rgba(59, 130, 246, 0.10)', 'rgba(59, 130, 246, 0.03)']}
-                  style={styles.stockCardGradient}
-                >
-                  <View style={[styles.stockCardIcon, { backgroundColor: 'rgba(37,99,235,0.15)' }]}>
-                    <Icon name="package-variant" size={24} color={colors.primary} />
+              <View style={[styles.stockCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+                <View style={styles.stockCardContent}>
+                  <View style={styles.stockCardIconPill}>
+                    <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.stockCardIconGrad}>
+                      <View style={styles.stockCardIconInner}>
+                        <Icon name="package-variant" size={20} color="#3B82F6" />
+                      </View>
+                    </LinearGradient>
                   </View>
                   <Text style={[styles.stockCardLabel, { color: colors.textSecondary }]}>Stock actuel</Text>
                   <View style={[styles.stockCardInputBox, { borderColor: colors.borderSubtle }]}>
@@ -1109,17 +1133,18 @@ export const ArticleEditScreen: React.FC = () => {
                       maxLength={6}
                     />
                   </View>
-                </LinearGradient>
+                </View>
               </View>
 
               {/* Seuil d'alerte */}
-              <View style={[styles.stockCard, { backgroundColor: colors.surface }]}>
-                <LinearGradient
-                  colors={['rgba(245, 158, 11, 0.10)', 'rgba(245, 158, 11, 0.03)']}
-                  style={styles.stockCardGradient}
-                >
-                  <View style={[styles.stockCardIcon, { backgroundColor: 'rgba(245,158,11,0.15)' }]}>
-                    <Icon name="bell-alert-outline" size={24} color={colors.warning} />
+              <View style={[styles.stockCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+                <View style={styles.stockCardContent}>
+                  <View style={styles.stockCardIconPill}>
+                    <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.stockCardIconGrad}>
+                      <View style={styles.stockCardIconInner}>
+                        <Icon name="bell-alert-outline" size={20} color="#F59E0B" />
+                      </View>
+                    </LinearGradient>
                   </View>
                   <Text style={[styles.stockCardLabel, { color: colors.textSecondary }]}>Seuil d'alerte</Text>
                   <View style={[styles.stockCardInputBox, { borderColor: '#FDE68A' }]}>
@@ -1133,7 +1158,7 @@ export const ArticleEditScreen: React.FC = () => {
                       maxLength={6}
                     />
                   </View>
-                </LinearGradient>
+                </View>
               </View>
             </View>
 
@@ -1150,12 +1175,18 @@ export const ArticleEditScreen: React.FC = () => {
           {/* ===== SECTION: INFORMATIONS COMPLÉMENTAIRES ===== */}
           <Animated.View entering={FadeInUp.delay(350).springify()} style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIconWrap, { backgroundColor: 'rgba(245,158,11,0.1)' }]}>
-                <Icon name="text-box-outline" size={18} color={colors.warning} />
+              <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.sectionAccent} />
+              <View style={styles.sectionIconPill}>
+                <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.sectionIconGrad}>
+                  <View style={styles.sectionIconInner}>
+                    <Icon name="text-box-outline" size={15} color="#F59E0B" />
+                  </View>
+                </LinearGradient>
               </View>
               <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Informations complémentaires</Text>
             </View>
             <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+              <LinearGradient colors={['#F59E0B', '#D97706']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
 
             <View style={styles.fieldGroup}>
               <Text style={[styles.label, { color: colors.textPrimary }]}>Description (optionnel)</Text>
@@ -1178,12 +1209,18 @@ export const ArticleEditScreen: React.FC = () => {
           {/* ===== SECTION: PHOTO ===== */}
           <Animated.View entering={FadeInUp.delay(450).springify()} style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIconWrap, { backgroundColor: 'rgba(236,72,153,0.1)' }]}>
-                <Icon name="camera-outline" size={18} color="#EC4899" />
+              <LinearGradient colors={['#EC4899', '#DB2777']} style={styles.sectionAccent} />
+              <View style={styles.sectionIconPill}>
+                <LinearGradient colors={['#EC4899', '#DB2777']} style={styles.sectionIconGrad}>
+                  <View style={styles.sectionIconInner}>
+                    <Icon name="camera-outline" size={15} color="#EC4899" />
+                  </View>
+                </LinearGradient>
               </View>
               <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Photo</Text>
             </View>
             <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+              <LinearGradient colors={['#EC4899', '#DB2777']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
 
             {!photoUri ? (
               /* Empty state */
@@ -1192,8 +1229,12 @@ export const ArticleEditScreen: React.FC = () => {
                   colors={['rgba(236, 72, 153, 0.08)', 'rgba(236, 72, 153, 0.02)']}
                   style={styles.photoEmptyGradient}
                 >
-                  <View style={styles.photoEmptyIcon}>
-                    <Icon name="camera-plus-outline" size={40} color="#EC4899" />
+                  <View style={styles.photoEmptyIconPill}>
+                    <LinearGradient colors={['#EC4899', '#DB2777']} style={styles.photoEmptyIconGrad}>
+                      <View style={styles.photoEmptyIconInner}>
+                        <Icon name="camera-plus-outline" size={34} color="#EC4899" />
+                      </View>
+                    </LinearGradient>
                   </View>
                   <Text style={[styles.photoEmptyTitle, { color: colors.textPrimary }]}>Ajouter une photo</Text>
                   <Text style={[styles.photoEmptySubtitle, { color: colors.textSecondary }]}>Prenez ou choisissez une photo de l'article</Text>
@@ -2239,9 +2280,11 @@ export const ArticleEditScreen: React.FC = () => {
             {/* Cercle animé avec pulse */}
             <Animated.View entering={ZoomIn.delay(100).springify().damping(8)} style={styles.successCircleOuter}>
               <View style={styles.successCircle}>
-                <Animated.View entering={ZoomIn.delay(300).duration(400)}>
-                  <Icon name="check-bold" size={52} color="#FFF" />
-                </Animated.View>
+                <LinearGradient colors={['#10B981', '#059669']} style={styles.successCircleGrad}>
+                  <Animated.View entering={ZoomIn.delay(300).duration(400)}>
+                    <Icon name="check-bold" size={52} color="#FFF" />
+                  </Animated.View>
+                </LinearGradient>
               </View>
             </Animated.View>
 
@@ -2292,7 +2335,7 @@ const styles = StyleSheet.create({
   // ===== PREMIUM HEADER =====
   header: {
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 44) + 12 : 54,
-    paddingBottom: 28,
+    paddingBottom: 30,
     paddingHorizontal: 20,
     overflow: 'hidden',
   },
@@ -2307,7 +2350,7 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   headerDeco2: {
     position: 'absolute',
@@ -2316,7 +2359,7 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   headerDeco3: {
     position: 'absolute',
@@ -2325,7 +2368,7 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
   headerDeco4: {
     position: 'absolute',
@@ -2334,7 +2377,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   headerDeco5: {
     position: 'absolute',
@@ -2343,7 +2386,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.10)',
   },
   headerDeco6: {
     position: 'absolute',
@@ -2352,22 +2395,17 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   backBtn: {
     width: 44,
     height: 44,
-    borderRadius: 16,
+    borderRadius: 15,
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: 'rgba(255,255,255,0.10)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
   },
   headerCenter: {
     flex: 1,
@@ -2378,23 +2416,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginBottom: 6,
-    gap: 5,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 8,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   headerBadgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
     backgroundColor: '#4ADE80',
   },
   headerBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.9)',
-    letterSpacing: 1,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.92)',
+    letterSpacing: 1.2,
   },
   headerTitle: {
     fontSize: 24,
@@ -2405,7 +2445,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.65)',
     marginTop: 4,
     letterSpacing: 0.2,
   },
@@ -2415,16 +2455,12 @@ const styles = StyleSheet.create({
   headerIconGradient: {
     width: 48,
     height: 48,
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
   },
 
   // ===== PREMIUM SECTIONS =====
@@ -2434,29 +2470,37 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     marginBottom: 14,
     paddingHorizontal: 4,
   },
-  sectionIconWrap: {
-    width: 36,
-    height: 36,
+  sectionAccent: {
+    width: 4,
+    height: 22,
+    borderRadius: 2,
+  },
+  sectionIconPill: {},
+  sectionIconGrad: {
+    width: 34,
+    height: 34,
     borderRadius: 10,
-    backgroundColor: 'rgba(59,130,246,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 1,
+    padding: 2,
+  },
+  sectionIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: '#1E293B',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   sectionSubtitle: {
     fontSize: 13,
@@ -2468,13 +2512,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 20,
+    paddingLeft: 22,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 3,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.04)',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  sectionCardStrip: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4.5,
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
   },
 
   // ===== PREMIUM FIELDS =====
@@ -2513,11 +2569,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
   },
   inputBoxSuccess: {
     borderColor: '#10B981',
@@ -2587,11 +2638,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
   },
   pickerText: {
     flex: 1,
@@ -2607,30 +2653,41 @@ const styles = StyleSheet.create({
   // ===== PREMIUM STOCK CARDS =====
   stockRow: {
     flexDirection: 'row',
-    gap: 14,
+    gap: 12,
   },
   stockCard: {
     flex: 1,
     borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 5,
-    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  stockCardGradient: {
+  stockCardContent: {
     padding: 18,
     alignItems: 'center',
   },
-  stockCardIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+  stockCardIconPill: {
+    marginBottom: 10,
+  },
+  stockCardIconGrad: {
+    width: 48,
+    height: 48,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    padding: 3,
+  },
+  stockCardIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stockCardLabel: {
     fontSize: 12,
@@ -2686,11 +2743,6 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     padding: 16,
     minHeight: 110,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
   },
   textarea: {
     fontSize: 15,
@@ -3083,19 +3135,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: 'center',
   },
-  photoEmptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: 'rgba(236,72,153,0.12)',
+  photoEmptyIconPill: {
+    marginBottom: 16,
+  },
+  photoEmptyIconGrad: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
-    shadowColor: '#EC4899',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 2,
+    padding: 4,
+  },
+  photoEmptyIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   photoEmptyTitle: {
     fontSize: 17,
@@ -3256,7 +3313,14 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  successCircleGrad: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#10B981',

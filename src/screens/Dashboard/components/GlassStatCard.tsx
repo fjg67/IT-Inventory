@@ -108,38 +108,47 @@ const GlassStatCard: React.FC<GlassStatCardProps> = ({
       >
         <View style={[
           styles.container,
-          { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+          {
+            backgroundColor: colors.surface,
+            borderColor: isDark ? colors.borderSubtle : colors.borderMedium,
+          },
           tablet && styles.containerTablet,
-          { shadowColor: accentColor },
         ]}>
-          {/* Left accent strip */}
+          {/* Left gradient accent bar */}
           <LinearGradient
             colors={[...(iconGradient as string[])]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
-            style={styles.accentStrip}
+            style={styles.accentBar}
           />
 
           {/* Top row: icon pill + trend */}
           <View style={styles.topRow}>
-            <View style={styles.iconPillContainer}>
+            <View style={[styles.iconPillShadow, { shadowColor: accentColor }]}>
               <LinearGradient
                 colors={[...(iconGradient as string[])]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={[styles.iconPill, tablet && styles.iconPillTablet]}
               >
-                <Icon name={icon} size={tablet ? 22 : 20} color="#FFFFFF" />
+                <View style={styles.iconInnerCircle}>
+                  <Icon name={icon} size={tablet ? 20 : 18} color={accentColor} />
+                </View>
               </LinearGradient>
             </View>
 
             {trendConfig && trendValue && (
-              <View style={[styles.trendBadge, { backgroundColor: isDark ? `${trendConfig.color}20` : `${trendConfig.color}12` }]}>
-                <Icon name={trendConfig.icon} size={13} color={trendConfig.color} />
-                <Text style={[styles.trendText, { color: trendConfig.color }]}>
+              <LinearGradient
+                colors={trend === 'down' ? ['#EF4444', '#DC2626'] : trend === 'up' ? ['#10B981', '#059669'] : [colors.textMuted, colors.textMuted]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.trendBadge}
+              >
+                <Icon name={trendConfig.icon} size={11} color="#FFFFFF" />
+                <Text style={styles.trendText}>
                   {trendValue}
                 </Text>
-              </View>
+              </LinearGradient>
             )}
           </View>
 
@@ -147,9 +156,9 @@ const GlassStatCard: React.FC<GlassStatCardProps> = ({
           <AnimatedCounter
             value={value}
             style={{
-              fontSize: fullWidth ? 36 : 32,
-              fontWeight: '800',
-              letterSpacing: -1,
+              fontSize: fullWidth ? 38 : 34,
+              fontWeight: '900',
+              letterSpacing: -1.5,
               color: colors.textPrimary,
             }}
           />
@@ -191,70 +200,80 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 16,
-    paddingLeft: 20,
+    padding: 18,
+    paddingLeft: 22,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 3 },
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 10,
+    shadowRadius: 12,
     elevation: 3,
   },
   containerTablet: {
     padding: premiumSpacing.xl,
+    paddingLeft: premiumSpacing.xl + 4,
   },
-  accentStrip: {
+  accentBar: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: 3.5,
-    borderTopLeftRadius: 18,
-    borderBottomLeftRadius: 18,
+    width: 4.5,
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
-  iconPillContainer: {
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+  iconPillShadow: {
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   iconPill: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
+    width: 44,
+    height: 44,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconPillTablet: {
-    width: 48,
-    height: 48,
-    borderRadius: 15,
+    width: 50,
+    height: 50,
+    borderRadius: 17,
+  },
+  iconInnerCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   trendBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 9,
     gap: 3,
   },
   trendText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
     letterSpacing: -0.2,
+    color: '#FFFFFF',
   },
   label: {
     fontSize: 13,
-    fontWeight: '500',
-    marginTop: 2,
+    fontWeight: '600',
+    marginTop: 4,
     letterSpacing: -0.1,
   },
   sparklineContainer: {

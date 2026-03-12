@@ -16,6 +16,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { debounce } from 'lodash';
 import { useAppSelector } from '@/store';
+import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { articleRepository } from '@/database';
 import { Article, ArticleFilters, PaginatedResult } from '@/types';
@@ -47,6 +48,7 @@ export const ArticlesListScreen: React.FC = () => {
   const route = useRoute<any>();
   const siteActif = useAppSelector((state) => state.site.siteActif);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
+  const isSuperviseur = useAppSelector(selectIsSuperviseur);
   const { isTablet, contentMaxWidth, rv } = useResponsive();
   const { colors, isDark } = useTheme();
   const numColumns = rv({ phone: 1, tablet: 2 });
@@ -522,8 +524,8 @@ export const ArticlesListScreen: React.FC = () => {
       )}
       </View>
 
-      {/* FAB Multi-Action */}
-      <FABMultiAction onScan={handleScan} onAdd={handleAdd} />
+      {/* FAB Multi-Action – masqué pour les superviseurs */}
+      {!isSuperviseur && <FABMultiAction onScan={handleScan} onAdd={handleAdd} />}
 
       {/* Modals */}
       <ArticlesFilterSheet

@@ -13,7 +13,6 @@ import { isTablet as checkIsTablet } from '../../../utils/responsive';
 import AnimatedCounter from '../../Dashboard/components/effects/AnimatedCounter';
 import {
   premiumSpacing,
-  premiumBorderRadius,
 } from '../../../constants/premiumTheme';
 import { useTheme } from '@/theme';
 
@@ -21,24 +20,20 @@ import { useTheme } from '@/theme';
 interface StatConfig {
   icon: string;
   gradient: readonly [string, string];
-  glowColor: string;
 }
 
 const STAT_CONFIGS: Record<string, StatConfig> = {
   total: {
     icon: 'package-variant-closed',
     gradient: ['#6366F1', '#4F46E5'],
-    glowColor: 'rgba(99, 102, 241, 0.4)',
   },
   stockOK: {
     icon: 'check-circle-outline',
     gradient: ['#10B981', '#059669'],
-    glowColor: 'rgba(16, 185, 129, 0.4)',
   },
   alertes: {
     icon: 'alert-circle-outline',
     gradient: ['#F59E0B', '#D97706'],
-    glowColor: 'rgba(245, 158, 11, 0.4)',
   },
 };
 
@@ -47,7 +42,6 @@ interface MiniStatProps {
   value: number;
   label: string;
   configKey: 'total' | 'stockOK' | 'alertes';
-  index: number;
   onPress?: () => void;
 }
 
@@ -55,12 +49,13 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
   value,
   label,
   configKey,
-  index,
   onPress,
 }) => {
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
+  const { colors, isDark } = useTheme();
   const cfg = STAT_CONFIGS[configKey];
+  const accentColor = cfg.gradient[0];
 
   return (
     <TouchableOpacity
@@ -71,36 +66,46 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
         onPress?.();
       }}
     >
-      <View style={miniStyles.card}>
-        {/* Glow accent line at top */}
+      <View style={[
+        miniStyles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: isDark ? colors.borderSubtle : colors.borderMedium,
+        },
+      ]}>
+        {/* Left accent bar */}
         <LinearGradient
           colors={[...cfg.gradient]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={miniStyles.accentLine}
+          end={{ x: 0, y: 1 }}
+          style={miniStyles.accentBar}
         />
 
         {/* Icon pill */}
-        <LinearGradient
-          colors={[...cfg.gradient]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[miniStyles.iconPill, tablet && miniStyles.iconPillTablet]}
-        >
-          <Icon
-            name={cfg.icon}
-            size={tablet ? 16 : 14}
-            color="#FFFFFF"
-          />
-        </LinearGradient>
+        <View style={[miniStyles.iconShadow, { shadowColor: accentColor }]}>
+          <LinearGradient
+            colors={[...cfg.gradient]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[miniStyles.iconPill, tablet && miniStyles.iconPillTablet]}
+          >
+            <View style={miniStyles.iconInner}>
+              <Icon
+                name={cfg.icon}
+                size={tablet ? 14 : 12}
+                color={accentColor}
+              />
+            </View>
+          </LinearGradient>
+        </View>
 
         {/* Value */}
         <AnimatedCounter
           value={value}
           style={{
             fontSize: tablet ? 30 : 24,
-            fontWeight: '800',
-            color: '#FFFFFF',
+            fontWeight: '900',
+            color: colors.textPrimary,
             letterSpacing: -1,
           }}
         />
@@ -109,7 +114,8 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
         <Text
           style={[
             miniStyles.label,
-            tablet && { fontSize: 12 },
+            { color: colors.textMuted },
+            tablet && { fontSize: 11 },
           ]}
           numberOfLines={1}
         >
@@ -126,58 +132,62 @@ const miniStyles = StyleSheet.create({
   },
   card: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: premiumBorderRadius.lg,
-    paddingTop: 16,
-    paddingBottom: 14,
+    borderRadius: 18,
+    paddingTop: 14,
+    paddingBottom: 12,
     paddingHorizontal: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  accentLine: {
+  accentBar: {
     position: 'absolute',
-    top: 0,
     left: 0,
-    right: 0,
-    height: 3,
-    borderTopLeftRadius: premiumBorderRadius.lg,
-    borderTopRightRadius: premiumBorderRadius.lg,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: 18,
+    borderBottomLeftRadius: 18,
+  },
+  iconShadow: {
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+    marginBottom: 8,
   },
   iconPill: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
   },
   iconPillTablet: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+  },
+  iconInner: {
+    width: 20,
+    height: 20,
+    borderRadius: 7,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 10,
+    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginTop: 3,
+    letterSpacing: 0.6,
+    marginTop: 2,
   },
 });
-
-// ─── Decorative Mesh Dots ───
-const MESH_DOTS = [
-  { top: 8, right: 30, size: 4, opacity: 0.12 },
-  { top: 22, right: 58, size: 3, opacity: 0.08 },
-  { top: 14, right: 90, size: 5, opacity: 0.1 },
-  { top: 38, right: 18, size: 3, opacity: 0.06 },
-  { top: 6, left: 40, size: 4, opacity: 0.07 },
-  { top: 26, left: 60, size: 3, opacity: 0.09 },
-  { top: 50, right: 110, size: 4, opacity: 0.05 },
-  { top: 42, left: 90, size: 3, opacity: 0.08 },
-];
 
 // ─── Main Header ───
 interface PremiumArticleHeaderProps {
@@ -203,149 +213,123 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
 }) => {
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
-  const { colors, gradients } = useTheme();
+  const { colors, isDark } = useTheme();
 
   return (
-    <View>
+    <View style={[
+      styles.headerCard,
+      {
+        backgroundColor: colors.surface,
+        borderColor: isDark ? colors.borderSubtle : colors.borderMedium,
+      },
+    ]}>
+      {/* Left accent bar */}
       <LinearGradient
-        colors={['#4338CA', '#6366F1', '#4F46E5']}
+        colors={['#6366F1', '#4338CA']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[
-          styles.container,
-          tablet && {
-            paddingTop: premiumSpacing.xxl + 4,
-            paddingBottom: premiumSpacing.xl,
-            paddingHorizontal: premiumSpacing.xl,
-          },
-        ]}
-      >
-        {/* Decorative mesh dots */}
-        {MESH_DOTS.map((dot, i) => (
-          <View
-            key={i}
-            style={{
-              position: 'absolute',
-              top: dot.top,
-              right: dot.right,
-              left: (dot as any).left,
-              width: dot.size,
-              height: dot.size,
-              borderRadius: dot.size / 2,
-              backgroundColor: `rgba(255, 255, 255, ${dot.opacity})`,
+        end={{ x: 0, y: 1 }}
+        style={styles.accentBar}
+      />
+
+      {/* Top Row: back + title */}
+      <View style={styles.topRow}>
+        {onBack ? (
+          <TouchableOpacity
+            onPress={() => {
+              Vibration.vibrate(10);
+              onBack();
             }}
-          />
-        ))}
-
-        {/* Subtle radial glow behind title */}
-        <View style={styles.titleGlow} />
-
-        {/* Top Row */}
-        <View
-          style={styles.topRow}
-        >
-          {onBack ? (
-            <TouchableOpacity
-              onPress={() => {
-                Vibration.vibrate(10);
-                onBack();
-              }}
-              style={styles.backButton}
-              activeOpacity={0.7}
-            >
-              <View style={styles.backButtonInner}>
-                <Icon
-                  name="arrow-left"
-                  size={tablet ? 24 : 20}
-                  color="#FFFFFF"
-                />
-              </View>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.iconButton} />
-          )}
-
-          <View style={styles.titleContainer}>
-            {/* Glow behind title */}
-            <View style={styles.titleGlowCircle} />
-            <View style={styles.titleRow}>
-              <Icon name="cube-outline" size={tablet ? 22 : 18} color="rgba(255,255,255,0.7)" />
-              <Text
-                style={[
-                  styles.title,
-                  tablet && { fontSize: 30 },
-                ]}
-              >
-                Articles
-              </Text>
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <View style={[
+              styles.backButtonInner,
+              { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' },
+            ]}>
+              <Icon name="arrow-left" size={tablet ? 22 : 18} color="#6366F1" />
             </View>
-            <LinearGradient
-              colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.5)', 'rgba(255,255,255,0)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.titleUnderline}
-            />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.spacer} />
+        )}
+
+        <View style={styles.titleContainer}>
+          <View style={styles.titleRow}>
+            <View style={[styles.titleIconShadow]}>
+              <LinearGradient
+                colors={['#6366F1', '#4338CA']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.titleIconPill}
+              >
+                <View style={styles.titleIconInner}>
+                  <Icon name="cube-outline" size={tablet ? 16 : 14} color="#6366F1" />
+                </View>
+              </LinearGradient>
+            </View>
+            <Text style={[styles.title, { color: colors.textPrimary }, tablet && { fontSize: 26 }]}>
+              Articles
+            </Text>
           </View>
-
-          <View style={styles.iconButton} />
         </View>
 
-        {/* Mini Stats */}
-        <View
-          style={[
-            styles.statsRow,
-            tablet && { gap: premiumSpacing.md },
-          ]}
-        >
-          <MiniStatCard
-            value={totalArticles}
-            label="Total"
-            configKey="total"
-            index={0}
-            onPress={onTotalPress}
-          />
-          <MiniStatCard
-            value={stockOK}
-            label="Stock OK"
-            configKey="stockOK"
-            index={1}
-            onPress={onStockOKPress}
-          />
-          <MiniStatCard
-            value={alertes}
-            label="Alertes"
-            configKey="alertes"
-            index={2}
-            onPress={onAlertesPress}
-          />
-        </View>
-      </LinearGradient>
+        <View style={styles.spacer} />
+      </View>
+
+      {/* Mini Stats */}
+      <View style={[styles.statsRow, tablet && { gap: premiumSpacing.md }]}>
+        <MiniStatCard
+          value={totalArticles}
+          label="Total"
+          configKey="total"
+          onPress={onTotalPress}
+        />
+        <MiniStatCard
+          value={stockOK}
+          label="Stock OK"
+          configKey="stockOK"
+          onPress={onStockOKPress}
+        />
+        <MiniStatCard
+          value={alertes}
+          label="Alertes"
+          configKey="alertes"
+          onPress={onAlertesPress}
+        />
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    paddingTop: premiumSpacing.xl + 2,
-    paddingBottom: premiumSpacing.lg + 4,
-    paddingHorizontal: premiumSpacing.lg,
+  headerCard: {
+    marginHorizontal: premiumSpacing.lg,
+    marginTop: premiumSpacing.lg,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 18,
+    paddingLeft: 22,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 4,
   },
-  titleGlow: {
+  accentBar: {
     position: 'absolute',
-    top: -20,
-    alignSelf: 'center',
-    left: '30%',
-    width: 140,
-    height: 90,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4.5,
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: premiumSpacing.lg + 2,
+    marginBottom: premiumSpacing.md,
   },
   backButton: {
     width: 40,
@@ -357,17 +341,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconButton: {
+  spacer: {
     width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   titleContainer: {
     alignItems: 'center',
@@ -375,31 +353,34 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
-  titleGlowCircle: {
-    position: 'absolute',
-    top: -18,
-    width: 120,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(167, 139, 250, 0.25)',
+  titleIconShadow: {
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  titleIconPill: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleIconInner: {
+    width: 22,
+    height: 22,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    textShadowColor: 'rgba(167, 139, 250, 0.6)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 12,
-  },
-  titleUnderline: {
-    width: 80,
-    height: 2.5,
-    borderRadius: 2,
-    marginTop: 8,
+    letterSpacing: -0.5,
   },
   statsRow: {
     flexDirection: 'row',

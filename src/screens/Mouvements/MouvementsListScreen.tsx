@@ -26,6 +26,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAppSelector } from '@/store';
+import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { mouvementRepository } from '@/database';
 import { formatTimeParis, formatRelativeDateParis, formatDateTimeParis } from '@/utils/dateUtils';
@@ -72,6 +73,7 @@ type QuickTypeFilter = 'all' | 'entree' | 'sortie' | 'ajustement' | 'transfert';
 export const MouvementsListScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
+  const isSuperviseur = useAppSelector(selectIsSuperviseur);
   const { isTablet, contentMaxWidth } = useResponsive();
   const { colors, isDark } = useTheme();
 
@@ -195,18 +197,14 @@ export const MouvementsListScreen: React.FC = () => {
       >
         {/* ===== HEADER ===== */}
         <View style={styles.headerWrap}>
-          <View style={[styles.header, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-            {/* Accent strip */}
+          <View style={[styles.header, { backgroundColor: colors.surface, borderColor: isDark ? colors.borderSubtle : colors.borderMedium }]}>
+            {/* Accent bar */}
             <LinearGradient
               colors={['#4338CA', '#6366F1']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
               style={styles.headerAccent}
             />
-
-            {/* Mesh dots */}
-            <View style={[styles.meshDot, styles.meshDot1, { backgroundColor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.04)' }]} />
-            <View style={[styles.meshDot, styles.meshDot2, { backgroundColor: isDark ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.03)' }]} />
 
             <View style={styles.headerTop}>
               <View style={styles.headerTitleRow}>
@@ -217,7 +215,9 @@ export const MouvementsListScreen: React.FC = () => {
                     end={{ x: 1, y: 1 }}
                     style={styles.headerIconPill}
                   >
-                    <Icon name="swap-vertical" size={20} color="#FFF" />
+                    <View style={styles.headerIconInner}>
+                      <Icon name="swap-vertical" size={16} color="#6366F1" />
+                    </View>
                   </LinearGradient>
                 </View>
                 <View>
@@ -246,7 +246,7 @@ export const MouvementsListScreen: React.FC = () => {
                 { label: 'Ajustements', value: stats.ajustements, prefix: '+', color: '#F59E0B', gradient: ['#F59E0B', '#D97706'] as [string, string] },
                 { label: 'Transferts', value: stats.transferts, prefix: '↔', color: '#8B5CF6', gradient: ['#8B5CF6', '#6D28D9'] as [string, string] },
               ].map((stat, i) => (
-                <View key={i} style={[styles.miniStatCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)', borderColor: colors.borderSubtle }]}>
+                <View key={i} style={[styles.miniStatCard, { backgroundColor: colors.surface, borderColor: isDark ? colors.borderSubtle : colors.borderMedium }]}>
                   <LinearGradient
                     colors={stat.gradient}
                     start={{ x: 0, y: 0 }}
@@ -362,11 +362,7 @@ export const MouvementsListScreen: React.FC = () => {
         ) : filteredMouvements.length === 0 ? (
           /* Empty state */
           <View style={styles.emptyContainer}>
-            <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-              {/* Mesh */}
-              <View style={[styles.meshDot, { width: 80, height: 80, top: -16, right: -16, backgroundColor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.04)', borderRadius: 999 }]} />
-              <View style={[styles.meshDot, { width: 50, height: 50, bottom: -10, left: -10, backgroundColor: isDark ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.03)', borderRadius: 999 }]} />
-
+            <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: isDark ? colors.borderSubtle : colors.borderMedium }]}>
               <View style={styles.emptyIconShadow}>
                 <LinearGradient
                   colors={['#4338CA', '#6366F1']}
@@ -374,11 +370,13 @@ export const MouvementsListScreen: React.FC = () => {
                   end={{ x: 1, y: 1 }}
                   style={styles.emptyIconPill}
                 >
-                  <Icon
-                    name={hasActiveFilters ? 'filter-remove-outline' : 'chart-timeline-variant'}
-                    size={32}
-                    color="#FFF"
-                  />
+                  <View style={styles.emptyIconInner}>
+                    <Icon
+                      name={hasActiveFilters ? 'filter-remove-outline' : 'chart-timeline-variant'}
+                      size={24}
+                      color="#6366F1"
+                    />
+                  </View>
                 </LinearGradient>
               </View>
               <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
@@ -437,7 +435,7 @@ export const MouvementsListScreen: React.FC = () => {
                       key={mouvement.id}
                     >
                       <TouchableOpacity
-                        style={[styles.mouvCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle, shadowColor: cfg.color }]}
+                        style={[styles.mouvCard, { backgroundColor: colors.surface, borderColor: isDark ? colors.borderSubtle : colors.borderMedium, shadowColor: '#000' }]}
                         activeOpacity={0.7}
                         onPress={() => {
                           Vibration.vibrate(10);
@@ -460,7 +458,9 @@ export const MouvementsListScreen: React.FC = () => {
                             end={{ x: 1, y: 1 }}
                             style={styles.mouvIconPill}
                           >
-                            <Icon name={cfg.icon} size={17} color="#FFF" />
+                            <View style={styles.mouvIconInner}>
+                              <Icon name={cfg.icon} size={14} color={cfg.color} />
+                            </View>
                           </LinearGradient>
                         </View>
 
@@ -523,7 +523,8 @@ export const MouvementsListScreen: React.FC = () => {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* ===== FAB ===== */}
+      {/* ===== FAB (masqué pour superviseurs) ===== */}
+      {!isSuperviseur && <>
       {fabOpen && (
         <TouchableWithoutFeedback onPress={() => setFabOpen(false)}>
           <View style={styles.fabBackdrop} />
@@ -559,7 +560,9 @@ export const MouvementsListScreen: React.FC = () => {
               >
                 <View style={[styles.fabMenuIconShadow, { shadowColor: item.gradient[0] }]}>
                   <LinearGradient colors={item.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabMenuIconPill}>
-                    <Icon name={item.icon} size={18} color="#FFF" />
+                    <View style={styles.fabMenuIconInner}>
+                      <Icon name={item.icon} size={14} color={item.gradient[0]} />
+                    </View>
                   </LinearGradient>
                 </View>
                 <Text style={[styles.fabMenuLabel, { color: colors.textPrimary }]}>{item.label}</Text>
@@ -581,6 +584,7 @@ export const MouvementsListScreen: React.FC = () => {
           <Icon name={fabOpen ? 'close' : 'plus'} size={26} color="#FFF" />
         </LinearGradient>
       </TouchableOpacity>
+      </>}
 
       {/* ===== DETAIL MODAL ===== */}
       <Modal
@@ -609,7 +613,9 @@ export const MouvementsListScreen: React.FC = () => {
                       >
                         <View style={styles.detailHeroTop}>
                           <View style={styles.detailHeroIconWrap}>
-                            <Icon name={cfg.icon} size={28} color="#FFF" />
+                            <View style={styles.detailHeroIconInner}>
+                              <Icon name={cfg.icon} size={20} color={cfg.color} />
+                            </View>
                           </View>
                           <TouchableOpacity
                             style={styles.detailHeroClose}
@@ -757,25 +763,9 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: 3.5,
+    width: 4.5,
     borderTopLeftRadius: 20,
     borderBottomLeftRadius: 20,
-  },
-  meshDot: {
-    position: 'absolute',
-    borderRadius: 999,
-  },
-  meshDot1: {
-    width: 100,
-    height: 100,
-    top: -30,
-    right: -30,
-  },
-  meshDot2: {
-    width: 60,
-    height: 60,
-    bottom: -15,
-    left: 30,
   },
   headerTop: {
     flexDirection: 'row',
@@ -799,6 +789,14 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerIconInner: {
+    width: 26,
+    height: 26,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -838,7 +836,7 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: 3,
+    width: 3.5,
     borderTopLeftRadius: 14,
     borderBottomLeftRadius: 14,
   },
@@ -848,9 +846,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   miniStatLabel: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 10,
+    fontWeight: '600',
     marginTop: 2,
+    letterSpacing: 0.3,
   },
 
   // ===== SEARCH =====
@@ -974,6 +973,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  emptyIconInner: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   emptyTitle: {
     fontSize: 18,
     fontWeight: '800',
@@ -1062,7 +1069,7 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: 3,
+    width: 4.5,
     borderTopLeftRadius: 16,
     borderBottomLeftRadius: 16,
   },
@@ -1077,6 +1084,14 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mouvIconInner: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1222,6 +1237,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  fabMenuIconInner: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   fabMenuLabel: {
     fontSize: 14,
     fontWeight: '700',
@@ -1267,6 +1290,14 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailHeroIconInner: {
+    width: 32,
+    height: 32,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -30,7 +30,7 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   const pressScale = useSharedValue(1);
   const { width: screenWidth } = useWindowDimensions();
   const tablet = checkIsTablet(screenWidth);
-  const { colors } = useTheme();
+  const { isDark } = useTheme();
 
   const handlePressIn = useCallback(() => {
     pressScale.value = withTiming(premiumAnimation.pressScaleSmall, {
@@ -54,6 +54,7 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   }, [onPress]);
 
   const accentColor = iconGradient[0] as string;
+  const accentEnd = (iconGradient[1] ?? iconGradient[0]) as string;
 
   return (
     <Animated.View style={[styles.wrapper, pressStyle]}>
@@ -64,36 +65,29 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
         onPressOut={handlePressOut}
         style={styles.touchable}
       >
-        <View style={[
-          styles.container,
-          { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
-          tablet && styles.containerTablet,
-        ]}>
-          {/* Top accent line */}
-          <LinearGradient
-            colors={[...(iconGradient as string[])]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.accentLine}
-          />
+        {/* Full gradient background card */}
+        <LinearGradient
+          colors={isDark
+            ? [accentColor, accentEnd]
+            : [accentColor, accentEnd]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.container, tablet && styles.containerTablet]}
+        >
+          {/* Decorative glow circle behind icon */}
+          <View style={styles.glowCircle} />
 
-          {/* Gradient icon pill */}
-          <View style={[styles.iconShadow, { shadowColor: accentColor }]}>
-            <LinearGradient
-              colors={[...(iconGradient as string[])]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.iconPill, tablet && styles.iconPillTablet]}
-            >
-              <Icon name={icon} size={tablet ? 24 : 20} color="#FFFFFF" />
-            </LinearGradient>
+          {/* Icon in frosted circle */}
+          <View style={styles.iconCircle}>
+            <Icon name={icon} size={tablet ? 26 : 24} color={accentColor} />
           </View>
 
           {/* Label */}
-          <Text style={[styles.label, { color: colors.textSecondary }, tablet && styles.labelTablet]} numberOfLines={1}>
+          <Text style={[styles.label, tablet && styles.labelTablet]} numberOfLines={1}>
             {label}
           </Text>
-        </View>
+        </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -110,55 +104,54 @@ const styles = StyleSheet.create({
   },
   container: {
     alignItems: 'center',
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingVertical: 14,
+    borderRadius: 22,
+    paddingVertical: 18,
     paddingHorizontal: 6,
     width: '100%',
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    elevation: 8,
   },
   containerTablet: {
-    paddingVertical: premiumSpacing.lg,
+    paddingVertical: premiumSpacing.lg + 2,
     paddingHorizontal: premiumSpacing.md,
+    borderRadius: 24,
   },
-  accentLine: {
+  glowCircle: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 2.5,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    top: -15,
+    right: -15,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
-  iconShadow: {
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
-    marginBottom: 8,
-  },
-  iconPill: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconPillTablet: {
+  iconCircle: {
     width: 50,
     height: 50,
-    borderRadius: 16,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   label: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '800',
     textAlign: 'center',
-    letterSpacing: -0.1,
+    letterSpacing: 0.2,
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.15)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   labelTablet: {
     fontSize: 14,

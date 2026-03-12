@@ -41,6 +41,7 @@ import {
   type CodeType,
 } from 'react-native-vision-camera';
 import { useAppSelector, useAppDispatch } from '@/store';
+import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { clearScannedArticle, clearLastBarcode, setBarcode, addToHistoryAndSave, loadScanHistory, persistScanHistory, ScanHistoryItem } from '@/store/slices/scanSlice';
 import { useBarcodeScanner } from '@/modules/DataWedgeModule';
@@ -158,6 +159,7 @@ export const ScanMouvementScreen: React.FC = () => {
 
   const siteActif = useAppSelector(state => state.site.siteActif);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
+  const isSuperviseur = useAppSelector(selectIsSuperviseur);
   const { lastBarcode, isScanning, history } = useAppSelector(state => state.scan);
 
   const [article, setArticle] = useState<Article | null>(null);
@@ -363,7 +365,7 @@ export const ScanMouvementScreen: React.FC = () => {
 
   // ===== Actions =====
 
-  const handleMouvement = (type: 'entree' | 'sortie') => {
+  const handleMouvement = (type: 'entree' | 'sortie' | 'ajustement') => {
     if (!article) return;
     Vibration.vibrate(10);
     navigation.navigate('Mouvements', {
@@ -559,14 +561,14 @@ export const ScanMouvementScreen: React.FC = () => {
       {/* ===== ARTICLE RESULT CARD - PREMIUM ===== */}
       {article && scanStatus === 'success' && (
         <Animated.View entering={FadeInUp.delay(100).duration(500)} style={styles.resultArea}>
-          {/* Carte principale glassmorphism */}
+          {/* Carte principale */}
           <View style={styles.resultCard}>
-            {/* Glow background */}
+            {/* Left accent bar */}
             <LinearGradient
-              colors={['rgba(59,130,246,0.12)', 'rgba(139,92,246,0.06)', 'transparent']}
+              colors={['#3B82F6', '#6366F1']}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
+              end={{ x: 0, y: 1 }}
+              style={styles.resultAccentBar}
             />
 
             {/* Header avec photo ou icône */}
@@ -582,10 +584,12 @@ export const ScanMouvementScreen: React.FC = () => {
               ) : (
                 <Animated.View entering={ZoomIn.delay(200).duration(400)} style={styles.resultIconCircle}>
                   <LinearGradient
-                    colors={['rgba(59,130,246,0.2)', 'rgba(139,92,246,0.15)']}
+                    colors={['#3B82F6', '#6366F1']}
                     style={styles.resultIconGrad}
                   >
-                    <Icon name="package-variant-closed" size={26} color="#60A5FA" />
+                    <View style={styles.resultIconInner}>
+                      <Icon name="package-variant-closed" size={22} color="#3B82F6" />
+                    </View>
                   </LinearGradient>
                 </Animated.View>
               )}
@@ -626,13 +630,8 @@ export const ScanMouvementScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* Séparateur lumineux */}
-            <LinearGradient
-              colors={['transparent', 'rgba(255,255,255,0.06)', 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.resultDivider}
-            />
+            {/* Séparateur */}
+            <View style={styles.resultDivider} />
 
             {/* Stock display premium */}
             <Animated.View entering={FadeIn.delay(300).duration(400)} style={styles.resultStockRow}>
@@ -649,22 +648,21 @@ export const ScanMouvementScreen: React.FC = () => {
                 </View>
               </View>
               <View style={styles.resultStockRight}>
-                <View style={[
-                  styles.resultStockIndicator,
-                  { backgroundColor: isLowStock ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)' },
-                ]}>
+                <LinearGradient
+                  colors={isLowStock ? ['#EF4444', '#DC2626'] : ['#10B981', '#059669']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.resultStockIndicator}
+                >
                   <Icon
                     name={isLowStock ? 'trending-down' : 'trending-up'}
-                    size={16}
-                    color={isLowStock ? '#EF4444' : '#10B981'}
+                    size={14}
+                    color="#FFF"
                   />
-                  <Text style={[
-                    styles.resultStockIndicatorText,
-                    { color: isLowStock ? '#EF4444' : '#10B981' },
-                  ]}>
+                  <Text style={styles.resultStockIndicatorText}>
                     {isLowStock ? 'Stock bas' : 'En stock'}
                   </Text>
-                </View>
+                </LinearGradient>
                 {isLowStock && (
                   <Text style={styles.resultStockMinText}>
                     Min. {article.stockMini} {article.unite}
@@ -676,41 +674,71 @@ export const ScanMouvementScreen: React.FC = () => {
 
           {/* Quick Actions - design premium */}
           <Animated.View entering={FadeInUp.delay(250).duration(400)} style={styles.quickActions}>
-            <TouchableOpacity
-              style={styles.qAction}
-              activeOpacity={0.8}
-              onPress={() => handleMouvement('entree')}
-            >
-              <LinearGradient
-                colors={['#10B981', '#059669']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.qActionGrad}
+            {!isSuperviseur && (
+              <TouchableOpacity
+                style={styles.qAction}
+                activeOpacity={0.8}
+                onPress={() => handleMouvement('entree')}
               >
-                <View style={styles.qActionIconWrap}>
-                  <Icon name="arrow-up-bold" size={24} color="#FFF" />
-                </View>
-                <Text style={styles.qActionLabel}>Entrée</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.qActionGrad}
+                >
+                  <View style={styles.qActionIconWrap}>
+                    <View style={styles.qActionIconInner}>
+                      <Icon name="arrow-up-bold" size={20} color="#10B981" />
+                    </View>
+                  </View>
+                  <Text style={styles.qActionLabel}>Entrée</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
 
-            <TouchableOpacity
-              style={styles.qAction}
-              activeOpacity={0.8}
-              onPress={() => handleMouvement('sortie')}
-            >
-              <LinearGradient
-                colors={['#EF4444', '#DC2626']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.qActionGrad}
+            {!isSuperviseur && (
+              <TouchableOpacity
+                style={styles.qAction}
+                activeOpacity={0.8}
+                onPress={() => handleMouvement('sortie')}
               >
-                <View style={styles.qActionIconWrap}>
-                  <Icon name="arrow-down-bold" size={24} color="#FFF" />
-                </View>
-                <Text style={styles.qActionLabel}>Sortie</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={['#EF4444', '#DC2626']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.qActionGrad}
+                >
+                  <View style={styles.qActionIconWrap}>
+                    <View style={styles.qActionIconInner}>
+                      <Icon name="arrow-down-bold" size={20} color="#EF4444" />
+                    </View>
+                  </View>
+                  <Text style={styles.qActionLabel}>Sortie</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
+
+            {!isSuperviseur && (
+              <TouchableOpacity
+                style={styles.qAction}
+                activeOpacity={0.8}
+                onPress={() => handleMouvement('ajustement')}
+              >
+                <LinearGradient
+                  colors={['#F59E0B', '#D97706']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.qActionGrad}
+                >
+                  <View style={styles.qActionIconWrap}>
+                    <View style={styles.qActionIconInner}>
+                      <Icon name="swap-vertical" size={20} color="#F59E0B" />
+                    </View>
+                  </View>
+                  <Text style={styles.qActionLabel}>Ajustement</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.qAction}
@@ -724,7 +752,9 @@ export const ScanMouvementScreen: React.FC = () => {
                 style={styles.qActionGrad}
               >
                 <View style={styles.qActionIconWrap}>
-                  <Icon name="eye-outline" size={24} color="#FFF" />
+                  <View style={styles.qActionIconInner}>
+                    <Icon name="eye-outline" size={20} color="#3B82F6" />
+                  </View>
                 </View>
                 <Text style={styles.qActionLabel}>Détails</Text>
               </LinearGradient>
@@ -1043,17 +1073,26 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   resultCard: {
-    backgroundColor: 'rgba(15,23,42,0.85)',
-    borderRadius: 24,
+    backgroundColor: 'rgba(15,23,42,0.92)',
+    borderRadius: 22,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    shadowColor: '#2563EB',
+    borderColor: 'rgba(255,255,255,0.08)',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
     elevation: 12,
     overflow: 'hidden',
+  },
+  resultAccentBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4.5,
+    borderTopLeftRadius: 22,
+    borderBottomLeftRadius: 22,
   },
   resultCardTop: {
     flexDirection: 'row',
@@ -1089,9 +1128,15 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.2)',
     borderRadius: 16,
+  },
+  resultIconInner: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   resultInfo: {
     flex: 1,
@@ -1106,15 +1151,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(59,130,246,0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    backgroundColor: 'rgba(59,130,246,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   resultRefText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#60A5FA',
+    color: '#93C5FD',
     letterSpacing: 0.8,
     fontVariant: ['tabular-nums'],
   },
@@ -1135,29 +1180,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   resultMetaText: {
     fontSize: 11,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.55)',
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
   },
   resultClose: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   resultDivider: {
     height: 1,
     marginVertical: 16,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 1,
   },
   resultStockRow: {
@@ -1168,11 +1214,11 @@ const styles = StyleSheet.create({
   resultStockLeft: {},
   resultStockLabel: {
     fontSize: 11,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.4)',
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.45)',
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 4,
+    letterSpacing: 1.2,
+    marginBottom: 6,
   },
   resultStockValueRow: {
     flexDirection: 'row',
@@ -1197,13 +1243,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
   },
   resultStockIndicatorText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
   resultStockMinText: {
     fontSize: 10,
@@ -1215,11 +1263,13 @@ const styles = StyleSheet.create({
   // ===== QUICK ACTIONS - PREMIUM =====
   quickActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginTop: 14,
     gap: 10,
   },
   qAction: {
-    flex: 1,
+    width: '47.5%',
+    flexGrow: 1,
     borderRadius: 18,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -1238,10 +1288,18 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
+  },
+  qActionIconInner: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   qActionLabel: {
     fontSize: 13,
@@ -1268,7 +1326,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(96,165,250,0.2)',
+    borderColor: 'rgba(96,165,250,0.15)',
     gap: 10,
   },
   newScanText: {
