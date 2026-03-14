@@ -48,3 +48,4 @@ CREATE POLICY "Allow anonymous select on LoginHistory"
 -- LEFT JOIN "Site" s ON s.id = lh."siteId"
 -- ORDER BY lh."loginAt" DESC
 -- LIMIT 100;
+

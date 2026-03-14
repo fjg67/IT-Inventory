@@ -198,6 +198,37 @@ export const articleRepository = {
 
   async findByReference(reference: string, siteId?: string | number): Promise<Article | null> {
     const supabase = getSupabaseClient();
+
+    // Si un site est sélectionné, ne retourner que l'article présent sur ce site
+    if (siteId != null) {
+      const siteIds = await getEffectiveSiteIds(siteId);
+      // Récupérer les articles ayant du stock sur le site sélectionné
+      const { data: stockRows } = await supabase
+        .from(tables.stocksSites)
+        .select('articleId, quantity')
+        .in('siteId', siteIds);
+      const stockMap = new Map<string, number>();
+      for (const row of stockRows ?? []) {
+        stockMap.set(row.articleId, (stockMap.get(row.articleId) ?? 0) + (row.quantity ?? 0));
+      }
+      const articleIdsOnSite = Array.from(stockMap.keys());
+      if (articleIdsOnSite.length === 0) return null;
+
+      const { data: rows, error } = await supabase
+        .from(tables.articles)
+        .select('*')
+        .eq('reference', reference)
+        .eq('isArchived', false)
+        .in('id', articleIdsOnSite)
+        .limit(1);
+      if (error) throw new Error(error.message);
+      if (!rows || rows.length === 0) return null;
+      const data = rows[0];
+      const quantite = stockMap.get((data as ArticleRow).id) ?? 0;
+      return mapRowToArticle({ ...data, quantite_actuelle: quantite } as ArticleRow);
+    }
+
+    // Sans site, retourner le premier article trouvé
     const { data: rows, error } = await supabase
       .from(tables.articles)
       .select('*')
@@ -206,18 +237,7 @@ export const articleRepository = {
       .limit(1);
     if (error) throw new Error(error.message);
     if (!rows || rows.length === 0) return null;
-    const data = rows[0];
-    let quantite: number | undefined;
-    if (siteId != null) {
-      const siteIds = await getEffectiveSiteIds(siteId);
-      const { data: stockRows } = await supabase
-        .from(tables.stocksSites)
-        .select('quantity')
-        .eq('articleId', (data as ArticleRow).id)
-        .in('siteId', siteIds);
-      quantite = (stockRows ?? []).reduce((sum, r) => sum + (r.quantity ?? 0), 0);
-    }
-    return mapRowToArticle({ ...data, quantite_actuelle: quantite } as ArticleRow);
+    return mapRowToArticle(rows[0] as ArticleRow);
   },
 
   async create(data: ArticleForm): Promise<string> {
