@@ -8,6 +8,14 @@ import { Article, ArticleForm, ArticleFilters, SyncStatus, PaginatedResult } fro
 import { APP_CONFIG } from '@/constants';
 import { getEffectiveSiteIds } from './siteRepository';
 
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 /**
  * Supabase Article table columns:
  * id (text), reference (text), name (text), description (text),
@@ -242,9 +250,11 @@ export const articleRepository = {
 
   async create(data: ArticleForm): Promise<string> {
     const supabase = getSupabaseClient();
+    const newId = generateUUID();
     const { data: inserted, error } = await supabase
       .from(tables.articles)
       .insert({
+        id: newId,
         reference: data.reference,
         name: data.nom,
         description: data.description ?? null,
@@ -257,6 +267,8 @@ export const articleRepository = {
         unit: data.unite ?? 'unité',
         imageUrl: data.photoUrl ?? null,
         isArchived: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select('id')
       .single();

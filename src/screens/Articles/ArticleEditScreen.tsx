@@ -343,7 +343,7 @@ export const ArticleEditScreen: React.FC = () => {
   // ===== Computed =====
   const isFormValid = useMemo(() => {
     const baseValid =
-      reference.trim().length >= 2 &&
+      reference.trim().length >= 7 &&
       nom.trim().length >= 2 &&
       parseFloat(stockMini) >= 0 &&
       !isNaN(parseFloat(stockMini));
@@ -459,7 +459,7 @@ export const ArticleEditScreen: React.FC = () => {
   const checkReference = useMemo(
     () =>
       debounce((ref: string) => {
-        if (ref.trim().length < 2) {
+        if (ref.trim().length < 7) {
           setRefStatus('idle');
           return;
         }
@@ -733,7 +733,7 @@ export const ArticleEditScreen: React.FC = () => {
               <View style={[
                 styles.inputBox,
                 { backgroundColor: colors.surface, borderColor: colors.borderMedium },
-                refStatus === 'available' && reference.length >= 2 && styles.inputBoxSuccess,
+                refStatus === 'available' && reference.length >= 7 && styles.inputBoxSuccess,
               ]}>
                 <TextInput
                   style={[styles.inputText, { color: colors.textPrimary }]}
@@ -742,7 +742,8 @@ export const ArticleEditScreen: React.FC = () => {
                   value={reference}
                   onChangeText={handleReferenceChange}
                   autoCapitalize="characters"
-                  maxLength={20}
+                  keyboardType="number-pad"
+                  maxLength={30}
                   editable={!isEditing}
                 />
                 <View style={styles.inputActions}>
@@ -768,14 +769,14 @@ export const ArticleEditScreen: React.FC = () => {
                   {refStatus === 'checking' && (
                     <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 6 }} />
                   )}
-                  {refStatus === 'available' && reference.length >= 2 && (
+                  {refStatus === 'available' && reference.length >= 7 && (
                     <Animated.View entering={ZoomIn.duration(200)}>
                       <Icon name="check-circle" size={20} color={colors.success} style={{ marginLeft: 6 }} />
                     </Animated.View>
                   )}
                 </View>
               </View>
-              {refStatus === 'available' && reference.length >= 2 && (
+              {refStatus === 'available' && reference.length >= 7 && (
                 <Animated.View entering={FadeIn.duration(200)} style={styles.validationMsg}>
                   <Icon name="check" size={13} color={colors.success} />
                   <Text style={[styles.validationText, { color: colors.success }]}>Référence valide</Text>
@@ -792,7 +793,6 @@ export const ArticleEditScreen: React.FC = () => {
               <View style={[
                 styles.inputBox,
                 { backgroundColor: colors.surface, borderColor: colors.borderMedium },
-                nom.length >= 2 && styles.inputBoxSuccess,
               ]}>
                 <TextInput
                   style={[styles.inputText, { color: colors.textPrimary }]}
@@ -801,12 +801,8 @@ export const ArticleEditScreen: React.FC = () => {
                   value={nom}
                   onChangeText={setNom}
                   maxLength={100}
+                  blurOnSubmit={false}
                 />
-                {nom.length >= 2 && (
-                  <Animated.View entering={ZoomIn.duration(200)}>
-                    <Icon name="check-circle" size={20} color={colors.success} />
-                  </Animated.View>
-                )}
               </View>
             </View>
 
