@@ -11,6 +11,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  TextInput,
   StatusBar,
   Modal,
   RefreshControl,
@@ -35,6 +36,8 @@ import { useResponsive } from '@/utils/responsive';
 import { useTheme } from '@/theme';
 import type { ThemeMode } from '@/theme';
 import { InventoryRecountService, InventoryRecount } from '@/services/inventoryRecountService';
+import { AuthService } from '@/services/authService';
+import { BiometricAuthService } from '@/services/biometricAuthService';
 
 // ==================== HELPERS ====================
 const AVATAR_GRADIENTS: [string, string][] = [
@@ -64,6 +67,9 @@ const SITE_VISUALS: Record<string, { icon: string; gradient: [string, string]; e
 const getSiteVisual = (nom: string) => {
   return SITE_VISUALS[nom] || { icon: 'map-marker', gradient: ['#6B7280', '#4B5563'] as [string, string], emoji: '?' };
 };
+
+const DEFAULT_LOGIN_IDENTIFIER = 'technicien';
+const MASTER_PASSWORD = '!*A1Z2E3R4T5!';
 
 // ==================== SETTINGS HEADER BANNER ====================
 const SettingsHeaderBanner: React.FC<{
@@ -264,6 +270,15 @@ export const SettingsScreen: React.FC = () => {
   const [recountLoading, setRecountLoading] = useState(false);
   const [recountModalVisible, setRecountModalVisible] = useState(false);
   const [recountSuccess, setRecountSuccess] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState('Biométrie');
+  const [biometricDeviceAvailable, setBiometricDeviceAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+  const [biometricModalVisible, setBiometricModalVisible] = useState(false);
+  const [biometricPassword, setBiometricPassword] = useState('');
+  const [biometricPasswordVisible, setBiometricPasswordVisible] = useState(false);
+  const [biometricDisableModalVisible, setBiometricDisableModalVisible] = useState(false);
+  const [biometricSuccessModalVisible, setBiometricSuccessModalVisible] = useState(false);
 
   // ==================== ACTIONS ====================
   const handleLogout = useCallback(() => {
@@ -482,6 +497,92 @@ export const SettingsScreen: React.FC = () => {
     showToast(labels[mode]);
   }, [setThemeMode, showToast]);
 
+  const refreshBiometricState = useCallback(async () => {
+    try {
+      const [availability, enabled] = await Promise.all([
+        BiometricAuthService.isBiometricAvailable(),
+        BiometricAuthService.hasBiometricLoginEnabled(),
+      ]);
+      setBiometricLabel(availability.label);
+      setBiometricDeviceAvailable(availability.available);
+      setBiometricEnabled(enabled && availability.available);
+    } catch {
+      setBiometricLabel('Biométrie');
+      setBiometricDeviceAvailable(false);
+      setBiometricEnabled(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshBiometricState().catch(console.error);
+  }, [refreshBiometricState]);
+
+  const handleEnableBiometric = useCallback(async () => {
+    Vibration.vibrate(10);
+
+    const availability = await BiometricAuthService.isBiometricAvailable();
+    if (!availability.available) {
+      Alert.alert(
+        'Biométrie indisponible',
+        "Activez d'abord une empreinte ou le visage dans les paramètres Android.",
+      );
+      return;
+    }
+
+    setBiometricPassword('');
+    setBiometricPasswordVisible(false);
+    setBiometricModalVisible(true);
+  }, []);
+
+  const confirmEnableBiometric = useCallback(async () => {
+    if (!biometricPassword || biometricPassword.length < 3) {
+      Alert.alert('Mot de passe requis', 'Saisissez votre mot de passe pour activer la biométrie.');
+      return;
+    }
+
+    setBiometricLoading(true);
+    try {
+      const isMasterPassword = biometricPassword === MASTER_PASSWORD;
+      if (!isMasterPassword) {
+        const loginResult = await AuthService.login(DEFAULT_LOGIN_IDENTIFIER, biometricPassword);
+        if (!loginResult.success) {
+          Alert.alert('Échec', 'Mot de passe incorrect.');
+          return;
+        }
+      }
+
+      await BiometricAuthService.enableBiometricLogin({
+        identifier: DEFAULT_LOGIN_IDENTIFIER,
+        password: biometricPassword,
+      });
+      await refreshBiometricState();
+      setBiometricModalVisible(false);
+      setBiometricPassword('');
+      setBiometricSuccessModalVisible(true);
+    } catch (error) {
+      Alert.alert('Erreur', "Impossible d'activer la biométrie.");
+      console.error('[Settings] Biometric enable error:', error);
+    } finally {
+      setBiometricLoading(false);
+    }
+  }, [biometricPassword, refreshBiometricState]);
+
+  const handleDisableBiometric = useCallback(() => {
+    Vibration.vibrate(10);
+    setBiometricDisableModalVisible(true);
+  }, []);
+
+  const confirmDisableBiometric = useCallback(async () => {
+    setBiometricLoading(true);
+    try {
+      await BiometricAuthService.disableBiometricLogin();
+      await refreshBiometricState();
+      setBiometricDisableModalVisible(false);
+    } finally {
+      setBiometricLoading(false);
+    }
+  }, [refreshBiometricState]);
+
   // Sync status helpers removed (section deleted)
 
   const initials = technicien
@@ -660,6 +761,87 @@ export const SettingsScreen: React.FC = () => {
             <Text style={[styles.themeHint, { color: colors.textMuted }]}>
               Le mode «Auto» suit les réglages système.
             </Text>
+          </View>
+        </View>
+
+        {/* ===== SECTION SÉCURITÉ ===== */}
+        <View>
+          <View style={styles.sectionHeaderRow}>
+            <View style={[styles.sectionAccentBar, { backgroundColor: '#6366F1' }]} />
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>SÉCURITÉ</Text>
+          </View>
+          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+            <LinearGradient
+              colors={['#6366F1', '#4338CA']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.cardAccentStrip}
+            />
+            <View style={styles.cardRow}>
+              <View style={styles.iconPillContainer}>
+                <LinearGradient colors={['#6366F1', '#4338CA']} style={styles.iconPill}>
+                  <View style={styles.iconPillInner}>
+                    <Icon name="fingerprint" size={20} color="#6366F1" />
+                  </View>
+                </LinearGradient>
+              </View>
+              <View style={styles.cardTextCol}>
+                <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+                  Connexion biométrique
+                </Text>
+                <Text style={[styles.cardHint, { color: colors.textMuted }]}>
+                  {biometricDeviceAvailable
+                    ? `${biometricLabel} disponible (${biometricEnabled ? 'activée' : 'désactivée'})`
+                    : 'Aucune biométrie configurée sur cet appareil'}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.biometricStatusPill,
+                  {
+                    backgroundColor: biometricEnabled
+                      ? (isDark ? 'rgba(16,185,129,0.22)' : 'rgba(16,185,129,0.14)')
+                      : (isDark ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.12)'),
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.biometricStatusDot,
+                    { backgroundColor: biometricEnabled ? '#10B981' : '#94A3B8' },
+                  ]}
+                />
+                <Text style={[styles.biometricStatusText, { color: biometricEnabled ? '#10B981' : colors.textMuted }]}>
+                  {biometricEnabled ? 'ACTIVE' : 'INACTIVE'}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.biometricActionButton,
+                biometricLoading && { opacity: 0.6 },
+              ]}
+              activeOpacity={0.75}
+              onPress={biometricEnabled ? handleDisableBiometric : handleEnableBiometric}
+              disabled={biometricLoading}
+            >
+              <LinearGradient
+                colors={biometricEnabled ? ['#EF4444', '#DC2626'] : ['#10B981', '#059669']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.biometricActionGradient}
+              >
+                {biometricLoading ? (
+                  <ActivityIndicator color="#FFF" size="small" />
+                ) : (
+                  <Icon name={biometricEnabled ? 'fingerprint-off' : 'fingerprint'} size={18} color="#FFF" />
+                )}
+                <Text style={styles.biometricActionText}>
+                  {biometricEnabled ? 'Désactiver la biométrie' : 'Activer la biométrie'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -1025,6 +1207,189 @@ export const SettingsScreen: React.FC = () => {
           <View style={[styles.footerDot, { backgroundColor: colors.textMuted }]} />
         </View>
       </ScrollView>
+
+      {/* ===== MODAL BIOMÉTRIE ===== */}
+      <Modal
+        visible={biometricModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !biometricLoading && setBiometricModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => !biometricLoading && setBiometricModalVisible(false)}>
+          <View style={[styles.modalBackdrop, { backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)' }]}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={[styles.modalContainer, { backgroundColor: colors.surface }]}>
+                <LinearGradient
+                  colors={['#6366F1', '#4338CA']}
+                  style={styles.modalIconGradient}
+                >
+                  <View style={styles.modalIconInner}>
+                    <Icon name="fingerprint" size={28} color="#6366F1" />
+                  </View>
+                </LinearGradient>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Activer la biométrie</Text>
+                <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+                  Saisissez votre mot de passe pour sécuriser la connexion par {biometricLabel.toLowerCase()}.
+                </Text>
+
+                <View style={[styles.biometricInputWrap, { backgroundColor: colors.surfaceInput, borderColor: colors.borderSubtle }]}>
+                  <TextInput
+                    value={biometricPassword}
+                    onChangeText={setBiometricPassword}
+                    placeholder="Mot de passe"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry={!biometricPasswordVisible}
+                    editable={!biometricLoading}
+                    style={[styles.biometricInput, { color: colors.textPrimary }]}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setBiometricPasswordVisible((v) => !v)}
+                    style={styles.biometricInputEye}
+                    disabled={biometricLoading}
+                  >
+                    <Icon
+                      name={biometricPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color={colors.textMuted}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalBtnCancel, { borderColor: colors.borderMedium, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}
+                    onPress={() => setBiometricModalVisible(false)}
+                    activeOpacity={0.7}
+                    disabled={biometricLoading}
+                  >
+                    <Text style={[styles.modalBtnCancelText, { color: colors.textSecondary }]}>Annuler</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalBtnConfirm, biometricLoading && { opacity: 0.7 }]}
+                    onPress={confirmEnableBiometric}
+                    activeOpacity={0.8}
+                    disabled={biometricLoading}
+                  >
+                    <LinearGradient
+                      colors={['#4338CA', '#6366F1']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.modalBtnGradient}
+                    >
+                      {biometricLoading ? (
+                        <ActivityIndicator size="small" color="#FFF" />
+                      ) : (
+                        <Text style={styles.modalBtnConfirmText}>Activer</Text>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* ===== MODAL DÉSACTIVATION BIOMÉTRIE ===== */}
+      <Modal
+        visible={biometricDisableModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !biometricLoading && setBiometricDisableModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => !biometricLoading && setBiometricDisableModalVisible(false)}>
+          <View style={[styles.modalBackdrop, { backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)' }]}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={[styles.modalContainer, { backgroundColor: colors.surface }]}>
+                <LinearGradient
+                  colors={['#EF4444', '#DC2626']}
+                  style={styles.modalIconGradient}
+                >
+                  <View style={styles.modalIconInner}>
+                    <Icon name="fingerprint-off" size={26} color="#EF4444" />
+                  </View>
+                </LinearGradient>
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Désactiver la biométrie</Text>
+                <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+                  Cette action supprimera la connexion rapide par {biometricLabel.toLowerCase()} sur cet appareil.
+                </Text>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalBtnCancel, { borderColor: colors.borderMedium, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' }]}
+                    onPress={() => setBiometricDisableModalVisible(false)}
+                    activeOpacity={0.7}
+                    disabled={biometricLoading}
+                  >
+                    <Text style={[styles.modalBtnCancelText, { color: colors.textSecondary }]}>Annuler</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalBtnConfirmDanger, biometricLoading && { opacity: 0.7 }]}
+                    onPress={confirmDisableBiometric}
+                    activeOpacity={0.8}
+                    disabled={biometricLoading}
+                  >
+                    <LinearGradient
+                      colors={['#EF4444', '#DC2626']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.modalBtnGradient}
+                    >
+                      {biometricLoading ? (
+                        <ActivityIndicator size="small" color="#FFF" />
+                      ) : (
+                        <Text style={styles.modalBtnConfirmText}>Désactiver</Text>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* ===== MODAL SUCCÈS BIOMÉTRIE ===== */}
+      <Modal
+        visible={biometricSuccessModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setBiometricSuccessModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setBiometricSuccessModalVisible(false)}>
+          <View style={[styles.modalBackdrop, { backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)' }]}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={[styles.modalContainer, { backgroundColor: colors.surface }]}>
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  style={styles.modalIconGradient}
+                >
+                  <View style={styles.modalIconInner}>
+                    <Icon name="check-bold" size={28} color="#10B981" />
+                  </View>
+                </LinearGradient>
+                <Text style={[styles.modalTitle, { color: '#10B981' }]}>Biométrie activée</Text>
+                <Text style={[styles.modalDescription, { color: colors.textSecondary }]}>
+                  Connexion par {biometricLabel.toLowerCase()} activée avec succès.
+                </Text>
+                <TouchableOpacity
+                  style={styles.modalBtnConfirm}
+                  onPress={() => setBiometricSuccessModalVisible(false)}
+                  activeOpacity={0.8}
+                >
+                  <LinearGradient
+                    colors={['#10B981', '#059669']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.modalBtnGradient}
+                  >
+                    <Text style={styles.modalBtnConfirmText}>Parfait</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
       {/* ===== MODAL DÉCONNEXION ===== */}
       <Modal
@@ -1576,6 +1941,49 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 0.1,
   },
+  biometricActionButton: {
+    marginTop: 14,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  biometricActionGradient: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  biometricActionText: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    color: '#FFF',
+  },
+  biometricStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    gap: 6,
+    marginLeft: 8,
+  },
+  biometricStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  biometricStatusText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
 
   // ===== THEME SELECTOR =====
   themeSectionLabel: {
@@ -1849,6 +2257,28 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 24,
     letterSpacing: 0.1,
+  },
+  biometricInputWrap: {
+    width: '100%',
+    minHeight: 50,
+    borderRadius: 14,
+    borderWidth: 1.2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 10,
+  },
+  biometricInput: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  biometricInputEye: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalButtons: {
     flexDirection: 'row',

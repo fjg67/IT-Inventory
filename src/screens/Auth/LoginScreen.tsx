@@ -10,6 +10,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Alert,
   TextInput,
   StatusBar,
   Dimensions,
@@ -37,6 +38,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { AuthService } from '@/services/authService';
+import { BiometricAuthService } from '@/services/biometricAuthService';
 import { syncService } from '@/api';
 import { APP_CONFIG } from '@/constants/config';
 import { useResponsive } from '@/utils/responsive';
@@ -66,6 +68,11 @@ export const LoginScreen: React.FC = () => {
   const [syncing, setSyncing] = useState(false);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
   const [loggedUserName, setLoggedUserName] = useState('');
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState('Biométrie');
+
+  const autoBiometricPromptRef = useRef(false);
+  const biometricUnavailableNoticeShownRef = useRef(false);
 
   const sizes = useMemo(() => {
     const logoSize = rv({ phone: 80, tablet: 110 });
@@ -198,6 +205,98 @@ export const LoginScreen: React.FC = () => {
     setFormValid((prev) => (prev !== valid ? valid : prev));
   }, []);
 
+  const refreshBiometricState = useCallback(async () => {
+    try {
+      const [enabled, availability] = await Promise.all([
+        BiometricAuthService.hasBiometricLoginEnabled(),
+        BiometricAuthService.isBiometricAvailable(),
+      ]);
+      setBiometricAvailable(enabled && availability.available);
+      setBiometricLabel(availability.label);
+    } catch {
+      setBiometricAvailable(false);
+      setBiometricLabel('Biométrie');
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshBiometricState().catch(console.error);
+  }, [refreshBiometricState]);
+
+  const maybeEnableBiometricAfterPasswordLogin = useCallback(async (password: string) => {
+    if (!password) return;
+
+    const [alreadyEnabled, availability] = await Promise.all([
+      BiometricAuthService.hasBiometricLoginEnabled(),
+      BiometricAuthService.isBiometricAvailable(),
+    ]);
+
+    if (alreadyEnabled) {
+      return;
+    }
+
+    if (!availability.available) {
+      if (!biometricUnavailableNoticeShownRef.current) {
+        biometricUnavailableNoticeShownRef.current = true;
+        Alert.alert(
+          'Biométrie indisponible',
+          "Aucune biométrie n'est configurée sur cet appareil. Ajoutez une empreinte ou un visage dans les paramètres Android puis reconnectez-vous.",
+        );
+      }
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      Alert.alert(
+        'Activer la biométrie',
+        `Souhaitez-vous activer la connexion par ${availability.label.toLowerCase()} pour vos prochaines connexions ?`,
+        [
+          { text: 'Plus tard', style: 'cancel', onPress: resolve },
+          {
+            text: 'Activer',
+            onPress: async () => {
+              try {
+                await BiometricAuthService.enableBiometricLogin({
+                  identifier: DEFAULT_IDENTIFIER,
+                  password,
+                });
+                await refreshBiometricState();
+                Alert.alert('Biométrie activée', 'Vous pourrez vous connecter avec votre empreinte ou votre visage.');
+              } catch {
+                Alert.alert('Erreur', "Impossible d'activer la connexion biométrique.");
+              } finally {
+                resolve();
+              }
+            },
+          },
+        ],
+      );
+    });
+  }, [refreshBiometricState]);
+
+  const completeLogin = useCallback(async (technicien: any, plainPassword?: string) => {
+    await AuthService.saveSession(technicien, true);
+    Vibration.vibrate([0, 30, 60, 30]);
+
+    setLoading(false);
+    setSyncing(true);
+    try {
+      await syncService.forceFullSync();
+    } catch (e) {
+      console.warn('[Login] Sync après connexion:', e);
+    }
+    setSyncing(false);
+
+    if (plainPassword) {
+      await maybeEnableBiometricAfterPasswordLogin(plainPassword);
+    }
+
+    setSuccess(true);
+    const displayName = technicien?.nom || technicien?.matricule || 'Technicien';
+    setLoggedUserName(displayName);
+    setTimeout(() => setShowSuccessOverlay(true), 600);
+  }, [maybeEnableBiometricAfterPasswordLogin]);
+
   const handleLogin = useCallback(async () => {
     if (!isFormValid || loading || success || syncing) return;
     Vibration.vibrate(15);
@@ -223,21 +322,7 @@ export const LoginScreen: React.FC = () => {
         return;
       }
 
-      await AuthService.saveSession(result.technicien, true);
-      Vibration.vibrate([0, 30, 60, 30]);
-      setLoading(false);
-      setSyncing(true);
-      try {
-        await syncService.forceFullSync();
-      } catch (e) {
-        console.warn('[Login] Sync après connexion:', e);
-      }
-      setSyncing(false);
-      setSuccess(true);
-
-      const displayName = result.technicien?.nom || result.technicien?.matricule || 'Technicien';
-      setLoggedUserName(displayName);
-      setTimeout(() => setShowSuccessOverlay(true), 600);
+      await completeLogin(result.technicien, passwordRef.current);
     } catch {
       setPasswordError('Une erreur est survenue.');
       Vibration.vibrate([0, 40, 60, 40]);
@@ -245,7 +330,70 @@ export const LoginScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [isFormValid, loading, success, syncing, navigation]);
+  }, [isFormValid, loading, success, syncing, completeLogin, triggerErrorAnimation]);
+
+  const handleMasterLoginSuccess = useCallback(() => {
+    setLoading(false);
+    setSuccess(true);
+    setLoggedUserName('Technicien');
+    setTimeout(() => setShowSuccessOverlay(true), 600);
+  }, []);
+
+  const handleBiometricLogin = useCallback(async () => {
+    if (loading || success || syncing) return;
+
+    setPasswordError('');
+    setLoading(true);
+    Vibration.vibrate(10);
+
+    try {
+      const biometricResult = await BiometricAuthService.authenticateAndGetCredentials();
+      if (!biometricResult.success) {
+        if (!biometricResult.cancelled) {
+          setPasswordError(biometricResult.error || 'Authentification biométrique échouée.');
+          triggerErrorAnimation();
+        }
+        return;
+      }
+
+      const credentials = biometricResult.credentials!;
+
+      // Support du mot de passe master stocké pour la biométrie
+      if (credentials.password === MASTER_PASSWORD) {
+        handleMasterLoginSuccess();
+        return;
+      }
+
+      const result = await AuthService.login(credentials.identifier, credentials.password);
+      if (!result.success) {
+        await BiometricAuthService.disableBiometricLogin();
+        await refreshBiometricState();
+        setPasswordError('La connexion biométrique a expiré. Reconnectez-vous avec votre mot de passe.');
+        triggerErrorAnimation();
+        return;
+      }
+
+      await completeLogin(result.technicien);
+    } catch {
+      setPasswordError('Une erreur est survenue.');
+      triggerErrorAnimation();
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, success, syncing, completeLogin, triggerErrorAnimation, refreshBiometricState, handleMasterLoginSuccess]);
+
+  useEffect(() => {
+    if (!biometricAvailable || autoBiometricPromptRef.current || loading || success || syncing) {
+      return;
+    }
+
+    autoBiometricPromptRef.current = true;
+    const timer = setTimeout(() => {
+      handleBiometricLogin().catch(console.error);
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [biometricAvailable, loading, success, syncing, handleBiometricLogin]);
 
   const inputDisabled = loading || success || syncing;
 
@@ -317,7 +465,9 @@ export const LoginScreen: React.FC = () => {
           <View style={s.instructionWrap}>
             <View style={[s.instructionDot, { backgroundColor: colors.textMuted }]} />
             <Text style={[s.instructionText, { fontSize: fs(13), color: colors.textMuted }]}>
-              Entrez votre mot de passe pour continuer
+              {biometricAvailable
+                ? `Connectez-vous par ${biometricLabel.toLowerCase()} ou mot de passe`
+                : 'Entrez votre mot de passe pour continuer'}
             </Text>
             <View style={[s.instructionDot, { backgroundColor: colors.textMuted }]} />
           </View>
@@ -516,6 +666,28 @@ export const LoginScreen: React.FC = () => {
                   )}
                 </LinearGradient>
               </TouchableOpacity>
+
+              {biometricAvailable && (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleBiometricLogin}
+                  disabled={inputDisabled}
+                  style={[
+                    s.biometricBtn,
+                    {
+                      borderColor: isDark ? colors.borderStrong : '#CBD5E1',
+                      backgroundColor: isDark ? colors.surfaceElevated : '#F8FAFC',
+                    },
+                    inputDisabled && s.biometricBtnDisabled,
+                  ]}
+                >
+                  <Icon name="fingerprint" size={20} color={colors.primaryDark} />
+                  <Text style={[s.biometricBtnText, { color: colors.textPrimary }]}>
+                    Se connecter avec {biometricLabel.toLowerCase()}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
             </Animated.View>
           </Animated.View>
 
@@ -759,6 +931,23 @@ const s = StyleSheet.create({
   },
   submitTextDisabled: {
     color: '#94A3B8',
+  },
+  biometricBtn: {
+    marginTop: 14,
+    height: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  biometricBtnDisabled: {
+    opacity: 0.6,
+  },
+  biometricBtnText: {
+    fontWeight: '700',
+    letterSpacing: 0.1,
   },
 
   // Footer
