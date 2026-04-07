@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+﻿import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
@@ -38,7 +38,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
       {actionLabel && onActionPress && (
         <TouchableOpacity
           onPress={handlePress}
-          style={[styles.actionButton, { backgroundColor: isDark ? 'rgba(99,102,241,0.1)' : 'rgba(99,102,241,0.06)' }]}
+          style={[styles.actionButton, { backgroundColor: isDark ? 'rgba(0,122,57,0.1)' : 'rgba(0,122,57,0.06)' }]}
           activeOpacity={0.7}
         >
           <Text style={[styles.actionLabel, { color: colors.primary }, tablet && { fontSize: 14 }]}>{actionLabel}</Text>

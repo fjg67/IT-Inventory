@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // MOUVEMENT FORM SCREEN - Premium Design
 // IT-Inventory Application
 // ============================================
@@ -457,7 +457,7 @@ export const MouvementFormScreen: React.FC = () => {
 
       {/* ===== HEADER ===== */}
       <LinearGradient
-        colors={['#4338CA', '#6366F1', '#818CF8']}
+        colors={['#005C2B', '#007A39', '#4EB35A']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -494,7 +494,7 @@ export const MouvementFormScreen: React.FC = () => {
                       <Icon name="check" size={10} color="#FFF" />
                     </LinearGradient>
                   ) : active ? (
-                    <LinearGradient colors={['#818CF8', '#6366F1']} style={styles.stepDot}>
+                    <LinearGradient colors={['#4EB35A', '#007A39']} style={styles.stepDot}>
                       <View style={styles.stepDotActive} />
                     </LinearGradient>
                   ) : (
@@ -538,13 +538,13 @@ export const MouvementFormScreen: React.FC = () => {
                 style={styles.scanZone}
               >
                 <LinearGradient
-                  colors={['rgba(99,102,241,0.06)', 'rgba(99,102,241,0.02)']}
+                  colors={['rgba(0,122,57,0.06)', 'rgba(99,102,241,0.02)']}
                   style={styles.scanGradient}
                 >
                   <View style={styles.scanIconPill}>
-                    <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.scanIconGrad}>
+                    <LinearGradient colors={['#007A39', '#007A39']} style={styles.scanIconGrad}>
                       <View style={styles.scanIconInner}>
-                        <Icon name="barcode-scan" size={32} color="#6366F1" />
+                        <Icon name="barcode-scan" size={32} color="#007A39" />
                       </View>
                     </LinearGradient>
                   </View>
@@ -567,7 +567,7 @@ export const MouvementFormScreen: React.FC = () => {
               {/* ===== 2. SEARCH ===== */}
               <View style={styles.searchSection}>
                 <View style={styles.searchLabelRow}>
-                  <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.searchLabelAccent} />
+                  <LinearGradient colors={['#007A39', '#007A39']} style={styles.searchLabelAccent} />
                   <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Code-barres / Référence</Text>
                 </View>
                 <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
@@ -635,9 +635,9 @@ export const MouvementFormScreen: React.FC = () => {
                 <LinearGradient colors={['#10B981', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.articleCardStrip} />
                 <View style={styles.articleCardTop}>
                   <View style={styles.articleIconPill}>
-                    <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.articleIconGrad}>
+                    <LinearGradient colors={['#007A39', '#007A39']} style={styles.articleIconGrad}>
                       <View style={styles.articleIconInner}>
-                        <Icon name="package-variant-closed" size={18} color="#6366F1" />
+                        <Icon name="package-variant-closed" size={18} color="#007A39" />
                       </View>
                     </LinearGradient>
                   </View>
@@ -652,11 +652,11 @@ export const MouvementFormScreen: React.FC = () => {
                 <View style={styles.articleMeta}>
                   <View style={[
                     styles.stockBadge,
-                    { backgroundColor: stockActuel < (article.stockMini ?? 0) ? colors.dangerBg : 'rgba(99,102,241,0.08)' },
+                    { backgroundColor: stockActuel < (article.stockMini ?? 0) ? colors.dangerBg : 'rgba(0,122,57,0.08)' },
                   ]}>
                     <Text style={[
                       styles.stockBadgeText,
-                      { color: stockActuel < (article.stockMini ?? 0) ? colors.danger : '#6366F1' },
+                      { color: stockActuel < (article.stockMini ?? 0) ? colors.danger : '#007A39' },
                     ]}>
                       Stock actuel : {stockActuel} {article.unite}
                     </Text>
@@ -677,7 +677,7 @@ export const MouvementFormScreen: React.FC = () => {
           {childSites.length > 0 && !selectedSubSiteId && (
             <Animated.View entering={FadeInUp.delay(50).duration(400)} style={{ marginBottom: 16 }}>
               <View style={styles.sectionLabelRow}>
-                <LinearGradient colors={['#4F46E5', '#4338CA']} style={styles.sectionLabelAccent} />
+                <LinearGradient colors={['#007A39', '#005C2B']} style={styles.sectionLabelAccent} />
                 <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Stock concerné <Text style={{ color: colors.danger }}>*</Text></Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
@@ -695,15 +695,15 @@ export const MouvementFormScreen: React.FC = () => {
                       activeOpacity={0.7}
                     >
                       {selected ? (
-                        <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.siteCardIconPill}>
+                        <LinearGradient colors={['#007A39', '#007A39']} style={styles.siteCardIconPill}>
                           <View style={styles.siteCardIconInner}>
-                            <Icon name="warehouse" size={16} color="#6366F1" />
+                            <Icon name="warehouse" size={16} color="#007A39" />
                           </View>
                         </LinearGradient>
                       ) : (
                         <Icon name="warehouse" size={18} color={colors.textMuted} />
                       )}
-                      <Text style={[styles.siteCardText, { color: selected ? '#6366F1' : colors.textSecondary }, selected && { fontWeight: '700' }]} numberOfLines={1}>
+                      <Text style={[styles.siteCardText, { color: selected ? '#007A39' : colors.textSecondary }, selected && { fontWeight: '700' }]} numberOfLines={1}>
                         {site.nom}
                       </Text>
                     </TouchableOpacity>
@@ -1113,7 +1113,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: 'rgba(99,102,241,0.2)',
+    borderColor: 'rgba(0,122,57,0.2)',
   },
   scanGradient: {
     paddingVertical: 32,
@@ -1605,7 +1605,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   siteCardSelected: {
-    borderColor: '#6366F1',
+    borderColor: '#007A39',
     backgroundColor: 'rgba(99,102,241,0.04)',
   },
   siteCardIconPill: {

@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // ARTICLE DETAIL SCREEN - Premium Design
 // IT-Inventory Application
 // ============================================
@@ -30,7 +30,11 @@ import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { articleRepository, mouvementRepository, stockRepository } from '@/database';
 import { formatTimeParis, formatRelativeDateParis } from '@/utils/dateUtils';
-import { exportArticleDetail } from '@/utils/csv';
+import {
+  exportArticleDetail,
+  exportArticleDetailAnalytics,
+  exportArticleDetailAccounting,
+} from '@/utils/csv';
 import { Article, Mouvement, StockSite } from '@/types';
 import { useResponsive } from '@/utils/responsive';
 import { useTheme } from '@/theme';
@@ -40,7 +44,7 @@ const { width: SCREEN_W } = Dimensions.get('window');
 // ==================== HELPERS ====================
 const AVATAR_GRADIENTS = [
   ['#3B82F6', '#2563EB'],
-  ['#8B5CF6', '#6366F1'],
+  ['#8B5CF6', '#007A39'],
   ['#EC4899', '#F472B6'],
   ['#10B981', '#34D399'],
   ['#F59E0B', '#FBBF24'],
@@ -75,7 +79,7 @@ const TYPE_CFG: Record<string, { icon: string; color: string; label: string; pre
 export const ArticleDetailScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { articleId } = route.params;
+  const { articleId, sourceTab } = route.params;
   const siteActif = useAppSelector(state => state.site.siteActif);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const isSuperviseur = useAppSelector(selectIsSuperviseur);
@@ -131,16 +135,54 @@ export const ArticleDetailScreen: React.FC = () => {
     navigation.navigate('ArticleEdit', { articleId });
   };
 
+  const handleBack = useCallback(() => {
+    Vibration.vibrate(10);
+
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    const tabName = sourceTab === 'Tablette' ? 'Tablette' : 'Articles';
+    const parentNav = navigation.getParent?.();
+    if (parentNav) {
+      parentNav.navigate(tabName, { screen: 'ArticlesList' });
+    } else {
+      navigation.navigate('ArticlesList');
+    }
+  }, [navigation, sourceTab]);
+
   const handleExportCSV = useCallback(async () => {
-    if (!article || !siteActif) return;
+    if (!article || !siteActif || !effectiveSiteId) return;
     Vibration.vibrate(10);
     setExporting(true);
     try {
-      const filepath = await exportArticleDetail(article, historique, siteActif.nom);
+      const exportFormat = await new Promise<'premium' | 'analytics' | 'comptable' | null>((resolve) => {
+        Alert.alert(
+          "Format d'export CSV",
+          'Choisissez le type de fichier à générer.',
+          [
+            { text: 'Annuler', style: 'cancel', onPress: () => resolve(null) },
+            { text: 'CSV Premium', onPress: () => resolve('premium') },
+            { text: 'CSV Analytics', onPress: () => resolve('analytics') },
+            { text: 'CSV Comptable', onPress: () => resolve('comptable') },
+          ],
+        );
+      });
+      if (!exportFormat) return;
+
+      // Export complet : récupérer tous les mouvements liés à l'article (pas seulement les 10 affichés)
+      const allMovements = await mouvementRepository.findByArticle(article.id, effectiveSiteId, 5000);
+      const filepath =
+        exportFormat === 'analytics'
+          ? await exportArticleDetailAnalytics(article, allMovements, siteActif.nom)
+          : exportFormat === 'comptable'
+            ? await exportArticleDetailAccounting(article, allMovements, siteActif.nom)
+            : await exportArticleDetail(article, allMovements, siteActif.nom);
       const dirName = filepath.split('/').slice(-2, -1)[0] || 'Téléchargements';
       Alert.alert(
         'Export réussi',
-        `Fichier enregistré dans ${dirName}.\n\n${filepath.split('/').pop() ?? ''}`,
+        `${exportFormat === 'analytics' ? 'Fichier analytics' : exportFormat === 'comptable' ? 'Fichier comptable' : 'Fichier premium'} enregistré dans ${dirName}.\n\n${filepath.split('/').pop() ?? ''}`,
         [{ text: 'OK' }],
       );
     } catch (error) {
@@ -148,7 +190,7 @@ export const ArticleDetailScreen: React.FC = () => {
     } finally {
       setExporting(false);
     }
-  }, [article, historique, siteActif]);
+  }, [article, effectiveSiteId, siteActif]);
 
   // Loading
   if (isLoading) {
@@ -167,7 +209,7 @@ export const ArticleDetailScreen: React.FC = () => {
         <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <Icon name="package-variant-closed-remove" size={56} color={colors.textMuted} />
         <Text style={{ marginTop: 12, color: colors.textSecondary, fontSize: 15 }}>Article non trouvé</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
+        <TouchableOpacity onPress={handleBack} style={{ marginTop: 16 }}>
           <Text style={{ color: colors.primary, fontWeight: '600' }}>Retour</Text>
         </TouchableOpacity>
       </View>
@@ -186,7 +228,7 @@ export const ArticleDetailScreen: React.FC = () => {
 
           {/* Nav */}
           <View style={styles.headerNav}>
-            <TouchableOpacity style={styles.navBtn} onPress={() => { Vibration.vibrate(10); navigation.navigate('ArticlesList'); }}>
+            <TouchableOpacity style={styles.navBtn} onPress={handleBack}>
               <Icon name="arrow-left" size={22} color="#FFF" />
             </TouchableOpacity>
             {!isSuperviseur && (
@@ -293,7 +335,7 @@ export const ArticleDetailScreen: React.FC = () => {
         {/* ===== INFORMATIONS ===== */}
         <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.section}>
           <View style={styles.sectionHeader}>
-            <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.sectionAccent} />
+            <LinearGradient colors={['#007A39', '#007A39']} style={styles.sectionAccent} />
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Informations</Text>
           </View>
           <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
@@ -400,7 +442,7 @@ export const ArticleDetailScreen: React.FC = () => {
                 <Text style={[styles.exportTitle, { color: colors.textPrimary }]}>
                   {exporting ? 'Export en cours...' : 'Exporter en CSV'}
                 </Text>
-                <Text style={[styles.exportSub, { color: colors.textMuted }]}>Fiche article + historique</Text>
+                <Text style={[styles.exportSub, { color: colors.textMuted }]}>Premium, Analytics ou Comptable</Text>
               </View>
               {!exporting && (
                 <View style={[styles.exportChevron, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }]}>
@@ -455,7 +497,7 @@ export const ArticleDetailScreen: React.FC = () => {
         {/* ===== HISTORIQUE ===== */}
         <Animated.View entering={FadeInUp.delay(500).duration(400)} style={styles.section}>
           <View style={styles.sectionHeader}>
-            <LinearGradient colors={['#4338CA', '#6366F1']} style={styles.sectionAccent} />
+            <LinearGradient colors={['#005C2B', '#007A39']} style={styles.sectionAccent} />
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Historique</Text>
             <Text style={[styles.sectionCount, { color: colors.textMuted }]}>{historique.length}</Text>
           </View>

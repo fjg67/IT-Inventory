@@ -7,12 +7,15 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
+const MOBILE_APP_DEEP_LINK = 'itinventory://open';
+const MOBILE_APP_FALLBACK_URL = 'https://play.google.com/store/apps/details?id=com.itinventory';
 const RECIPIENT_EMAILS = [
   'florian.jove.garcia@gmail.com',
   'Robert.LAMANDE-ext@ca-alsace-vosges.fr',
   'Olivier.KLOTZ-ext@ca-alsace-vosges.fr',
   'Florian.JOVEGARCIA-ext@ca-alsace-vosges.fr',
   'guillaume.oudinot@ca-alsace-vosges.fr',
+  'thibaud.hebrard-ext@ca-alsace-vosges.fr',
 ];
 
 interface ProductAlert {
@@ -95,6 +98,16 @@ function buildHtmlFromProducts(products: ProductAlert[], siteNom?: string): stri
         <tbody>${rows}</tbody>
       </table>
       <div style="padding: 20px 24px; text-align: center; border-top: 1px solid #F3F4F6;">
+        <a
+          href="${MOBILE_APP_DEEP_LINK}"
+          style="display: inline-block; background: linear-gradient(135deg, #2563EB, #7C3AED); color: #FFFFFF; font-size: 14px; font-weight: 700; text-decoration: none; padding: 11px 22px; border-radius: 10px; margin-bottom: 10px;"
+        >
+          Ouvrir IT-Inventory →
+        </a>
+        <p style="color: #6B7280; font-size: 12px; margin: 0 0 8px 0;">
+          Si l'application ne s'ouvre pas :
+          <a href="${MOBILE_APP_FALLBACK_URL}" style="color: #2563EB; text-decoration: none;">ouvrir via Play Store</a>.
+        </p>
         <p style="color: #9CA3AF; font-size: 12px; margin: 0;">Cet email a été envoyé automatiquement par IT-Inventory.</p>
       </div>
     </div>

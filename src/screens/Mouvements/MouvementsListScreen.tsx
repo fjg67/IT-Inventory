@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // MOUVEMENTS LIST SCREEN - Modern Redesign
 // IT-Inventory Application
 // ============================================
@@ -29,6 +29,7 @@ import { useAppSelector } from '@/store';
 import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { mouvementRepository } from '@/database';
+import type { MouvementStats } from '@/database/repositories/mouvementRepository';
 import { formatTimeParis, formatRelativeDateParis, formatDateTimeParis } from '@/utils/dateUtils';
 import { Mouvement } from '@/types';
 import { useResponsive } from '@/utils/responsive';
@@ -78,6 +79,14 @@ export const MouvementsListScreen: React.FC = () => {
   const { colors, isDark } = useTheme();
 
   const [mouvements, setMouvements] = useState<Mouvement[]>([]);
+  const [totalMouvements, setTotalMouvements] = useState(0);
+  const [realStats, setRealStats] = useState<MouvementStats>({
+    total: 0,
+    entrees: 0,
+    sorties: 0,
+    ajustements: 0,
+    transferts: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -98,8 +107,23 @@ export const MouvementsListScreen: React.FC = () => {
     try {
       const result = await mouvementRepository.findAll(effectiveSiteId ?? undefined, 0, 50);
       setMouvements(result.data);
+      setTotalMouvements(result.total);
+
+      try {
+        const statsResult = await mouvementRepository.getStats(effectiveSiteId ?? undefined);
+        setRealStats(statsResult);
+      } catch (statsError) {
+        console.warn('[MouvementsListScreen] getStats failed, fallback to loaded page counts:', statsError);
+        setRealStats({
+          total: result.total,
+          entrees: result.data.filter(m => m.type === 'entree').length,
+          sorties: result.data.filter(m => m.type === 'sortie').length,
+          ajustements: result.data.filter(m => m.type === 'ajustement').length,
+          transferts: result.data.filter(m => m.type === 'transfert_depart' || m.type === 'transfert_arrivee').length,
+        });
+      }
     } catch (error) {
-      console.error('Erreur chargement mouvements:', error);
+      console.warn('[MouvementsListScreen] Erreur chargement mouvements:', error);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -152,13 +176,13 @@ export const MouvementsListScreen: React.FC = () => {
   // ==================== STATS ====================
   const stats = useMemo(() => {
     return {
-      total: mouvements.length,
-      entrees: mouvements.filter(m => m.type === 'entree').length,
-      sorties: mouvements.filter(m => m.type === 'sortie').length,
-      ajustements: mouvements.filter(m => m.type === 'ajustement').length,
-      transferts: mouvements.filter(m => m.type === 'transfert_depart' || m.type === 'transfert_arrivee').length,
+      total: totalMouvements,
+      entrees: realStats.entrees,
+      sorties: realStats.sorties,
+      ajustements: realStats.ajustements,
+      transferts: realStats.transferts,
     };
-  }, [mouvements]);
+  }, [totalMouvements, realStats]);
 
   const hasActiveFilters = typeFilter !== 'all' || searchQuery.trim().length > 0;
 
@@ -200,7 +224,7 @@ export const MouvementsListScreen: React.FC = () => {
           <View style={[styles.header, { backgroundColor: colors.surface, borderColor: isDark ? colors.borderSubtle : colors.borderMedium }]}>
             {/* Accent bar */}
             <LinearGradient
-              colors={['#4338CA', '#6366F1']}
+              colors={['#005C2B', '#007A39']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
               style={styles.headerAccent}
@@ -210,13 +234,13 @@ export const MouvementsListScreen: React.FC = () => {
               <View style={styles.headerTitleRow}>
                 <View style={styles.headerIconShadow}>
                   <LinearGradient
-                    colors={['#4338CA', '#6366F1']}
+                    colors={['#005C2B', '#007A39']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.headerIconPill}
                   >
                     <View style={styles.headerIconInner}>
-                      <Icon name="swap-vertical" size={16} color="#6366F1" />
+                      <Icon name="swap-vertical" size={16} color="#007A39" />
                     </View>
                   </LinearGradient>
                 </View>
@@ -232,7 +256,7 @@ export const MouvementsListScreen: React.FC = () => {
                   Vibration.vibrate(10);
                   setShowSearch(!showSearch);
                 }}
-                style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' }]}
+                style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(0,122,57,0.08)' }]}
               >
                 <Icon name={showSearch ? 'close' : 'magnify'} size={20} color={colors.primary} />
               </TouchableOpacity>
@@ -265,7 +289,7 @@ export const MouvementsListScreen: React.FC = () => {
         {showSearch && (
           <Animated.View entering={SlideInRight.springify().damping(20)} style={styles.searchWrap}>
             <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-              <View style={[styles.searchIconPill, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' }]}>
+              <View style={[styles.searchIconPill, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(0,122,57,0.08)' }]}>
                 <Icon name="magnify" size={16} color={colors.primary} />
               </View>
               <TextInput
@@ -293,7 +317,7 @@ export const MouvementsListScreen: React.FC = () => {
             contentContainerStyle={styles.filtersScroll}
           >
             {([
-              { key: 'all' as QuickTypeFilter, label: 'Tous', icon: 'format-list-bulleted', color: '#6366F1' },
+              { key: 'all' as QuickTypeFilter, label: 'Tous', icon: 'format-list-bulleted', color: '#007A39' },
               { key: 'entree' as QuickTypeFilter, label: 'Entrées', icon: 'arrow-up-bold', color: '#10B981' },
               { key: 'sortie' as QuickTypeFilter, label: 'Sorties', icon: 'arrow-down-bold', color: '#EF4444' },
               { key: 'ajustement' as QuickTypeFilter, label: 'Ajustements', icon: 'swap-vertical', color: '#F59E0B' },
@@ -365,7 +389,7 @@ export const MouvementsListScreen: React.FC = () => {
             <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: isDark ? colors.borderSubtle : colors.borderMedium }]}>
               <View style={styles.emptyIconShadow}>
                 <LinearGradient
-                  colors={['#4338CA', '#6366F1']}
+                  colors={['#005C2B', '#007A39']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.emptyIconPill}
@@ -374,7 +398,7 @@ export const MouvementsListScreen: React.FC = () => {
                     <Icon
                       name={hasActiveFilters ? 'filter-remove-outline' : 'chart-timeline-variant'}
                       size={24}
-                      color="#6366F1"
+                      color="#007A39"
                     />
                   </View>
                 </LinearGradient>
@@ -400,7 +424,7 @@ export const MouvementsListScreen: React.FC = () => {
                 }}
                 style={styles.emptyCtaWrap}
               >
-                <LinearGradient colors={['#4338CA', '#6366F1']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.emptyCtaGradient}>
+                <LinearGradient colors={['#005C2B', '#007A39']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.emptyCtaGradient}>
                   <Icon
                     name={hasActiveFilters ? 'filter-remove' : 'plus'}
                     size={16}
@@ -422,7 +446,7 @@ export const MouvementsListScreen: React.FC = () => {
                 <View
                   style={styles.dateHeaderRow}
                 >
-                  <View style={[styles.dateAccentBar, { backgroundColor: '#6366F1' }]} />
+                  <View style={[styles.dateAccentBar, { backgroundColor: '#007A39' }]} />
                   <Text style={[styles.dateHeaderText, { color: colors.textSecondary }]}>{group.label}</Text>
                   <View style={[styles.dateLineAfter, { backgroundColor: colors.borderSubtle }]} />
                 </View>
@@ -534,7 +558,7 @@ export const MouvementsListScreen: React.FC = () => {
       {fabOpen && (
         <Animated.View entering={FadeIn.duration(200)} style={styles.fabMenu}>
           {[
-            { icon: 'barcode-scan', label: 'Scanner', gradient: ['#4338CA', '#6366F1'] as [string, string], onPress: handleScan },
+            { icon: 'barcode-scan', label: 'Scanner', gradient: ['#005C2B', '#007A39'] as [string, string], onPress: handleScan },
             {
               icon: 'arrow-up-bold', label: 'Entrée', gradient: ['#10B981', '#059669'] as [string, string],
               onPress: () => { Vibration.vibrate(10); setFabOpen(false); navigation.navigate('MouvementForm', { type: 'entree' }); },
@@ -580,7 +604,7 @@ export const MouvementsListScreen: React.FC = () => {
           setFabOpen(!fabOpen);
         }}
       >
-        <LinearGradient colors={['#4338CA', '#6366F1', '#4F46E5']} style={styles.fabGradient}>
+        <LinearGradient colors={['#005C2B', '#007A39', '#007A39']} style={styles.fabGradient}>
           <Icon name={fabOpen ? 'close' : 'plus'} size={26} color="#FFF" />
         </LinearGradient>
       </TouchableOpacity>
@@ -663,8 +687,8 @@ export const MouvementsListScreen: React.FC = () => {
                       {/* ===== INFO ROWS ===== */}
                       <View style={[styles.detailInfoCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#FFF', borderColor: colors.borderSubtle }]}>
                         <View style={styles.detailInfoRow}>
-                          <View style={[styles.detailInfoIconCircle, { backgroundColor: '#6366F1' + '14' }]}>
-                            <Icon name="account-outline" size={16} color="#6366F1" />
+                          <View style={[styles.detailInfoIconCircle, { backgroundColor: '#007A39' + '14' }]}>
+                            <Icon name="account-outline" size={16} color="#007A39" />
                           </View>
                           <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Technicien</Text>
                           <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={1}>
@@ -779,7 +803,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerIconShadow: {
-    shadowColor: '#4338CA',
+    shadowColor: '#005C2B',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.18,
     shadowRadius: 6,
@@ -959,7 +983,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   emptyIconShadow: {
-    shadowColor: '#4338CA',
+    shadowColor: '#005C2B',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 10,
@@ -998,7 +1022,7 @@ const styles = StyleSheet.create({
     marginTop: premiumSpacing.lg,
     borderRadius: 999,
     overflow: 'hidden',
-    shadowColor: '#4338CA',
+    shadowColor: '#005C2B',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -1184,7 +1208,7 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 18,
-    shadowColor: '#4338CA',
+    shadowColor: '#005C2B',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 14,

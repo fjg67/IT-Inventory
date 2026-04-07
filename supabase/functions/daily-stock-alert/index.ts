@@ -15,7 +15,10 @@ const RECIPIENT_EMAILS = [
   'Olivier.KLOTZ-ext@ca-alsace-vosges.fr',
   'Florian.JOVEGARCIA-ext@ca-alsace-vosges.fr',
   'guillaume.oudinot@ca-alsace-vosges.fr',
+  'thibaud.hebrard-ext@ca-alsace-vosges.fr',
 ];
+const MOBILE_APP_DEEP_LINK = 'itinventory://open';
+const MOBILE_APP_FALLBACK_URL = 'https://play.google.com/store/apps/details?id=com.itinventory';
 
 // KV store key for J-1 comparison
 const KV_PREV_KEY = 'daily-stock-alert-previous-count';
@@ -364,9 +367,13 @@ function buildEmailHtml(alertsBySite: SiteAlerts[], comparison: Comparison): str
       <table cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;">
         <tr><td style="background:${C.primary};border-radius:12px;padding:14px 32px;text-align:center;">
           <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" style="width:220px;height:44px;" arcsize="28%" fill="true" stroke="false"><v:fill color="${C.primary}"/><w:anchorlock/><center style="color:#FFFFFF;font-family:${FONT};font-size:15px;font-weight:600;">Ouvrir IT-Inventory</center></v:roundrect><![endif]-->
-          <a href="#" style="color:#FFFFFF;font-size:15px;font-weight:600;text-decoration:none;font-family:${FONT};display:inline-block;">Ouvrir IT-Inventory &rarr;</a>
+          <a href="${MOBILE_APP_DEEP_LINK}" style="color:#FFFFFF;font-size:15px;font-weight:600;text-decoration:none;font-family:${FONT};display:inline-block;">Ouvrir IT-Inventory &rarr;</a>
         </td></tr>
       </table>
+      <p style="margin:10px 0 0;font-size:11px;color:${C.textMuted};font-family:${FONT};">
+        Si l'application ne s'ouvre pas automatiquement :
+        <a href="${MOBILE_APP_FALLBACK_URL}" style="color:${C.primaryDark};text-decoration:none;">ouvrir via Play Store</a>.
+      </p>
     </td></tr>
 
     <!-- ========== SITE SECTIONS ========== -->

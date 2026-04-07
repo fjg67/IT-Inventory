@@ -21,14 +21,14 @@ export const darkShadows: ThemeShadows = {
     elevation: 8,
   },
   button: {
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },
   glow: {
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 20,
@@ -52,14 +52,14 @@ export const lightShadows: ThemeShadows = {
     elevation: 4,
   },
   button: {
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 3,
   },
   glow: {
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.15,
     shadowRadius: 12,

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+﻿import React, { useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 import Animated, {
@@ -50,7 +50,7 @@ const TYPE_CONFIGS = {
   },
   transfert: {
     icon: 'swap-horizontal',
-    gradient: ['#6366F1', '#4338CA'] as [string, string],
+    gradient: ['#007A39', '#005C2B'] as [string, string],
     label: 'Transfert',
     sign: '',
   },

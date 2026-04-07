@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // FORCE UPDATE SCREEN - IT-Inventory
 // Blocks app usage when version is outdated
 // ============================================
@@ -41,7 +41,7 @@ const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion }) => 
           style={[styles.blob, { width: 280, height: 280, top: -60, left: -80 }]}
         />
         <LinearGradient
-          colors={['rgba(99,102,241,0.05)', 'rgba(99,102,241,0)']}
+          colors={['rgba(0,122,57,0.05)', 'rgba(99,102,241,0)']}
           style={[styles.blob, { width: 220, height: 220, bottom: 60, right: -60 }]}
         />
       </View>
@@ -88,7 +88,7 @@ const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion }) => 
       <Animated.View entering={FadeInUp.delay(800).duration(500)} style={styles.buttonSection}>
         <TouchableOpacity activeOpacity={0.8} onPress={handleUpdate} style={styles.updateBtn}>
           <LinearGradient
-            colors={['#6366F1', '#4F46E5']}
+            colors={['#007A39', '#007A39']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.updateBtnGradient}

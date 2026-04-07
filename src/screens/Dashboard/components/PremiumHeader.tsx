@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+﻿import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -49,7 +49,7 @@ interface PremiumHeaderProps {
 
 const AVATAR_GRADIENTS: [string, string][] = [
   ['#3B82F6', '#2563EB'],
-  ['#8B5CF6', '#6366F1'],
+  ['#8B5CF6', '#007A39'],
   ['#EC4899', '#F472B6'],
   ['#10B981', '#34D399'],
   ['#F59E0B', '#FBBF24'],
@@ -114,9 +114,9 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
               styles.technicienRow,
               { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' },
               isCurrent && {
-                backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.06)',
+                backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(0,122,57,0.06)',
                 borderWidth: 1.5,
-                borderColor: isDark ? 'rgba(99,102,241,0.3)' : 'rgba(99,102,241,0.2)',
+                borderColor: isDark ? 'rgba(0,122,57,0.3)' : 'rgba(0,122,57,0.2)',
               },
             ]}
           >
@@ -134,7 +134,7 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
                 <LinearGradient
-                  colors={item.role === 'superviseur' ? ['#F59E0B', '#D97706'] : ['#6366F1', '#4F46E5']}
+                  colors={item.role === 'superviseur' ? ['#F59E0B', '#D97706'] : ['#007A39', '#007A39']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, gap: 3 }}
@@ -210,7 +210,7 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
     >
       {/* Left gradient accent bar */}
       <LinearGradient
-        colors={['#6366F1', '#4338CA']}
+        colors={['#007A39', '#005C2B']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={styles.accentBar}
@@ -245,9 +245,9 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
             }}
             activeOpacity={0.85}
           >
-            <View style={[styles.iconPillShadow, { shadowColor: '#6366F1' }]}>
+            <View style={[styles.iconPillShadow, { shadowColor: '#007A39' }]}>
               <LinearGradient
-                colors={['#6366F1', '#4338CA']}
+                colors={['#007A39', '#005C2B']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={[styles.avatar, isTablet && { width: 58, height: 58, borderRadius: 20 }]}
@@ -278,14 +278,14 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
 
           {/* Switch profile icon */}
           <TouchableOpacity
-            style={[styles.switchProfileBtn, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' }]}
+            style={[styles.switchProfileBtn, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(0,122,57,0.08)' }]}
             onPress={() => {
               Vibration.vibrate(10);
               setShowTechnicienModal(true);
             }}
             activeOpacity={0.7}
           >
-            <Icon name="account-switch-outline" size={18} color="#6366F1" />
+            <Icon name="account-switch-outline" size={18} color="#007A39" />
           </TouchableOpacity>
         </View>
 
@@ -300,13 +300,13 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
             style={styles.sitePill}
           >
             <LinearGradient
-              colors={['#6366F1', '#4338CA']}
+              colors={['#007A39', '#005C2B']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.sitePillGradient}
             >
               <View style={styles.siteIconDot}>
-                <Icon name="map-marker" size={10} color="#6366F1" />
+                <Icon name="map-marker" size={10} color="#007A39" />
               </View>
               <Text style={styles.sitePillText} numberOfLines={1}>
                 {site?.name ?? 'Aucun site'}
@@ -333,7 +333,7 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
             <View style={[styles.modalHandle, { backgroundColor: colors.textMuted }]} />
             <View style={styles.modalHeaderRow}>
               <LinearGradient
-                colors={['#4338CA', '#6366F1']}
+                colors={['#005C2B', '#007A39']}
                 style={styles.modalIconWrap}
               >
                 <Icon name="account-switch" size={20} color="#FFF" />
@@ -369,7 +369,7 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={['#4338CA', '#6366F1']}
+                colors={['#005C2B', '#007A39']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.modalCloseBtnInner}
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
-    color: '#4338CA',
+    color: '#005C2B',
     fontWeight: '900',
     fontSize: 14,
     letterSpacing: 0.5,

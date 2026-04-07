@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // ARTICLE EDIT SCREEN - Premium Design
 // IT-Inventory Application - Création & Modification
 // ============================================
@@ -193,7 +193,7 @@ export const ArticleEditScreen: React.FC = () => {
   }, [famillesFromDb]);
 
   const TYPE_STATIC: { value: string; label: string; icon: string; color: string }[] = [
-    { value: 'Souris', label: 'Souris', icon: 'mouse', color: '#6366F1' },
+    { value: 'Souris', label: 'Souris', icon: 'mouse', color: '#007A39' },
     { value: 'Clavier', label: 'Clavier', icon: 'keyboard', color: '#8B5CF6' },
     { value: 'Dock', label: 'Dock', icon: 'dock-bottom', color: '#0EA5E9' },
     { value: 'HUB USB', label: 'HUB USB', icon: 'usb', color: '#14B8A6' },
@@ -214,7 +214,7 @@ export const ArticleEditScreen: React.FC = () => {
     { value: 'Alimentation', label: 'Alimentation', icon: 'power', color: '#DC2626' },
     { value: 'Multiprise', label: 'Multiprise', icon: 'power-socket-eu', color: '#EA580C' },
     { value: "Bras d'écran", label: "Bras d'écran", icon: 'monitor-screenshot', color: '#0891B2' },
-    { value: 'Scanner doc', label: 'Scanner doc', icon: 'scanner', color: '#4F46E5' },
+    { value: 'Scanner doc', label: 'Scanner doc', icon: 'scanner', color: '#007A39' },
     { value: 'Ensemble de matériel', label: 'Ensemble de matériel', icon: 'package-variant-closed', color: '#78716C' },
   ];
   const TYPE_OPTIONS = useMemo(() => {
@@ -224,7 +224,7 @@ export const ArticleEditScreen: React.FC = () => {
   }, [typesFromDb]);
 
   const SOUS_TYPE_OPTIONS: { value: string; label: string; icon: string; color: string }[] = [
-    { value: 'Filaire', label: 'Filaire', icon: 'ethernet', color: '#6366F1' },
+    { value: 'Filaire', label: 'Filaire', icon: 'ethernet', color: '#007A39' },
     { value: 'Sans fil', label: 'Sans fil', icon: 'wifi', color: '#3B82F6' },
     { value: 'Agence', label: 'Agence', icon: 'office-building', color: '#0EA5E9' },
     { value: 'Siège', label: 'Siège', icon: 'domain', color: '#14B8A6' },
@@ -237,14 +237,14 @@ export const ArticleEditScreen: React.FC = () => {
     { value: 'Tablette', label: 'Tablette', icon: 'tablet', color: '#06B6D4' },
     { value: 'Pour présentation', label: 'Pour présentation', icon: 'presentation', color: '#F97316' },
     { value: 'Kit clavier souris', label: 'Kit clavier souris', icon: 'keyboard-variant', color: '#A855F7' },
-    { value: 'Clavier / Souris', label: 'Clavier / Souris', icon: 'mouse', color: '#6366F1' },
+    { value: 'Clavier / Souris', label: 'Clavier / Souris', icon: 'mouse', color: '#007A39' },
     { value: 'Plantronics', label: 'Plantronics', icon: 'headset', color: '#EC4899' },
     { value: 'Sacoche', label: 'Sacoche', icon: 'bag-personal', color: '#78716C' },
     { value: 'Sac à dos', label: 'Sac à dos', icon: 'bag-suitcase', color: '#92400E' },
     { value: 'Plantronics SF V1', label: 'Plantronics SF V1', icon: 'headphones', color: '#DB2777' },
     { value: 'Plantronics SF V2', label: 'Plantronics SF V2', icon: 'headphones', color: '#BE185D' },
     { value: 'Plantronics filaire', label: 'Plantronics filaire', icon: 'headset', color: '#9D174D' },
-    { value: 'Epsos', label: 'Epsos', icon: 'printer', color: '#4F46E5' },
+    { value: 'Epsos', label: 'Epsos', icon: 'printer', color: '#007A39' },
     { value: 'Poly', label: 'Poly', icon: 'microphone', color: '#7C3AED' },
     { value: 'DisplayPort / USB C 1m', label: 'DP / USB C 1m', icon: 'cable-data', color: '#2563EB' },
     { value: 'DisplayPort / HDMI 3m', label: 'DP / HDMI 3m', icon: 'cable-data', color: '#1D4ED8' },
@@ -257,7 +257,7 @@ export const ArticleEditScreen: React.FC = () => {
     { value: '65 watt', label: '65 Watt', icon: 'flash', color: '#F59E0B' },
     { value: 'Mini UC', label: 'Mini UC', icon: 'desktop-tower', color: '#0891B2' },
     { value: 'Bras Ergotron', label: 'Bras Ergotron', icon: 'arm-flex', color: '#059669' },
-    { value: 'Avec feuille à feuille', label: 'Feuille à feuille', icon: 'file-document-multiple', color: '#4338CA' },
+    { value: 'Avec feuille à feuille', label: 'Feuille à feuille', icon: 'file-document-multiple', color: '#005C2B' },
     { value: 'Projecteur', label: 'Projecteur', icon: 'projector', color: '#7C2D12' },
     { value: 'Kit audio', label: 'Kit audio', icon: 'music-box', color: '#BE123C' },
     { value: 'Kit complet', label: 'Kit complet', icon: 'package-variant', color: '#15803D' },
@@ -652,7 +652,7 @@ export const ArticleEditScreen: React.FC = () => {
 
       {/* ===== IMMERSIVE HEADER ===== */}
       <LinearGradient
-        colors={isEditing ? ['#6366F1', '#8B5CF6', '#A78BFA'] : ['#3B82F6', '#6366F1', '#8B5CF6']}
+        colors={isEditing ? ['#007A39', '#8B5CF6', '#A78BFA'] : ['#3B82F6', '#007A39', '#8B5CF6']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -711,18 +711,18 @@ export const ArticleEditScreen: React.FC = () => {
           {/* ===== SECTION: INFORMATIONS PRINCIPALES ===== */}
           <Animated.View entering={FadeInUp.delay(50).springify()} style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
-              <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.sectionAccent} />
+              <LinearGradient colors={['#007A39', '#007A39']} style={styles.sectionAccent} />
               <View style={styles.sectionIconPill}>
-                <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.sectionIconGrad}>
+                <LinearGradient colors={['#007A39', '#007A39']} style={styles.sectionIconGrad}>
                   <View style={styles.sectionIconInner}>
-                    <Icon name="information-outline" size={15} color="#6366F1" />
+                    <Icon name="information-outline" size={15} color="#007A39" />
                   </View>
                 </LinearGradient>
               </View>
               <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Informations principales</Text>
             </View>
             <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-              <LinearGradient colors={['#6366F1', '#4F46E5']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
+              <LinearGradient colors={['#007A39', '#007A39']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
 
             {/* --- REFERENCE --- */}
             <View style={styles.fieldGroup}>
@@ -1018,13 +1018,13 @@ export const ArticleEditScreen: React.FC = () => {
                 {emplacement ? (
                   <View style={{
                     width: 32, height: 32, borderRadius: 10,
-                    backgroundColor: (EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.color || '#6366F1') + '15',
+                    backgroundColor: (EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.color || '#007A39') + '15',
                     alignItems: 'center', justifyContent: 'center',
                   }}>
                     <Icon
                       name={EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.icon || 'map-marker'}
                       size={18}
-                      color={EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.color || '#6366F1'}
+                      color={EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.color || '#007A39'}
                     />
                   </View>
                 ) : (
@@ -1051,11 +1051,11 @@ export const ArticleEditScreen: React.FC = () => {
           {hasChildSites && !selectedSubSiteId && (
             <Animated.View entering={FadeInUp.delay(230).springify()} style={styles.sectionWrap}>
               <View style={styles.sectionHeader}>
-                <LinearGradient colors={['#4F46E5', '#4338CA']} style={styles.sectionAccent} />
+                <LinearGradient colors={['#007A39', '#005C2B']} style={styles.sectionAccent} />
                 <View style={styles.sectionIconPill}>
-                  <LinearGradient colors={['#4F46E5', '#4338CA']} style={styles.sectionIconGrad}>
+                  <LinearGradient colors={['#007A39', '#005C2B']} style={styles.sectionIconGrad}>
                     <View style={styles.sectionIconInner}>
-                      <Icon name="warehouse" size={15} color="#4F46E5" />
+                      <Icon name="warehouse" size={15} color="#007A39" />
                     </View>
                   </LinearGradient>
                 </View>
@@ -1684,8 +1684,8 @@ export const ArticleEditScreen: React.FC = () => {
                     style={styles.addOptionRow}
                     onPress={() => { Vibration.vibrate(10); setAddTypeInput(''); setShowAddTypeModal(true); }}
                   >
-                    <View style={[styles.addOptionIconWrap, { backgroundColor: 'rgba(99,102,241,0.1)' }]}>
-                      <Icon name="plus" size={24} color="#6366F1" />
+                    <View style={[styles.addOptionIconWrap, { backgroundColor: 'rgba(0,122,57,0.1)' }]}>
+                      <Icon name="plus" size={24} color="#007A39" />
                     </View>
                     <Text style={styles.addOptionText}>Ajouter un type</Text>
                   </TouchableOpacity>
@@ -2050,10 +2050,10 @@ export const ArticleEditScreen: React.FC = () => {
                 <View style={{ alignItems: 'center', marginBottom: 4 }}>
                   <View style={{
                     width: 52, height: 52, borderRadius: 16,
-                    backgroundColor: '#6366F115',
+                    backgroundColor: '#007A3915',
                     alignItems: 'center', justifyContent: 'center', marginBottom: 10,
                   }}>
-                    <Icon name="map-marker-radius" size={28} color="#6366F1" />
+                    <Icon name="map-marker-radius" size={28} color="#007A39" />
                   </View>
                   <Text style={[styles.modalTitle, { textAlign: 'center', marginBottom: 4 }]}>Emplacement de stockage</Text>
                   <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 14, textAlign: 'center', paddingHorizontal: 20 }}>

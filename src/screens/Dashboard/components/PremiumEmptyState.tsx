@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -46,13 +46,13 @@ const PremiumEmptyState: React.FC<PremiumEmptyStateProps> = ({
       tablet && { paddingVertical: premiumSpacing.xxxl + 8, paddingHorizontal: premiumSpacing.xxxl },
     ]}>
       {/* Mesh decorative dots */}
-      <View style={[styles.meshDot, styles.meshDot1, { backgroundColor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.05)' }]} />
-      <View style={[styles.meshDot, styles.meshDot2, { backgroundColor: isDark ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.04)' }]} />
+      <View style={[styles.meshDot, styles.meshDot1, { backgroundColor: isDark ? 'rgba(0,122,57,0.08)' : 'rgba(0,122,57,0.05)' }]} />
+      <View style={[styles.meshDot, styles.meshDot2, { backgroundColor: isDark ? 'rgba(0,122,57,0.06)' : 'rgba(99,102,241,0.04)' }]} />
 
       {/* Icon in rounded-square gradient pill */}
       <View style={[styles.iconShadow, tablet && { marginBottom: premiumSpacing.xl }]}>
         <LinearGradient
-          colors={['#4338CA', '#6366F1']}
+          colors={['#005C2B', '#007A39']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.iconPill, tablet && { width: 64, height: 64, borderRadius: 20 }]}
@@ -79,7 +79,7 @@ const PremiumEmptyState: React.FC<PremiumEmptyStateProps> = ({
           activeOpacity={0.7}
         >
           <LinearGradient
-            colors={['#4338CA', '#6366F1']}
+            colors={['#005C2B', '#007A39']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={[styles.actionButton, tablet && { paddingHorizontal: premiumSpacing.xxxl, paddingVertical: premiumSpacing.md }]}
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     left: -10,
   },
   iconShadow: {
-    shadowColor: '#4338CA',
+    shadowColor: '#005C2B',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.18,
     shadowRadius: 10,
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     marginTop: premiumSpacing.lg,
     borderRadius: premiumBorderRadius.full,
     overflow: 'hidden',
-    shadowColor: '#4338CA',
+    shadowColor: '#005C2B',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

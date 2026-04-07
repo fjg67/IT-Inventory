@@ -369,6 +369,53 @@ export const articleRepository = {
     }
     return Array.from(set).sort();
   },
+
+  async delete(id: string | number): Promise<void> {
+    const supabase = getSupabaseClient();
+    try {
+      if (!id || String(id).trim() === '') {
+        throw new Error('ID article invalide');
+      }
+
+      console.log('[articleRepository.delete] Suppression article id:', id);
+
+      // Supprimer d'abord les stocks associés
+      console.log('[articleRepository.delete] Suppression des stocks pour id:', id);
+      const { error: stError } = await supabase
+        .from(tables.stocksSites)
+        .delete()
+        .eq('articleId', id);
+      if (stError) {
+        console.error('[articleRepository.delete] Error deleting stocks:', stError.message, stError.details);
+        // On continue même si les stocks ne sont pas supprimés
+      } else {
+        console.log('[articleRepository.delete] Stocks supprimés avec succès');
+      }
+
+      // Puis supprimer l'article
+      console.log('[articleRepository.delete] Suppression de l\'article...');
+      const { error, data: deletedRows } = await supabase
+        .from(tables.articles)
+        .delete()
+        .eq('id', id)
+        .select('id');
+
+      if (error) {
+        console.error('[articleRepository.delete] Erreur Supabase:', error.message, error.details, error.hint);
+        throw new Error(`Erreur suppression: ${error.message}`);
+      }
+
+      if (!deletedRows || deletedRows.length === 0) {
+        console.warn('[articleRepository.delete] Aucun article supprimé pour id:', id);
+        throw new Error('Article non trouvé ou accès refusé');
+      }
+
+      console.log('[articleRepository.delete] Succès, articles supprimés:', deletedRows.length);
+    } catch (err: any) {
+      console.error('[articleRepository.delete] Error complète:', err);
+      throw new Error(err?.message || 'Erreur lors de la suppression de la tablette');
+    }
+  },
 };
 
 export default articleRepository;

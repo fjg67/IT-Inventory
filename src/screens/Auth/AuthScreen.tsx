@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // AUTH SCREEN - Premium Profile Selection
 // IT-Inventory - Interface Premium
 // ============================================
@@ -45,7 +45,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // ==================== HELPERS ====================
 const AVATAR_GRADIENTS: [string, string][] = [
   ['#3B82F6', '#2563EB'],
-  ['#8B5CF6', '#6366F1'],
+  ['#8B5CF6', '#007A39'],
   ['#EC4899', '#F472B6'],
   ['#10B981', '#34D399'],
   ['#F59E0B', '#FBBF24'],
@@ -70,7 +70,7 @@ const getInitials = (technicien: Technicien): string => {
 const { height: SCREEN_H } = Dimensions.get('window');
 const BLOBS = [
   { size: 320, x: -80, y: -60, colors: ['rgba(59,130,246,0.06)', 'rgba(59,130,246,0)'] as const },
-  { size: 280, x: SCREEN_WIDTH - 100, y: SCREEN_H * 0.35, colors: ['rgba(99,102,241,0.05)', 'rgba(99,102,241,0)'] as const },
+  { size: 280, x: SCREEN_WIDTH - 100, y: SCREEN_H * 0.35, colors: ['rgba(0,122,57,0.05)', 'rgba(99,102,241,0)'] as const },
   { size: 200, x: -50, y: SCREEN_H * 0.65, colors: ['rgba(6,182,212,0.04)', 'rgba(6,182,212,0)'] as const },
 ];
 
@@ -81,7 +81,7 @@ const DOTS = Array.from({ length: 20 }).map((_, i) => ({
   x: Math.random() * SCREEN_WIDTH,
   y: Math.random() * SCREEN_H,
   opacity: 0.04 + Math.random() * 0.07,
-  color: ['#3B82F6', '#6366F1', '#8B5CF6', '#06B6D4'][Math.floor(Math.random() * 4)],
+  color: ['#3B82F6', '#007A39', '#8B5CF6', '#06B6D4'][Math.floor(Math.random() * 4)],
 }));
 
 // ==================== MAIN AUTH SCREEN ====================
@@ -168,8 +168,8 @@ export const AuthScreen: React.FC = () => {
 
       const emailSubject = `[IT-Inventory] Demande de création de profil – ${prenomTrimmed} ${nomTrimmed}`;
 
-      const roleBg = newRole === 'superviseur' ? '#FEF3C7' : '#EEF2FF';
-      const roleColor = newRole === 'superviseur' ? '#92400E' : '#4338CA';
+      const roleBg = newRole === 'superviseur' ? '#FEF3C7' : '#E8F5E9';
+      const roleColor = newRole === 'superviseur' ? '#92400E' : '#005C2B';
       const roleIcon = newRole === 'superviseur' ? '👑' : '🔧';
       const initials = `${prenomTrimmed.charAt(0)}${nomTrimmed.charAt(0)}`.toUpperCase();
 
@@ -181,7 +181,7 @@ export const AuthScreen: React.FC = () => {
   <div style="max-width:580px;margin:0 auto;padding:32px 16px;">
 
     <!-- HEADER GRADIENT -->
-    <div style="background:linear-gradient(135deg,#4338CA 0%,#6366F1 50%,#818CF8 100%);border-radius:20px 20px 0 0;padding:40px 32px 48px 32px;text-align:center;position:relative;">
+    <div style="background:linear-gradient(135deg,#005C2B 0%,#007A39 50%,#4EB35A 100%);border-radius:20px 20px 0 0;padding:40px 32px 48px 32px;text-align:center;position:relative;">
       <div style="position:absolute;top:16px;right:24px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.08);"></div>
       <div style="position:absolute;bottom:-8px;left:32px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.06);"></div>
       <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.15);margin:0 auto 16px auto;display:flex;align-items:center;justify-content:center;">
@@ -193,7 +193,7 @@ export const AuthScreen: React.FC = () => {
 
     <!-- AVATAR CARD -->
     <div style="background:#FFFFFF;margin-top:-20px;margin-left:24px;margin-right:24px;border-radius:16px;padding:20px;text-align:center;box-shadow:0 4px 24px rgba(67,56,202,0.12);position:relative;z-index:2;">
-      <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#818CF8);margin:0 auto 12px auto;line-height:64px;text-align:center;">
+      <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#007A39,#4EB35A);margin:0 auto 12px auto;line-height:64px;text-align:center;">
         <span style="color:#FFFFFF;font-size:24px;font-weight:700;letter-spacing:1px;">${initials}</span>
       </div>
       <p style="margin:0 0 2px 0;font-size:18px;font-weight:700;color:#111827;">${prenomTrimmed} ${nomTrimmed}</p>
@@ -210,7 +210,7 @@ export const AuthScreen: React.FC = () => {
 
         <div style="display:flex;padding:14px 20px;border-bottom:1px solid #F3F4F6;">
           <table style="width:100%;border-collapse:collapse;"><tr>
-            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,#EEF2FF,#E0E7FF);border-radius:10px;text-align:center;line-height:36px;font-size:16px;">👤</span></td>
+            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:10px;text-align:center;line-height:36px;font-size:16px;">👤</span></td>
             <td style="vertical-align:middle;padding-left:12px;">
               <p style="margin:0;font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Prénom</p>
               <p style="margin:2px 0 0 0;font-size:15px;color:#111827;font-weight:600;">${prenomTrimmed}</p>
@@ -220,7 +220,7 @@ export const AuthScreen: React.FC = () => {
 
         <div style="display:flex;padding:14px 20px;border-bottom:1px solid #F3F4F6;">
           <table style="width:100%;border-collapse:collapse;"><tr>
-            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,#EEF2FF,#E0E7FF);border-radius:10px;text-align:center;line-height:36px;font-size:16px;">📛</span></td>
+            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:10px;text-align:center;line-height:36px;font-size:16px;">📛</span></td>
             <td style="vertical-align:middle;padding-left:12px;">
               <p style="margin:0;font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Nom</p>
               <p style="margin:2px 0 0 0;font-size:15px;color:#111827;font-weight:600;">${nomTrimmed}</p>
@@ -230,7 +230,7 @@ export const AuthScreen: React.FC = () => {
 
         <div style="display:flex;padding:14px 20px;border-bottom:1px solid #F3F4F6;">
           <table style="width:100%;border-collapse:collapse;"><tr>
-            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,#EEF2FF,#E0E7FF);border-radius:10px;text-align:center;line-height:36px;font-size:16px;">🔢</span></td>
+            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:10px;text-align:center;line-height:36px;font-size:16px;">🔢</span></td>
             <td style="vertical-align:middle;padding-left:12px;">
               <p style="margin:0;font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Matricule</p>
               <p style="margin:2px 0 0 0;font-size:15px;color:#111827;font-weight:600;font-family:'SF Mono',Menlo,monospace;">${matriculeText}</p>
@@ -240,7 +240,7 @@ export const AuthScreen: React.FC = () => {
 
         <div style="display:flex;padding:14px 20px;border-bottom:1px solid #F3F4F6;">
           <table style="width:100%;border-collapse:collapse;"><tr>
-            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,${newRole === 'superviseur' ? '#FEF9C3,#FEF3C7' : '#EEF2FF,#E0E7FF'});border-radius:10px;text-align:center;line-height:36px;font-size:16px;">${roleIcon}</span></td>
+            <td style="width:40px;vertical-align:middle;"><span style="display:inline-block;width:36px;height:36px;background:linear-gradient(135deg,${newRole === 'superviseur' ? '#FEF9C3,#FEF3C7' : '#E8F5E9,#C8E6C9'});border-radius:10px;text-align:center;line-height:36px;font-size:16px;">${roleIcon}</span></td>
             <td style="vertical-align:middle;padding-left:12px;">
               <p style="margin:0;font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Rôle demandé</p>
               <p style="margin:4px 0 0 0;"><span style="display:inline-block;background:${roleBg};color:${roleColor};padding:4px 14px;border-radius:20px;font-size:13px;font-weight:700;">${roleLabel}</span></p>
@@ -261,9 +261,9 @@ export const AuthScreen: React.FC = () => {
       </div>
 
       <!-- ACTION BOX -->
-      <div style="margin-top:24px;background:linear-gradient(135deg,#EEF2FF,#E0E7FF);border-radius:14px;padding:20px;text-align:center;border:1px solid #C7D2FE;">
-        <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:#4338CA;">⚡ Action requise</p>
-        <p style="margin:0;font-size:13px;color:#6366F1;line-height:1.5;">Merci de créer ce profil dans la base de données Supabase.</p>
+      <div style="margin-top:24px;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border-radius:14px;padding:20px;text-align:center;border:1px solid #B2DFDB;">
+        <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:#005C2B;">⚡ Action requise</p>
+        <p style="margin:0;font-size:13px;color:#007A39;line-height:1.5;">Merci de créer ce profil dans la base de données Supabase.</p>
       </div>
 
       <!-- FOOTER -->
@@ -357,7 +357,7 @@ export const AuthScreen: React.FC = () => {
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                 <LinearGradient
-                  colors={item.role === 'superviseur' ? ['#F59E0B', '#D97706'] : ['#6366F1', '#4F46E5']}
+                  colors={item.role === 'superviseur' ? ['#F59E0B', '#D97706'] : ['#007A39', '#007A39']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, gap: 4 }}
@@ -383,7 +383,7 @@ export const AuthScreen: React.FC = () => {
   const renderEmpty = useCallback(
     () => (
       <Animated.View entering={FadeIn.delay(1000).duration(600)} style={styles.emptyContainer}>
-        <View style={[styles.emptyIconCircle, { backgroundColor: isDark ? colors.primaryGlow : '#EEF2FF', borderColor: isDark ? colors.primaryGlowStrong : '#E0E7FF' }]}>
+        <View style={[styles.emptyIconCircle, { backgroundColor: isDark ? colors.primaryGlow : '#E8F5E9', borderColor: isDark ? colors.primaryGlowStrong : '#C8E6C9' }]}>
           <Icon name="account-plus-outline" size={48} color={colors.primaryDark} />
         </View>
         <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Aucun profil trouvé</Text>
@@ -391,7 +391,7 @@ export const AuthScreen: React.FC = () => {
           Créez votre premier profil{'\n'}technicien pour commencer
         </Text>
         <TouchableOpacity
-          style={[styles.emptyCta, { shadowColor: isDark ? '#000' : '#4F46E5' }]}
+          style={[styles.emptyCta, { shadowColor: isDark ? '#000' : '#007A39' }]}
           onPress={() => {
             Vibration.vibrate(15);
             setIsModalVisible(true);
@@ -399,7 +399,7 @@ export const AuthScreen: React.FC = () => {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={['#6366F1', '#4F46E5', '#4338CA']}
+            colors={['#007A39', '#007A39', '#005C2B']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.emptyCtaGradient}
@@ -424,14 +424,14 @@ export const AuthScreen: React.FC = () => {
       techniciens.length > 0 ? (
         <Animated.View entering={FadeInUp.delay(1200 + techniciens.length * 120).duration(400)}>
           <TouchableOpacity
-            style={[styles.addButton, { borderColor: isDark ? colors.primaryGlow : '#E0E7FF', backgroundColor: isDark ? colors.surfaceElevated : '#FAFBFF' }]}
+            style={[styles.addButton, { borderColor: isDark ? colors.primaryGlow : '#C8E6C9', backgroundColor: isDark ? colors.surfaceElevated : '#FAFBFF' }]}
             onPress={() => {
               Vibration.vibrate(10);
               setIsModalVisible(true);
             }}
             activeOpacity={0.7}
           >
-            <View style={[styles.addIconCircle, { backgroundColor: isDark ? colors.primaryGlow : '#EEF2FF' }]}>
+            <View style={[styles.addIconCircle, { backgroundColor: isDark ? colors.primaryGlow : '#E8F5E9' }]}>
               <Icon name="plus" size={22} color={colors.primaryDark} />
             </View>
             <Text style={[styles.addButtonText, { color: colors.primaryDark }]}>Ajouter un profil</Text>
@@ -512,16 +512,16 @@ export const AuthScreen: React.FC = () => {
 
         {siteActif && (
           <Animated.View entering={FadeInUp.delay(720).duration(400)}>
-            <View style={[styles.siteBadge, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : '#EEF2FF', borderColor: isDark ? 'rgba(99,102,241,0.25)' : '#C7D2FE' }]}>
-              <Icon name="map-marker" size={14} color={isDark ? '#818CF8' : '#6366F1'} />
-              <Text style={[styles.siteBadgeText, { color: isDark ? '#A5B4FC' : '#4F46E5' }]}>{siteActif.nom}</Text>
+            <View style={[styles.siteBadge, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : '#E8F5E9', borderColor: isDark ? 'rgba(0,122,57,0.25)' : '#B2DFDB' }]}>
+              <Icon name="map-marker" size={14} color={isDark ? '#4EB35A' : '#007A39'} />
+              <Text style={[styles.siteBadgeText, { color: isDark ? '#A5B4FC' : '#007A39' }]}>{siteActif.nom}</Text>
             </View>
           </Animated.View>
         )}
 
         <Animated.View entering={ZoomIn.delay(800).duration(400)}>
           <LinearGradient
-            colors={['transparent', isDark ? colors.primaryGlow : '#C7D2FE', 'transparent']}
+            colors={['transparent', isDark ? colors.primaryGlow : '#B2DFDB', 'transparent']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.separator}
@@ -531,13 +531,13 @@ export const AuthScreen: React.FC = () => {
 
       {/* Instruction */}
       <Animated.View entering={FadeIn.delay(900).duration(400)} style={styles.instructionWrap}>
-        <View style={[styles.instructionDot, { backgroundColor: isDark ? colors.primaryGlow : '#C7D2FE' }]} />
+        <View style={[styles.instructionDot, { backgroundColor: isDark ? colors.primaryGlow : '#B2DFDB' }]} />
         <Text style={[styles.instruction, { color: colors.textSecondary }]}>
           {techniciens.length > 0
             ? 'Sélectionnez votre profil pour continuer'
             : 'Bienvenue sur IT-Inventory'}
         </Text>
-        <View style={[styles.instructionDot, { backgroundColor: isDark ? colors.primaryGlow : '#C7D2FE' }]} />
+        <View style={[styles.instructionDot, { backgroundColor: isDark ? colors.primaryGlow : '#B2DFDB' }]} />
       </Animated.View>
 
       {/* Erreur */}
@@ -616,8 +616,8 @@ export const AuthScreen: React.FC = () => {
                     {/* Icon + Title centered */}
                     <View style={{ alignItems: 'center', marginBottom: 20 }}>
                       <LinearGradient
-                        colors={['#6366F1', '#4F46E5']}
-                        style={{ width: 60, height: 60, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 14, shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}
+                        colors={['#007A39', '#007A39']}
+                        style={{ width: 60, height: 60, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 14, shadowColor: '#007A39', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}
                       >
                         <Icon name="account-plus-outline" size={28} color="#FFF" />
                       </LinearGradient>
@@ -643,7 +643,7 @@ export const AuthScreen: React.FC = () => {
                           },
                         ]}
                       >
-                        <Icon name="account-outline" size={18} color={prenomFocused ? '#6366F1' : colors.textMuted} style={{ marginRight: 10 }} />
+                        <Icon name="account-outline" size={18} color={prenomFocused ? '#007A39' : colors.textMuted} style={{ marginRight: 10 }} />
                         <TextInput
                           style={[styles.input, { color: colors.textPrimary }]}
                           placeholder="Ex: Jean"
@@ -683,7 +683,7 @@ export const AuthScreen: React.FC = () => {
                           },
                         ]}
                       >
-                        <Icon name="badge-account-horizontal-outline" size={18} color={nomFocused ? '#6366F1' : colors.textMuted} style={{ marginRight: 10 }} />
+                        <Icon name="badge-account-horizontal-outline" size={18} color={nomFocused ? '#007A39' : colors.textMuted} style={{ marginRight: 10 }} />
                         <TextInput
                           style={[styles.input, { color: colors.textPrimary }]}
                           placeholder="Ex: Dupont"
@@ -723,7 +723,7 @@ export const AuthScreen: React.FC = () => {
                           },
                         ]}
                       >
-                        <Icon name="identifier" size={18} color={matriculeFocused ? '#6366F1' : colors.textMuted} style={{ marginRight: 10 }} />
+                        <Icon name="identifier" size={18} color={matriculeFocused ? '#007A39' : colors.textMuted} style={{ marginRight: 10 }} />
                         <TextInput
                           style={[styles.input, { color: colors.textPrimary }]}
                           placeholder="Ex: T-12345"
@@ -755,9 +755,9 @@ export const AuthScreen: React.FC = () => {
                           activeOpacity={0.7}
                         >
                           {newRole === 'TECHNICIAN' ? (
-                            <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.roleIconPill}>
+                            <LinearGradient colors={['#007A39', '#007A39']} style={styles.roleIconPill}>
                               <View style={styles.roleIconInner}>
-                                <Icon name="wrench-outline" size={18} color="#6366F1" />
+                                <Icon name="wrench-outline" size={18} color="#007A39" />
                               </View>
                             </LinearGradient>
                           ) : (
@@ -765,7 +765,7 @@ export const AuthScreen: React.FC = () => {
                               <Icon name="wrench-outline" size={18} color={colors.textMuted} />
                             </View>
                           )}
-                          <Text style={[styles.roleLabel, { color: newRole === 'TECHNICIAN' ? '#6366F1' : colors.textSecondary }]}>
+                          <Text style={[styles.roleLabel, { color: newRole === 'TECHNICIAN' ? '#007A39' : colors.textSecondary }]}>
                             Technicien
                           </Text>
                         </TouchableOpacity>
@@ -825,7 +825,7 @@ export const AuthScreen: React.FC = () => {
                         <LinearGradient
                           colors={
                             isFormValid && !isCreating
-                              ? ['#6366F1', '#4F46E5']
+                              ? ['#007A39', '#007A39']
                               : isDark ? [colors.surfaceElevated, colors.surfaceElevated] : ['#94A3B8', '#64748B']
                           }
                           style={styles.submitBtnGradient}
@@ -1230,7 +1230,7 @@ const styles = StyleSheet.create({
     flex: 2,
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#4F46E5',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -1299,7 +1299,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   roleCardActive: {
-    borderColor: '#6366F1',
+    borderColor: '#007A39',
     borderWidth: 2,
     backgroundColor: 'rgba(99,102,241,0.04)',
   },

@@ -51,7 +51,7 @@ export const refOptionsRepository = {
       value: v,
       label: v,
       icon: 'tag-outline',
-      color: '#6366F1',
+      color: '#007A39',
     }));
   },
 

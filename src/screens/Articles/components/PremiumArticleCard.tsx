@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+﻿import React, { useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -40,7 +40,8 @@ const MARQUE_MAP: Record<string, { color: string; initials: string }> = {
 };
 
 const TYPE_MAP: Record<string, { icon: string; color: string }> = {
-  'Souris': { icon: 'mouse', color: '#6366F1' },
+  'Tablette': { icon: 'tablet-cellphone', color: '#007A39' },
+  'Souris': { icon: 'mouse', color: '#007A39' },
   'Clavier': { icon: 'keyboard', color: '#8B5CF6' },
   'Dock': { icon: 'dock-bottom', color: '#0EA5E9' },
   'HUB USB': { icon: 'usb', color: '#14B8A6' },
@@ -61,7 +62,7 @@ const TYPE_MAP: Record<string, { icon: string; color: string }> = {
   'Alimentation': { icon: 'power', color: '#DC2626' },
   'Multiprise': { icon: 'power-socket-eu', color: '#EA580C' },
   "Bras d'écran": { icon: 'monitor-screenshot', color: '#0891B2' },
-  'Scanner doc': { icon: 'scanner', color: '#4F46E5' },
+  'Scanner doc': { icon: 'scanner', color: '#007A39' },
   'Ensemble de matériel': { icon: 'package-variant-closed', color: '#78716C' },
 };
 
@@ -79,7 +80,7 @@ interface PremiumArticleCardProps {
   article: Article;
   onPress: (articleId: number) => void;
   onEdit?: () => void;
-  onDelete?: () => void;
+  onDelete?: (articleId: number) => void;
 }
 
 /**
@@ -88,6 +89,7 @@ interface PremiumArticleCardProps {
 const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
   article,
   onPress,
+  onDelete,
 }) => {
   const { width } = useWindowDimensions();
   const { colors, isDark } = useTheme();
@@ -114,6 +116,14 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
     Vibration.vibrate(10);
     onPress(article.id);
   }, [onPress, article.id]);
+
+  const handleDelete = useCallback((e: any) => {
+    e.stopPropagation();
+    if (onDelete) {
+      Vibration.vibrate([10, 50, 10]);
+      onDelete(article.id);
+    }
+  }, [onDelete, article.id]);
 
   // Stock config
   const stockConfig = useMemo(() => {
@@ -159,6 +169,13 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
     if (diffDays < 7) return `Modifié il y a ${diffDays}j`;
     return `Modifié le ${date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
   }, [article.dateModification]);
+
+  const isTabletItem = useMemo(() => {
+    const values = [article.typeArticle, article.sousType, article.famille]
+      .filter((v): v is string => !!v)
+      .map((v) => v.toLowerCase());
+    return values.some((v) => v.includes('tablette'));
+  }, [article.typeArticle, article.sousType, article.famille]);
 
   return (
     <Animated.View style={pressStyle}>
@@ -210,7 +227,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
             ) : (
               <View style={[styles.iconShadow, { shadowColor: colors.primary }]}>
                 <LinearGradient
-                  colors={['#6366F1', '#4F46E5']}
+                  colors={isTabletItem ? ['#007A39', '#059669'] : ['#007A39', '#007A39']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={[
@@ -219,7 +236,11 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                   ]}
                 >
                   <View style={[styles.iconInner, tablet && { width: 38, height: 38, borderRadius: 10 }]}>
-                    <Icon name="package-variant" size={tablet ? 22 : 18} color="#6366F1" />
+                    <Icon
+                      name={isTabletItem ? 'tablet-cellphone' : 'package-variant'}
+                      size={tablet ? 22 : 18}
+                      color={isTabletItem ? '#007A39' : '#007A39'}
+                    />
                   </View>
                 </LinearGradient>
               </View>
@@ -260,7 +281,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                 style={[
                   styles.badge,
                   {
-                    backgroundColor: isDark ? 'rgba(99,102,241,0.1)' : '#EEF2FF',
+                    backgroundColor: isDark ? 'rgba(0,122,57,0.1)' : '#E8F5E9',
                   },
                 ]}
               >
@@ -363,34 +384,54 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
 
           {/* Stock indicator (right) */}
           <View style={styles.stockColumn}>
-            <LinearGradient
-              colors={[...stockConfig.gradient]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[
-                styles.stockPill,
-                tablet && { paddingHorizontal: 12, paddingVertical: 8 },
-              ]}
-            >
-              <Icon name={stockConfig.icon} size={14} color="#FFFFFF" />
-              <Text
+            {isTabletItem ? (
+              // Delete button for tablets
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleDelete}
                 style={[
-                  styles.stockValue,
-                  tablet && { fontSize: 18 },
+                  styles.deleteBtn,
+                  { 
+                    backgroundColor: isDark ? 'rgba(239,68,68,0.1)' : '#FEE2E2',
+                    borderColor: isDark ? 'rgba(239,68,68,0.2)' : '#FCA5A5',
+                  }
                 ]}
               >
-                {article.quantiteActuelle ?? 0}
-              </Text>
-            </LinearGradient>
-            <Text
-              style={[
-                styles.stockUnit,
-                { color: colors.textMuted },
-                tablet && { fontSize: 11 },
-              ]}
-            >
-              {article.unite}
-            </Text>
+                <Icon name="trash-can-outline" size={16} color="#EF4444" />
+              </TouchableOpacity>
+            ) : (
+              // Stock indicator for non-tablets
+              <>
+                <LinearGradient
+                  colors={[...stockConfig.gradient]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[
+                    styles.stockPill,
+                    tablet && { paddingHorizontal: 12, paddingVertical: 8 },
+                  ]}
+                >
+                  <Icon name={stockConfig.icon} size={14} color="#FFFFFF" />
+                  <Text
+                    style={[
+                      styles.stockValue,
+                      tablet && { fontSize: 18 },
+                    ]}
+                  >
+                    {article.quantiteActuelle ?? 0}
+                  </Text>
+                </LinearGradient>
+                <Text
+                  style={[
+                    styles.stockUnit,
+                    { color: colors.textMuted },
+                    tablet && { fontSize: 11 },
+                  ]}
+                >
+                  {article.unite}
+                </Text>
+              </>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -507,6 +548,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 52,
+  },
+  deleteBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stockPill: {
     flexDirection: 'row',

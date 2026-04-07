@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // TRANSFERT FORM SCREEN - IT-Inventory Application
 // Transfert inter-sites — Premium Design
 // ============================================
@@ -371,7 +371,7 @@ export const TransfertFormScreen: React.FC = () => {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <LinearGradient
-            colors={['#3B82F6', '#6366F1']}
+            colors={['#3B82F6', '#007A39']}
             style={styles.headerIconBg}
           >
             <Icon name="swap-horizontal" size={18} color="#FFF" />
@@ -429,7 +429,7 @@ export const TransfertFormScreen: React.FC = () => {
               {/* Search bar */}
               <View style={styles.searchSection}>
                 <View style={styles.siteLabelRow}>
-                  <View style={[styles.siteLabelIcon, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : '#EEF2FF' }]}>
+                  <View style={[styles.siteLabelIcon, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : '#E8F5E9' }]}>
                     <Icon name="magnify" size={16} color={colors.primary} />
                   </View>
                   <Text style={[styles.siteLabel, { color: colors.textPrimary }]}>Rechercher un article</Text>
@@ -460,7 +460,7 @@ export const TransfertFormScreen: React.FC = () => {
                   activeOpacity={0.7}
                 >
                   <LinearGradient
-                    colors={['#3B82F6', '#6366F1']}
+                    colors={['#3B82F6', '#007A39']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.scanButtonGradient}
@@ -524,13 +524,13 @@ export const TransfertFormScreen: React.FC = () => {
               <View style={[styles.arrowDot, { backgroundColor: '#3B82F6' }]} />
               <View style={[styles.arrowDash, { backgroundColor: colors.borderMedium }]} />
               <LinearGradient
-                colors={['#3B82F6', '#6366F1']}
+                colors={['#3B82F6', '#007A39']}
                 style={styles.arrowCircle}
               >
                 <Icon name="arrow-down" size={22} color="#FFF" />
               </LinearGradient>
               <View style={[styles.arrowDash, { backgroundColor: colors.borderMedium }]} />
-              <View style={[styles.arrowDot, { backgroundColor: '#6366F1' }]} />
+              <View style={[styles.arrowDot, { backgroundColor: '#007A39' }]} />
             </View>
           </Animated.View>
 
@@ -585,7 +585,7 @@ export const TransfertFormScreen: React.FC = () => {
             <View style={styles.siteSection}>
               <View style={styles.siteLabelRow}>
                 <View style={[styles.siteLabelIcon, { backgroundColor: 'rgba(99,102,241,0.12)' }]}>
-                  <Icon name="logout" size={16} color="#6366F1" />
+                  <Icon name="logout" size={16} color="#007A39" />
                 </View>
                 <Text style={[styles.siteLabel, { color: colors.textPrimary }]}>Site de destination</Text>
               </View>
@@ -599,20 +599,20 @@ export const TransfertFormScreen: React.FC = () => {
                       style={[
                         styles.siteChip,
                         {
-                          backgroundColor: selected ? (isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF') : colors.surface,
-                          borderColor: selected ? '#6366F1' : colors.borderSubtle,
+                          backgroundColor: selected ? (isDark ? 'rgba(0,122,57,0.15)' : '#E8F5E9') : colors.surface,
+                          borderColor: selected ? '#007A39' : colors.borderSubtle,
                         },
                       ]}
                       activeOpacity={0.7}
                     >
-                      <View style={[styles.siteChipDot, { backgroundColor: selected ? '#6366F1' : colors.borderMedium }]} />
+                      <View style={[styles.siteChipDot, { backgroundColor: selected ? '#007A39' : colors.borderMedium }]} />
                       <Text style={[
                         styles.siteChipText,
-                        { color: selected ? '#6366F1' : colors.textSecondary, fontWeight: selected ? '700' : '500' },
+                        { color: selected ? '#007A39' : colors.textSecondary, fontWeight: selected ? '700' : '500' },
                       ]} numberOfLines={1}>
                         {site.nom}
                       </Text>
-                      {selected && <Icon name="check-circle" size={16} color="#6366F1" />}
+                      {selected && <Icon name="check-circle" size={16} color="#007A39" />}
                     </TouchableOpacity>
                   );
                 })}
@@ -706,7 +706,7 @@ export const TransfertFormScreen: React.FC = () => {
           {/* ===== RÉSUMÉ ===== */}
           {article && siteDepartId && siteArriveeId && (
             <Animated.View entering={FadeInUp.delay(300).duration(400)}>
-              <View style={[styles.summaryCard, { backgroundColor: isDark ? 'rgba(99,102,241,0.08)' : '#EEF2FF', borderColor: isDark ? 'rgba(99,102,241,0.2)' : '#C7D2FE' }]}>
+              <View style={[styles.summaryCard, { backgroundColor: isDark ? 'rgba(0,122,57,0.08)' : '#E8F5E9', borderColor: isDark ? 'rgba(0,122,57,0.2)' : '#B2DFDB' }]}>
                 <View style={styles.summaryHeader}>
                   <Icon name="clipboard-check-outline" size={18} color={colors.primary} />
                   <Text style={[styles.summaryTitle, { color: colors.primary }]}>Résumé du transfert</Text>
@@ -754,7 +754,7 @@ export const TransfertFormScreen: React.FC = () => {
               style={{ opacity: canSubmit ? 1 : 0.45 }}
             >
               <LinearGradient
-                colors={canSubmit ? ['#3B82F6', '#6366F1'] : [colors.borderMedium, colors.borderMedium]}
+                colors={canSubmit ? ['#3B82F6', '#007A39'] : [colors.borderMedium, colors.borderMedium]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.submitBtn}

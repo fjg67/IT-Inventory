@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // SETTINGS SCREEN - Premium Design
 // IT-Inventory Application
 // ============================================
@@ -22,8 +22,14 @@ import {
   Platform,
 } from 'react-native';
 import Animated, {
+  Easing,
   FadeInUp,
   FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -38,11 +44,12 @@ import type { ThemeMode } from '@/theme';
 import { InventoryRecountService, InventoryRecount } from '@/services/inventoryRecountService';
 import { AuthService } from '@/services/authService';
 import { BiometricAuthService } from '@/services/biometricAuthService';
+import { pushNotificationsService } from '@/services/pushNotificationsService';
 
 // ==================== HELPERS ====================
 const AVATAR_GRADIENTS: [string, string][] = [
   ['#3B82F6', '#2563EB'],
-  ['#8B5CF6', '#6366F1'],
+  ['#00A651', '#007A39'],
   ['#EC4899', '#F472B6'],
   ['#10B981', '#34D399'],
   ['#F59E0B', '#FBBF24'],
@@ -60,7 +67,7 @@ const getAvatarGradient = (id: string | number | undefined): [string, string] =>
 // Site visual config
 const SITE_VISUALS: Record<string, { icon: string; gradient: [string, string]; emoji: string }> = {
   'Stock 5ième': { icon: 'office-building', gradient: ['#3B82F6', '#2563EB'], emoji: '5' },
-  'Stock 8ième': { icon: 'office-building-marker', gradient: ['#8B5CF6', '#6366F1'], emoji: '8' },
+  'Stock 8ième': { icon: 'office-building-marker', gradient: ['#005C2B', '#007A39'], emoji: '8' },
   'Stock Epinal': { icon: 'warehouse', gradient: ['#10B981', '#059669'], emoji: 'E' },
 };
 
@@ -71,18 +78,251 @@ const getSiteVisual = (nom: string) => {
 const DEFAULT_LOGIN_IDENTIFIER = 'technicien';
 const MASTER_PASSWORD = '!*A1Z2E3R4T5!';
 
+const HamsterMascot: React.FC<{
+  accentColor: string;
+  mood: 'happy' | 'calm' | 'alert';
+  isSuperviseur: boolean;
+  isSpeaking: boolean;
+}> = ({ accentColor, mood, isSuperviseur, isSpeaking }) => {
+  const blink = useSharedValue(1);
+  const armSwing = useSharedValue(0);
+  const legStep = useSharedValue(0);
+  const bob = useSharedValue(0);
+  const speechMouth = useSharedValue(0);
+
+  useEffect(() => {
+    blink.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1800 }),
+        withTiming(0.12, { duration: 100, easing: Easing.out(Easing.quad) }),
+        withTiming(1, { duration: 120, easing: Easing.in(Easing.quad) }),
+      ),
+      -1,
+      false,
+    );
+
+    armSwing.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 650, easing: Easing.inOut(Easing.sin) }),
+        withTiming(-1, { duration: 650, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      true,
+    );
+
+    legStep.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 700, easing: Easing.inOut(Easing.sin) }),
+        withTiming(-1, { duration: 700, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      true,
+    );
+
+    bob.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 850, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 850, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      true,
+    );
+  }, [armSwing, blink, bob, legStep]);
+
+  const eyeAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleY: blink.value }],
+  }));
+
+  const bodyAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -2 * bob.value }],
+  }));
+
+  const leftArmAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${-22 + armSwing.value * 14}deg` }],
+  }));
+
+  const rightArmAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${22 - armSwing.value * 14}deg` }],
+  }));
+
+  const leftLegAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${-8 - legStep.value * 10}deg` }],
+  }));
+
+  const rightLegAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${8 + legStep.value * 10}deg` }],
+  }));
+
+  useEffect(() => {
+    if (!isSpeaking) {
+      speechMouth.value = withTiming(0, { duration: 120 });
+      return;
+    }
+
+    speechMouth.value = withSequence(
+      withTiming(1, { duration: 90, easing: Easing.out(Easing.quad) }),
+      withTiming(0.2, { duration: 80, easing: Easing.inOut(Easing.quad) }),
+      withTiming(1, { duration: 90, easing: Easing.out(Easing.quad) }),
+      withTiming(0, { duration: 100, easing: Easing.in(Easing.quad) }),
+      withTiming(0.9, { duration: 90, easing: Easing.out(Easing.quad) }),
+      withTiming(0, { duration: 120, easing: Easing.in(Easing.quad) }),
+    );
+  }, [isSpeaking, speechMouth]);
+
+  const lowerBeakAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: speechMouth.value * 1.8 }],
+  }));
+
+  const mouthAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleY: 0.5 + speechMouth.value * 1.8 }],
+    opacity: 0.35 + speechMouth.value * 0.65,
+  }));
+
+  const beakColor = mood === 'alert' ? '#EF4444' : '#FF6D3B';
+  const crownColor = mood === 'alert' ? '#EF4444' : '#007A39';
+
+  return (
+    <View style={headerStyles.mascotContainer}>
+      {isSuperviseur && (
+        <>
+          <View style={headerStyles.mascotCapTop} />
+          <View style={headerStyles.mascotCapBrim} />
+        </>
+      )}
+
+      <Animated.View style={[headerStyles.mascotCharacter, bodyAnimatedStyle]}>
+        {/* Tufts verts CA — couronne de la cigogne d'Alsace */}
+        <View style={[headerStyles.storkTuftL, { backgroundColor: crownColor }]} />
+        <View style={[headerStyles.storkTuftM, { backgroundColor: crownColor }]} />
+        <View style={[headerStyles.storkTuftR, { backgroundColor: crownColor }]} />
+
+        <View style={headerStyles.mascotBody}>
+          <Animated.View style={[headerStyles.mascotArm, headerStyles.mascotArmLeft, leftArmAnimatedStyle]} />
+          <Animated.View style={[headerStyles.mascotArm, headerStyles.mascotArmRight, rightArmAnimatedStyle]} />
+
+          {/* Tête blanche de la cigogne */}
+          <View style={headerStyles.storkHead}>
+            <View style={headerStyles.storkEyeRow}>
+              <Animated.View style={[headerStyles.storkEye, eyeAnimatedStyle]} />
+              <Animated.View style={[headerStyles.storkEye, eyeAnimatedStyle]} />
+            </View>
+            {/* Bec — mandibule sup */}
+            <View style={[headerStyles.storkBeakUpper, { backgroundColor: beakColor }]} />
+            <Animated.View style={[headerStyles.storkMouthCore, mouthAnimatedStyle]} />
+            {/* Bec — mandibule inf */}
+            <Animated.View style={[headerStyles.storkBeakLower, { backgroundColor: beakColor }, lowerBeakAnimatedStyle]} />
+          </View>
+
+          <View style={[headerStyles.mascotBelly, { borderColor: accentColor }]} />
+        </View>
+
+        <View style={headerStyles.mascotLegRow}>
+          <Animated.View style={[headerStyles.mascotLeg, leftLegAnimatedStyle]}>
+            <View style={headerStyles.mascotFoot} />
+          </Animated.View>
+          <Animated.View style={[headerStyles.mascotLeg, rightLegAnimatedStyle]}>
+            <View style={headerStyles.mascotFoot} />
+          </Animated.View>
+        </View>
+      </Animated.View>
+    </View>
+  );
+};
+
 // ==================== SETTINGS HEADER BANNER ====================
 const SettingsHeaderBanner: React.FC<{
   initials: string;
   technicien: any;
+  lastRecount: InventoryRecount | null;
   avatarGradient: [string, string] | string[];
   isDark: boolean;
-}> = ({ initials, technicien, avatarGradient, isDark }) => {
+}> = ({ initials, technicien, lastRecount, avatarGradient, isDark }) => {
   const { colors } = useTheme();
 
-  const fullName = technicien
-    ? `${technicien.prenom || ''} ${technicien.nom || ''}`.trim()
-    : 'Utilisateur';
+  const mascot = { emoji: '🦢', name: 'Clara la Cigogne' };
+  const daysSinceRecount = lastRecount
+    ? Math.floor((Date.now() - new Date(lastRecount.recountDate).getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const mood = (() => {
+    if (daysSinceRecount == null) {
+      return {
+        key: 'alert' as const,
+        title: 'Mode Alerte Inventaire',
+        subtitle: 'Clara cherche encore le dernier inventaire complet.',
+        chip: '🟠 Alerte douce',
+        speeches: [
+          'On fait un point stock ensemble ?',
+          'Je n ai pas trouve le dernier recomptage.',
+          'Un scan rapide et on repart propre.',
+        ],
+      };
+    }
+    if (daysSinceRecount <= 2) {
+      return {
+        key: 'happy' as const,
+        title: 'Stock Au Top',
+        subtitle: 'Clara est fiere: inventaire recent et reserve bien surveillee.',
+        chip: '🟢 Bravo team',
+        speeches: [
+          'Top, le stock est nickel !',
+          'Rien a signaler, on garde le rythme.',
+          'Equipe efficace, bravo !',
+        ],
+      };
+    }
+    if (daysSinceRecount <= 7) {
+      return {
+        key: 'calm' as const,
+        title: 'Stock Sous Controle',
+        subtitle: 'Clara garde le cap, pense juste au prochain recomptage.',
+        chip: '🔵 Mode calme',
+        speeches: [
+          'Tout va bien, on reste regulier.',
+          'Pense au prochain mini-controle.',
+          'Je veille sur tes mouvements.',
+        ],
+      };
+    }
+    return {
+      key: 'alert' as const,
+      title: 'Inventaire A Rafraichir',
+      subtitle: 'Clara te souffle: un petit recomptage ferait du bien.',
+      chip: '🟠 Alerte douce',
+      speeches: [
+        'On est proche d un ecart de stock.',
+        'Un recomptage maintenant evite les surprises.',
+        'Je te guide, on le fait en 2 minutes.',
+      ],
+    };
+  })();
+
+  const [speechIndex, setSpeechIndex] = useState(0);
+  const [isSpeaking, setIsSpeaking] = useState(true);
+
+  useEffect(() => {
+    setSpeechIndex(0);
+    setIsSpeaking(true);
+
+    let speechOffTimeout: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+      setIsSpeaking(false);
+    }, 1100);
+
+    const timer = setInterval(() => {
+      setSpeechIndex((prev) => (prev + 1) % mood.speeches.length);
+      setIsSpeaking(true);
+
+      if (speechOffTimeout) clearTimeout(speechOffTimeout);
+      speechOffTimeout = setTimeout(() => {
+        setIsSpeaking(false);
+      }, 1100);
+    }, 3300);
+
+    return () => {
+      clearInterval(timer);
+      if (speechOffTimeout) clearTimeout(speechOffTimeout);
+    };
+  }, [mood.key, mood.speeches.length]);
 
   return (
     <Animated.View entering={FadeInDown.duration(500).springify()}>
@@ -90,9 +330,18 @@ const SettingsHeaderBanner: React.FC<{
         backgroundColor: colors.surface,
         borderColor: isDark ? colors.borderSubtle : colors.borderMedium,
       }]}>
+        <LinearGradient
+          colors={isDark ? ['rgba(0,122,57,0.14)', 'rgba(0,122,57,0.02)'] : ['rgba(0,122,57,0.10)', 'rgba(0,122,57,0.00)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={headerStyles.headerGlow}
+        />
+        <View style={[headerStyles.decorBubble, headerStyles.decorBubbleTop, { backgroundColor: isDark ? 'rgba(0,122,57,0.22)' : 'rgba(0,122,57,0.10)' }]} />
+        <View style={[headerStyles.decorBubble, headerStyles.decorBubbleBottom, { backgroundColor: isDark ? 'rgba(16,185,129,0.16)' : 'rgba(16,185,129,0.08)' }]} />
+
         {/* Left accent bar */}
         <LinearGradient
-          colors={['#6366F1', '#4338CA']}
+          colors={['#00A651', '#007A39']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={headerStyles.accentBar}
@@ -108,22 +357,41 @@ const SettingsHeaderBanner: React.FC<{
               style={headerStyles.avatar}
             >
               <View style={headerStyles.avatarInner}>
-                <Text style={[headerStyles.avatarText, { color: (avatarGradient as [string, string])[0] }]}>{initials}</Text>
+                <HamsterMascot
+                  accentColor={(avatarGradient as [string, string])[0]}
+                  mood={mood.key}
+                  isSuperviseur={technicien?.role === 'superviseur'}
+                  isSpeaking={isSpeaking}
+                />
               </View>
             </LinearGradient>
           </View>
         </View>
 
-        {/* Name */}
-        <Text style={[headerStyles.name, { color: colors.textPrimary }]}>{initials}</Text>
+        <View style={[headerStyles.mascotChip, { backgroundColor: isDark ? 'rgba(0,122,57,0.18)' : 'rgba(0,122,57,0.10)' }]}>
+          <Text style={headerStyles.mascotEmoji}>{mascot.emoji}</Text>
+          <Text style={[headerStyles.mascotName, { color: colors.primary }]}>{mascot.name}</Text>
+        </View>
+
+        <View style={[headerStyles.speechBubble, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F5FAF6', borderColor: isDark ? colors.borderMedium : '#D7ECDD' }]}>
+          <Text style={[headerStyles.speechText, { color: colors.textSecondary }]}>{mood.speeches[speechIndex]}</Text>
+        </View>
+        <View style={[headerStyles.speechTail, { borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : '#F5FAF6' }]} />
+
+        <Text style={[headerStyles.name, { color: colors.textPrimary }]} numberOfLines={2}>{mood.title}</Text>
+        <Text style={[headerStyles.subName, { color: colors.textMuted }]} numberOfLines={2}>{mood.subtitle}</Text>
+
+        <View style={[headerStyles.moodChip, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.06)' }]}>
+          <Text style={[headerStyles.moodChipText, { color: colors.textSecondary }]}>{mood.chip}</Text>
+        </View>
 
         {/* Role badge */}
         <View style={headerStyles.roleRow}>
           <LinearGradient
-            colors={technicien?.role === 'superviseur' ? ['#F59E0B', '#D97706'] : ['#6366F1', '#4F46E5']}
+            colors={technicien?.role === 'superviseur' ? ['#F59E0B', '#D97706'] : ['#00A651', '#007A39']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, gap: 5 }}
+            style={headerStyles.rolePill}
           >
             <Icon name={technicien?.role === 'superviseur' ? 'eye-outline' : 'wrench-outline'} size={12} color="#FFF" />
             <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFF', letterSpacing: 0.3 }}>
@@ -150,9 +418,9 @@ const SettingsHeaderBanner: React.FC<{
 const headerStyles = StyleSheet.create({
   header: {
     marginHorizontal: 16,
-    marginTop: 52,
-    paddingTop: 28,
-    paddingBottom: 24,
+    marginTop: 40,
+    paddingTop: 24,
+    paddingBottom: 22,
     paddingHorizontal: 24,
     alignItems: 'center',
     borderRadius: 20,
@@ -163,6 +431,25 @@ const headerStyles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 14,
     elevation: 4,
+  },
+  headerGlow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  decorBubble: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  decorBubbleTop: {
+    width: 120,
+    height: 120,
+    top: -52,
+    right: -28,
+  },
+  decorBubbleBottom: {
+    width: 84,
+    height: 84,
+    bottom: -36,
+    left: 34,
   },
   accentBar: {
     position: 'absolute',
@@ -179,7 +466,7 @@ const headerStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarShadow: {
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -200,22 +487,275 @@ const headerStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  mascotContainer: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mascotCharacter: {
+    width: 38,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  mascotCapTop: {
+    position: 'absolute',
+    top: -2,
+    width: 22,
+    height: 8,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 4,
+    backgroundColor: '#005C2B',
+  },
+  mascotCapBrim: {
+    position: 'absolute',
+    top: 5,
+    width: 26,
+    height: 4,
+    borderRadius: 3,
+    backgroundColor: '#007A39',
+  },
+  mascotLoupeRing: {
+    position: 'absolute',
+    right: -2,
+    top: 11,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#334155',
+    backgroundColor: '#E8F5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mascotLoupeGlass: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: 'rgba(0,122,57,0.25)',
+  },
+  mascotLoupeHandle: {
+    position: 'absolute',
+    right: 4,
+    top: 19,
+    width: 6,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#334155',
+    transform: [{ rotate: '32deg' }],
+  },
+  mascotBody: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 3,
+  },
+  mascotArm: {
+    position: 'absolute',
+    top: 12,
+    width: 12,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E4EFE7',
+  },
+  mascotArmLeft: {
+    left: -8,
+    transformOrigin: 'right center',
+  },
+  mascotArmRight: {
+    right: -8,
+    transformOrigin: 'left center',
+  },
+  mascotBelly: {
+    width: 11,
+    height: 7,
+    borderRadius: 5,
+    borderWidth: 1,
+    backgroundColor: '#F0F7F2',
+    marginBottom: 1,
+  },
+  mascotLegRow: {
+    width: 22,
+    marginTop: -1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  mascotLeg: {
+    width: 4,
+    height: 8,
+    alignItems: 'center',
+    backgroundColor: '#E98A5A',
+    borderRadius: 3,
+  },
+  mascotFoot: {
+    position: 'absolute',
+    bottom: -1,
+    width: 6,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#D8653B',
+  },
+  // ── Cigogne d'Alsace — Crédit Agricole Alsace Vosges ──
+  storkTuftL: {
+    position: 'absolute',
+    top: 3,
+    left: 9,
+    width: 5,
+    height: 7,
+    borderRadius: 3,
+  },
+  storkTuftM: {
+    position: 'absolute',
+    top: 1,
+    left: 17,
+    width: 5,
+    height: 9,
+    borderRadius: 3,
+  },
+  storkTuftR: {
+    position: 'absolute',
+    top: 3,
+    right: 8,
+    width: 5,
+    height: 7,
+    borderRadius: 3,
+  },
+  storkHead: {
+    width: 24,
+    height: 19,
+    borderRadius: 10,
+    backgroundColor: '#F5FAF6',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 4,
+    marginBottom: 2,
+  },
+  storkEyeRow: {
+    width: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  storkEye: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: '#1A2332',
+  },
+  storkBeakUpper: {
+    width: 9,
+    height: 3,
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+  },
+  storkBeakLower: {
+    width: 7,
+    height: 2,
+    borderBottomLeftRadius: 3,
+    borderBottomRightRadius: 3,
+    alignSelf: 'center' as const,
+    marginTop: 1,
+  },
+  storkMouthCore: {
+    width: 5,
+    height: 1.4,
+    borderRadius: 1,
+    backgroundColor: '#9A3412',
+    marginTop: 0.5,
+    marginBottom: 0.5,
+  },
+  speechBubble: {
+    maxWidth: '90%',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 3,
+  },
+  speechText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  speechTail: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 7,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    marginBottom: 8,
+  },
   avatarText: {
     fontSize: 22,
     fontWeight: '900',
     letterSpacing: -0.5,
   },
-  name: {
-    fontSize: 22,
+  mascotChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    gap: 6,
+    marginBottom: 10,
+  },
+  mascotEmoji: {
+    fontSize: 14,
+  },
+  mascotName: {
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: -0.3,
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
+  },
+  name: {
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -0.8,
     marginBottom: 6,
+    textAlign: 'center',
+  },
+  subName: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    marginBottom: 10,
+    textAlign: 'center',
+    paddingHorizontal: 12,
+  },
+  moodChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    marginBottom: 12,
+  },
+  moodChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   roleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 16,
+    marginBottom: 14,
+  },
+  rolePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 6,
   },
   roleDot: {
     width: 7,
@@ -279,6 +819,8 @@ export const SettingsScreen: React.FC = () => {
   const [biometricPasswordVisible, setBiometricPasswordVisible] = useState(false);
   const [biometricDisableModalVisible, setBiometricDisableModalVisible] = useState(false);
   const [biometricSuccessModalVisible, setBiometricSuccessModalVisible] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(true);
+  const [pushLoading, setPushLoading] = useState(false);
 
   // ==================== ACTIONS ====================
   const handleLogout = useCallback(() => {
@@ -354,8 +896,9 @@ export const SettingsScreen: React.FC = () => {
     if (siteActif?.id) {
       InventoryRecountService.getLastRecount(String(siteActif.id)).then(setLastRecount);
     }
+    refreshPushState().catch(console.error);
     setTimeout(() => setRefreshing(false), 500);
-  }, [siteActif?.id]);
+  }, [siteActif?.id, refreshPushState]);
 
   const [exporting, setExporting] = useState(false);
 
@@ -469,15 +1012,6 @@ export const SettingsScreen: React.FC = () => {
     }
   }, [technicien, dispatch]);
 
-  const handleResetDatabase = useCallback(() => {
-    Vibration.vibrate(15);
-    Alert.alert(
-      'Information',
-      "L'application utilise uniquement Supabase. Il n'y a pas de base locale à réinitialiser.",
-      [{ text: 'OK' }],
-    );
-  }, []);
-
   const showToast = useCallback((msg: string) => {
     if (Platform.OS === 'android') {
       ToastAndroid.show(msg, ToastAndroid.SHORT);
@@ -516,6 +1050,38 @@ export const SettingsScreen: React.FC = () => {
   useEffect(() => {
     refreshBiometricState().catch(console.error);
   }, [refreshBiometricState]);
+
+  const refreshPushState = useCallback(async () => {
+    try {
+      const enabled = await pushNotificationsService.isPushEnabledForDevice();
+      setPushEnabled(enabled);
+    } catch (error) {
+      console.warn('[SettingsScreen] refreshPushState error:', error);
+      setPushEnabled(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshPushState().catch(console.error);
+  }, [refreshPushState]);
+
+  const handleTogglePushNotifications = useCallback(async () => {
+    if (!technicien) return;
+
+    Vibration.vibrate(10);
+    const next = !pushEnabled;
+    setPushLoading(true);
+    try {
+      await pushNotificationsService.setPushEnabledForDevice(next, String(technicien.id));
+      setPushEnabled(next);
+      showToast(next ? 'Notifications activées' : 'Notifications désactivées');
+    } catch (error) {
+      console.warn('[SettingsScreen] handleTogglePushNotifications error:', error);
+      Alert.alert('Notifications', "Impossible de modifier l'état des notifications.");
+    } finally {
+      setPushLoading(false);
+    }
+  }, [technicien, pushEnabled, showToast]);
 
   const handleEnableBiometric = useCallback(async () => {
     Vibration.vibrate(10);
@@ -614,6 +1180,7 @@ export const SettingsScreen: React.FC = () => {
         <SettingsHeaderBanner
           initials={initials}
           technicien={technicien}
+          lastRecount={lastRecount}
           avatarGradient={avatarGradient}
           isDark={isDark}
         />
@@ -646,7 +1213,7 @@ export const SettingsScreen: React.FC = () => {
                 </Text>
                 <View style={{ flexDirection: 'row', marginTop: 3 }}>
                   <LinearGradient
-                    colors={isSuperviseur ? ['#F59E0B', '#D97706'] : ['#6366F1', '#4F46E5']}
+                    colors={isSuperviseur ? ['#F59E0B', '#D97706'] : ['#00A651', '#007A39']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, gap: 4 }}
@@ -707,12 +1274,12 @@ export const SettingsScreen: React.FC = () => {
         {/* ===== SECTION APPARENCE ===== */}
         <View>
           <View style={styles.sectionHeaderRow}>
-            <View style={[styles.sectionAccentBar, { backgroundColor: '#8B5CF6' }]} />
+            <View style={[styles.sectionAccentBar, { backgroundColor: '#007A39' }]} />
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>APPARENCE</Text>
           </View>
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
             <LinearGradient
-              colors={['#8B5CF6', '#6366F1']}
+              colors={['#00A651', '#007A39']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
               style={styles.cardAccentStrip}
@@ -721,7 +1288,7 @@ export const SettingsScreen: React.FC = () => {
             <View style={[styles.themeSelector, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', borderColor: colors.borderSubtle }]}>
               {([
                 { mode: 'light' as ThemeMode, icon: 'weather-sunny', label: 'Clair', gradient: ['#F59E0B', '#FBBF24'] as [string, string] },
-                { mode: 'dark' as ThemeMode, icon: 'moon-waning-crescent', label: 'Sombre', gradient: ['#6366F1', '#4338CA'] as [string, string] },
+                { mode: 'dark' as ThemeMode, icon: 'moon-waning-crescent', label: 'Sombre', gradient: ['#005C2B', '#007A39'] as [string, string] },
                 { mode: 'system' as ThemeMode, icon: 'cellphone', label: 'Auto', gradient: ['#10B981', '#059669'] as [string, string] },
               ]).map((opt) => {
                 const isActive = themeMode === opt.mode;
@@ -730,7 +1297,7 @@ export const SettingsScreen: React.FC = () => {
                     key={opt.mode}
                     style={[
                       styles.themeOption,
-                      isActive && [styles.themeOptionActive, { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.08)' }],
+                      isActive && [styles.themeOptionActive, { backgroundColor: isDark ? 'rgba(0,122,57,0.15)' : 'rgba(0,122,57,0.08)' }],
                     ]}
                     activeOpacity={0.7}
                     onPress={() => handleSelectThemeMode(opt.mode)}
@@ -767,21 +1334,21 @@ export const SettingsScreen: React.FC = () => {
         {/* ===== SECTION SÉCURITÉ ===== */}
         <View>
           <View style={styles.sectionHeaderRow}>
-            <View style={[styles.sectionAccentBar, { backgroundColor: '#6366F1' }]} />
+            <View style={[styles.sectionAccentBar, { backgroundColor: '#007A39' }]} />
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>SÉCURITÉ</Text>
           </View>
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
             <LinearGradient
-              colors={['#6366F1', '#4338CA']}
+              colors={['#00A651', '#007A39']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
               style={styles.cardAccentStrip}
             />
             <View style={styles.cardRow}>
               <View style={styles.iconPillContainer}>
-                <LinearGradient colors={['#6366F1', '#4338CA']} style={styles.iconPill}>
+                <LinearGradient colors={['#00A651', '#007A39']} style={styles.iconPill}>
                   <View style={styles.iconPillInner}>
-                    <Icon name="fingerprint" size={20} color="#6366F1" />
+                    <Icon name="fingerprint" size={20} color="#007A39" />
                   </View>
                 </LinearGradient>
               </View>
@@ -843,6 +1410,78 @@ export const SettingsScreen: React.FC = () => {
               </LinearGradient>
             </TouchableOpacity>
           </View>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}> 
+          <LinearGradient
+            colors={['#10B981', '#059669']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.cardAccentStrip}
+          />
+          <View style={styles.cardRow}>
+            <View style={styles.iconPillContainer}>
+              <LinearGradient colors={['#10B981', '#059669']} style={styles.iconPill}>
+                <View style={styles.iconPillInner}>
+                  <Icon name={pushEnabled ? 'bell-ring' : 'bell-off-outline'} size={20} color="#10B981" />
+                </View>
+              </LinearGradient>
+            </View>
+            <View style={styles.cardTextCol}>
+              <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Notifications de mouvements</Text>
+              <Text style={[styles.cardHint, { color: colors.textMuted }]}>
+                {pushEnabled
+                  ? 'Vous recevez les alertes même si l\'application est fermée'
+                  : 'Les alertes push sont coupées sur cet appareil'}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.biometricStatusPill,
+                {
+                  backgroundColor: pushEnabled
+                    ? (isDark ? 'rgba(16,185,129,0.22)' : 'rgba(16,185,129,0.14)')
+                    : (isDark ? 'rgba(148,163,184,0.2)' : 'rgba(148,163,184,0.12)'),
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.biometricStatusDot,
+                  { backgroundColor: pushEnabled ? '#10B981' : '#94A3B8' },
+                ]}
+              />
+              <Text style={[styles.biometricStatusText, { color: pushEnabled ? '#10B981' : colors.textMuted }]}>
+                {pushEnabled ? 'ACTIVE' : 'INACTIVE'}
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.biometricActionButton,
+              pushLoading && { opacity: 0.6 },
+            ]}
+            activeOpacity={0.75}
+            onPress={handleTogglePushNotifications}
+            disabled={pushLoading}
+          >
+            <LinearGradient
+              colors={pushEnabled ? ['#EF4444', '#DC2626'] : ['#10B981', '#059669']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.biometricActionGradient}
+            >
+              {pushLoading ? (
+                <ActivityIndicator color="#FFF" size="small" />
+              ) : (
+                <Icon name={pushEnabled ? 'bell-off-outline' : 'bell-ring'} size={18} color="#FFF" />
+              )}
+              <Text style={styles.biometricActionText}>
+                {pushEnabled ? 'Désactiver les notifications' : 'Activer les notifications'}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
 
         {/* ===== SECTION INVENTAIRE (masqué pour superviseurs) ===== */}
@@ -1004,9 +1643,9 @@ export const SettingsScreen: React.FC = () => {
           </View>
 
           {/* Version */}
-          <View style={[styles.versionCard, { backgroundColor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.05)', borderColor: isDark ? 'rgba(99,102,241,0.2)' : 'rgba(99,102,241,0.12)' }]}>
+          <View style={[styles.versionCard, { backgroundColor: isDark ? 'rgba(0,122,57,0.08)' : 'rgba(0,122,57,0.05)', borderColor: isDark ? 'rgba(0,122,57,0.2)' : 'rgba(0,122,57,0.12)' }]}>
             <LinearGradient
-              colors={['#6366F1', '#4338CA']}
+              colors={['#00A651', '#007A39']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
               style={styles.cardAccentStrip}
@@ -1016,7 +1655,7 @@ export const SettingsScreen: React.FC = () => {
                 <Text style={[styles.versionLabel, { color: colors.textSecondary }]}>Version</Text>
                 <Text style={[styles.versionNumber, { color: colors.primary }]}>{APP_CONFIG.version}</Text>
               </View>
-              <View style={[styles.versionBadge, { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.1)' }]}>
+              <View style={[styles.versionBadge, { backgroundColor: isDark ? 'rgba(0,122,57,0.15)' : 'rgba(0,122,57,0.1)' }]}>
                 <Icon name="information-outline" size={16} color={colors.primary} />
               </View>
             </View>
@@ -1025,18 +1664,18 @@ export const SettingsScreen: React.FC = () => {
           {/* Créateur & Licence */}
           <View style={[styles.creatorCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
             <LinearGradient
-              colors={['#4338CA', '#6366F1']}
+              colors={['#007A39', '#00A651']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
               style={styles.cardAccentStrip}
             />
             <View style={styles.creatorHeader}>
               <LinearGradient
-                colors={['#4338CA', '#6366F1']}
+                colors={['#007A39', '#00A651']}
                 style={styles.creatorAvatarPill}
               >
                 <View style={styles.iconPillInner}>
-                  <Icon name="account-check" size={20} color="#4338CA" />
+                  <Icon name="account-check" size={20} color="#007A39" />
                 </View>
               </LinearGradient>
               <View style={styles.creatorHeaderText}>
@@ -1061,7 +1700,7 @@ export const SettingsScreen: React.FC = () => {
                 setLicenseModalVisible(true);
               }}
             >
-              <View style={[styles.creatorInfoIcon, { backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.08)' }]}>
+              <View style={[styles.creatorInfoIcon, { backgroundColor: isDark ? 'rgba(0,122,57,0.15)' : 'rgba(0,122,57,0.08)' }]}>
                 <Icon name="license" size={13} color={colors.primary} />
               </View>
               <Text style={[styles.creatorInfoText, { color: colors.primary, fontWeight: '600' }]}>Licence MIT</Text>
@@ -1139,46 +1778,6 @@ export const SettingsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* ===== DEV TOOLS ===== */}
-        {__DEV__ && (
-          <View>
-            <View style={styles.sectionHeaderRow}>
-              <View style={[styles.sectionAccentBar, { backgroundColor: '#EF4444' }]} />
-              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>DÉVELOPPEMENT</Text>
-            </View>
-            <TouchableOpacity
-              style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}
-              activeOpacity={0.7}
-              onPress={handleResetDatabase}
-            >
-              <LinearGradient
-                colors={['#EF4444', '#DC2626']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={styles.cardAccentStrip}
-              />
-              <View style={styles.cardRow}>
-                <View style={styles.iconPillContainer}>
-                  <LinearGradient colors={['#EF4444', '#DC2626']} style={styles.iconPill}>
-                    <View style={styles.iconPillInner}>
-                      <Icon name="database-remove-outline" size={20} color="#EF4444" />
-                    </View>
-                  </LinearGradient>
-                </View>
-                <View style={styles.cardTextCol}>
-                  <Text style={[styles.cardTitle, { color: colors.danger }]}>
-                    Réinitialiser la base
-                  </Text>
-                  <Text style={[styles.cardHint, { color: colors.textMuted }]}>Debug uniquement</Text>
-                </View>
-                <View style={[styles.chevronPill, { backgroundColor: isDark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.06)' }]}>
-                  <Icon name="chevron-right" size={18} color={colors.danger} />
-                </View>
-              </View>
-            </TouchableOpacity>
-          </View>
-        )}
-
         {/* ===== BOUTON DÉCONNEXION ===== */}
         <View collapsable={false}>
           <TouchableOpacity
@@ -1220,11 +1819,11 @@ export const SettingsScreen: React.FC = () => {
             <TouchableWithoutFeedback onPress={() => {}}>
               <View style={[styles.modalContainer, { backgroundColor: colors.surface }]}>
                 <LinearGradient
-                  colors={['#6366F1', '#4338CA']}
+                  colors={['#00A651', '#007A39']}
                   style={styles.modalIconGradient}
                 >
                   <View style={styles.modalIconInner}>
-                    <Icon name="fingerprint" size={28} color="#6366F1" />
+                    <Icon name="fingerprint" size={28} color="#007A39" />
                   </View>
                 </LinearGradient>
                 <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Activer la biométrie</Text>
@@ -1271,7 +1870,7 @@ export const SettingsScreen: React.FC = () => {
                     disabled={biometricLoading}
                   >
                     <LinearGradient
-                      colors={['#4338CA', '#6366F1']}
+                      colors={['#007A39', '#00A651']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles.modalBtnGradient}
@@ -1403,11 +2002,11 @@ export const SettingsScreen: React.FC = () => {
             <TouchableWithoutFeedback onPress={() => {}}>
               <View style={[styles.modalContainer, { backgroundColor: colors.surface }]}>
                 <LinearGradient
-                  colors={['#6366F1', '#4338CA']}
+                  colors={['#00A651', '#007A39']}
                   style={styles.modalIconGradient}
                 >
                   <View style={styles.modalIconInner}>
-                    <Icon name="logout" size={28} color="#6366F1" />
+                    <Icon name="logout" size={28} color="#007A39" />
                   </View>
                 </LinearGradient>
                 <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Se déconnecter ?</Text>
@@ -1434,7 +2033,7 @@ export const SettingsScreen: React.FC = () => {
                     activeOpacity={0.8}
                   >
                     <LinearGradient
-                      colors={['#4338CA', '#6366F1']}
+                      colors={['#007A39', '#00A651']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles.modalBtnGradient}
@@ -1529,14 +2128,14 @@ export const SettingsScreen: React.FC = () => {
 
                 {/* Hero header with gradient */}
                 <LinearGradient
-                  colors={['#6366F1', '#8B5CF6']}
+                  colors={['#00A651', '#007A39']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.siteModalHero}
                 >
                   <View style={styles.siteModalHeroIcon}>
                     <View style={styles.siteModalHeroIconInner}>
-                      <Icon name="map-marker-radius-outline" size={24} color="#6366F1" />
+                      <Icon name="map-marker-radius-outline" size={24} color="#007A39" />
                     </View>
                   </View>
                   <Text style={styles.siteModalHeroTitle}>Changer de site</Text>
@@ -1569,32 +2168,32 @@ export const SettingsScreen: React.FC = () => {
                           style={[
                             styles.siteCard,
                             { backgroundColor: colors.surfaceInput, borderColor: 'transparent' },
-                            isActive && { backgroundColor: '#6366F1' + '12', borderColor: '#6366F1' },
+                            isActive && { backgroundColor: '#007A39' + '12', borderColor: '#007A39' },
                           ]}
                           activeOpacity={0.7}
                           onPress={() => handleSelectSite(site.id as number)}
                         >
                           <LinearGradient
-                            colors={isActive ? ['#6366F1', '#8B5CF6'] : visual.gradient}
+                            colors={isActive ? ['#00A651', '#007A39'] : visual.gradient}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.siteCardIcon}
                           >
                             <View style={styles.siteCardIconInner}>
-                              <Icon name={visual.icon} size={18} color={isActive ? '#6366F1' : visual.gradient[0]} />
+                              <Icon name={visual.icon} size={18} color={isActive ? '#007A39' : visual.gradient[0]} />
                             </View>
                           </LinearGradient>
 
                           <View style={styles.siteCardInfo}>
-                            <Text style={[styles.siteCardName, { color: isActive ? '#6366F1' : colors.textPrimary }]}>{site.nom}</Text>
-                            <Text style={[styles.siteCardStatus, { color: isActive ? '#6366F1' : colors.textMuted }]}>
+                            <Text style={[styles.siteCardName, { color: isActive ? '#007A39' : colors.textPrimary }]}>{site.nom}</Text>
+                            <Text style={[styles.siteCardStatus, { color: isActive ? '#007A39' : colors.textMuted }]}>
                               {isActive ? 'Site actif' : 'Appuyez pour sélectionner'}
                             </Text>
                           </View>
 
                           {isActive ? (
                             <LinearGradient
-                              colors={['#6366F1', '#8B5CF6']}
+                            colors={['#00A651', '#007A39']}
                               style={styles.siteCheckBadge}
                             >
                               <Icon name="check" size={16} color="#FFF" />
@@ -1611,7 +2210,7 @@ export const SettingsScreen: React.FC = () => {
                 {/* Footer info */}
                 <View style={[styles.siteModalFooter, { backgroundColor: colors.surfaceInput }]}>
                   <View style={styles.siteFooterIconWrap}>
-                    <Icon name="information-outline" size={14} color="#6366F1" />
+                    <Icon name="information-outline" size={14} color="#007A39" />
                   </View>
                   <Text style={[styles.siteModalFooterText, { color: colors.textMuted }]}>
                     Le site sélectionné détermine le stock affiché
@@ -1732,11 +2331,11 @@ export const SettingsScreen: React.FC = () => {
             <TouchableWithoutFeedback onPress={() => {}}>
               <View style={[styles.modalContainer, styles.licenseModalContainer, { backgroundColor: colors.surface }]}>
                 <LinearGradient
-                  colors={['#4338CA', '#6366F1']}
+                  colors={['#007A39', '#00A651']}
                   style={styles.modalIconGradient}
                 >
                   <View style={styles.modalIconInner}>
-                    <Icon name="license" size={26} color="#4338CA" />
+                    <Icon name="license" size={26} color="#007A39" />
                   </View>
                 </LinearGradient>
                 <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Licence MIT</Text>
@@ -1769,7 +2368,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
                   activeOpacity={0.8}
                 >
                   <LinearGradient
-                    colors={['#4338CA', '#6366F1']}
+                    colors={['#007A39', '#00A651']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.licenseCloseBtnGradient}
@@ -2501,7 +3100,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -2528,7 +3127,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 8,
-    backgroundColor: '#6366F1' + '15',
+    backgroundColor: '#007A39' + '15',
     alignItems: 'center',
     justifyContent: 'center',
   },

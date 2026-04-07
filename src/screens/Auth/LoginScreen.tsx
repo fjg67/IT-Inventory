@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // LOGIN SCREEN — Light mode premium
 // IT-Inventory Application
 // Clean, airy, modern — soft depth & micro-interactions
@@ -498,7 +498,7 @@ export const LoginScreen: React.FC = () => {
             >
               {/* Left accent bar */}
               <LinearGradient
-                colors={['#6366F1', '#4338CA']}
+                colors={['#007A39', '#005C2B']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
                 style={[s.accentBar, { borderTopLeftRadius: sizes.cardRadius, borderBottomLeftRadius: sizes.cardRadius }]}
@@ -508,7 +508,7 @@ export const LoginScreen: React.FC = () => {
               <View style={s.secureHeader}>
                 <View style={s.secureIconShadow}>
                   <LinearGradient
-                    colors={['#6366F1', '#4338CA']}
+                    colors={['#007A39', '#005C2B']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={[
@@ -521,7 +521,7 @@ export const LoginScreen: React.FC = () => {
                     ]}
                   >
                     <View style={[s.secureIconInner, { borderRadius: sizes.secureIconRadius - 4 }]}>
-                      <Icon name="shield-check" size={sizes.shieldIconSize} color="#6366F1" />
+                      <Icon name="shield-check" size={sizes.shieldIconSize} color="#007A39" />
                     </View>
                   </LinearGradient>
                 </View>
@@ -614,7 +614,7 @@ export const LoginScreen: React.FC = () => {
                     success
                       ? ['#10B981', '#059669']
                       : isFormValid
-                        ? [colors.primaryDark, isDark ? '#3730A3' : '#4338CA']
+                        ? [colors.primaryDark, isDark ? '#005C2B' : '#005C2B']
                         : isDark ? [colors.surfaceElevated, colors.surfaceElevated] : ['#E2E8F0', '#E2E8F0']
                   }
                   start={{ x: 0, y: 0 }}
@@ -797,7 +797,7 @@ const s = StyleSheet.create({
     marginBottom: 20,
   },
   secureIconShadow: {
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 6,

@@ -224,59 +224,271 @@ export async function exportJournal(dateDebut?: Date): Promise<string> {
  * Export des données d'un article (fiche + historique mouvements) en CSV, enregistré sur le téléphone
  */
 export async function exportArticleDetail(article: Article, movements: Mouvement[], siteNom: string): Promise<string> {
-  const articleHeaders = [
-    'Référence', 'Nom', 'Description', 'Code famille', 'Famille', 'Type', 'Sous-type',
-    'Marque', 'Emplacement', 'Stock actuel', 'Stock minimum', 'Unité', 'Site',
-  ];
-  const articleRow = [
-    article.reference,
-    article.nom,
-    article.description ?? '',
-    article.codeFamille ?? '',
-    article.famille ?? '',
-    article.typeArticle ?? '',
-    article.sousType ?? '',
-    article.marque ?? '',
-    article.emplacement ?? '',
-    String(article.quantiteActuelle ?? 0),
-    String(article.stockMini),
-    article.unite,
-    siteNom,
-  ];
+  const currentStock = Number(article.quantiteActuelle ?? 0);
+  const minStock = Number(article.stockMini ?? 0);
+  const isLowStock = currentStock < minStock;
+  const generatedAt = new Date();
 
-  const mouvementHeaders = [
-    'Date', 'Type', 'Quantité', 'Stock avant', 'Stock après', 'Technicien', 'Commentaire',
-  ];
-  const mouvementRows = movements.map(m => {
+  const totalMouvements = movements.length;
+  const totalEntries = movements.filter(m => Number(m.quantite ?? 0) > 0).reduce((sum, m) => sum + Number(m.quantite ?? 0), 0);
+  const totalExits = movements.filter(m => Number(m.quantite ?? 0) < 0).reduce((sum, m) => sum + Math.abs(Number(m.quantite ?? 0)), 0);
+  const netFlow = totalEntries - totalExits;
+
+  const lines: string[] = [];
+  lines.push('\uFEFFIT-INVENTORY EXPORT ARTICLE PREMIUM');
+  lines.push('==============================');
+  lines.push(toCSVRow(['Export généré le', generatedAt.toLocaleString('fr-FR')]));
+  lines.push(toCSVRow(['Site', siteNom]));
+  lines.push(toCSVRow(['']));
+  lines.push('RESUME ARTICLE');
+  lines.push(toCSVRow(['Référence', 'Nom', 'Description', 'Code famille', 'Famille', 'Type', 'Sous-type', 'Marque', 'Emplacement', 'Unité']));
+  lines.push(
+    toCSVRow([
+      article.reference,
+      article.nom,
+      article.description ?? '',
+      article.codeFamille ?? '',
+      article.famille ?? '',
+      article.typeArticle ?? '',
+      article.sousType ?? '',
+      article.marque ?? '',
+      article.emplacement ?? '',
+      article.unite,
+    ]),
+  );
+  lines.push(toCSVRow(['']));
+  lines.push('INDICATEURS STOCK');
+  lines.push(toCSVRow(['Stock actuel', 'Stock minimum', 'État stock', 'Total mouvements', 'Entrées cumulées', 'Sorties cumulées', 'Flux net']));
+  lines.push(
+    toCSVRow([
+      currentStock,
+      minStock,
+      isLowStock ? 'Stock faible' : 'Stock correct',
+      totalMouvements,
+      totalEntries,
+      totalExits,
+      netFlow,
+    ]),
+  );
+  lines.push(toCSVRow(['']));
+  lines.push('HISTORIQUE COMPLET DES MOUVEMENTS');
+  lines.push(
+    toCSVRow([
+      '#',
+      'Date',
+      'Type',
+      'Quantité',
+      'Stock avant',
+      'Stock après',
+      'Technicien',
+      'Commentaire',
+    ]),
+  );
+
+  movements.forEach((m, index) => {
     const technicienStr = m.technicien
       ? `${m.technicien.prenom ?? ''} ${m.technicien.nom ?? ''}`.trim()
       : '';
-    const dateStr = m.dateMouvement instanceof Date
-      ? m.dateMouvement.toISOString()
-      : String(m.dateMouvement);
+    const rawDate = m.dateMouvement instanceof Date ? m.dateMouvement : new Date(String(m.dateMouvement));
+    const dateStr = Number.isNaN(rawDate.getTime()) ? String(m.dateMouvement) : rawDate.toLocaleString('fr-FR');
+    lines.push(
+      toCSVRow([
+        index + 1,
+        dateStr,
+        m.type,
+        m.quantite,
+        m.stockAvant,
+        m.stockApres,
+        technicienStr,
+        m.commentaire ?? '',
+      ]),
+    );
+  });
+
+  const csvContent = lines.join('\n');
+  const safeRef = (article.reference || 'article').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const filename = generateFilename(`article_premium_${safeRef}`);
+  const filepath = `${EXPORT_DIR}/${filename}`;
+  await RNFS.writeFile(filepath, csvContent, 'utf8');
+  return filepath;
+}
+
+/**
+ * Export analytique d'un article (format plat pour BI/Excel)
+ */
+export async function exportArticleDetailAnalytics(
+  article: Article,
+  movements: Mouvement[],
+  siteNom: string,
+): Promise<string> {
+  const currentStock = Number(article.quantiteActuelle ?? 0);
+  const minStock = Number(article.stockMini ?? 0);
+  const isLowStock = currentStock < minStock;
+  const generatedAt = new Date().toISOString();
+
+  const headers = [
+    'export_generated_at',
+    'site_name',
+    'article_id',
+    'article_reference',
+    'article_name',
+    'article_unit',
+    'article_current_stock',
+    'article_min_stock',
+    'article_is_low_stock',
+    'movement_index',
+    'movement_id',
+    'movement_date_iso',
+    'movement_type',
+    'movement_quantity',
+    'movement_stock_before',
+    'movement_stock_after',
+    'movement_technician_id',
+    'movement_technician_name',
+    'movement_comment',
+  ];
+
+  const rows = movements.map((m, index) => {
+    const dateIso =
+      m.dateMouvement instanceof Date
+        ? m.dateMouvement.toISOString()
+        : new Date(String(m.dateMouvement)).toISOString();
+    const technicienName = m.technicien
+      ? `${m.technicien.prenom ?? ''} ${m.technicien.nom ?? ''}`.trim()
+      : '';
+
     return [
-      dateStr,
+      generatedAt,
+      siteNom,
+      String(article.id ?? ''),
+      article.reference,
+      article.nom,
+      article.unite,
+      currentStock,
+      minStock,
+      isLowStock ? 1 : 0,
+      index + 1,
+      String(m.id ?? ''),
+      dateIso,
       m.type,
       m.quantite,
       m.stockAvant,
       m.stockApres,
-      technicienStr,
+      String(m.technicienId ?? ''),
+      technicienName,
       m.commentaire ?? '',
     ];
   });
 
+  // Conserver une ligne même sans mouvement, utile pour dashboards
+  if (rows.length === 0) {
+    rows.push([
+      generatedAt,
+      siteNom,
+      String(article.id ?? ''),
+      article.reference,
+      article.nom,
+      article.unite,
+      currentStock,
+      minStock,
+      isLowStock ? 1 : 0,
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ]);
+  }
+
+  const csvContent = ['\uFEFF' + toCSVRow(headers), ...rows.map(toCSVRow)].join('\n');
+  const safeRef = (article.reference || 'article').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const filename = generateFilename(`article_analytics_${safeRef}`);
+  const filepath = `${EXPORT_DIR}/${filename}`;
+  await RNFS.writeFile(filepath, csvContent, 'utf8');
+  return filepath;
+}
+
+/**
+ * Export comptable d'un article (entrées/sorties + totaux)
+ */
+export async function exportArticleDetailAccounting(
+  article: Article,
+  movements: Mouvement[],
+  siteNom: string,
+): Promise<string> {
+  const currentStock = Number(article.quantiteActuelle ?? 0);
+  const minStock = Number(article.stockMini ?? 0);
+  const generatedAt = new Date();
+
+  let totalEntrees = 0;
+  let totalSorties = 0;
+
+  const rows = movements.map((m, index) => {
+    const qty = Number(m.quantite ?? 0);
+    const entree = qty > 0 ? qty : 0;
+    const sortie = qty < 0 ? Math.abs(qty) : 0;
+    totalEntrees += entree;
+    totalSorties += sortie;
+
+    const rawDate = m.dateMouvement instanceof Date ? m.dateMouvement : new Date(String(m.dateMouvement));
+    const dateStr = Number.isNaN(rawDate.getTime()) ? String(m.dateMouvement) : rawDate.toLocaleString('fr-FR');
+    const techName = m.technicien ? `${m.technicien.prenom ?? ''} ${m.technicien.nom ?? ''}`.trim() : '';
+
+    return [
+      index + 1,
+      dateStr,
+      m.type,
+      entree,
+      sortie,
+      qty,
+      m.stockAvant,
+      m.stockApres,
+      techName,
+      m.commentaire ?? '',
+    ];
+  });
+
+  const fluxNet = totalEntrees - totalSorties;
+
   const lines: string[] = [];
-  lines.push('Informations article');
-  lines.push(toCSVRow(articleHeaders));
-  lines.push(toCSVRow(articleRow));
+  lines.push('\uFEFFIT-INVENTORY EXPORT COMPTABLE');
+  lines.push(toCSVRow(['Généré le', generatedAt.toLocaleString('fr-FR')]));
+  lines.push(toCSVRow(['Article', `${article.reference} - ${article.nom}`]));
+  lines.push(toCSVRow(['Site', siteNom]));
   lines.push('');
-  lines.push('Historique des mouvements');
-  lines.push(toCSVRow(mouvementHeaders));
-  mouvementRows.forEach(row => lines.push(toCSVRow(row)));
+  lines.push('SYNTHÈSE');
+  lines.push(toCSVRow(['Stock actuel', 'Stock minimum', 'Total entrées', 'Total sorties', 'Flux net']));
+  lines.push(toCSVRow([currentStock, minStock, totalEntrees, totalSorties, fluxNet]));
+  lines.push('');
+  lines.push('DÉTAIL MOUVEMENTS');
+  lines.push(
+    toCSVRow([
+      '#',
+      'Date',
+      'Type',
+      'Entrée',
+      'Sortie',
+      'Quantité signée',
+      'Stock avant',
+      'Stock après',
+      'Technicien',
+      'Commentaire',
+    ]),
+  );
+  rows.forEach((r) => lines.push(toCSVRow(r)));
+
+  if (rows.length === 0) {
+    lines.push(toCSVRow(['', '', '', 0, 0, 0, '', '', '', 'Aucun mouvement']));
+  }
 
   const csvContent = lines.join('\n');
   const safeRef = (article.reference || 'article').replace(/[^a-zA-Z0-9_-]/g, '_');
-  const filename = generateFilename(`article_${safeRef}`);
+  const filename = generateFilename(`article_comptable_${safeRef}`);
   const filepath = `${EXPORT_DIR}/${filename}`;
   await RNFS.writeFile(filepath, csvContent, 'utf8');
   return filepath;

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   View,
   Text,
@@ -25,7 +25,7 @@ interface StatConfig {
 const STAT_CONFIGS: Record<string, StatConfig> = {
   total: {
     icon: 'package-variant-closed',
-    gradient: ['#6366F1', '#4F46E5'],
+    gradient: ['#007A39', '#007A39'],
   },
   stockOK: {
     icon: 'check-circle-outline',
@@ -42,6 +42,8 @@ interface MiniStatProps {
   value: number;
   label: string;
   configKey: 'total' | 'stockOK' | 'alertes';
+  iconOverride?: string;
+  showcaseMode?: boolean;
   onPress?: () => void;
 }
 
@@ -49,6 +51,8 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
   value,
   label,
   configKey,
+  iconOverride,
+  showcaseMode = false,
   onPress,
 }) => {
   const { width } = useWindowDimensions();
@@ -59,7 +63,7 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
 
   return (
     <TouchableOpacity
-      style={miniStyles.wrapper}
+      style={[miniStyles.wrapper, showcaseMode && miniStyles.wrapperShowcase]}
       activeOpacity={0.7}
       onPress={() => {
         Vibration.vibrate(10);
@@ -68,11 +72,14 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
     >
       <View style={[
         miniStyles.card,
+        showcaseMode && miniStyles.cardShowcase,
         {
           backgroundColor: colors.surface,
           borderColor: isDark ? colors.borderSubtle : colors.borderMedium,
         },
       ]}>
+        {showcaseMode && <View style={miniStyles.showcaseOrb} />}
+
         {/* Left accent bar */}
         <LinearGradient
           colors={[...cfg.gradient]}
@@ -87,12 +94,16 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
             colors={[...cfg.gradient]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={[miniStyles.iconPill, tablet && miniStyles.iconPillTablet]}
+            style={[
+              miniStyles.iconPill,
+              tablet && miniStyles.iconPillTablet,
+              showcaseMode && miniStyles.iconPillShowcase,
+            ]}
           >
-            <View style={miniStyles.iconInner}>
+            <View style={[miniStyles.iconInner, showcaseMode && miniStyles.iconInnerShowcase]}>
               <Icon
-                name={cfg.icon}
-                size={tablet ? 14 : 12}
+                name={iconOverride ?? cfg.icon}
+                size={showcaseMode ? (tablet ? 18 : 16) : (tablet ? 14 : 12)}
                 color={accentColor}
               />
             </View>
@@ -103,7 +114,7 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
         <AnimatedCounter
           value={value}
           style={{
-            fontSize: tablet ? 30 : 24,
+            fontSize: showcaseMode ? (tablet ? 34 : 28) : (tablet ? 30 : 24),
             fontWeight: '900',
             color: colors.textPrimary,
             letterSpacing: -1,
@@ -114,6 +125,7 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
         <Text
           style={[
             miniStyles.label,
+            showcaseMode && miniStyles.labelShowcase,
             { color: colors.textMuted },
             tablet && { fontSize: 11 },
           ]}
@@ -130,6 +142,12 @@ const miniStyles = StyleSheet.create({
   wrapper: {
     flex: 1,
   },
+  wrapperShowcase: {
+    flex: 0,
+    width: '100%',
+    maxWidth: 340,
+    alignSelf: 'center',
+  },
   card: {
     alignItems: 'center',
     borderRadius: 18,
@@ -143,6 +161,25 @@ const miniStyles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+  },
+  cardShowcase: {
+    width: '100%',
+    minWidth: 220,
+    borderRadius: 20,
+    paddingTop: 16,
+    paddingBottom: 14,
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  showcaseOrb: {
+    position: 'absolute',
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    top: -30,
+    right: -24,
+    backgroundColor: 'rgba(0,122,57,0.08)',
   },
   accentBar: {
     position: 'absolute',
@@ -172,6 +209,11 @@ const miniStyles = StyleSheet.create({
     height: 38,
     borderRadius: 13,
   },
+  iconPillShowcase: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+  },
   iconInner: {
     width: 20,
     height: 20,
@@ -180,6 +222,11 @@ const miniStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconInnerShowcase: {
+    width: 24,
+    height: 24,
+    borderRadius: 9,
+  },
   label: {
     fontSize: 10,
     fontWeight: '700',
@@ -187,10 +234,15 @@ const miniStyles = StyleSheet.create({
     letterSpacing: 0.6,
     marginTop: 2,
   },
+  labelShowcase: {
+    letterSpacing: 0.9,
+  },
 });
 
 // ─── Main Header ───
 interface PremiumArticleHeaderProps {
+  title?: string;
+  statsMode?: 'full' | 'totalOnly';
   totalArticles: number;
   stockOK: number;
   alertes: number;
@@ -202,6 +254,8 @@ interface PremiumArticleHeaderProps {
 }
 
 const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
+  title = 'Articles',
+  statsMode = 'full',
   totalArticles,
   stockOK,
   alertes,
@@ -225,7 +279,7 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
     ]}>
       {/* Left accent bar */}
       <LinearGradient
-        colors={['#6366F1', '#4338CA']}
+        colors={['#007A39', '#005C2B']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={styles.accentBar}
@@ -244,9 +298,9 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
           >
             <View style={[
               styles.backButtonInner,
-              { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.08)' },
+              { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(0,122,57,0.08)' },
             ]}>
-              <Icon name="arrow-left" size={tablet ? 22 : 18} color="#6366F1" />
+              <Icon name="arrow-left" size={tablet ? 22 : 18} color="#007A39" />
             </View>
           </TouchableOpacity>
         ) : (
@@ -257,45 +311,70 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
           <View style={styles.titleRow}>
             <View style={[styles.titleIconShadow]}>
               <LinearGradient
-                colors={['#6366F1', '#4338CA']}
+                colors={['#007A39', '#005C2B']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.titleIconPill}
               >
                 <View style={styles.titleIconInner}>
-                  <Icon name="cube-outline" size={tablet ? 16 : 14} color="#6366F1" />
+                  <Icon
+                    name={statsMode === 'totalOnly' ? 'tablet-cellphone' : 'cube-outline'}
+                    size={tablet ? 16 : 14}
+                    color="#007A39"
+                  />
                 </View>
               </LinearGradient>
             </View>
             <Text style={[styles.title, { color: colors.textPrimary }, tablet && { fontSize: 26 }]}>
-              Articles
+              {title}
             </Text>
           </View>
+          {statsMode === 'totalOnly' && (
+            <LinearGradient
+              colors={isDark ? ['rgba(0,122,57,0.25)', 'rgba(5,150,105,0.22)'] : ['#E8F8F0', '#DDF5E8']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.tabletteTagPill}
+            >
+              <View style={styles.tabletteTagDot} />
+              <Text style={styles.tabletteTagText}>PARC TABLETTE</Text>
+            </LinearGradient>
+          )}
         </View>
 
         <View style={styles.spacer} />
       </View>
 
       {/* Mini Stats */}
-      <View style={[styles.statsRow, tablet && { gap: premiumSpacing.md }]}>
+      <View style={[
+        styles.statsRow,
+        tablet && { gap: premiumSpacing.md },
+        statsMode === 'totalOnly' && styles.statsRowSingle,
+      ]}>
         <MiniStatCard
           value={totalArticles}
-          label="Total"
+          label={statsMode === 'totalOnly' ? 'Tablettes' : 'Total'}
           configKey="total"
+          iconOverride={statsMode === 'totalOnly' ? 'tablet-cellphone' : undefined}
+          showcaseMode={statsMode === 'totalOnly'}
           onPress={onTotalPress}
         />
-        <MiniStatCard
-          value={stockOK}
-          label="Stock OK"
-          configKey="stockOK"
-          onPress={onStockOKPress}
-        />
-        <MiniStatCard
-          value={alertes}
-          label="Alertes"
-          configKey="alertes"
-          onPress={onAlertesPress}
-        />
+        {statsMode === 'full' && (
+          <>
+            <MiniStatCard
+              value={stockOK}
+              label="Stock OK"
+              configKey="stockOK"
+              onPress={onStockOKPress}
+            />
+            <MiniStatCard
+              value={alertes}
+              label="Alertes"
+              configKey="alertes"
+              onPress={onAlertesPress}
+            />
+          </>
+        )}
       </View>
     </View>
   );
@@ -309,7 +388,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 18,
     paddingLeft: 22,
-    overflow: 'hidden',
+    overflow: 'visible',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -349,6 +428,7 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     alignItems: 'center',
+    gap: 8,
   },
   titleRow: {
     flexDirection: 'row',
@@ -356,7 +436,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   titleIconShadow: {
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -382,9 +462,37 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: -0.5,
   },
+  tabletteTagPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0,122,57,0.2)',
+  },
+  tabletteTagDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#059669',
+  },
+  tabletteTagText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: '#007A39',
+  },
   statsRow: {
     flexDirection: 'row',
     gap: premiumSpacing.sm + 2,
+  },
+  statsRowSingle: {
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: premiumSpacing.xs,
   },
 });
 

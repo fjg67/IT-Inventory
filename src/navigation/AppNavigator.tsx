@@ -12,10 +12,12 @@ import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 
 import { useAppSelector, useAppDispatch } from '@/store';
 import { loadStoredAuth, loadTechniciens, setRedirectToTechnicianChoiceAfterLogout } from '@/store/slices/authSlice';
-import { loadSites, loadStoredSite } from '@/store/slices/siteSlice';
+import { loadSites, loadStoredSite, loadSiblingSites } from '@/store/slices/siteSlice';
 import { setNetworkState, setSupabaseReachable } from '@/store/slices/networkSlice';
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { preferencesService } from '@/services/preferencesService';
+import { movementRealtimeNotificationService } from '@/services/movementRealtimeNotificationService';
+import { pushNotificationsService } from '@/services/pushNotificationsService';
 
 import { FullScreenLoading, NoConnectionScreen } from '@/components';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
@@ -71,10 +73,27 @@ const TabIcon: React.FC<{ focused: boolean; emoji: string; label: string }> = ({
   </View>
 );
 
-// Articles Navigator
+// Articles Navigator - Standard (Articles, Kits, etc)
 const ArticlesNavigator: React.FC = () => (
   <ArticlesStack.Navigator screenOptions={{ headerShown: false }}>
     <ArticlesStack.Screen name="ArticlesList" component={ArticlesListScreen} />
+    <ArticlesStack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
+    <ArticlesStack.Screen name="ArticleEdit" component={ArticleEditScreen} />
+    <ArticlesStack.Screen name="Kit" component={KitScreen} />
+  </ArticlesStack.Navigator>
+);
+
+// Articles Navigator - Tablette Mode (with locked Tablette type)
+const TablettesNavigator: React.FC = () => (
+  <ArticlesStack.Navigator screenOptions={{ headerShown: false }}>
+    <ArticlesStack.Screen 
+      name="ArticlesList" 
+      component={ArticlesListScreen}
+      initialParams={{
+        presetTypeArticle: 'Tablette',
+        lockPresetTypeArticle: true,
+      }}
+    />
     <ArticlesStack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
     <ArticlesStack.Screen name="ArticleEdit" component={ArticleEditScreen} />
     <ArticlesStack.Screen name="Kit" component={KitScreen} />
@@ -121,61 +140,98 @@ const SettingsIcon = ({ focused }: { focused: boolean }) => (
   <TabIcon focused={focused} emoji="⚙️" label="Paramètres" />
 );
 
-// Main Tab Navigator
-const MainNavigator: React.FC = () => (
-  <MainTab.Navigator
-    tabBar={(props) => <PremiumTabBar {...props} />}
-    screenOptions={{
-      headerShown: false,
-    }}
-  >
-    <MainTab.Screen
-      name="Dashboard"
-      component={DashboardScreen}
-      options={{
-        tabBarIcon: DashboardIcon,
-        tabBarLabel: () => null,
-      }}
-    />
-    <MainTab.Screen
-      name="Articles"
-      component={ArticlesNavigator}
-      options={{
-        tabBarIcon: ArticlesIcon,
-        tabBarLabel: () => null,
-      }}
-    />
-    <MainTab.Screen
-      name="Scan"
-      component={ScanMouvementScreen}
-      options={{
-        tabBarIcon: ScanIcon,
-        tabBarLabel: () => null,
-      }}
-    />
-    <MainTab.Screen
-      name="Mouvements"
-      component={MouvementsNavigator}
-      options={{
-        tabBarIcon: MouvementsIcon,
-        tabBarLabel: () => null,
-      }}
-    />
-    <MainTab.Screen
-      name="Settings"
-      component={SettingsNavigator}
-      options={{
-        tabBarIcon: SettingsIcon,
-        tabBarLabel: () => null,
-      }}
-    />
-  </MainTab.Navigator>
+const TabletteIcon = ({ focused }: { focused: boolean }) => (
+  <TabIcon focused={focused} emoji="📱" label="Tablette" />
 );
+
+// Main Tab Navigator
+const MainNavigator: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const siteActif = useAppSelector((state) => state.site.siteActif);
+  const childSites = useAppSelector((state) => state.site.childSites);
+
+  useEffect(() => {
+    if (siteActif?.id != null) {
+      dispatch(loadSiblingSites(siteActif.id));
+    }
+  }, [dispatch, siteActif?.id]);
+
+  const isStrasbourgGeneral = React.useMemo(() => {
+    const siteName = (siteActif?.nom ?? '').toLowerCase();
+    const isNamedStrasbourg =
+      siteName.includes('strasbourg') || siteName.includes('siège') || siteName.includes('siege');
+
+    // Les sites Strasbourg sont gérés en groupe (site parent + sous-sites).
+    return isNamedStrasbourg || childSites.length > 0;
+  }, [siteActif?.nom, childSites.length]);
+
+  return (
+    <MainTab.Navigator
+      tabBar={(props) => <PremiumTabBar {...props} />}
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <MainTab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{
+          tabBarIcon: DashboardIcon,
+          tabBarLabel: () => null,
+        }}
+      />
+      <MainTab.Screen
+        name="Articles"
+        component={ArticlesNavigator}
+        options={{
+          tabBarIcon: ArticlesIcon,
+          tabBarLabel: () => null,
+        }}
+      />
+
+      {isStrasbourgGeneral && (
+        <MainTab.Screen
+          name="Tablette"
+          component={TablettesNavigator}
+          options={{
+            tabBarIcon: TabletteIcon,
+            tabBarLabel: () => null,
+          }}
+        />
+      )}
+
+      <MainTab.Screen
+        name="Scan"
+        component={ScanMouvementScreen}
+        options={{
+          tabBarIcon: ScanIcon,
+          tabBarLabel: () => null,
+        }}
+      />
+      <MainTab.Screen
+        name="Mouvements"
+        component={MouvementsNavigator}
+        options={{
+          tabBarIcon: MouvementsIcon,
+          tabBarLabel: () => null,
+        }}
+      />
+      <MainTab.Screen
+        name="Settings"
+        component={SettingsNavigator}
+        options={{
+          tabBarIcon: SettingsIcon,
+          tabBarLabel: () => null,
+        }}
+      />
+    </MainTab.Navigator>
+  );
+};
 
 // App Navigator
 export const AppNavigator: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated, isLoading: authLoading, redirectToTechnicianChoiceAfterLogout } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, isLoading: authLoading, redirectToTechnicianChoiceAfterLogout, currentTechnicien } = useAppSelector((state) => state.auth);
   const { isConnected, isInternetReachable } = useAppSelector((state) => state.network);
 
   const [isInitializing, setIsInitializing] = React.useState(true);
@@ -256,6 +312,33 @@ export const AppNavigator: React.FC = () => {
     initializeApp().catch(console.error);
   }, [dispatch]);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      movementRealtimeNotificationService.start();
+    } else {
+      movementRealtimeNotificationService.stop();
+    }
+
+    return () => {
+      movementRealtimeNotificationService.stop();
+    };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      pushNotificationsService.stop();
+      return;
+    }
+
+    pushNotificationsService.start(currentTechnicien?.id != null ? String(currentTechnicien.id) : undefined).catch((error) => {
+      console.warn('[AppNavigator] pushNotificationsService.start error:', error);
+    });
+
+    return () => {
+      pushNotificationsService.stop();
+    };
+  }, [isAuthenticated, currentTechnicien?.id]);
+
   // Réinitialiser le flag "après déconnexion" une fois l'écran Auth affiché (pour que le prochain lancement affiche Login)
   useEffect(() => {
     if (!isAuthenticated && redirectToTechnicianChoiceAfterLogout) {
@@ -286,7 +369,16 @@ export const AppNavigator: React.FC = () => {
   };
 
   if (isInitializing) {
-    return <FullScreenLoading message="Chargement de l'application..." />;
+    return (
+      <FullScreenLoading
+        messages={[
+          "Restauration de votre session...",
+          'Chargement des sites et du stock...',
+          'Sécurisation de votre espace...',
+          "Finalisation de l'environnement...",
+        ]}
+      />
+    );
   }
 
   // Version trop ancienne → écran de mise à jour obligatoire

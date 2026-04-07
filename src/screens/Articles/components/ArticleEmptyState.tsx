@@ -24,6 +24,7 @@ interface ArticleEmptyStateProps {
   type: EmptyType;
   searchQuery?: string;
   onAction?: () => void;
+  mode?: 'articles' | 'tablettes';
 }
 
 const EMPTY_CONFIGS: Record<EmptyType, {
@@ -60,16 +61,38 @@ const ArticleEmptyState: React.FC<ArticleEmptyStateProps> = ({
   type,
   searchQuery = '',
   onAction,
+  mode = 'articles',
 }) => {
-  const config = EMPTY_CONFIGS[type];
+  const baseConfig = EMPTY_CONFIGS[type];
 
   const { colors, theme: { gradients } } = useTheme();
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
 
-  const subtitle = typeof config.subtitle === 'function'
-    ? config.subtitle(searchQuery)
-    : config.subtitle;
+  const tabletConfig = {
+    'no-articles': {
+      title: 'Aucune tablette trouvée',
+      subtitle: 'La liste des tablettes est vide\nAjoutez votre première tablette',
+      actionLabel: 'Ajouter une tablette',
+    },
+    'no-results': {
+      title: 'Aucun résultat',
+      subtitle: `Aucune tablette ne correspond à « ${searchQuery} »`,
+      actionLabel: 'Effacer la recherche',
+    },
+    'no-filters': {
+      title: 'Aucune tablette avec ces filtres',
+      subtitle: 'Essayez de modifier vos critères de recherche',
+      actionLabel: 'Réinitialiser les filtres',
+    },
+  } as const;
+
+  const title = mode === 'tablettes' ? tabletConfig[type].title : baseConfig.title;
+  const subtitle = mode === 'tablettes'
+    ? tabletConfig[type].subtitle
+    : (typeof baseConfig.subtitle === 'function' ? baseConfig.subtitle(searchQuery) : baseConfig.subtitle);
+  const actionLabel = mode === 'tablettes' ? tabletConfig[type].actionLabel : baseConfig.actionLabel;
+  const displayIcon = mode === 'tablettes' ? 'tablet-cellphone' : baseConfig.icon;
 
   // Animation flottante de l'icône
   const floatY = useSharedValue(0);
@@ -94,12 +117,12 @@ const ArticleEmptyState: React.FC<ArticleEmptyStateProps> = ({
       {/* Icône flottante */}
       <Animated.View style={[styles.iconWrapper, floatStyle]}>
         <View style={[styles.iconCircle, { backgroundColor: colors.primary + '10' }, tablet && { width: 140, height: 140, borderRadius: 70 }]}>
-          <Icon name={config.icon} size={tablet ? 72 : 56} color={colors.primary} />
+          <Icon name={displayIcon} size={tablet ? 72 : 56} color={colors.primary} />
         </View>
       </Animated.View>
 
       {/* Textes */}
-      <Text style={[styles.title, { color: colors.textPrimary }, tablet && { fontSize: 26 }]}>{config.title}</Text>
+      <Text style={[styles.title, { color: colors.textPrimary }, tablet && { fontSize: 26 }]}>{title}</Text>
       <Text style={[styles.subtitle, { color: colors.textSecondary }, tablet && { fontSize: 17, lineHeight: 26 }]}>{subtitle}</Text>
 
       {/* Bouton CTA */}
@@ -118,8 +141,8 @@ const ArticleEmptyState: React.FC<ArticleEmptyStateProps> = ({
             end={{ x: 1, y: 1 }}
             style={styles.cta}
           >
-            <Icon name={config.actionIcon} size={tablet ? 24 : 20} color="#FFF" />
-            <Text style={[styles.ctaText, tablet && { fontSize: 17 }]}>{config.actionLabel}</Text>
+            <Icon name={baseConfig.actionIcon} size={tablet ? 24 : 20} color="#FFF" />
+            <Text style={[styles.ctaText, tablet && { fontSize: 17 }]}>{actionLabel}</Text>
           </LinearGradient>
         </TouchableOpacity>
       )}

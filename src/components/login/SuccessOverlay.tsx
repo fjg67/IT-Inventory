@@ -31,8 +31,8 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 const { width: SW, height: SH } = Dimensions.get('window');
 
 // ===== PALETTE — Light =====
-const INDIGO = '#4F46E5';
-const VIOLET = '#7C3AED';
+const INDIGO = '#007A39';
+const VIOLET = '#005C2B';
 const BLUE = '#3B82F6';
 const CYAN = '#06B6D4';
 const EMERALD = '#10B981';
@@ -461,7 +461,7 @@ export const SuccessOverlay: React.FC<SuccessOverlayProps> = ({
           {/* Icon — shield → check */}
           <Animated.View style={[styles.iconContainer, iconContainerStyle]}>
             <LinearGradient
-              colors={['#4F46E5', '#6366F1', '#818CF8']}
+              colors={['#005C2B', '#007A39', '#4EB35A']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.iconGradient}
@@ -493,7 +493,7 @@ export const SuccessOverlay: React.FC<SuccessOverlayProps> = ({
           {/* User badge */}
           <Animated.View style={userStyle}>
             <View style={styles.userBadge}>
-              <Icon name="account-circle-outline" size={18} color="#4F46E5" />
+              <Icon name="account-circle-outline" size={18} color="#007A39" />
               <Text style={styles.userText}>{userName}</Text>
             </View>
           </Animated.View>
@@ -530,8 +530,8 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75,
-    backgroundColor: '#EEF2FF',
-    shadowColor: '#4F46E5',
+    backgroundColor: '#E8F5E9',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 50,
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: 28,
-    shadowColor: '#4F46E5',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.3,
     shadowRadius: 28,
@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
   subtitleText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#4F46E5',
+    color: '#007A39',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
     marginBottom: 14,
@@ -581,24 +581,24 @@ const styles = StyleSheet.create({
   divider: {
     height: 2,
     borderRadius: 1,
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#C8E6C9',
     marginBottom: 18,
   },
   userBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#E8F5E9',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#E0E7FF',
+    borderColor: '#C8E6C9',
     gap: 8,
   },
   userText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#4F46E5',
+    color: '#007A39',
     letterSpacing: 0.3,
   },
 });

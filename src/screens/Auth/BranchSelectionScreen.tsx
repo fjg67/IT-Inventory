@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // BRANCH SELECTION SCREEN - IT-Inventory
 // Choose between Siège Strasbourg and Agences
 // ============================================
@@ -158,7 +158,7 @@ export const BranchSelectionScreen: React.FC = () => {
 
         <Animated.View entering={ZoomIn.delay(800).duration(400)}>
           <LinearGradient
-            colors={['transparent', isDark ? 'rgba(99,102,241,0.15)' : '#C7D2FE', 'transparent']}
+            colors={['transparent', isDark ? 'rgba(0,122,57,0.15)' : '#B2DFDB', 'transparent']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.separator}
@@ -169,13 +169,13 @@ export const BranchSelectionScreen: React.FC = () => {
       {/* Instruction */}
       <Animated.View entering={FadeIn.delay(900).duration(400)} style={styles.instructionWrap}>
         <Animated.View style={pinStyle}>
-          <Icon name="domain" size={16} color={isDark ? '#818CF8' : '#6366F1'} />
+          <Icon name="domain" size={16} color={isDark ? '#4EB35A' : '#007A39'} />
         </Animated.View>
         <Text style={[styles.instruction, { color: colors.textSecondary }]}>
           Sélectionnez votre espace de travail
         </Text>
         <Animated.View style={pinStyle}>
-          <Icon name="domain" size={16} color={isDark ? '#818CF8' : '#6366F1'} />
+          <Icon name="domain" size={16} color={isDark ? '#4EB35A' : '#007A39'} />
         </Animated.View>
       </Animated.View>
 
@@ -228,7 +228,7 @@ export const BranchSelectionScreen: React.FC = () => {
               <View
                 style={[
                   styles.branchChevronBg,
-                  { backgroundColor: isDark ? 'rgba(99,102,241,0.1)' : '#F0F4FF' },
+                  { backgroundColor: isDark ? 'rgba(0,122,57,0.1)' : '#F1F8E9' },
                 ]}
               >
                 <Icon name="chevron-right" size={20} color={branch.gradient[0]} />

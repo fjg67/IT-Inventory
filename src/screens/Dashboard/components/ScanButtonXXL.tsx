@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+﻿import React, { useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -93,7 +93,7 @@ const ScanButtonXXL: React.FC<ScanButtonXXLProps> = ({ onPress }) => {
           <Animated.View style={[styles.outerGlow, glowStyle]} />
 
           <LinearGradient
-            colors={['#4338CA', '#6366F1', '#818CF8']}
+            colors={['#005C2B', '#007A39', '#4EB35A']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.container}
@@ -139,7 +139,7 @@ const ScanButtonXXL: React.FC<ScanButtonXXLProps> = ({ onPress }) => {
 
             {/* Right arrow */}
             <View style={styles.arrowCircle}>
-              <Icon name="chevron-right" size={20} color="#6366F1" />
+              <Icon name="chevron-right" size={20} color="#007A39" />
             </View>
           </LinearGradient>
         </View>
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     right: 8,
     bottom: -4,
     borderRadius: 24,
-    backgroundColor: '#6366F1',
+    backgroundColor: '#007A39',
   },
   container: {
     flexDirection: 'row',

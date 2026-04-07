@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // DASHBOARD SCREEN - Premium Redesign
 // GestStock IT - Interface Premium
 // ============================================
@@ -213,7 +213,7 @@ export const DashboardScreen: React.FC = () => {
                 styles.subSiteTab,
                 { borderColor: isDark ? colors.borderSubtle : '#E2E8F0' },
                 selectedSubSiteId === null && {
-                  backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
+                  backgroundColor: isDark ? 'rgba(0,122,57,0.15)' : '#E8F5E9',
                   borderColor: colors.primary,
                 },
               ]}
@@ -245,7 +245,7 @@ export const DashboardScreen: React.FC = () => {
                     styles.subSiteTab,
                     { borderColor: isDark ? colors.borderSubtle : '#E2E8F0' },
                     isSelected && {
-                      backgroundColor: isDark ? 'rgba(99,102,241,0.15)' : '#EEF2FF',
+                      backgroundColor: isDark ? 'rgba(0,122,57,0.15)' : '#E8F5E9',
                       borderColor: colors.primary,
                     },
                   ]}
@@ -339,7 +339,7 @@ export const DashboardScreen: React.FC = () => {
         <View
           style={styles.actionsSection}
         >
-          <SectionHeader title="Actions rapides" accentColor="#6366F1" />
+          <SectionHeader title="Actions rapides" accentColor="#007A39" />
           <View style={[styles.actionsRow, isTablet && styles.actionsRowTablet]}>
             {!isSuperviseur && (
               <QuickActionButton
@@ -376,7 +376,7 @@ export const DashboardScreen: React.FC = () => {
             {!isSuperviseur && (
               <QuickActionButton
                 icon="swap-horizontal"
-                iconGradient={['#3B82F6', '#6366F1']}
+                iconGradient={['#00A651', '#007A39']}
                 label="Transfert"
                 onPress={() => navigation.navigate('Mouvements', { screen: 'TransfertForm' })}
               />
@@ -392,7 +392,7 @@ export const DashboardScreen: React.FC = () => {
             title="Derniers mouvements"
             actionLabel="Voir tout"
             onActionPress={() => navigation.navigate('Mouvements')}
-            accentColor="#4338CA"
+            accentColor="#005C2B"
           />
 
           {loading ? (
@@ -446,7 +446,7 @@ export const DashboardScreen: React.FC = () => {
 
                 {/* Hero header */}
                 <LinearGradient
-                  colors={['#6366F1', '#8B5CF6']}
+                  colors={['#00A651', '#007A39']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.siteModalHero}
@@ -475,7 +475,7 @@ export const DashboardScreen: React.FC = () => {
                   {(childSites.length > 0 ? childSites : sitesDisponibles).map((site, index) => {
                     const isActive = siteActif?.id === site.id;
                     const siteIcons: Record<string, { icon: string; colors: [string, string] }> = {
-                      'Stock 5ème': { icon: 'archive-outline', colors: ['#6366F1', '#4F46E5'] },
+                      'Stock 5ème': { icon: 'archive-outline', colors: ['#00A651', '#007A39'] },
                       'Stock 8ème': { icon: 'archive-outline', colors: ['#F59E0B', '#D97706'] },
                       'Epinal': { icon: 'pine-tree', colors: ['#10B981', '#059669'] },
                       'TCS': { icon: 'tools', colors: ['#EF4444', '#DC2626'] },
@@ -491,13 +491,13 @@ export const DashboardScreen: React.FC = () => {
                           style={[
                             styles.siteCard,
                             { backgroundColor: colors.surfaceInput, borderColor: 'transparent' },
-                            isActive && { backgroundColor: '#6366F1' + '12', borderColor: '#6366F1' },
+                            isActive && { backgroundColor: '#007A39' + '12', borderColor: '#007A39' },
                           ]}
                           activeOpacity={0.7}
                           onPress={() => handleSelectSite(site.id as number)}
                         >
                           <LinearGradient
-                            colors={isActive ? ['#6366F1', '#8B5CF6'] : cfg.colors}
+                            colors={isActive ? ['#00A651', '#007A39'] : cfg.colors}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.siteIcon}
@@ -506,17 +506,17 @@ export const DashboardScreen: React.FC = () => {
                           </LinearGradient>
 
                           <View style={styles.siteInfo}>
-                            <Text style={[styles.siteName, { color: isActive ? '#6366F1' : colors.textPrimary }]}>
+                            <Text style={[styles.siteName, { color: isActive ? '#007A39' : colors.textPrimary }]}>
                               {site.nom}
                             </Text>
-                            <Text style={[styles.siteStatus, { color: isActive ? '#6366F1' : colors.textMuted }]}>
+                            <Text style={[styles.siteStatus, { color: isActive ? '#007A39' : colors.textMuted }]}>
                               {isActive ? 'Site actif' : 'Appuyez pour sélectionner'}
                             </Text>
                           </View>
 
                           {isActive ? (
                             <LinearGradient
-                              colors={['#6366F1', '#8B5CF6']}
+                              colors={['#00A651', '#007A39']}
                               style={styles.siteCheckBadge}
                             >
                               <Icon name="check" size={16} color="#FFF" />
@@ -533,7 +533,7 @@ export const DashboardScreen: React.FC = () => {
                 {/* Footer info */}
                 <View style={[styles.siteModalFooter, { backgroundColor: colors.surfaceInput }]}>
                   <View style={styles.siteFooterIconWrap}>
-                    <Icon name="information-outline" size={14} color="#6366F1" />
+                    <Icon name="information-outline" size={14} color="#007A39" />
                   </View>
                   <Text style={[styles.siteModalFooterText, { color: colors.textMuted }]}>
                     Le site sélectionné détermine le stock affiché
@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -761,7 +761,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 8,
-    backgroundColor: '#6366F1' + '15',
+    backgroundColor: '#007A39' + '15',
     alignItems: 'center',
     justifyContent: 'center',
   },

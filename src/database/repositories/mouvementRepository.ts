@@ -15,6 +15,7 @@ import {
 import { APP_CONFIG, ERROR_MESSAGES } from '@/constants';
 import { stockRepository } from './stockRepository';
 import { getEffectiveSiteIds } from './siteRepository';
+import { movementPushDispatchService } from '@/services/movementPushDispatchService';
 
 /** Generate a simple UUID v4 (text) for StockMovement rows */
 function generateId(): string {
@@ -45,6 +46,14 @@ interface MouvementRow {
   User?: { name: string } | null;
   FromSite?: { name: string } | null;
   ToSite?: { name: string } | null;
+}
+
+export interface MouvementStats {
+  total: number;
+  entrees: number;
+  sorties: number;
+  ajustements: number;
+  transferts: number;
 }
 
 // Mapping DB types (ENTRY/EXIT/ADJUSTMENT/TRANSFER) <-> App types (entree/sortie/ajustement/transfert_*)
@@ -385,6 +394,66 @@ export const mouvementRepository = {
     return count ?? 0;
   },
 
+  async getStats(siteId?: string | number): Promise<MouvementStats> {
+    try {
+      const supabase = getSupabaseClient();
+      const siteIds = siteId != null ? await getEffectiveSiteIds(siteId) : null;
+
+      let query = supabase
+        .from(tables.mouvements)
+        .select('type');
+
+      if (siteIds) {
+        query = query.in('fromSiteId', siteIds);
+      }
+
+      const { data, error } = await query;
+      if (error) throw new Error(error.message);
+
+      let entrees = 0;
+      let sorties = 0;
+      let ajustements = 0;
+      let transferts = 0;
+
+      for (const row of data ?? []) {
+        const normalized = String((row as any).type ?? '').toUpperCase();
+        if (normalized === 'ENTRY' || normalized === 'ENTREE') {
+          entrees += 1;
+        } else if (normalized === 'EXIT' || normalized === 'SORTIE') {
+          sorties += 1;
+        } else if (normalized === 'ADJUSTMENT' || normalized === 'AJUSTEMENT') {
+          ajustements += 1;
+        } else if (
+          normalized === 'TRANSFER' ||
+          normalized === 'TRANSFERT' ||
+          normalized === 'TRANSFERT_DEPART' ||
+          normalized === 'TRANSFERT_ARRIVEE'
+        ) {
+          transferts += 1;
+        }
+      }
+
+      const total = (data ?? []).length;
+
+      return {
+        total,
+        entrees,
+        sorties,
+        ajustements,
+        transferts,
+      };
+    } catch (error) {
+      console.warn('[mouvementRepository] getStats failed:', error);
+      return {
+        total: 0,
+        entrees: 0,
+        sorties: 0,
+        ajustements: 0,
+        transferts: 0,
+      };
+    }
+  },
+
   async create(data: MouvementStockForm, technicienId: string | number): Promise<string> {
     let stockActuel = await stockRepository.getQuantite(data.articleId, data.siteId);
     if (stockActuel === null) {
@@ -416,6 +485,12 @@ export const mouvementRepository = {
     if (errInsert) throw new Error(errInsert.message);
 
     await stockRepository.updateQuantite(data.articleId, data.siteId, nouveauStock);
+    movementPushDispatchService.dispatchMovementCreated({
+      movementId: inserted?.id ?? newId,
+      senderUserId: String(technicienId),
+    }).catch((error) => {
+      console.warn('[mouvementRepository] push dispatch createInOut failed:', error);
+    });
     return inserted?.id ?? '';
   },
 
@@ -433,9 +508,11 @@ export const mouvementRepository = {
     const nouveauStockArrivee = stockArrivee + data.quantite;
 
     const supabase = getSupabaseClient();
+    const transferOutId = generateId();
+    const transferInId = generateId();
     await supabase.from(tables.mouvements).insert([
       {
-        id: generateId(),
+        id: transferOutId,
         articleId: data.articleId,
         fromSiteId: data.siteDepartId,
         type: 'TRANSFER',
@@ -445,7 +522,7 @@ export const mouvementRepository = {
         reason: data.commentaire ?? null,
       },
       {
-        id: generateId(),
+        id: transferInId,
         articleId: data.articleId,
         fromSiteId: data.siteArriveeId,
         type: 'TRANSFER',
@@ -456,6 +533,18 @@ export const mouvementRepository = {
     ]);
     await stockRepository.updateQuantite(data.articleId, data.siteDepartId, nouveauStockDepart);
     await stockRepository.updateQuantite(data.articleId, data.siteArriveeId, nouveauStockArrivee);
+    movementPushDispatchService.dispatchMovementCreated({
+      movementId: transferOutId,
+      senderUserId: String(technicienId),
+    }).catch((error) => {
+      console.warn('[mouvementRepository] push dispatch transferOut failed:', error);
+    });
+    movementPushDispatchService.dispatchMovementCreated({
+      movementId: transferInId,
+      senderUserId: String(technicienId),
+    }).catch((error) => {
+      console.warn('[mouvementRepository] push dispatch transferIn failed:', error);
+    });
   },
 
   async findByPeriod(

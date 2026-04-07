@@ -29,6 +29,8 @@ export const SORT_LABELS: Record<SortOption, string> = {
 interface FiltersPanelProps {
   sortBy: SortOption;
   showStockFaible: boolean;
+  showStockFaibleChip?: boolean;
+  filtersLabel?: string;
   hasActiveFilters: boolean;
   activeFiltersCount?: number;
   onSortPress: () => void;
@@ -40,6 +42,8 @@ interface FiltersPanelProps {
 const FiltersPanel: React.FC<FiltersPanelProps> = ({
   sortBy,
   showStockFaible,
+  showStockFaibleChip = true,
+  filtersLabel = 'Filtres',
   hasActiveFilters,
   activeFiltersCount = 0,
   onSortPress,
@@ -134,7 +138,7 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
               ]}
               numberOfLines={1}
             >
-              Filtres
+              {filtersLabel}
             </Text>
             {activeFiltersCount > 0 ? (
               <View style={[styles.filterCountBadge, { backgroundColor: colors.primary }]}>
@@ -149,55 +153,57 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
 
       {/* Row 2: Chips + Reset */}
       <View style={styles.chipsRow}>
-        <Animated.View style={chipAnimStyle}>
-          <TouchableOpacity
-            style={[
-              styles.chip,
-              showStockFaible
-                ? {
-                    backgroundColor: isDark ? 'rgba(245,158,11,0.12)' : 'rgba(245,158,11,0.08)',
-                    borderColor: colors.warning + '50',
-                  }
-                : {
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
-                    borderColor: colors.borderSubtle,
-                  },
-            ]}
-            onPress={handleToggleStock}
-            activeOpacity={0.7}
-          >
-            <View
+        {showStockFaibleChip && (
+          <Animated.View style={chipAnimStyle}>
+            <TouchableOpacity
               style={[
-                styles.chipIconWrap,
-                {
-                  backgroundColor: showStockFaible
-                    ? colors.warning + '20'
-                    : isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                },
-              ]}
-            >
-              <Icon
-                name="alert-circle-outline"
-                size={13}
-                color={showStockFaible ? colors.warning : colors.textMuted}
-              />
-            </View>
-            <Text
-              style={[
-                styles.chipText,
+                styles.chip,
                 showStockFaible
-                  ? { color: colors.warning, fontWeight: '600' }
-                  : { color: colors.textSecondary },
-                tablet && { fontSize: 13 },
+                  ? {
+                      backgroundColor: isDark ? 'rgba(245,158,11,0.12)' : 'rgba(245,158,11,0.08)',
+                      borderColor: colors.warning + '50',
+                    }
+                  : {
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
+                      borderColor: colors.borderSubtle,
+                    },
               ]}
+              onPress={handleToggleStock}
+              activeOpacity={0.7}
             >
-              Stock faible
-            </Text>
-            {showStockFaible && (
-              <View style={[styles.chipActiveIndicator, { backgroundColor: colors.warning }]} />
-            )}
-          </TouchableOpacity>
-        </Animated.View>
+              <View
+                style={[
+                  styles.chipIconWrap,
+                  {
+                    backgroundColor: showStockFaible
+                      ? colors.warning + '20'
+                      : isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                  },
+                ]}
+              >
+                <Icon
+                  name="alert-circle-outline"
+                  size={13}
+                  color={showStockFaible ? colors.warning : colors.textMuted}
+                />
+              </View>
+              <Text
+                style={[
+                  styles.chipText,
+                  showStockFaible
+                    ? { color: colors.warning, fontWeight: '600' }
+                    : { color: colors.textSecondary },
+                  tablet && { fontSize: 13 },
+                ]}
+              >
+                Stock faible
+              </Text>
+              {showStockFaible && (
+                <View style={[styles.chipActiveIndicator, { backgroundColor: colors.warning }]} />
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {hasActiveFilters && (
           <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)}>

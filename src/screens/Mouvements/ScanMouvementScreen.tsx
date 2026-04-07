@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // SCAN MOUVEMENT SCREEN - Premium Design
 // IT-Inventory Application
 // ============================================
@@ -565,7 +565,7 @@ export const ScanMouvementScreen: React.FC = () => {
           <View style={styles.resultCard}>
             {/* Left accent bar */}
             <LinearGradient
-              colors={['#3B82F6', '#6366F1']}
+              colors={['#3B82F6', '#007A39']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
               style={styles.resultAccentBar}
@@ -584,7 +584,7 @@ export const ScanMouvementScreen: React.FC = () => {
               ) : (
                 <Animated.View entering={ZoomIn.delay(200).duration(400)} style={styles.resultIconCircle}>
                   <LinearGradient
-                    colors={['#3B82F6', '#6366F1']}
+                    colors={['#3B82F6', '#007A39']}
                     style={styles.resultIconGrad}
                   >
                     <View style={styles.resultIconInner}>

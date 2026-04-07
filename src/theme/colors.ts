@@ -20,17 +20,17 @@ export const darkColors: ThemeColors = {
   borderSubtle: 'rgba(255,255,255,0.05)',
   borderMedium: 'rgba(255,255,255,0.09)',
   borderStrong: 'rgba(255,255,255,0.15)',
-  borderFocus: '#3B82F6',
-  borderFocusGlow: 'rgba(59,130,246,0.35)',
+  borderFocus: '#4EB35A',
+  borderFocusGlow: 'rgba(78,179,90,0.35)',
 
-  // Accents primaires
-  primary: '#6366F1',
-  primaryLight: '#818CF8',
-  primaryDark: '#4F46E5',
-  primaryGlow: 'rgba(99,102,241,0.18)',
-  primaryGlowStrong: 'rgba(99,102,241,0.35)',
-  secondary: '#3B82F6',
-  secondaryLight: '#60A5FA',
+  // Accents primaires — Crédit Agricole Alsace Vosges
+  primary: '#4EB35A',
+  primaryLight: '#7DCF87',
+  primaryDark: '#007A39',
+  primaryGlow: 'rgba(0,122,57,0.18)',
+  primaryGlowStrong: 'rgba(0,122,57,0.35)',
+  secondary: '#2E7D32',
+  secondaryLight: '#60AD5E',
 
   // Statuts
   success: '#10B981',
@@ -46,10 +46,10 @@ export const darkColors: ThemeColors = {
   infoBg: 'rgba(59,130,246,0.08)',
 
   // Textes
-  textPrimary: '#EEF2FF',
+  textPrimary: '#E8F5E9',
   textSecondary: '#94A3B8',
   textMuted: '#4A5568',
-  textAccent: '#818CF8',
+  textAccent: '#7DCF87',
   textOnPrimary: '#FFFFFF',
   textOnSuccess: '#FFFFFF',
   textOnDanger: '#FFFFFF',
@@ -57,7 +57,7 @@ export const darkColors: ThemeColors = {
   // Spécifiques
   tabBarBackground: '#0A0F1A',
   tabBarBorder: 'rgba(255,255,255,0.05)',
-  tabBarActive: '#6366F1',
+  tabBarActive: '#4EB35A',
   tabBarInactive: '#4A5568',
   statusBarStyle: 'light-content',
   headerBackground: '#0A0F1A',
@@ -65,8 +65,8 @@ export const darkColors: ThemeColors = {
   modalOverlay: 'rgba(0,0,0,0.75)',
   skeleton: '#131D2E',
   skeletonHighlight: '#1E293B',
-  badge: 'rgba(99,102,241,0.15)',
-  badgeText: '#818CF8',
+  badge: 'rgba(0,122,57,0.15)',
+  badgeText: '#7DCF87',
   divider: 'rgba(255,255,255,0.06)',
   avatarBackground: '#1E293B',
 
@@ -92,17 +92,17 @@ export const lightColors: ThemeColors = {
   borderSubtle: 'rgba(0,0,0,0.04)',
   borderMedium: 'rgba(0,0,0,0.08)',
   borderStrong: 'rgba(0,0,0,0.12)',
-  borderFocus: '#6366F1',
-  borderFocusGlow: 'rgba(99,102,241,0.2)',
+  borderFocus: '#007A39',
+  borderFocusGlow: 'rgba(0,122,57,0.2)',
 
-  // Accents primaires
-  primary: '#6366F1',
-  primaryLight: '#818CF8',
-  primaryDark: '#4F46E5',
-  primaryGlow: 'rgba(99,102,241,0.1)',
-  primaryGlowStrong: 'rgba(99,102,241,0.2)',
-  secondary: '#3B82F6',
-  secondaryLight: '#60A5FA',
+  // Accents primaires — Crédit Agricole Alsace Vosges
+  primary: '#007A39',
+  primaryLight: '#4EB35A',
+  primaryDark: '#005C2B',
+  primaryGlow: 'rgba(0,122,57,0.1)',
+  primaryGlowStrong: 'rgba(0,122,57,0.2)',
+  secondary: '#00A651',
+  secondaryLight: '#4EB35A',
 
   // Statuts
   success: '#059669',
@@ -121,7 +121,7 @@ export const lightColors: ThemeColors = {
   textPrimary: '#1E293B',
   textSecondary: '#64748B',
   textMuted: '#94A3B8',
-  textAccent: '#6366F1',
+  textAccent: '#007A39',
   textOnPrimary: '#FFFFFF',
   textOnSuccess: '#FFFFFF',
   textOnDanger: '#FFFFFF',
@@ -129,7 +129,7 @@ export const lightColors: ThemeColors = {
   // Spécifiques
   tabBarBackground: '#FFFFFF',
   tabBarBorder: 'rgba(0,0,0,0.06)',
-  tabBarActive: '#6366F1',
+  tabBarActive: '#007A39',
   tabBarInactive: '#94A3B8',
   statusBarStyle: 'dark-content',
   headerBackground: '#F8FAFC',
@@ -137,8 +137,8 @@ export const lightColors: ThemeColors = {
   modalOverlay: 'rgba(0,0,0,0.4)',
   skeleton: '#E2E8F0',
   skeletonHighlight: '#F1F5F9',
-  badge: 'rgba(99,102,241,0.1)',
-  badgeText: '#6366F1',
+  badge: 'rgba(0,122,57,0.1)',
+  badgeText: '#007A39',
   divider: 'rgba(0,0,0,0.06)',
   avatarBackground: '#E2E8F0',
 

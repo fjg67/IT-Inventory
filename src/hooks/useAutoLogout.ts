@@ -1,6 +1,6 @@
 // ============================================
 // AUTO LOGOUT HOOK - IT-Inventory Application
-// Déconnexion automatique sur inactivité / fermeture
+// Déconnexion automatique sur inactivité uniquement
 // ============================================
 
 import { useEffect, useRef, useCallback } from 'react';
@@ -12,8 +12,11 @@ const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Hook qui gère la déconnexion automatique :
- * - Quand l'appli passe en arrière-plan (fermeture / changement d'app)
- * - Après 5 minutes d'inactivité (aucun touch)
+ * - Après 5 minutes d'inactivité (aucun touch) quand l'app est active
+ *
+ * IMPORTANT:
+ * - On NE déconnecte plus lors du passage en arrière-plan/fermeture,
+ *   afin de conserver la session utilisateur au prochain lancement.
  *
  * Retourne `resetInactivityTimer` à appeler sur chaque interaction utilisateur.
  */
@@ -57,19 +60,25 @@ export const useAutoLogout = () => {
     return clearTimer;
   }, [isAuthenticated, resetInactivityTimer, clearTimer]);
 
-  // --- AppState listener (background / inactive) ---
+  // --- AppState listener (pause/reprise du timer) ---
   useEffect(() => {
     const handleAppStateChange = (nextState: AppStateStatus) => {
-      // L'app passe en arrière-plan ou devient inactive → déconnexion
+      // Mettre en pause le timer hors écran actif pour conserver la session
       if (appState.current === 'active' && (nextState === 'background' || nextState === 'inactive')) {
-        performLogout();
+        clearTimer();
       }
+
+      // Reprendre le timer au retour en foreground
+      if ((appState.current === 'background' || appState.current === 'inactive') && nextState === 'active') {
+        resetInactivityTimer();
+      }
+
       appState.current = nextState;
     };
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
-  }, [performLogout]);
+  }, [clearTimer, resetInactivityTimer]);
 
   return { resetInactivityTimer };
 };

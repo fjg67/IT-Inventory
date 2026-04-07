@@ -28,6 +28,7 @@ type TabCfg = { icon: string; iconFocused: string; label: string };
 const TAB_CONFIG: Record<string, TabCfg> = {
   Dashboard:  { icon: 'home-outline',       iconFocused: 'home',                    label: 'Accueil' },
   Articles:   { icon: 'package-variant',     iconFocused: 'package-variant-closed',  label: 'Articles' },
+  Tablette:   { icon: 'tablet-cellphone',    iconFocused: 'tablet-cellphone',        label: 'Tablette' },
   Scan:       { icon: 'barcode-scan',        iconFocused: 'barcode-scan',            label: 'Scan' },
   Mouvements: { icon: 'swap-horizontal',     iconFocused: 'swap-horizontal',         label: 'Mouvements' },
   Settings:   { icon: 'cog-outline',         iconFocused: 'cog',                     label: 'Réglages' },
@@ -312,7 +313,7 @@ const s = StyleSheet.create({
     height: 56,
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   View,
   Text,
@@ -34,7 +34,7 @@ interface FilterRowConfig {
 }
 
 const ROWS: FilterRowConfig[] = [
-  { key: 'codeFamille', label: 'Code famille', icon: 'tag-outline', iconColor: '#6366F1' },
+  { key: 'codeFamille', label: 'Code famille', icon: 'tag-outline', iconColor: '#007A39' },
   { key: 'famille', label: 'Famille', icon: 'shape-outline', iconColor: '#8B5CF6' },
   { key: 'typeArticle', label: 'Type', icon: 'format-list-bulleted-type', iconColor: '#06B6D4' },
   { key: 'sousType', label: 'Sous-type', icon: 'tag-text-outline', iconColor: '#F59E0B' },
@@ -47,6 +47,7 @@ interface ArticlesFilterSheetProps {
   filterValues: Partial<Record<ArticleFilterKey, string[] | null>>;
   onClose: () => void;
   onSelectRow: (key: ArticleFilterKey) => void;
+  allowedKeys?: ArticleFilterKey[];
 }
 
 const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
@@ -54,10 +55,20 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
   filterValues,
   onClose,
   onSelectRow,
+  allowedKeys,
 }) => {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
+
+  const visibleRows = allowedKeys && allowedKeys.length > 0
+    ? ROWS.filter((row) => allowedKeys.includes(row.key))
+    : ROWS;
+
+  const subtitleText =
+    visibleRows.length === 2 && visibleRows.some((r) => r.key === 'marque') && visibleRows.some((r) => r.key === 'emplacement')
+      ? 'Marque et emplacement des tablettes'
+      : 'Code famille, famille, type, sous-type, marque, emplacement';
 
   const handleRowPress = (key: ArticleFilterKey) => {
     Vibration.vibrate(10);
@@ -84,7 +95,7 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
             <Text style={[styles.title, { color: colors.textPrimary }]}>Filtrer par</Text>
           </View>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Code famille, famille, type, sous-type, marque, emplacement
+            {subtitleText}
           </Text>
 
           <ScrollView
@@ -92,7 +103,7 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {ROWS.map((row) => {
+            {visibleRows.map((row) => {
               const value = filterValues[row.key];
               const displayValue = value && value.length > 0 ? value.join(', ') : 'Tous';
               const isSet = !!(value && value.length > 0);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -88,7 +88,7 @@ const FABMultiAction: React.FC<FABMultiActionProps> = ({ onScan, onAdd, onKit })
       icon: 'barcode-scan',
       label: 'Scanner',
       color: colors.primary,
-      gradient: ['#6366F1', '#4F46E5'] as const,
+      gradient: ['#007A39', '#007A39'] as const,
       onPress: onScan,
     },
     {
@@ -187,7 +187,7 @@ const FABMultiAction: React.FC<FABMultiActionProps> = ({ onScan, onAdd, onKit })
       >
         <TouchableOpacity activeOpacity={0.85} onPress={toggleFAB}>
           <LinearGradient
-            colors={['#6366F1', '#4F46E5', '#4338CA']}
+            colors={['#007A39', '#007A39', '#005C2B']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     width: 76,
     height: 76,
     borderRadius: 22,
-    backgroundColor: '#6366F1',
+    backgroundColor: '#007A39',
     zIndex: 99,
   },
   fabContainer: {
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 16,

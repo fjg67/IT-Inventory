@@ -14,12 +14,12 @@ export const withAlpha = (hex: string, alpha: number): string => {
 // ==================== COULEURS ====================
 
 export const premiumColors = {
-  // Couleurs principales
+  // Couleurs principales — Crédit Agricole Alsace Vosges
   primary: {
-    base: '#2563EB',
-    light: '#60A5FA',
-    dark: '#1E40AF',
-    gradient: ['#3B82F6', '#2563EB', '#1D4ED8'] as const,
+    base: '#007A39',
+    light: '#4EB35A',
+    dark: '#005C2B',
+    gradient: ['#00A651', '#007A39', '#005C2B'] as const,
   },
 
   // Couleurs d'état
@@ -52,11 +52,11 @@ export const premiumColors = {
   },
 
   // Surfaces (fond clair)
-  background: '#F1F5F9',
+  background: '#F0F7F2',
   surface: '#FFFFFF',
   surfaceElevated: '#FFFFFF',
-  border: '#E2E8F0',
-  borderLight: '#F1F5F9',
+  border: '#C8E6C9',
+  borderLight: '#E8F5E9',
 
   // Glass (simulé)
   glass: {
@@ -73,18 +73,18 @@ export const premiumColors = {
     secondary: '#475569',
     tertiary: '#94A3B8',
     inverse: '#FFFFFF',
-    link: '#2563EB',
+    link: '#007A39',
   },
 
   // Dégradés de fond
   gradients: {
-    header: ['#EFF6FF', '#F1F5F9'] as const,
-    scanButton: ['#3B82F6', '#2563EB', '#1D4ED8'] as const,
+    header: ['#E8F5E9', '#F0F7F2'] as const,
+    scanButton: ['#00A651', '#007A39', '#005C2B'] as const,
     success: ['#34D399', '#10B981'] as const,
     error: ['#F87171', '#EF4444'] as const,
     warning: ['#FBBF24', '#F59E0B'] as const,
-    info: ['#A78BFA', '#8B5CF6'] as const,
-    avatar: ['#3B82F6', '#8B5CF6'] as const,
+    info: ['#60A5FA', '#2563EB'] as const,
+    avatar: ['#00A651', '#007A39'] as const,
   },
 } as const;
 

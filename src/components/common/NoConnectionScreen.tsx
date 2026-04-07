@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // NO CONNECTION SCREEN - IT-Inventory Application
 // Beautiful offline screen when no internet
 // ============================================
@@ -212,8 +212,8 @@ export const NoConnectionScreen: React.FC = () => {
             <View style={s.cardDivider} />
 
             <View style={s.infoCard}>
-              <View style={[s.infoIconBg, { backgroundColor: 'rgba(99, 102, 241, 0.12)' }]}>
-                <Icon name="server-network-off" size={18} color="#6366F1" />
+              <View style={[s.infoIconBg, { backgroundColor: 'rgba(0, 122, 57, 0.12)' }]}>
+                <Icon name="server-network-off" size={18} color="#007A39" />
               </View>
               <View style={s.infoTextContainer}>
                 <Text style={s.infoTitle}>Serveur inaccessible</Text>
@@ -226,7 +226,7 @@ export const NoConnectionScreen: React.FC = () => {
           <Animated.View entering={FadeInDown.delay(800).duration(600)}>
             <TouchableOpacity onPress={handleRetry} activeOpacity={0.8}>
               <LinearGradient
-                colors={['#3B82F6', '#6366F1']}
+                colors={['#00A651', '#007A39']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={s.retryButton}
@@ -288,7 +288,7 @@ const s = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(99, 102, 241, 0.06)',
+    backgroundColor: 'rgba(0, 122, 57, 0.06)',
   },
 
   // Signal lines (decorative broken lines)

@@ -6,15 +6,15 @@
 import { StyleSheet } from 'react-native';
 
 export const colors = {
-  // Couleurs principales
-  primary: '#2563EB',
-  primaryLight: '#3B82F6',
-  primaryDark: '#1D4ED8',
+  // Couleurs principales — Crédit Agricole Alsace Vosges
+  primary: '#007A39',
+  primaryLight: '#4EB35A',
+  primaryDark: '#005C2B',
   
   // Couleurs secondaires
-  secondary: '#64748B',
-  secondaryLight: '#94A3B8',
-  secondaryDark: '#475569',
+  secondary: '#00A651',
+  secondaryLight: '#60AD5E',
+  secondaryDark: '#005C2B',
   
   // États
   success: '#10B981',

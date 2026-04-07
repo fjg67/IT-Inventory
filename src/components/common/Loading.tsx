@@ -1,9 +1,9 @@
-// ============================================
+﻿// ============================================
 // LOADING COMPONENT - IT-Inventory Application
 // ============================================
 
-import React, { useEffect } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet, Modal } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, ActivityIndicator, Text, StyleSheet, Modal, Image } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -59,9 +59,30 @@ export const Loading: React.FC<LoadingProps> = ({
 
 interface FullScreenLoadingProps {
   message?: string;
+  messages?: string[];
 }
 
-export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message }) => {
+export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message, messages }) => {
+  const rotatingMessages = useMemo(
+    () => (messages && messages.length > 0 ? messages : ['Chargement']),
+    [messages],
+  );
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    if (!messages || messages.length <= 1 || message) return;
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % rotatingMessages.length);
+    }, 1800);
+    return () => clearInterval(interval);
+  }, [messages, message, rotatingMessages.length]);
+
+  useEffect(() => {
+    setMessageIndex(0);
+  }, [rotatingMessages.length]);
+
+  const activeMessage = message || rotatingMessages[messageIndex];
+
   // ===== Animations =====
   const iconPulse = useSharedValue(1);
   const glowScale = useSharedValue(0.8);
@@ -73,6 +94,8 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message })
   const dot2 = useSharedValue(0);
   const dot3 = useSharedValue(0);
   const progressWidth = useSharedValue(0);
+  const logoRotate = useSharedValue(0);
+  const cardFloatY = useSharedValue(0);
 
   useEffect(() => {
     // Icon breathing
@@ -172,6 +195,20 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message })
       ),
       -1,
     );
+
+    // Subtle logo rotation + glass card float
+    logoRotate.value = withRepeat(
+      withTiming(360, { duration: 9000, easing: Easing.linear }),
+      -1,
+    );
+    cardFloatY.value = withRepeat(
+      withSequence(
+        withTiming(-5, { duration: 2400, easing: Easing.inOut(Easing.ease) }),
+        withTiming(5, { duration: 2400, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      true,
+    );
   }, []);
 
   const iconStyle = useAnimatedStyle(() => ({
@@ -207,6 +244,14 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message })
     width: `${interpolate(progressWidth.value, [0, 1], [0, 100])}%` as any,
   }));
 
+  const logoRotateStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${logoRotate.value}deg` }],
+  }));
+
+  const floatingCardStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: cardFloatY.value }],
+  }));
+
   return (
     <View style={splashStyles.container}>
       <LinearGradient
@@ -232,16 +277,23 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message })
           {/* Glow */}
           <Animated.View style={[splashStyles.glowCircle, glowStyle]} />
 
-          {/* Icon */}
-          <Animated.View entering={FadeIn.delay(200).duration(600)} style={splashStyles.iconWrapper}>
+          {/* Brand icon card */}
+          <Animated.View entering={FadeIn.delay(200).duration(600)} style={[splashStyles.iconWrapper, floatingCardStyle]}>
+            <Animated.View style={[splashStyles.rotatingHalo, logoRotateStyle]} />
             <Animated.View style={iconStyle}>
               <LinearGradient
-                colors={['#3B82F6', '#6366F1', '#8B5CF6']}
+                colors={['rgba(59,130,246,0.95)', 'rgba(0,122,57,0.95)', 'rgba(139,92,246,0.95)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={splashStyles.iconCircle}
               >
-                <Icon name="cube-scan" size={38} color="#FFF" />
+                <View style={splashStyles.iconInnerPlate}>
+                  <Image
+                    source={require('@/assets/images/logo.png')}
+                    resizeMode="contain"
+                    style={splashStyles.brandLogo}
+                  />
+                </View>
               </LinearGradient>
             </Animated.View>
           </Animated.View>
@@ -258,7 +310,7 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message })
             <View style={splashStyles.progressTrack}>
               <Animated.View style={[splashStyles.progressFill, progressStyle]}>
                 <LinearGradient
-                  colors={['#3B82F6', '#6366F1']}
+                  colors={['#00A651', '#007A39']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={splashStyles.progressGradient}
@@ -269,9 +321,9 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message })
             {/* Message with animated dots */}
             <View style={splashStyles.messageRow}>
               <Text style={splashStyles.loadingMessage}>
-                {message || 'Chargement'}
+                {activeMessage}
               </Text>
-              {!message && (
+              {!message && (!messages || messages.length <= 1) && (
                 <View style={splashStyles.dotsRow}>
                   <Animated.View style={[splashStyles.dot, dot1Style]} />
                   <Animated.View style={[splashStyles.dot, dot2Style]} />
@@ -313,7 +365,7 @@ const splashStyles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: 'rgba(99, 102, 241, 0.06)',
+    backgroundColor: 'rgba(0, 122, 57, 0.06)',
   },
   orb2: {
     position: 'absolute',
@@ -354,7 +406,7 @@ const splashStyles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 1.5,
-    borderColor: 'rgba(99, 102, 241, 0.25)',
+    borderColor: 'rgba(0, 122, 57, 0.25)',
   },
 
   // Glow
@@ -363,17 +415,26 @@ const splashStyles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    backgroundColor: 'rgba(0, 122, 57, 0.15)',
   },
 
   // Icon
   iconWrapper: {
     marginBottom: 32,
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
     shadowRadius: 20,
     elevation: 15,
+  },
+  rotatingHalo: {
+    position: 'absolute',
+    width: 102,
+    height: 102,
+    borderRadius: 51,
+    borderWidth: 1.4,
+    borderColor: 'rgba(129, 140, 248, 0.35)',
+    borderStyle: 'dashed',
   },
   iconCircle: {
     width: 82,
@@ -381,6 +442,20 @@ const splashStyles = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconInnerPlate: {
+    width: 62,
+    height: 62,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+  },
+  brandLogo: {
+    width: 46,
+    height: 46,
   },
 
   // Text

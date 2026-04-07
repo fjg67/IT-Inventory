@@ -51,7 +51,8 @@ export async function initializeSupabaseAuth(): Promise<void> {
     // Créer une session anonyme
     const { error } = await supabase.auth.signInAnonymously();
     if (error) {
-      console.error('[Supabase] Erreur d\'authentification anonyme:', error);
+      // Anonymous sign-in peut être désactivé côté projet: ne pas remonter en erreur bloquante
+      console.warn('[Supabase] Auth anonyme indisponible, on continue sans session anonyme');
     } else {
       console.log('[Supabase] Authentification anonyme réussie');
     }
@@ -67,6 +68,7 @@ export const tables = {
   articles: 'Article',
   stocksSites: 'ArticleStock',
   mouvements: 'StockMovement',
+  pushDeviceTokens: 'PushDeviceToken',
   journalModifications: 'AuditLog',
   loginHistory: 'LoginHistory',
   inventoryRecount: 'InventoryRecount',

@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // KIT SCREEN - IT-Inventory Application
 // Écran de sélection et validation des kits
 // ============================================
@@ -394,7 +394,7 @@ export const KitScreen: React.FC = () => {
           <Animated.View entering={FadeInUp.delay(100).duration(500)} style={styles.headerContent}>
             <View style={styles.headerIconGlow}>
               <LinearGradient
-                colors={['#3B82F6', '#6366F1']}
+                colors={['#00A651', '#007A39']}
                 style={styles.headerIconCircle}
               >
                 <Icon name="toolbox" size={26} color="#FFF" />
@@ -421,10 +421,10 @@ export const KitScreen: React.FC = () => {
           <View style={[styles.tipContainer, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
             <View style={styles.tipIconWrapper}>
               <LinearGradient
-                colors={isDark ? ['#1E1B4B', '#312E81'] : ['#EEF2FF', '#E0E7FF']}
+                colors={isDark ? ['#052E0E', '#0A4D1A'] : ['#E8F5E9', '#C8E6C9']}
                 style={styles.tipIconBg}
               >
-                <Icon name="lightbulb-on-outline" size={18} color="#6366F1" />
+                <Icon name="lightbulb-on-outline" size={18} color="#007A39" />
               </LinearGradient>
             </View>
             <Text style={[styles.tipText, { color: colors.textSecondary }]}>
@@ -829,7 +829,7 @@ export const KitScreen: React.FC = () => {
                     ? ['#F87171', '#EF4444']
                     : confirmModal.type === 'warning'
                     ? ['#FBBF24', '#F59E0B']
-                    : ['#818CF8', '#6366F1']
+                    : ['#4EB35A', '#007A39']
                 }
                 style={confirmStyles.iconCircle}
               >
@@ -868,7 +868,7 @@ export const KitScreen: React.FC = () => {
                       colors={
                         confirmModal.type === 'success'
                           ? isDark ? ['#064E3B', '#065F46'] : ['#ECFDF5', '#D1FAE5']
-                          : isDark ? ['#1E1B4B', '#312E81'] : ['#EEF2FF', '#E0E7FF']
+                          : isDark ? ['#1E1B4B', '#312E81'] : ['#E8F5E9', '#C8E6C9']
                       }
                       style={confirmStyles.articleChipGradient}
                     >
@@ -932,7 +932,7 @@ export const KitScreen: React.FC = () => {
                       ? ['#F87171', '#EF4444']
                       : confirmModal.type === 'warning'
                       ? ['#FBBF24', '#F59E0B']
-                      : ['#818CF8', '#6366F1']
+                      : ['#4EB35A', '#007A39']
                   }
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
@@ -1045,7 +1045,7 @@ const styles = StyleSheet.create({
   },
   headerIconGlow: {
     marginBottom: 14,
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
@@ -1102,7 +1102,7 @@ const styles = StyleSheet.create({
     gap: 12,
     borderWidth: 1,
     borderWidth: 1,
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -1485,7 +1485,7 @@ const confirmStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 8,
-    shadowColor: '#6366F1',
+    shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
