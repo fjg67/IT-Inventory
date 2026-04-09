@@ -40,6 +40,7 @@ const MARQUE_MAP: Record<string, { color: string; initials: string }> = {
 };
 
 const TYPE_MAP: Record<string, { icon: string; color: string }> = {
+  'PC': { icon: 'laptop', color: '#007A39' },
   'Tablette': { icon: 'tablet-cellphone', color: '#007A39' },
   'Souris': { icon: 'mouse', color: '#007A39' },
   'Clavier': { icon: 'keyboard', color: '#8B5CF6' },
@@ -74,6 +75,16 @@ const FAMILLE_MAP: Record<string, { icon: string; color: string; emoji: string }
   Electrique: { icon: 'flash', color: '#3B82F6', emoji: '⚡' },
   Ergonomie: { icon: 'human-handsup', color: '#06B6D4', emoji: '🪑' },
   Kit: { icon: 'toolbox-outline', color: '#EF4444', emoji: '🧰' },
+  'PC portable': { icon: 'laptop', color: '#007A39', emoji: '💻' },
+  'PC disponible': { icon: 'laptop-account', color: '#2563EB', emoji: '💼' },
+};
+
+const getPcStatus = (description?: string) => {
+  const normalized = (description ?? '').toLowerCase();
+  if (normalized.includes('disponible')) return 'Disponible';
+  if (normalized.includes('reusin') || normalized.includes('recondition')) return 'A reusiner';
+  if (normalized.includes('a chaud') || normalized.includes('à chaud')) return 'A chaud';
+  return null;
 };
 
 interface PremiumArticleCardProps {
@@ -81,6 +92,9 @@ interface PremiumArticleCardProps {
   onPress: (articleId: number) => void;
   onEdit?: () => void;
   onDelete?: (articleId: number) => void;
+  onMarkSent?: (articleId: number) => void;
+  onMarkAvailable?: (articleId: number) => void;
+  onMarkHot?: (articleId: number) => void;
 }
 
 /**
@@ -90,6 +104,9 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
   article,
   onPress,
   onDelete,
+  onMarkSent,
+  onMarkAvailable,
+  onMarkHot,
 }) => {
   const { width } = useWindowDimensions();
   const { colors, isDark } = useTheme();
@@ -124,6 +141,30 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
       onDelete(article.id);
     }
   }, [onDelete, article.id]);
+
+  const handleMarkSent = useCallback((e: any) => {
+    e.stopPropagation();
+    if (onMarkSent) {
+      Vibration.vibrate([10, 40, 10]);
+      onMarkSent(article.id);
+    }
+  }, [onMarkSent, article.id]);
+
+  const handleMarkAvailable = useCallback((e: any) => {
+    e.stopPropagation();
+    if (onMarkAvailable) {
+      Vibration.vibrate(12);
+      onMarkAvailable(article.id);
+    }
+  }, [onMarkAvailable, article.id]);
+
+  const handleMarkHot = useCallback((e: any) => {
+    e.stopPropagation();
+    if (onMarkHot) {
+      Vibration.vibrate(12);
+      onMarkHot(article.id);
+    }
+  }, [onMarkHot, article.id]);
 
   // Stock config
   const stockConfig = useMemo(() => {
@@ -170,12 +211,72 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
     return `Modifié le ${date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
   }, [article.dateModification]);
 
+  const pcHotDateLabel = useMemo(() => {
+    if (!article.dateModification) return '';
+
+    const date = new Date(article.dateModification);
+    return `A chaud depuis le ${date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })}`;
+  }, [article.dateModification]);
+
+  const pcAvailableDateLabel = useMemo(() => {
+    if (!article.dateModification) return '';
+
+    const date = new Date(article.dateModification);
+    return `Disponible depuis le ${date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })}`;
+  }, [article.dateModification]);
+
   const isTabletItem = useMemo(() => {
     const values = [article.typeArticle, article.sousType, article.famille]
       .filter((v): v is string => !!v)
       .map((v) => v.toLowerCase());
     return values.some((v) => v.includes('tablette'));
   }, [article.typeArticle, article.sousType, article.famille]);
+
+  const isPCItem = useMemo(() => {
+    const values = [article.typeArticle, article.sousType, article.famille]
+      .filter((v): v is string => !!v)
+      .map((v) => v.toLowerCase());
+    return values.some((v) => v === 'pc' || v.includes('portable agence') || v.includes('portable siège') || v.includes('pc portable'));
+  }, [article.typeArticle, article.sousType, article.famille]);
+
+  const displayDescription = useMemo(() => {
+    if (!article.description) return null;
+    const normalized = article.description.toLowerCase().trim();
+    if (isPCItem && normalized.startsWith('statut:')) return null;
+    return article.description;
+  }, [article.description, isPCItem]);
+
+  const pcStatus = useMemo(() => getPcStatus(article.description), [article.description]);
+  const pcAllocationLabel = useMemo(() => {
+    if (!isPCItem) return null;
+
+    const values = [article.sousType, article.typeArticle, article.famille]
+      .filter((value): value is string => !!value)
+      .map((value) => value.toLowerCase());
+
+    if (values.some((value) => value.includes('portable agence'))) {
+      return 'Portable agence';
+    }
+
+    if (values.some((value) => value.includes('portable siège') || value.includes('portable siege'))) {
+      return 'Portable siège';
+    }
+
+    return null;
+  }, [article.famille, article.sousType, article.typeArticle, isPCItem]);
+  const isPCAvailable =
+    isPCItem && (pcStatus === 'Disponible' || (article.famille ?? '').toLowerCase().includes('disponible'));
+  const isPCReconditioning = isPCItem && pcStatus === 'A reusiner';
+  const canSetHot = isPCAvailable || isPCReconditioning;
+  const canMarkSent = isPCItem && !isPCReconditioning;
 
   return (
     <Animated.View style={pressStyle}>
@@ -227,7 +328,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
             ) : (
               <View style={[styles.iconShadow, { shadowColor: colors.primary }]}>
                 <LinearGradient
-                  colors={isTabletItem ? ['#007A39', '#059669'] : ['#007A39', '#007A39']}
+                  colors={isTabletItem || isPCItem ? ['#007A39', '#059669'] : ['#007A39', '#007A39']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={[
@@ -237,9 +338,9 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                 >
                   <View style={[styles.iconInner, tablet && { width: 38, height: 38, borderRadius: 10 }]}>
                     <Icon
-                      name={isTabletItem ? 'tablet-cellphone' : 'package-variant'}
+                      name={isTabletItem ? 'tablet-cellphone' : isPCItem ? 'laptop' : 'package-variant'}
                       size={tablet ? 22 : 18}
-                      color={isTabletItem ? '#007A39' : '#007A39'}
+                      color="#007A39"
                     />
                   </View>
                 </LinearGradient>
@@ -262,7 +363,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
             </Text>
 
             {/* Description */}
-            {article.description ? (
+            {displayDescription ? (
               <Text
                 style={[
                   styles.description,
@@ -271,7 +372,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                 ]}
                 numberOfLines={1}
               >
-                {article.description}
+                {displayDescription}
               </Text>
             ) : null}
 
@@ -291,7 +392,21 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                 </Text>
               </View>
 
-              {article.famille && FAMILLE_MAP[article.famille] ? (
+              {article.barcode ? (
+                <View
+                  style={[
+                    styles.badge,
+                    {
+                      backgroundColor: isDark ? 'rgba(59,130,246,0.16)' : '#DBEAFE',
+                    },
+                  ]}
+                >
+                  <Icon name="tag-outline" size={11} color="#2563EB" />
+                  <Text style={[styles.badgeText, { color: '#2563EB' }]}>Asset {article.barcode}</Text>
+                </View>
+              ) : null}
+
+              {!isPCItem && article.famille && FAMILLE_MAP[article.famille] ? (
                 <View
                   style={[
                     styles.badge,
@@ -309,7 +424,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                     {article.famille}
                   </Text>
                 </View>
-              ) : article.codeFamille ? (
+              ) : !isPCItem && article.codeFamille ? (
                 <View style={[styles.badge, { backgroundColor: '#8B5CF6' + (isDark ? '18' : '10') }]}>
                   <Icon name="tag-outline" size={11} color="#8B5CF6" />
                   <Text style={[styles.badgeText, { color: '#8B5CF6' }]}>
@@ -320,7 +435,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
             </View>
 
             {/* Badges row 2: Marque + Type + Sous-type */}
-            {(article.typeArticle || article.sousType || article.marque) ? (
+            {!isPCItem && (article.typeArticle || article.sousType || article.marque) ? (
               <View style={styles.badgesRow}>
                 {article.marque && MARQUE_MAP[article.marque] ? (
                   <View
@@ -376,9 +491,64 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
               </View>
             ) : null}
 
+            {(article.modele || pcStatus || pcAllocationLabel) ? (
+              <View style={styles.badgesRow}>
+                {pcAllocationLabel ? (
+                  <View
+                    style={[
+                      styles.badge,
+                      {
+                        backgroundColor: isDark ? 'rgba(15,118,110,0.16)' : '#CCFBF1',
+                      },
+                    ]}
+                  >
+                    <Icon name="office-building-outline" size={11} color="#0F766E" />
+                    <Text style={[styles.badgeText, { color: '#0F766E' }]}>{pcAllocationLabel}</Text>
+                  </View>
+                ) : null}
+                {article.modele ? (
+                  <View
+                    style={[
+                      styles.badge,
+                      { backgroundColor: isDark ? 'rgba(0,122,57,0.16)' : '#DCFCE7' },
+                    ]}
+                  >
+                    <Icon name="laptop" size={11} color="#007A39" />
+                    <Text style={[styles.badgeText, { color: '#007A39' }]}>{article.modele}</Text>
+                  </View>
+                ) : null}
+                {pcStatus ? (
+                  <View
+                    style={[
+                      styles.badge,
+                      {
+                        backgroundColor:
+                          pcStatus === 'A chaud'
+                            ? (isDark ? 'rgba(16,185,129,0.16)' : '#D1FAE5')
+                            : pcStatus === 'Disponible'
+                              ? (isDark ? 'rgba(37,99,235,0.18)' : '#DBEAFE')
+                              : (isDark ? 'rgba(245,158,11,0.18)' : '#FEF3C7'),
+                      },
+                    ]}
+                  >
+                    <Icon
+                      name={pcStatus === 'A chaud' ? 'flash-outline' : pcStatus === 'Disponible' ? 'check-circle-outline' : 'wrench-outline'}
+                      size={11}
+                      color={pcStatus === 'A chaud' ? '#059669' : pcStatus === 'Disponible' ? '#2563EB' : '#D97706'}
+                    />
+                    <Text style={[styles.badgeText, { color: pcStatus === 'A chaud' ? '#059669' : pcStatus === 'Disponible' ? '#2563EB' : '#D97706' }]}>{pcStatus}</Text>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+
             {/* Date */}
             <Text style={[styles.dateText, { color: colors.textMuted }]}>
-              {relativeDate}
+              {isPCItem && pcStatus === 'A chaud'
+                ? pcHotDateLabel
+                : isPCItem && pcStatus === 'Disponible'
+                  ? pcAvailableDateLabel
+                  : relativeDate}
             </Text>
           </View>
 
@@ -399,6 +569,85 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
               >
                 <Icon name="trash-can-outline" size={16} color="#EF4444" />
               </TouchableOpacity>
+            ) : isPCItem ? (
+              <View style={[styles.pcActionsRail, { backgroundColor: isDark ? 'rgba(15,23,42,0.28)' : '#F8FAFC' }]}>
+                {canMarkSent && (
+                  <TouchableOpacity
+                    activeOpacity={0.78}
+                    onPress={handleMarkSent}
+                    style={styles.pcActionBtnWrap}
+                  >
+                    <LinearGradient
+                      colors={isDark ? ['#7F1D1D', '#B91C1C'] : ['#FFF1F2', '#FFE4E6']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[styles.pcActionBtn, styles.pcActionBtnDanger]}
+                    >
+                      <View style={[styles.pcActionIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
+                        <Icon name="send-outline" size={13} color="#E11D48" />
+                      </View>
+                      <View style={styles.pcActionTextWrap}>
+                        <Text style={[styles.pcActionBtnLabel, { color: '#9F1239' }]}>Envoyé</Text>
+                        <Text style={[styles.pcActionBtnHint, { color: '#BE123C' }]}>Sortie</Text>
+                      </View>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
+                {!canSetHot && (
+                  <>
+                    {canMarkSent ? (
+                      <View style={[styles.pcActionDivider, { backgroundColor: isDark ? 'rgba(148,163,184,0.16)' : '#E2E8F0' }]} />
+                    ) : null}
+                    <TouchableOpacity
+                      activeOpacity={0.78}
+                      onPress={handleMarkAvailable}
+                      style={styles.pcActionBtnWrap}
+                    >
+                      <LinearGradient
+                        colors={isDark ? ['#0F3A68', '#1D4ED8'] : ['#EFF6FF', '#DBEAFE']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={[styles.pcActionBtn, styles.pcActionBtnInfo]}
+                      >
+                        <View style={[styles.pcActionIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
+                          <Icon name="check-circle-outline" size={13} color="#2563EB" />
+                        </View>
+                        <View style={styles.pcActionTextWrap}>
+                          <Text style={[styles.pcActionBtnLabel, { color: '#1D4ED8' }]}>Disponible</Text>
+                          <Text style={[styles.pcActionBtnHint, { color: '#1E40AF' }]}>Stock</Text>
+                        </View>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </>
+                )}
+                {canSetHot && (
+                  <>
+                    {canMarkSent ? (
+                      <View style={[styles.pcActionDivider, { backgroundColor: isDark ? 'rgba(148,163,184,0.16)' : '#E2E8F0' }]} />
+                    ) : null}
+                    <TouchableOpacity
+                      activeOpacity={0.78}
+                      onPress={handleMarkHot}
+                      style={styles.pcActionBtnWrap}
+                    >
+                      <LinearGradient
+                        colors={isDark ? ['#0B5D3B', '#059669'] : ['#ECFDF5', '#D1FAE5']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={[styles.pcActionBtn, styles.pcActionBtnSuccess]}
+                      >
+                        <View style={[styles.pcActionIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}>
+                          <Icon name="flash-outline" size={13} color="#059669" />
+                        </View>
+                        <View style={styles.pcActionTextWrap}>
+                          <Text style={[styles.pcActionBtnLabel, { color: '#047857' }]}>A chaud</Text>
+                          <Text style={[styles.pcActionBtnHint, { color: '#065F46' }]}>Remise</Text>
+                        </View>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
             ) : (
               // Stock indicator for non-tablets
               <>
@@ -565,6 +814,68 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 4,
     marginBottom: 3,
+  },
+  pcActionsRail: {
+    width: 112,
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(148,163,184,0.14)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  pcActionBtnWrap: {
+    borderRadius: 13,
+    overflow: 'hidden',
+  },
+  pcActionBtn: {
+    minHeight: 48,
+    borderRadius: 13,
+    paddingHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+  },
+  pcActionBtnDanger: {
+    borderColor: 'rgba(244,63,94,0.16)',
+  },
+  pcActionBtnInfo: {
+    borderColor: 'rgba(37,99,235,0.16)',
+  },
+  pcActionBtnSuccess: {
+    borderColor: 'rgba(5,150,105,0.18)',
+  },
+  pcActionIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pcActionTextWrap: {
+    flex: 1,
+  },
+  pcActionBtnLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: -0.1,
+  },
+  pcActionBtnHint: {
+    fontSize: 9,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    opacity: 0.9,
+    marginTop: 1,
+    letterSpacing: 0.6,
+  },
+  pcActionDivider: {
+    height: 1,
+    marginVertical: 6,
   },
   stockValue: {
     fontSize: 16,

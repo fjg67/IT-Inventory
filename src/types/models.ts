@@ -66,6 +66,7 @@ export interface Article {
   reference: string;
   nom: string;
   description?: string;
+  barcode?: string;
   categorieId?: string | number;
   categorie?: Categorie;
   codeFamille?: string;
@@ -73,6 +74,7 @@ export interface Article {
   typeArticle?: string;
   sousType?: string;
   marque?: string;
+  modele?: string;
   emplacement?: string;
   stockMini: number;
   unite: string;
@@ -165,12 +167,14 @@ export interface ArticleForm {
   reference: string;
   nom: string;
   description?: string;
+  barcode?: string;
   categorieId?: string | number;
   codeFamille?: string;
   famille?: string;
   typeArticle?: string;
   sousType?: string;
   marque?: string;
+  modele?: string;
   emplacement?: string;
   stockMini: number;
   unite: string;

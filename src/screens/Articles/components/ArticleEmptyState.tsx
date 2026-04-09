@@ -24,7 +24,7 @@ interface ArticleEmptyStateProps {
   type: EmptyType;
   searchQuery?: string;
   onAction?: () => void;
-  mode?: 'articles' | 'tablettes';
+  mode?: 'articles' | 'tablettes' | 'pc';
 }
 
 const EMPTY_CONFIGS: Record<EmptyType, {
@@ -87,12 +87,40 @@ const ArticleEmptyState: React.FC<ArticleEmptyStateProps> = ({
     },
   } as const;
 
-  const title = mode === 'tablettes' ? tabletConfig[type].title : baseConfig.title;
+  const pcConfig = {
+    'no-articles': {
+      title: 'Aucun PC trouvé',
+      subtitle: 'Le parc PC est vide\nAjoutez votre premier portable',
+      actionLabel: 'Ajouter un PC',
+    },
+    'no-results': {
+      title: 'Aucun résultat',
+      subtitle: `Aucun PC ne correspond à « ${searchQuery} »`,
+      actionLabel: 'Effacer la recherche',
+    },
+    'no-filters': {
+      title: 'Aucun PC avec ces filtres',
+      subtitle: 'Essayez de modifier vos critères de recherche',
+      actionLabel: 'Réinitialiser les filtres',
+    },
+  } as const;
+
+  const title = mode === 'tablettes'
+    ? tabletConfig[type].title
+    : mode === 'pc'
+      ? pcConfig[type].title
+      : baseConfig.title;
   const subtitle = mode === 'tablettes'
     ? tabletConfig[type].subtitle
-    : (typeof baseConfig.subtitle === 'function' ? baseConfig.subtitle(searchQuery) : baseConfig.subtitle);
-  const actionLabel = mode === 'tablettes' ? tabletConfig[type].actionLabel : baseConfig.actionLabel;
-  const displayIcon = mode === 'tablettes' ? 'tablet-cellphone' : baseConfig.icon;
+    : mode === 'pc'
+      ? pcConfig[type].subtitle
+      : (typeof baseConfig.subtitle === 'function' ? baseConfig.subtitle(searchQuery) : baseConfig.subtitle);
+  const actionLabel = mode === 'tablettes'
+    ? tabletConfig[type].actionLabel
+    : mode === 'pc'
+      ? pcConfig[type].actionLabel
+      : baseConfig.actionLabel;
+  const displayIcon = mode === 'tablettes' ? 'tablet-cellphone' : mode === 'pc' ? 'laptop' : baseConfig.icon;
 
   // Animation flottante de l'icône
   const floatY = useSharedValue(0);

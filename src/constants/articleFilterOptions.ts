@@ -11,9 +11,12 @@ export const FAMILLE_OPTIONS = [
   { value: 'Electrique', label: 'Électrique' },
   { value: 'Ergonomie', label: 'Ergonomie' },
   { value: 'Kit', label: 'Kit' },
+  { value: 'PC portable', label: 'PC portable' },
+  { value: 'PC disponible', label: 'PC disponible' },
 ];
 
 export const TYPE_OPTIONS = [
+  { value: 'PC', label: 'PC' },
   { value: 'Souris', label: 'Souris' },
   { value: 'Clavier', label: 'Clavier' },
   { value: 'Dock', label: 'Dock' },
@@ -44,6 +47,8 @@ export const SOUS_TYPE_OPTIONS = [
   { value: 'Sans fil', label: 'Sans fil' },
   { value: 'Agence', label: 'Agence' },
   { value: 'Siège', label: 'Siège' },
+  { value: 'Portable agence', label: 'Portable agence' },
+  { value: 'Portable siège', label: 'Portable siège' },
   { value: 'D6000', label: 'D6000' },
   { value: '4 ports', label: '4 ports' },
   { value: 'Filtre confidentialité 14"', label: 'Filtre confidentialité 14"' },

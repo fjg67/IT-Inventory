@@ -1,0 +1,18 @@
+diff --git a/node_modules/whatwg-fetch/dist/fetch.umd.js b/node_modules/whatwg-fetch/dist/fetch.umd.js
+index 7a0d852..9ace1f4 100644
+--- a/node_modules/whatwg-fetch/dist/fetch.umd.js
++++ b/node_modules/whatwg-fetch/dist/fetch.umd.js
+@@ -544,6 +544,13 @@
+       }
+ 
+       xhr.onload = function() {
++        // Status 0 = network failure on Android (XHR fires onload instead of onerror)
++        if (xhr.status === 0) {
++          setTimeout(function() {
++            reject(new TypeError('Network request failed'));
++          }, 0);
++          return;
++        }
+         var options = {
+           statusText: xhr.statusText,
+           headers: parseHeaders(xhr.getAllResponseHeaders() || '')

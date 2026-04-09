@@ -31,6 +31,7 @@ import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { mouvementRepository } from '@/database';
 import type { MouvementStats } from '@/database/repositories/mouvementRepository';
 import { formatTimeParis, formatRelativeDateParis, formatDateTimeParis } from '@/utils/dateUtils';
+import { toAbbreviation } from '@/utils/abbreviation';
 import { Mouvement } from '@/types';
 import { useResponsive } from '@/utils/responsive';
 import { useTheme } from '@/theme';
@@ -526,7 +527,7 @@ export const MouvementsListScreen: React.FC = () => {
                               </Text>
                               {mouvement.technicien && (
                                 <Text style={[styles.mouvMetaText, { color: colors.textMuted }]}>
-                                  {' · '}{`${mouvement.technicien.nom || mouvement.technicien.prenom || ''}`.trim().split(/\s+/).map(w => w.charAt(0)).join('').toUpperCase()}
+                                  {' · '}{toAbbreviation(`${mouvement.technicien.prenom || ''} ${mouvement.technicien.nom || ''}`, 3, 'N/A')}
                                 </Text>
                               )}
                             </View>
@@ -693,7 +694,7 @@ export const MouvementsListScreen: React.FC = () => {
                           <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Technicien</Text>
                           <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={1}>
                             {selectedMouvement.technicien
-                              ? `${selectedMouvement.technicien.nom || selectedMouvement.technicien.prenom || ''}`.trim().split(/\s+/).map(w => w.charAt(0)).join('').toUpperCase()
+                              ? toAbbreviation(`${selectedMouvement.technicien.prenom || ''} ${selectedMouvement.technicien.nom || ''}`, 3, 'N/A')
                               : 'N/A'}
                           </Text>
                         </View>

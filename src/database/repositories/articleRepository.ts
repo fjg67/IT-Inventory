@@ -52,11 +52,13 @@ function mapRowToArticle(row: ArticleRow): Article {
     reference: row.reference,
     nom: row.name,
     description: row.description ?? undefined,
+    barcode: row.barcode ?? undefined,
     codeFamille: row.codeFamille ?? undefined,
     famille: row.category ?? undefined,
     typeArticle: row.articleType ?? undefined,
     sousType: row.sousType ?? undefined,
     marque: row.brand ?? undefined,
+    modele: row.model ?? undefined,
     emplacement: row.emplacement ?? undefined,
     stockMini: row.minStock ?? 0,
     unite: row.unit ?? 'unité',
@@ -149,7 +151,7 @@ export const articleRepository = {
 
     if (filters.searchQuery && filters.searchQuery.length >= APP_CONFIG.search.minSearchLength) {
       const q = `%${filters.searchQuery}%`;
-      query = query.or(`reference.ilike.${q},name.ilike.${q}`);
+      query = query.or(`reference.ilike.${q},name.ilike.${q},description.ilike.${q}`);
     }
     if (filters.codeFamille && filters.codeFamille.length > 0) query = query.in('codeFamille', filters.codeFamille);
     if (filters.famille && filters.famille.length > 0) query = query.in('category', filters.famille);
@@ -251,27 +253,68 @@ export const articleRepository = {
   async create(data: ArticleForm): Promise<string> {
     const supabase = getSupabaseClient();
     const newId = generateUUID();
-    const { data: inserted, error } = await supabase
+    const fullPayload = {
+      id: newId,
+      reference: data.reference,
+      name: data.nom,
+      description: data.description ?? null,
+      barcode: data.barcode ?? null,
+      category: data.famille ?? null,
+      codeFamille: data.codeFamille ?? null,
+      articleType: data.typeArticle ?? null,
+      sousType: data.sousType ?? null,
+      brand: data.marque ?? null,
+      model: data.modele ?? null,
+      emplacement: data.emplacement ?? null,
+      minStock: data.stockMini ?? 0,
+      unit: data.unite ?? 'unité',
+      imageUrl: data.photoUrl ?? null,
+      isArchived: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const basePayload = {
+      id: newId,
+      reference: data.reference,
+      name: data.nom,
+      description: data.description ?? null,
+      category: data.famille ?? null,
+      codeFamille: data.codeFamille ?? null,
+      articleType: data.typeArticle ?? null,
+      brand: data.marque ?? null,
+      emplacement: data.emplacement ?? null,
+      minStock: data.stockMini ?? 0,
+      unit: data.unite ?? 'unité',
+      imageUrl: data.photoUrl ?? null,
+      isArchived: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    let inserted: { id?: string } | null = null;
+    let error: { message: string } | null = null;
+
+    ({ data: inserted, error } = await supabase
       .from(tables.articles)
-      .insert({
-        id: newId,
-        reference: data.reference,
-        name: data.nom,
-        description: data.description ?? null,
-        category: data.famille ?? null,
-        codeFamille: data.codeFamille ?? null,
-        articleType: data.typeArticle ?? null,
-        brand: data.marque ?? null,
-        emplacement: data.emplacement ?? null,
-        minStock: data.stockMini ?? 0,
-        unit: data.unite ?? 'unité',
-        imageUrl: data.photoUrl ?? null,
-        isArchived: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
+      .insert(fullPayload)
       .select('id')
-      .single();
+      .single());
+
+    if (error) {
+      const msg = error.message.toLowerCase();
+      const hasOptionalColumnIssue =
+        msg.includes('model') || msg.includes('barcode') || msg.includes('soustype');
+
+      if (hasOptionalColumnIssue) {
+        ({ data: inserted, error } = await supabase
+          .from(tables.articles)
+          .insert(basePayload)
+          .select('id')
+          .single());
+      }
+    }
+
     if (error) throw new Error(error.message);
     return inserted?.id ?? '';
   },
@@ -282,22 +325,46 @@ export const articleRepository = {
     if (data.reference !== undefined) payload.reference = data.reference;
     if (data.nom !== undefined) payload.name = data.nom;
     if (data.description !== undefined) payload.description = data.description ?? null;
+    if (data.barcode !== undefined) payload.barcode = data.barcode ?? null;
     if (data.codeFamille !== undefined) payload.codeFamille = data.codeFamille ?? null;
     if (data.famille !== undefined) payload.category = data.famille ?? null;
     if (data.typeArticle !== undefined) payload.articleType = data.typeArticle ?? null;
     if (data.sousType !== undefined) payload.sousType = data.sousType ?? null;
     if (data.marque !== undefined) payload.brand = data.marque ?? null;
+    if (data.modele !== undefined) payload.model = data.modele ?? null;
     if (data.emplacement !== undefined) payload.emplacement = data.emplacement ?? null;
     if (data.stockMini !== undefined) payload.minStock = data.stockMini;
     if (data.unite !== undefined) payload.unit = data.unite;
     if (data.photoUrl !== undefined) payload.imageUrl = data.photoUrl ?? null;
     if (Object.keys(payload).length === 0) return;
     console.log('[articleRepository.update] id:', id, 'payload:', JSON.stringify(payload));
-    const { error, data: updatedRows } = await supabase
+    let { error, data: updatedRows } = await supabase
       .from(tables.articles)
       .update(payload)
       .eq('id', id)
       .select('id');
+
+    if (error) {
+      const msg = error.message.toLowerCase();
+      const hasOptionalColumnIssue =
+        msg.includes('model') || msg.includes('barcode') || msg.includes('soustype');
+
+      if (hasOptionalColumnIssue) {
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.model;
+        delete fallbackPayload.barcode;
+        delete fallbackPayload.sousType;
+
+        if (Object.keys(fallbackPayload).length > 0) {
+          ({ error, data: updatedRows } = await supabase
+            .from(tables.articles)
+            .update(fallbackPayload)
+            .eq('id', id)
+            .select('id'));
+        }
+      }
+    }
+
     if (error) {
       console.error('[articleRepository.update] Erreur Supabase:', error.message, error.details, error.hint);
       throw new Error(error.message);

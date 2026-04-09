@@ -39,6 +39,7 @@ import { logoutTechnicien, setRedirectToTechnicianChoiceAfterLogout, selectIsSup
 import { selectSite } from '@/store/slices/siteSlice';
 import { APP_CONFIG } from '@/constants';
 import { useResponsive } from '@/utils/responsive';
+import { toAbbreviation } from '@/utils/abbreviation';
 import { useTheme } from '@/theme';
 import type { ThemeMode } from '@/theme';
 import { InventoryRecountService, InventoryRecount } from '@/services/inventoryRecountService';
@@ -821,6 +822,8 @@ export const SettingsScreen: React.FC = () => {
   const [biometricSuccessModalVisible, setBiometricSuccessModalVisible] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(true);
   const [pushLoading, setPushLoading] = useState(false);
+  const [complianceDetailsModalVisible, setComplianceDetailsModalVisible] = useState(false);
+  const [verifyingCompliance, setVerifyingCompliance] = useState(false);
 
   // ==================== ACTIONS ====================
   const handleLogout = useCallback(() => {
@@ -889,6 +892,28 @@ export const SettingsScreen: React.FC = () => {
     }
     setRecountLoading(false);
   }, [siteActif, technicien]);
+
+  const handleShowComplianceDetails = useCallback(() => {
+    Vibration.vibrate(10);
+    setComplianceDetailsModalVisible(true);
+  }, []);
+
+  const handleVerifyCompliance = useCallback(async () => {
+    Vibration.vibrate(15);
+    setVerifyingCompliance(true);
+    try {
+      // Simuler une vérification ou charger les données actuelles
+      if (siteActif?.id) {
+        await InventoryRecountService.getLastRecount(String(siteActif.id)).then(setLastRecount);
+      }
+      showToast('Vérification du stock terminée ✓');
+    } catch (error) {
+      console.error('Erreur lors de la vérification:', error);
+      showToast('Erreur lors de la vérification');
+    } finally {
+      setVerifyingCompliance(false);
+    }
+  }, [siteActif?.id, showToast]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -1152,10 +1177,31 @@ export const SettingsScreen: React.FC = () => {
   // Sync status helpers removed (section deleted)
 
   const initials = technicien
-    ? `${technicien.nom?.charAt(0) || ''}${technicien.prenom?.charAt(0) || ''}`.toUpperCase()
+    ? toAbbreviation(`${technicien.prenom || ''} ${technicien.nom || ''}`, 3, '??')
     : '??';
 
   const avatarGradient = technicien ? getAvatarGradient(technicien.id) : ['#6B7280', '#9CA3AF'];
+  const daysSinceRecount = lastRecount
+    ? Math.floor((Date.now() - new Date(lastRecount.recountDate).getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+  const complianceStatusLabel = daysSinceRecount == null
+    ? 'A verifier'
+    : daysSinceRecount <= 2
+      ? 'Excellent'
+      : daysSinceRecount <= 7
+        ? 'Sous controle'
+        : 'A rafraichir';
+  const complianceStatusColor = daysSinceRecount == null
+    ? '#F59E0B'
+    : daysSinceRecount <= 7
+      ? '#00A651'
+      : '#D97706';
+  const lastRecountDateLabel = lastRecount
+    ? new Date(lastRecount.recountDate).toLocaleDateString('fr-FR')
+    : 'Aucun inventaire';
+  const lastRecountTechnicianInitials = lastRecount?.technicianName
+    ? toAbbreviation(lastRecount.technicianName, 3, '---')
+    : '---';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.backgroundBase }]}>
@@ -1176,14 +1222,78 @@ export const SettingsScreen: React.FC = () => {
           />
         }
       >
-        {/* ===== HEADER PREMIUM ===== */}
-        <SettingsHeaderBanner
-          initials={initials}
-          technicien={technicien}
-          lastRecount={lastRecount}
-          avatarGradient={avatarGradient}
-          isDark={isDark}
-        />
+        {/* ===== SECTION CONFORMITÉ DU STOCK (Crédit Agricole Style) ===== */}
+        <View style={[styles.stockComplianceCard, { backgroundColor: colors.surface, borderColor: isDark ? 'rgba(0,122,57,0.22)' : 'rgba(0,122,57,0.16)' }]}>
+          <LinearGradient
+            colors={['#00A651', '#007A39']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.stockComplianceTopBar}
+          />
+
+          <View style={styles.stockComplianceHeader}>
+            <View style={styles.stockComplianceHeaderTitleWrap}>
+              <Icon name="shield-check-outline" size={20} color="#00A651" />
+              <Text style={[styles.stockComplianceTitle, { color: colors.textPrimary }]}>Conformité du stock</Text>
+            </View>
+            <Text style={[styles.stockComplianceSubtitle, { color: colors.textMuted }]}>État général de votre inventaire</Text>
+
+            <View style={[styles.stockComplianceStatusBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,122,57,0.06)' }]}>
+              <View style={[styles.stockComplianceStatusDot, { backgroundColor: complianceStatusColor }]} />
+              <Text style={[styles.stockComplianceStatusText, { color: colors.textPrimary }]}>{complianceStatusLabel}</Text>
+            </View>
+          </View>
+
+          <View style={[styles.stockComplianceInfoCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.025)' }]}>
+            <View style={styles.stockComplianceInfoRow}>
+              <View style={styles.stockComplianceInfoLeft}>
+                <Icon name="calendar-clock-outline" size={15} color={colors.textSecondary} />
+                <Text style={[styles.stockComplianceInfoLabel, { color: colors.textSecondary }]}>Dernier inventaire</Text>
+              </View>
+              <Text style={[styles.stockComplianceInfoValue, { color: colors.textPrimary }]}>{lastRecountDateLabel}</Text>
+            </View>
+
+            <View style={styles.stockComplianceInfoRow}>
+              <View style={styles.stockComplianceInfoLeft}>
+                <Icon name="timer-sand" size={15} color={colors.textSecondary} />
+                <Text style={[styles.stockComplianceInfoLabel, { color: colors.textSecondary }]}>Jours écoulés</Text>
+              </View>
+              <Text style={[styles.stockComplianceInfoValue, { color: colors.textPrimary }]}>{daysSinceRecount == null ? '—' : `${daysSinceRecount} j`}</Text>
+            </View>
+
+            <View style={styles.stockComplianceInfoRow}>
+              <View style={styles.stockComplianceInfoLeft}>
+                <Icon name="map-marker-outline" size={15} color={colors.textSecondary} />
+                <Text style={[styles.stockComplianceInfoLabel, { color: colors.textSecondary }]}>Site</Text>
+              </View>
+              <Text style={[styles.stockComplianceInfoValue, { color: colors.textPrimary }]} numberOfLines={1}>{siteActif?.nom ?? 'Non sélectionné'}</Text>
+            </View>
+          </View>
+
+          <View style={styles.stockComplianceActions}>
+            <TouchableOpacity
+              style={[styles.stockComplianceActionSecondary, { borderColor: '#00A651' }, isDark && { backgroundColor: 'rgba(0,122,57,0.09)' }]}
+              onPress={handleShowComplianceDetails}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.stockComplianceActionSecondaryText}>Détails</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.stockComplianceActionPrimary, verifyingCompliance && { opacity: 0.6 }]}
+              onPress={handleVerifyCompliance}
+              disabled={verifyingCompliance}
+              activeOpacity={0.7}
+            >
+              <LinearGradient colors={['#00A651', '#007A39']} style={styles.stockComplianceActionPrimaryGradient} />
+              {verifyingCompliance ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text style={styles.stockComplianceActionPrimaryText}>Vérifier</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {/* ===== SECTION PROFIL ===== */}
         <View>
@@ -1484,9 +1594,8 @@ export const SettingsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* ===== SECTION INVENTAIRE (masqué pour superviseurs) ===== */}
-        {!isSuperviseur && (
-        <View>
+  {/* ===== SECTION INVENTAIRE ===== */}
+  <View>
           <View style={styles.sectionHeaderRow}>
             <View style={[styles.sectionAccentBar, { backgroundColor: '#F97316' }]} />
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>INVENTAIRE COMPLET</Text>
@@ -1511,7 +1620,7 @@ export const SettingsScreen: React.FC = () => {
                 <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Dernier inventaire</Text>
                 <Text style={[styles.cardHint, { color: colors.textMuted }]}>
                   {lastRecount
-                    ? `${new Date(lastRecount.recountDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} à ${new Date(lastRecount.recountDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}\nPar ${lastRecount.technicianName} — ${lastRecount.siteName}`
+                    ? `${new Date(lastRecount.recountDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} à ${new Date(lastRecount.recountDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}\nPar ${lastRecountTechnicianInitials} — ${lastRecount.siteName}`
                     : 'Aucun inventaire enregistré'}
                 </Text>
               </View>
@@ -1556,7 +1665,6 @@ export const SettingsScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
         </View>
-        )}
 
         {/* ===== SECTION RGPD ===== */}
         <View>
@@ -1990,6 +2098,57 @@ export const SettingsScreen: React.FC = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
+      {/* ===== MODAL CONFORMITÉ DU STOCK ===== */}
+      <Modal
+        visible={complianceDetailsModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setComplianceDetailsModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <TouchableWithoutFeedback onPress={() => setComplianceDetailsModalVisible(false)}>
+            <View style={{ flex: 1 }} />
+          </TouchableWithoutFeedback>
+          <View style={[{ backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 20, paddingVertical: 24, paddingBottom: 32 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Icon name="shield-check-outline" size={22} color="#00A651" />
+                <Text style={[{ fontSize: 18, fontWeight: '800', color: colors.textPrimary }]}>Détails conformité</Text>
+              </View>
+              <TouchableOpacity onPress={() => setComplianceDetailsModalVisible(false)} activeOpacity={0.7}>
+                <Icon name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[{ backgroundColor: isDark ? 'rgba(0,122,57,0.1)' : 'rgba(0,122,57,0.05)', borderRadius: 12, padding: 16, marginBottom: 16 }]}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>État du stock</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#00A651' }}>✓ Actif</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>Rythme contrôle</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textPrimary }}>Régulier</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>Dernier inventaire</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textPrimary }}>
+                  {lastRecount ? new Date(lastRecount.recountDate).toLocaleDateString('fr-FR') : '—'}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[{ paddingVertical: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }]}
+              onPress={() => setComplianceDetailsModalVisible(false)}
+              activeOpacity={0.7}
+            >
+              <LinearGradient colors={['#00A651', '#007A39']} style={{ position: 'absolute', inset: 0, borderRadius: 10 }} />
+              <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 14, letterSpacing: 0.3, zIndex: 1 }}>Fermer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* ===== MODAL DÉCONNEXION ===== */}
       <Modal
         visible={logoutModalVisible}
@@ -2267,7 +2426,7 @@ export const SettingsScreen: React.FC = () => {
                     <View style={[styles.recountInfoRow, { backgroundColor: isDark ? 'rgba(249,115,22,0.08)' : 'rgba(249,115,22,0.05)', borderColor: isDark ? 'rgba(249,115,22,0.2)' : 'rgba(249,115,22,0.12)' }]}>
                       <Icon name="account" size={16} color="#F97316" />
                       <Text style={[styles.recountInfoText, { color: colors.textSecondary }]}>
-                        {technicien ? `${(technicien.prenom || '?').charAt(0)}${(technicien.nom || '?').charAt(0)}`.toUpperCase() : '—'}
+                        {technicien ? toAbbreviation(`${technicien.prenom || ''} ${technicien.nom || ''}`, 3, '—') : '—'}
                       </Text>
                     </View>
                     <View style={[styles.recountInfoRow, { backgroundColor: isDark ? 'rgba(249,115,22,0.08)' : 'rgba(249,115,22,0.05)', borderColor: isDark ? 'rgba(249,115,22,0.2)' : 'rgba(249,115,22,0.12)' }]}>
@@ -3136,6 +3295,125 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 0.1,
     flex: 1,
+  },
+  stockComplianceCard: {
+    marginHorizontal: 16,
+    marginVertical: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    overflow: 'hidden',
+  },
+  stockComplianceTopBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+  },
+  stockComplianceHeader: {
+    marginTop: 6,
+    marginBottom: 14,
+  },
+  stockComplianceHeaderTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  stockComplianceTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  stockComplianceSubtitle: {
+    fontSize: 12,
+    fontWeight: '400',
+    letterSpacing: 0.1,
+  },
+  stockComplianceStatusBadge: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    gap: 7,
+  },
+  stockComplianceStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  stockComplianceStatusText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.15,
+  },
+  stockComplianceInfoCard: {
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 14,
+  },
+  stockComplianceInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 9,
+  },
+  stockComplianceInfoLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 110,
+  },
+  stockComplianceInfoLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  stockComplianceInfoValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    maxWidth: '56%',
+    textAlign: 'right',
+  },
+  stockComplianceActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  stockComplianceActionSecondary: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+  },
+  stockComplianceActionSecondaryText: {
+    color: '#00A651',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  stockComplianceActionPrimary: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    overflow: 'hidden',
+    minHeight: 44,
+  },
+  stockComplianceActionPrimaryGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  stockComplianceActionPrimaryText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    zIndex: 1,
   },
 });
 

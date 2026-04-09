@@ -7,3 +7,4 @@ export * from './validation';
 export * from './encryption';
 export * from './dateUtils';
 export * from './responsive';
+export * from './abbreviation';

@@ -14,11 +14,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSpring,
-  FadeIn,
-  FadeOut,
-  ZoomIn,
-  ZoomOut,
-  SlideInRight,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -104,18 +99,14 @@ const FABMultiAction: React.FC<FABMultiActionProps> = ({ onScan, onAdd, onKit })
     <>
       {/* Backdrop */}
       {expanded && (
-        <Animated.View
-          entering={FadeIn.duration(200)}
-          exiting={FadeOut.duration(150)}
-          style={styles.backdrop}
-        >
+        <View style={styles.backdrop}>
           <TouchableWithoutFeedback onPress={toggleFAB}>
             <View style={[
               styles.backdropFill,
               { backgroundColor: isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.25)' },
             ]} />
           </TouchableWithoutFeedback>
-        </Animated.View>
+        </View>
       )}
 
       {/* Secondary actions */}
@@ -125,13 +116,7 @@ const FABMultiAction: React.FC<FABMultiActionProps> = ({ onScan, onAdd, onKit })
           tablet && { bottom: 116, right: 32, gap: premiumSpacing.lg },
         ]}>
           {actions.map((action, index) => (
-            <Animated.View
-              key={action.label}
-              entering={ZoomIn.delay(index * 60)
-                .springify()
-                .damping(14)}
-              exiting={ZoomOut.duration(120)}
-            >
+            <View key={action.label}>
               <TouchableOpacity
                 style={[
                   styles.secondaryAction,
@@ -169,7 +154,7 @@ const FABMultiAction: React.FC<FABMultiActionProps> = ({ onScan, onAdd, onKit })
                   {action.label}
                 </Text>
               </TouchableOpacity>
-            </Animated.View>
+            </View>
           ))}
         </View>
       )}

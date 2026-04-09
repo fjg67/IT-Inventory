@@ -13,11 +13,13 @@ import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { loadStoredAuth, loadTechniciens, setRedirectToTechnicianChoiceAfterLogout } from '@/store/slices/authSlice';
 import { loadSites, loadStoredSite, loadSiblingSites } from '@/store/slices/siteSlice';
+import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { setNetworkState, setSupabaseReachable } from '@/store/slices/networkSlice';
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { preferencesService } from '@/services/preferencesService';
 import { movementRealtimeNotificationService } from '@/services/movementRealtimeNotificationService';
 import { pushNotificationsService } from '@/services/pushNotificationsService';
+import { pcAvailabilityAlertService } from '@/services/pcAvailabilityAlertService';
 
 import { FullScreenLoading, NoConnectionScreen } from '@/components';
 import { useAutoLogout } from '@/hooks/useAutoLogout';
@@ -77,6 +79,23 @@ const TabIcon: React.FC<{ focused: boolean; emoji: string; label: string }> = ({
 const ArticlesNavigator: React.FC = () => (
   <ArticlesStack.Navigator screenOptions={{ headerShown: false }}>
     <ArticlesStack.Screen name="ArticlesList" component={ArticlesListScreen} />
+    <ArticlesStack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
+    <ArticlesStack.Screen name="ArticleEdit" component={ArticleEditScreen} />
+    <ArticlesStack.Screen name="Kit" component={KitScreen} />
+  </ArticlesStack.Navigator>
+);
+
+// Articles Navigator - PC Mode (with locked PC type)
+const PCNavigator: React.FC = () => (
+  <ArticlesStack.Navigator screenOptions={{ headerShown: false }}>
+    <ArticlesStack.Screen
+      name="ArticlesList"
+      component={ArticlesListScreen}
+      initialParams={{
+        presetTypeArticle: 'PC',
+        lockPresetTypeArticle: true,
+      }}
+    />
     <ArticlesStack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
     <ArticlesStack.Screen name="ArticleEdit" component={ArticleEditScreen} />
     <ArticlesStack.Screen name="Kit" component={KitScreen} />
@@ -144,6 +163,10 @@ const TabletteIcon = ({ focused }: { focused: boolean }) => (
   <TabIcon focused={focused} emoji="📱" label="Tablette" />
 );
 
+const PCIcon = ({ focused }: { focused: boolean }) => (
+  <TabIcon focused={focused} emoji="🖥️" label="PC" />
+);
+
 // Main Tab Navigator
 const MainNavigator: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -189,6 +212,24 @@ const MainNavigator: React.FC = () => {
         }}
       />
 
+      <MainTab.Screen
+        name="PC"
+        component={PCNavigator}
+        options={{
+          tabBarIcon: PCIcon,
+          tabBarLabel: () => null,
+        }}
+      />
+
+      <MainTab.Screen
+        name="Scan"
+        component={ScanMouvementScreen}
+        options={{
+          tabBarIcon: ScanIcon,
+          tabBarLabel: () => null,
+        }}
+      />
+
       {isStrasbourgGeneral && (
         <MainTab.Screen
           name="Tablette"
@@ -199,15 +240,6 @@ const MainNavigator: React.FC = () => {
           }}
         />
       )}
-
-      <MainTab.Screen
-        name="Scan"
-        component={ScanMouvementScreen}
-        options={{
-          tabBarIcon: ScanIcon,
-          tabBarLabel: () => null,
-        }}
-      />
       <MainTab.Screen
         name="Mouvements"
         component={MouvementsNavigator}
@@ -233,6 +265,7 @@ export const AppNavigator: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isAuthenticated, isLoading: authLoading, redirectToTechnicianChoiceAfterLogout, currentTechnicien } = useAppSelector((state) => state.auth);
   const { isConnected, isInternetReachable } = useAppSelector((state) => state.network);
+  const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
 
   const [isInitializing, setIsInitializing] = React.useState(true);
   const [onboardingSeen, setOnboardingSeen] = React.useState(false);
@@ -338,6 +371,25 @@ export const AppNavigator: React.FC = () => {
       pushNotificationsService.stop();
     };
   }, [isAuthenticated, currentTechnicien?.id]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !effectiveSiteId) return;
+
+    const runCheck = () => {
+      pcAvailabilityAlertService
+        .checkAndNotify(effectiveSiteId)
+        .catch((error) => {
+          console.warn('[AppNavigator] pcAvailabilityAlertService.checkAndNotify error:', error);
+        });
+    };
+
+    runCheck();
+    const interval = setInterval(runCheck, 6 * 60 * 60 * 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, effectiveSiteId]);
 
   // Réinitialiser le flag "après déconnexion" une fois l'écran Auth affiché (pour que le prochain lancement affiche Login)
   useEffect(() => {

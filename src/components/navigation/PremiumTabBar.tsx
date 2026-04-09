@@ -28,6 +28,7 @@ type TabCfg = { icon: string; iconFocused: string; label: string };
 const TAB_CONFIG: Record<string, TabCfg> = {
   Dashboard:  { icon: 'home-outline',       iconFocused: 'home',                    label: 'Accueil' },
   Articles:   { icon: 'package-variant',     iconFocused: 'package-variant-closed',  label: 'Articles' },
+  PC:         { icon: 'laptop',              iconFocused: 'laptop',                  label: 'PC' },
   Tablette:   { icon: 'tablet-cellphone',    iconFocused: 'tablet-cellphone',        label: 'Tablette' },
   Scan:       { icon: 'barcode-scan',        iconFocused: 'barcode-scan',            label: 'Scan' },
   Mouvements: { icon: 'swap-horizontal',     iconFocused: 'swap-horizontal',         label: 'Mouvements' },
@@ -177,49 +178,76 @@ const PremiumTabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
   const tablet = checkIsTablet(width);
   const { colors } = useTheme();
 
+  const scanIndex = state.routes.findIndex(r => r.name === 'Scan');
+  const leftRoutes = state.routes.slice(0, scanIndex);
+  const scanRoute = state.routes[scanIndex];
+  const rightRoutes = state.routes.slice(scanIndex + 1);
+
+  const makeHandlers = (route: typeof state.routes[number], index: number) => {
+    const isFocused = state.index === index;
+    const onPress = () => {
+      const event = navigation.emit({
+        type: 'tabPress',
+        target: route.key,
+        canPreventDefault: true,
+      });
+      if (!isFocused && !event.defaultPrevented) {
+        navigation.navigate(route.name, route.params);
+      }
+    };
+    const onLongPress = () => {
+      navigation.emit({ type: 'tabLongPress', target: route.key });
+    };
+    return { isFocused, onPress, onLongPress };
+  };
+
   return (
     <View style={[s.container, { backgroundColor: colors.tabBarBackground, borderTopColor: colors.tabBarBorder }]}>
       <View style={[s.tabBar, tablet && s.tabBarTablet]}>
-        {state.routes.map((route, index) => {
-          const isFocused = state.index === index;
-
-          const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name, route.params);
-            }
-          };
-
-          const onLongPress = () => {
-            navigation.emit({ type: 'tabLongPress', target: route.key });
-          };
-
-          // Bouton Scan central surélevé
-          if (route.name === 'Scan') {
+        {/* Groupe gauche */}
+        <View style={s.tabGroup}>
+          {leftRoutes.map((route, i) => {
+            const { isFocused, onPress, onLongPress } = makeHandlers(route, i);
             return (
-              <ScanCenterButton
+              <TabItem
                 key={route.key}
+                routeName={route.name}
                 isFocused={isFocused}
                 onPress={onPress}
                 onLongPress={onLongPress}
               />
             );
-          }
+          })}
+        </View>
 
+        {/* Bouton Scan central surélevé */}
+        {scanRoute && (() => {
+          const { isFocused, onPress, onLongPress } = makeHandlers(scanRoute, scanIndex);
           return (
-            <TabItem
-              key={route.key}
-              routeName={route.name}
+            <ScanCenterButton
+              key={scanRoute.key}
               isFocused={isFocused}
               onPress={onPress}
               onLongPress={onLongPress}
             />
           );
-        })}
+        })()}
+
+        {/* Groupe droite */}
+        <View style={s.tabGroup}>
+          {rightRoutes.map((route, i) => {
+            const { isFocused, onPress, onLongPress } = makeHandlers(route, scanIndex + 1 + i);
+            return (
+              <TabItem
+                key={route.key}
+                routeName={route.name}
+                isFocused={isFocused}
+                onPress={onPress}
+                onLongPress={onLongPress}
+              />
+            );
+          })}
+        </View>
       </View>
     </View>
   );
@@ -284,12 +312,19 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
 
+  // === Tab groups (left / right) ===
+  tabGroup: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+
   // === Scan center button ===
   scanBtnWrapper: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
     marginTop: -22,
+    paddingHorizontal: 4,
   },
   scanBtnWrapperTablet: {
     marginTop: -28,

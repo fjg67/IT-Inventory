@@ -60,14 +60,27 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
+  const isPCFilterSheet =
+    allowedKeys?.length === 3 &&
+    allowedKeys.includes('sousType') &&
+    allowedKeys.includes('marque') &&
+    allowedKeys.includes('emplacement');
 
   const visibleRows = allowedKeys && allowedKeys.length > 0
-    ? ROWS.filter((row) => allowedKeys.includes(row.key))
+    ? ROWS
+        .filter((row) => allowedKeys.includes(row.key))
+        .map((row) =>
+          isPCFilterSheet && row.key === 'sousType'
+            ? { ...row, label: 'Catégorie' }
+            : row,
+        )
     : ROWS;
 
   const subtitleText =
     visibleRows.length === 2 && visibleRows.some((r) => r.key === 'marque') && visibleRows.some((r) => r.key === 'emplacement')
       ? 'Marque et emplacement des tablettes'
+      : isPCFilterSheet
+        ? 'Catégorie, marque et emplacement du parc PC'
       : 'Code famille, famille, type, sous-type, marque, emplacement';
 
   const handleRowPress = (key: ArticleFilterKey) => {

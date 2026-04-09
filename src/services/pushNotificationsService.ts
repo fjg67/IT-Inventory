@@ -84,21 +84,30 @@ async function saveTokenForUser(userId: string | null, token: string): Promise<v
   };
   headers.Authorization = `Bearer ${session?.access_token ?? SUPABASE_CONFIG.anonKey}`;
 
-  const response = await fetch(`${SUPABASE_CONFIG.url}/functions/v1/register-push-token`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      deviceId,
-      userId: userId ?? undefined,
-      token,
-      platform: Platform.OS,
-      enabled: true,
-    }),
-  });
+  let response: Response | null = null;
+  try {
+    response = await fetch(`${SUPABASE_CONFIG.url}/functions/v1/register-push-token`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        deviceId,
+        userId: userId ?? undefined,
+        token,
+        platform: Platform.OS,
+        enabled: true,
+      }),
+    });
+  } catch {
+    // Network error (status 0, offline, etc.) — fall through to direct DB write
+  }
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    console.warn(`[pushNotificationsService] register-push-token failed: HTTP ${response.status} ${body}`);
+  if (!response || !response.ok) {
+    if (response) {
+      const body = await response.text().catch(() => '');
+      console.warn(`[pushNotificationsService] register-push-token failed: HTTP ${response.status} ${body}`);
+    } else {
+      console.warn('[pushNotificationsService] register-push-token: network error, falling back to direct DB write');
+    }
 
     // Fallback direct DB write if edge function is not deployed/available
     let { error } = await supabase.from(tables.pushDeviceTokens).upsert(

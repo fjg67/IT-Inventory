@@ -18,6 +18,7 @@ export type RootStackParamList = {
 export type MainTabParamList = {
   Dashboard: undefined;
   Articles: NavigatorScreenParams<ArticlesStackParamList>;
+  PC: NavigatorScreenParams<ArticlesStackParamList>;
   Tablette: NavigatorScreenParams<ArticlesStackParamList>;
   Mouvements: NavigatorScreenParams<MouvementsStackParamList>;
   Scan: undefined;
@@ -40,7 +41,7 @@ export type ArticlesStackParamList = {
         lockPresetTypeArticle?: boolean;
       }
     | undefined;
-  ArticleDetail: { articleId: number; sourceTab?: 'Articles' | 'Tablette' };
+  ArticleDetail: { articleId: number; sourceTab?: 'Articles' | 'Tablette' | 'PC' };
   ArticleEdit: { articleId?: number; famille?: string } | undefined;
   Kit: undefined;
 };

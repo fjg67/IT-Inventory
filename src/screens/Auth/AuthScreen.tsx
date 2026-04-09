@@ -4,11 +4,13 @@
 // ============================================
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
+  Pressable,
   TouchableOpacity,
   StatusBar,
   Modal,
@@ -37,8 +39,11 @@ import { loadTechniciens, loadTechniciensBySite, loginTechnicien } from '@/store
 import { FullScreenLoading } from '@/components';
 import { Technicien } from '@/types';
 import { useResponsive } from '@/utils/responsive';
+import { toAbbreviation } from '@/utils/abbreviation';
 import { useTheme } from '@/theme';
 import { SUPABASE_CONFIG } from '@/constants/config';
+import { protectedProfileMfaConfigs, ProtectedProfileMfaConfig } from '@/constants/mfa';
+import { buildGoogleAuthenticatorUri, verifyGoogleAuthenticatorCode } from '@/services/googleAuthenticatorService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -61,9 +66,30 @@ const getAvatarGradient = (id: string | number | undefined): [string, string] =>
 };
 
 const getInitials = (technicien: Technicien): string => {
-  const p = technicien.prenom?.charAt(0) || '';
-  const n = technicien.nom?.charAt(0) || '';
-  return `${p}${n}`.toUpperCase();
+  const fullName = `${technicien.prenom || ''} ${technicien.nom || ''}`.trim();
+  return toAbbreviation(fullName, 3, '?');
+};
+
+const MFA_SETUP_VIEWED_KEY_PREFIX = '@it-inventory/mfa-setup-viewed/';
+
+const getMfaSetupViewedStorageKey = (config: ProtectedProfileMfaConfig): string => (
+  `${MFA_SETUP_VIEWED_KEY_PREFIX}${config.issuer}:${config.accountLabel}`
+);
+
+const findProtectedProfileMfa = (technicien: Technicien): ProtectedProfileMfaConfig | undefined => {
+  const initials = getInitials(technicien);
+
+  return protectedProfileMfaConfigs.find((config) => {
+    if (config.requiredRole && technicien.role !== config.requiredRole) {
+      return false;
+    }
+
+    if (config.requiredInitials && initials !== config.requiredInitials) {
+      return false;
+    }
+
+    return true;
+  });
 };
 
 // ==================== BACKGROUND BLOBS ====================
@@ -105,6 +131,13 @@ export const AuthScreen: React.FC = () => {
   const [newRole, setNewRole] = useState<'TECHNICIAN' | 'superviseur'>('TECHNICIAN');
   const [isCreating, setIsCreating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [mfaModalVisible, setMfaModalVisible] = useState(false);
+  const [pendingTechnicien, setPendingTechnicien] = useState<Technicien | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaError, setMfaError] = useState('');
+  const [mfaSubmitting, setMfaSubmitting] = useState(false);
+  const [showMfaSetupKey, setShowMfaSetupKey] = useState<'hidden' | 'collapsed' | 'revealed'>('collapsed');
+  const [mfaSecretCopied, setMfaSecretCopied] = useState(false);
 
   // Input focus states
   const [prenomFocused, setPrenomFocused] = useState(false);
@@ -143,17 +176,116 @@ export const AuthScreen: React.FC = () => {
     }
   }, [dispatch, siteId, parentSiteId]);
 
+  const currentMfaConfig = useMemo(
+    () => (pendingTechnicien ? findProtectedProfileMfa(pendingTechnicien) : undefined),
+    [pendingTechnicien],
+  );
+
+  const closeMfaModal = useCallback(() => {
+    setMfaModalVisible(false);
+    setPendingTechnicien(null);
+    setMfaCode('');
+    setMfaError('');
+    setMfaSubmitting(false);
+    setShowMfaSetupKey('collapsed');
+    setMfaSecretCopied(false);
+  }, []);
+
+  const handleCopyMfaSecret = useCallback(() => {
+    if (!currentMfaConfig) {
+      return;
+    }
+
+    try {
+      const ClipboardModule = require('@react-native-clipboard/clipboard').default;
+      ClipboardModule.setString(currentMfaConfig.secret);
+    } catch {
+      Alert.alert(
+        'Copie indisponible',
+        'La fonction de copie sera disponible apres la prochaine reconstruction de l\'application.',
+      );
+      return;
+    }
+
+    setMfaSecretCopied(true);
+    Vibration.vibrate(12);
+
+    setTimeout(() => {
+      setMfaSecretCopied(false);
+    }, 2200);
+  }, [currentMfaConfig]);
+
+  const completeTechnicienLogin = useCallback(
+    async (technicien: Technicien) => {
+      await dispatch(loginTechnicien({ technicienId: technicien.id, persist: rememberMe })).unwrap();
+    },
+    [dispatch, rememberMe],
+  );
+
   const handleSelectTechnicien = useCallback(
     async (technicien: Technicien) => {
       Vibration.vibrate(10);
+
+      const protectedMfa = findProtectedProfileMfa(technicien);
+      if (protectedMfa) {
+        let nextSetupVisibility: 'hidden' | 'collapsed' | 'revealed' = 'collapsed';
+
+        try {
+          const stored = await AsyncStorage.getItem(getMfaSetupViewedStorageKey(protectedMfa));
+          if (stored === 'true') {
+            nextSetupVisibility = 'hidden';
+          }
+        } catch {
+          nextSetupVisibility = 'collapsed';
+        }
+
+        setPendingTechnicien(technicien);
+        setMfaCode('');
+        setMfaError('');
+        setMfaSecretCopied(false);
+        setShowMfaSetupKey(nextSetupVisibility);
+        setMfaModalVisible(true);
+        return;
+      }
+
       try {
-        await dispatch(loginTechnicien({ technicienId: technicien.id, persist: rememberMe })).unwrap();
+        await completeTechnicienLogin(technicien);
       } catch (err) {
         console.error('Erreur de connexion:', err);
       }
     },
-    [dispatch],
+    [completeTechnicienLogin],
   );
+
+  const handleConfirmMfa = useCallback(async () => {
+    if (!pendingTechnicien || !currentMfaConfig) {
+      return;
+    }
+
+    const normalizedCode = mfaCode.replace(/\D/g, '').slice(0, 6);
+    if (normalizedCode.length !== 6) {
+      setMfaError('Entrez le code à 6 chiffres de Google Authenticator.');
+      Vibration.vibrate(15);
+      return;
+    }
+
+    if (!verifyGoogleAuthenticatorCode(normalizedCode, currentMfaConfig.secret)) {
+      setMfaError('Code Google Authenticator invalide.');
+      Vibration.vibrate([0, 40, 50, 40]);
+      return;
+    }
+
+    setMfaSubmitting(true);
+    try {
+      await completeTechnicienLogin(pendingTechnicien);
+      closeMfaModal();
+    } catch (err) {
+      console.error('Erreur de connexion après validation 2FA:', err);
+      setMfaError('Validation réussie, mais la connexion a échoué.');
+    } finally {
+      setMfaSubmitting(false);
+    }
+  }, [closeMfaModal, completeTechnicienLogin, currentMfaConfig, mfaCode, pendingTechnicien]);
 
   const handleCreateTechnicien = useCallback(async () => {
     if (!isFormValid) return;
@@ -171,7 +303,7 @@ export const AuthScreen: React.FC = () => {
       const roleBg = newRole === 'superviseur' ? '#FEF3C7' : '#E8F5E9';
       const roleColor = newRole === 'superviseur' ? '#92400E' : '#005C2B';
       const roleIcon = newRole === 'superviseur' ? '👑' : '🔧';
-      const initials = `${prenomTrimmed.charAt(0)}${nomTrimmed.charAt(0)}`.toUpperCase();
+      const initials = toAbbreviation(`${prenomTrimmed} ${nomTrimmed}`, 3, '');
 
       const emailHtml = `
 <!DOCTYPE html>
@@ -333,6 +465,8 @@ export const AuthScreen: React.FC = () => {
   const renderTechnicien = useCallback(
     ({ item, index }: { item: Technicien; index: number }) => {
       const gradient = getAvatarGradient(item.id);
+      const protectedMfa = findProtectedProfileMfa(item);
+
       return (
         <Animated.View entering={FadeInUp.delay(1000 + index * 120).duration(500)}>
           <TouchableOpacity
@@ -355,6 +489,14 @@ export const AuthScreen: React.FC = () => {
               <Text style={[styles.profileName, { color: colors.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">
                 {getInitials(item)}
               </Text>
+              {protectedMfa ? (
+                <View style={styles.profileSecurityRow}>
+                  <View style={styles.profileSecurityBadge}>
+                    <Icon name="shield-key-outline" size={12} color="#FFFFFF" />
+                    <Text style={styles.profileSecurityBadgeText}>2FA Google</Text>
+                  </View>
+                </View>
+              ) : null}
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                 <LinearGradient
                   colors={item.role === 'superviseur' ? ['#F59E0B', '#D97706'] : ['#007A39', '#007A39']}
@@ -377,7 +519,7 @@ export const AuthScreen: React.FC = () => {
         </Animated.View>
       );
     },
-    [handleSelectTechnicien],
+    [colors, handleSelectTechnicien, isDark],
   );
 
   const renderEmpty = useCallback(
@@ -559,6 +701,182 @@ export const AuthScreen: React.FC = () => {
         ListFooterComponent={renderFooter}
         {...(isTablet ? { numColumns: 2, columnWrapperStyle: { gap: 16 } } : {})}
       />
+
+      {mfaModalVisible ? (
+        <View style={styles.inlineModalHost} pointerEvents="box-none">
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalOverlay}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.modalWrapper}
+              >
+                <View style={[styles.modalSheet, { backgroundColor: colors.surface }]}> 
+                  <View style={[styles.modalHandle, { backgroundColor: colors.textMuted }]} />
+
+                  <View style={styles.modalHeader}>
+                    <View style={{ flex: 1 }} />
+                    <Pressable
+                      onPress={() => {
+                        Vibration.vibrate(10);
+                        closeMfaModal();
+                      }}
+                      style={[styles.closeBtn, { backgroundColor: isDark ? colors.surfaceElevated : '#F1F5F9' }]}
+                      disabled={mfaSubmitting}
+                    >
+                      <Icon name="close" size={20} color={colors.textSecondary} />
+                    </Pressable>
+                  </View>
+
+                  <View style={styles.mfaHeroWrap}>
+                    <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.mfaHeroIcon}>
+                      <Icon name="shield-key-outline" size={28} color="#FFFFFF" />
+                    </LinearGradient>
+                    <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Double authentification</Text>
+                    <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>Google Authenticator est requis pour accéder à ce profil.</Text>
+                  </View>
+
+                  {pendingTechnicien ? (
+                    <View style={[styles.mfaProfileCard, { backgroundColor: colors.surfaceInput, borderColor: colors.borderSubtle }]}> 
+                      <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.mfaProfileAvatar}>
+                        <Text style={styles.mfaProfileAvatarText}>{getInitials(pendingTechnicien)}</Text>
+                      </LinearGradient>
+                      <View style={styles.mfaProfileContent}>
+                        <Text style={[styles.mfaProfileTitle, { color: colors.textPrimary }]}>{getInitials(pendingTechnicien)}</Text>
+                        <Text style={[styles.mfaProfileSubtitle, { color: colors.textSecondary }]}>Profil protégé par code temporaire à 6 chiffres</Text>
+                      </View>
+                    </View>
+                  ) : null}
+
+                <View style={styles.inputGroup}>
+                  <View style={styles.labelRow}>
+                    <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Code Google Authenticator</Text>
+                    <Text style={[styles.requiredStar, { color: colors.danger }]}> *</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.inputContainer,
+                      {
+                        borderColor: mfaError ? colors.danger : colors.borderSubtle,
+                        borderWidth: mfaError ? 2 : 1.5,
+                        backgroundColor: colors.surfaceInput,
+                      },
+                    ]}
+                  >
+                    <Icon name="cellphone-key" size={18} color={mfaError ? colors.danger : colors.textMuted} style={{ marginRight: 10 }} />
+                    <TextInput
+                      style={[styles.input, styles.mfaInput, { color: colors.textPrimary }]}
+                      placeholder="123456"
+                      placeholderTextColor={colors.textMuted}
+                      value={mfaCode}
+                      onChangeText={(text) => {
+                        setMfaCode(text.replace(/\D/g, '').slice(0, 6));
+                        if (mfaError) {
+                          setMfaError('');
+                        }
+                      }}
+                      keyboardType="number-pad"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      maxLength={6}
+                    />
+                  </View>
+                  {mfaError ? (
+                    <Text style={[styles.errorMsg, { color: colors.danger }]}>{mfaError}</Text>
+                  ) : (
+                    <Text style={[styles.mfaHint, { color: colors.textMuted }]}>Ouvrez Google Authenticator et saisissez le code en cours.</Text>
+                  )}
+                </View>
+
+                {currentMfaConfig && showMfaSetupKey !== 'hidden' ? (
+                  <View style={[styles.mfaSetupCard, { backgroundColor: isDark ? colors.surfaceElevated : '#F8FAFC', borderColor: colors.borderSubtle }]}>
+                    <Pressable
+                      style={styles.mfaSetupToggle}
+                      onPress={async () => {
+                        if (!currentMfaConfig || showMfaSetupKey === 'hidden') {
+                          return;
+                        }
+
+                        setShowMfaSetupKey('revealed');
+
+                        try {
+                          await AsyncStorage.setItem(getMfaSetupViewedStorageKey(currentMfaConfig), 'true');
+                        } catch {
+                          // Ignore persistence failure: current session still reveals the key.
+                        }
+                      }}
+                    >
+                      <View style={styles.mfaSetupToggleTextWrap}>
+                        <Text style={[styles.mfaSetupTitle, { color: colors.textPrimary }]}>Configuration Google Authenticator</Text>
+                        <Text style={[styles.mfaSetupSubtitle, { color: colors.textSecondary }]}>Afficher la clé si le téléphone RL n'est pas encore enrôlé.</Text>
+                      </View>
+                      <Icon name={showMfaSetupKey === 'revealed' ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
+                    </Pressable>
+
+                    {showMfaSetupKey === 'revealed' ? (
+                      <View style={styles.mfaSetupBody}>
+                        <Text style={[styles.mfaSetupLabel, { color: colors.textMuted }]}>Clé manuelle</Text>
+                        <Text selectable style={[styles.mfaSecret, { color: colors.textPrimary }]}>{currentMfaConfig.secret}</Text>
+                        <Pressable
+                          onPress={handleCopyMfaSecret}
+                          style={[
+                            styles.mfaCopyBtn,
+                            {
+                              backgroundColor: isDark ? colors.surfaceInput : '#FFF7ED',
+                              borderColor: isDark ? colors.borderStrong : '#FED7AA',
+                            },
+                          ]}
+                        >
+                          <Icon name={mfaSecretCopied ? 'clipboard-check-outline' : 'content-copy'} size={16} color="#D97706" />
+                          <Text style={styles.mfaCopyBtnText}>{mfaSecretCopied ? 'Clé copiée' : 'Copier la clé'}</Text>
+                        </Pressable>
+                        <Text style={[styles.mfaSetupLabel, { color: colors.textMuted }]}>URI otpauth</Text>
+                        <Text selectable style={[styles.mfaUri, { color: colors.textPrimary }]}>{buildGoogleAuthenticatorUri(currentMfaConfig.issuer, currentMfaConfig.accountLabel, currentMfaConfig.secret)}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
+
+                  <View style={styles.modalButtons}>
+                    <Pressable
+                      style={[styles.cancelBtn, { borderColor: isDark ? colors.borderStrong : '#E2E8F0' }]}
+                      onPress={() => {
+                        Vibration.vibrate(10);
+                        closeMfaModal();
+                      }}
+                      disabled={mfaSubmitting}
+                    >
+                      <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>Annuler</Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={[styles.submitBtn, mfaSubmitting && styles.submitBtnDisabled]}
+                      onPress={() => {
+                        Vibration.vibrate(15);
+                        handleConfirmMfa();
+                      }}
+                      disabled={mfaSubmitting}
+                    >
+                      <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.submitBtnGradient}>
+                        {mfaSubmitting ? (
+                          <>
+                            <ActivityIndicator color="#FFF" size="small" />
+                            <Text style={styles.submitBtnText}>Vérification...</Text>
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="shield-check-outline" size={20} color="#FFF" />
+                            <Text style={styles.submitBtnText}>Valider la 2FA</Text>
+                          </>
+                        )}
+                      </LinearGradient>
+                    </Pressable>
+                  </View>
+                </View>
+              </KeyboardAvoidingView>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      ) : null}
 
       {/* Version */}
       <View style={styles.footer}>
@@ -1006,6 +1324,25 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
   },
+  profileSecurityRow: {
+    marginTop: 6,
+  },
+  profileSecurityBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#111827',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  profileSecurityBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
   profileMatricule: {
     fontSize: 13,
     fontWeight: '500',
@@ -1120,6 +1457,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'flex-end',
+  },
+  inlineModalHost: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
+    elevation: 999,
   },
   modalWrapper: {
     width: '100%',
@@ -1253,6 +1595,126 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  mfaHeroWrap: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  mfaHeroIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  mfaProfileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 18,
+    gap: 12,
+  },
+  mfaProfileAvatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mfaProfileAvatarText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  mfaProfileContent: {
+    flex: 1,
+  },
+  mfaProfileTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  mfaProfileSubtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  mfaInput: {
+    letterSpacing: 8,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  mfaHint: {
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+    lineHeight: 18,
+  },
+  mfaSetupCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+  },
+  mfaSetupToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  mfaSetupToggleTextWrap: {
+    flex: 1,
+  },
+  mfaSetupTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  mfaSetupSubtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  mfaSetupBody: {
+    marginTop: 12,
+    gap: 8,
+  },
+  mfaSetupLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  mfaSecret: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 1.1,
+  },
+  mfaCopyBtn: {
+    marginTop: 2,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  mfaCopyBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#D97706',
+  },
+  mfaUri: {
+    fontSize: 11,
+    lineHeight: 18,
   },
 
   // Success

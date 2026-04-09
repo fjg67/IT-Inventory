@@ -27,6 +27,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useAppSelector } from '@/store';
 import { selectIsSuperviseur } from '@/store/slices/authSlice';
+import { notifyPCStatusChange } from '@/services/pcStatusNotificationService';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { articleRepository, mouvementRepository, stockRepository } from '@/database';
 import { formatTimeParis, formatRelativeDateParis } from '@/utils/dateUtils';
@@ -64,6 +65,14 @@ const getInitials = (name: string) => {
   return name.substring(0, 2).toUpperCase();
 };
 
+const getInventoryStatus = (description?: string) => {
+  const normalized = (description ?? '').toLowerCase();
+  if (normalized.includes('disponible')) return 'Disponible';
+  if (normalized.includes('reusin') || normalized.includes('recondition')) return 'A reusiner';
+  if (normalized.includes('a chaud') || normalized.includes('à chaud')) return 'A chaud';
+  return null;
+};
+
 const formatTime = (date: Date) => formatTimeParis(date);
 const formatRelDate = (date: Date) => formatRelativeDateParis(date);
 
@@ -83,6 +92,7 @@ export const ArticleDetailScreen: React.FC = () => {
   const siteActif = useAppSelector(state => state.site.siteActif);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const isSuperviseur = useAppSelector(selectIsSuperviseur);
+  const currentTechnicien = useAppSelector((state) => state.auth.currentTechnicien);
   const { isTablet, contentMaxWidth } = useResponsive();
   const { colors, isDark, theme } = useTheme();
   const { gradients } = theme;
@@ -91,6 +101,7 @@ export const ArticleDetailScreen: React.FC = () => {
   const [historique, setHistorique] = useState<Mouvement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [isUpdatingPCStatus, setIsUpdatingPCStatus] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!articleId || !effectiveSiteId) return;
@@ -119,7 +130,27 @@ export const ArticleDetailScreen: React.FC = () => {
   const stockActuel = article?.quantiteActuelle ?? 0;
   const isLowStock = article ? stockActuel < article.stockMini : false;
   const isCritical = article ? stockActuel === 0 && article.stockMini > 0 : false;
+  const inventoryStatus = getInventoryStatus(article?.description);
   const gradient = useMemo(() => getGradient(article?.nom ?? 'A'), [article?.nom]);
+  const isPCArticle = useMemo(() => {
+    if (!article) return false;
+
+    const values = [article.typeArticle, article.sousType, article.famille]
+      .filter((value): value is string => !!value)
+      .map((value) => value.toLowerCase());
+
+    return values.some((value) =>
+      value === 'pc' ||
+      value.includes('pc portable') ||
+      value.includes('portable siège') ||
+      value.includes('portable siege') ||
+      value.includes('portable agence') ||
+      value.includes('pc disponible'),
+    );
+  }, [article]);
+  const isPCAvailable = isPCArticle && inventoryStatus === 'Disponible';
+  const isPCReconditioning = isPCArticle && inventoryStatus === 'A reusiner';
+  const isPCHot = isPCArticle && inventoryStatus === 'A chaud';
 
   // Navigation
   const handleMouvement = (type: 'entree' | 'sortie' | 'ajustement') => {
@@ -130,20 +161,107 @@ export const ArticleDetailScreen: React.FC = () => {
     Vibration.vibrate(10);
     navigation.navigate('Mouvements', { screen: 'TransfertForm', params: { articleId } });
   };
+  const handleUpdatePCStatus = useCallback(async (nextStatus: 'À chaud' | 'À reusiner' | 'Disponible') => {
+    if (!article) return;
+
+    try {
+      setIsUpdatingPCStatus(true);
+      const nextFamily = nextStatus === 'Disponible' ? 'PC disponible' : 'PC portable';
+      await articleRepository.update(article.id, {
+        description: `Statut: ${nextStatus}`,
+        famille: nextFamily,
+      });
+
+      setArticle((prev) => prev ? {
+        ...prev,
+        description: `Statut: ${nextStatus}`,
+        famille: nextFamily,
+        dateModification: new Date(),
+      } : prev);
+      Vibration.vibrate(16);
+
+      const techName = currentTechnicien
+        ? `${currentTechnicien.prenom} ${currentTechnicien.nom}`.trim()
+        : 'Technicien inconnu';
+      notifyPCStatusChange({
+        article: { ...article, description: `Statut: ${nextStatus}`, famille: nextFamily },
+        nextStatus,
+        technicienName: techName,
+      });
+    } catch (error) {
+      Alert.alert('Erreur', `Impossible de passer le PC en ${nextStatus}.`);
+    } finally {
+      setIsUpdatingPCStatus(false);
+    }
+  }, [article, currentTechnicien]);
   const handleEdit = () => {
     Vibration.vibrate(10);
     navigation.navigate('ArticleEdit', { articleId });
   };
 
+  const quickActions = useMemo(() => {
+    if (isPCArticle) {
+      return [
+        {
+          icon: 'check-circle-outline',
+          label: 'Disponible',
+          gradient: ['#2563EB', '#1D4ED8'] as [string, string],
+          onPress: () => handleUpdatePCStatus('Disponible'),
+          disabled: isUpdatingPCStatus || isPCAvailable,
+        },
+        {
+          icon: 'flash-outline',
+          label: 'À chaud',
+          gradient: ['#10B981', '#059669'] as [string, string],
+          onPress: () => handleUpdatePCStatus('À chaud'),
+          disabled: isUpdatingPCStatus || isPCHot,
+        },
+        {
+          icon: 'wrench-outline',
+          label: 'À reusiner',
+          gradient: ['#F59E0B', '#D97706'] as [string, string],
+          onPress: () => handleUpdatePCStatus('À reusiner'),
+          disabled: isUpdatingPCStatus || isPCReconditioning,
+        },
+        {
+          icon: 'arrow-down-bold',
+          label: 'Sortie',
+          gradient: ['#EF4444', '#DC2626'] as [string, string],
+          onPress: () => handleMouvement('sortie'),
+          disabled: stockActuel === 0,
+        },
+      ];
+    }
+
+    return [
+      { icon: 'arrow-up-bold', label: 'Entrée', gradient: ['#10B981', '#059669'] as [string, string], onPress: () => handleMouvement('entree'), disabled: false },
+      { icon: 'arrow-down-bold', label: 'Sortie', gradient: ['#EF4444', '#DC2626'] as [string, string], onPress: () => handleMouvement('sortie'), disabled: stockActuel === 0 },
+      { icon: 'tune-vertical', label: 'Ajustement', gradient: ['#F59E0B', '#D97706'] as [string, string], onPress: () => handleMouvement('ajustement'), disabled: false },
+      { icon: 'swap-horizontal', label: 'Transfert', gradient: ['#8B5CF6', '#6D28D9'] as [string, string], onPress: handleTransfert, disabled: false },
+    ];
+  }, [handleMouvement, handleTransfert, handleUpdatePCStatus, isPCArticle, isPCAvailable, isPCHot, isPCReconditioning, isUpdatingPCStatus, stockActuel]);
+
   const handleBack = useCallback(() => {
     Vibration.vibrate(10);
+
+    if (sourceTab === 'PC' || sourceTab === 'Tablette') {
+      const tabName = sourceTab === 'Tablette' ? 'Tablette' : 'PC';
+      const parentNav = navigation.getParent?.();
+
+      if (parentNav) {
+        parentNav.navigate(tabName, { screen: 'ArticlesList' });
+      } else {
+        navigation.navigate('ArticlesList');
+      }
+      return;
+    }
 
     if (navigation.canGoBack()) {
       navigation.goBack();
       return;
     }
 
-    const tabName = sourceTab === 'Tablette' ? 'Tablette' : 'Articles';
+    const tabName = sourceTab === 'Tablette' ? 'Tablette' : sourceTab === 'PC' ? 'PC' : 'Articles';
     const parentNav = navigation.getParent?.();
     if (parentNav) {
       parentNav.navigate(tabName, { screen: 'ArticlesList' });
@@ -388,6 +506,33 @@ export const ArticleDetailScreen: React.FC = () => {
                 </View>
               </View>
             ) : null}
+            {article.modele ? (
+              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Modèle</Text>
+                <View style={[styles.infoTagBadge, { backgroundColor: colors.successBg }]}>
+                  <Icon name="laptop" size={13} color={colors.success} />
+                  <Text style={[styles.infoTagText, { color: colors.success }]}>{article.modele}</Text>
+                </View>
+              </View>
+            ) : null}
+            {article.barcode ? (
+              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Asset</Text>
+                <View style={[styles.infoTagBadge, { backgroundColor: colors.infoBg }]}>
+                  <Icon name="tag-outline" size={13} color={colors.info} />
+                  <Text style={[styles.infoTagText, { color: colors.info }]}>{article.barcode}</Text>
+                </View>
+              </View>
+            ) : null}
+            {inventoryStatus ? (
+              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Statut</Text>
+                <View style={[styles.infoTagBadge, { backgroundColor: inventoryStatus === 'A chaud' ? colors.successBg : inventoryStatus === 'Disponible' ? '#DBEAFE' : colors.warningBg }]}>
+                  <Icon name={inventoryStatus === 'A chaud' ? 'flash-outline' : inventoryStatus === 'Disponible' ? 'check-circle-outline' : 'wrench-outline'} size={13} color={inventoryStatus === 'A chaud' ? colors.success : inventoryStatus === 'Disponible' ? '#2563EB' : colors.warning} />
+                  <Text style={[styles.infoTagText, { color: inventoryStatus === 'A chaud' ? colors.success : inventoryStatus === 'Disponible' ? '#2563EB' : colors.warning }]}>{inventoryStatus}</Text>
+                </View>
+              </View>
+            ) : null}
             {article.emplacement ? (
               <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Emplacement</Text>
@@ -458,15 +603,10 @@ export const ArticleDetailScreen: React.FC = () => {
           <Animated.View entering={FadeInUp.delay(400).duration(400)} style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#10B981', '#059669']} style={styles.sectionAccent} />
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Actions rapides</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{isPCArticle ? 'Actions PC' : 'Actions rapides'}</Text>
             </View>
             <View style={styles.actionsGrid}>
-              {[
-                { icon: 'arrow-up-bold', label: 'Entrée', gradient: ['#10B981', '#059669'] as [string, string], onPress: () => handleMouvement('entree'), disabled: false },
-                { icon: 'arrow-down-bold', label: 'Sortie', gradient: ['#EF4444', '#DC2626'] as [string, string], onPress: () => handleMouvement('sortie'), disabled: stockActuel === 0 },
-                { icon: 'tune-vertical', label: 'Ajustement', gradient: ['#F59E0B', '#D97706'] as [string, string], onPress: () => handleMouvement('ajustement'), disabled: false },
-                { icon: 'swap-horizontal', label: 'Transfert', gradient: ['#8B5CF6', '#6D28D9'] as [string, string], onPress: handleTransfert, disabled: false },
-              ].map((action) => (
+              {quickActions.map((action) => (
                 <TouchableOpacity
                   key={action.label}
                   style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }, action.disabled && { opacity: 0.4 }]}
@@ -488,6 +628,9 @@ export const ArticleDetailScreen: React.FC = () => {
                     </LinearGradient>
                   </View>
                   <Text style={[styles.actionLabel, { color: action.gradient[0] }]}>{action.label}</Text>
+                  {isPCArticle && action.disabled ? (
+                    <Text style={[styles.actionHint, { color: colors.textMuted }]}>Actuel</Text>
+                  ) : null}
                 </TouchableOpacity>
               ))}
             </View>
@@ -975,6 +1118,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionLabel: { fontSize: 13, fontWeight: '700' },
+  actionHint: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    marginTop: 4,
+    textTransform: 'uppercase',
+  },
 
   // ===== EMPTY =====
   emptyHistory: {

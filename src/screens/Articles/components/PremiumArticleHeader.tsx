@@ -35,15 +35,21 @@ const STAT_CONFIGS: Record<string, StatConfig> = {
     icon: 'alert-circle-outline',
     gradient: ['#F59E0B', '#D97706'],
   },
+  available: {
+    icon: 'check-circle-outline',
+    gradient: ['#3B82F6', '#2563EB'],
+  },
 };
 
 // ─── Mini Stat Card ───
 interface MiniStatProps {
   value: number;
   label: string;
-  configKey: 'total' | 'stockOK' | 'alertes';
+  configKey: 'total' | 'stockOK' | 'alertes' | 'available';
   iconOverride?: string;
   showcaseMode?: boolean;
+  pcGridMode?: boolean;
+  compactMode?: boolean;
   onPress?: () => void;
 }
 
@@ -53,6 +59,8 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
   configKey,
   iconOverride,
   showcaseMode = false,
+  pcGridMode = false,
+  compactMode = false,
   onPress,
 }) => {
   const { width } = useWindowDimensions();
@@ -63,7 +71,11 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
 
   return (
     <TouchableOpacity
-      style={[miniStyles.wrapper, showcaseMode && miniStyles.wrapperShowcase]}
+      style={[
+        miniStyles.wrapper,
+        showcaseMode && miniStyles.wrapperShowcase,
+        pcGridMode && !tablet && miniStyles.wrapperPcGrid,
+      ]}
       activeOpacity={0.7}
       onPress={() => {
         Vibration.vibrate(10);
@@ -73,6 +85,7 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
       <View style={[
         miniStyles.card,
         showcaseMode && miniStyles.cardShowcase,
+        compactMode && miniStyles.cardCompact,
         {
           backgroundColor: colors.surface,
           borderColor: isDark ? colors.borderSubtle : colors.borderMedium,
@@ -98,12 +111,13 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
               miniStyles.iconPill,
               tablet && miniStyles.iconPillTablet,
               showcaseMode && miniStyles.iconPillShowcase,
+              compactMode && miniStyles.iconPillCompact,
             ]}
           >
-            <View style={[miniStyles.iconInner, showcaseMode && miniStyles.iconInnerShowcase]}>
+            <View style={[miniStyles.iconInner, showcaseMode && miniStyles.iconInnerShowcase, compactMode && miniStyles.iconInnerCompact]}>
               <Icon
                 name={iconOverride ?? cfg.icon}
-                size={showcaseMode ? (tablet ? 18 : 16) : (tablet ? 14 : 12)}
+                size={compactMode ? (tablet ? 13 : 12) : showcaseMode ? (tablet ? 18 : 16) : (tablet ? 14 : 12)}
                 color={accentColor}
               />
             </View>
@@ -114,7 +128,7 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
         <AnimatedCounter
           value={value}
           style={{
-            fontSize: showcaseMode ? (tablet ? 34 : 28) : (tablet ? 30 : 24),
+            fontSize: compactMode ? (tablet ? 22 : 20) : showcaseMode ? (tablet ? 34 : 28) : (tablet ? 30 : 24),
             fontWeight: '900',
             color: colors.textPrimary,
             letterSpacing: -1,
@@ -148,6 +162,10 @@ const miniStyles = StyleSheet.create({
     maxWidth: 340,
     alignSelf: 'center',
   },
+  wrapperPcGrid: {
+    flexBasis: '48%',
+    maxWidth: '48%',
+  },
   card: {
     alignItems: 'center',
     borderRadius: 18,
@@ -171,6 +189,12 @@ const miniStyles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 4,
+  },
+  cardCompact: {
+    borderRadius: 14,
+    paddingTop: 10,
+    paddingBottom: 9,
+    paddingHorizontal: 6,
   },
   showcaseOrb: {
     position: 'absolute',
@@ -214,6 +238,11 @@ const miniStyles = StyleSheet.create({
     height: 42,
     borderRadius: 14,
   },
+  iconPillCompact: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+  },
   iconInner: {
     width: 20,
     height: 20,
@@ -226,6 +255,11 @@ const miniStyles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 9,
+  },
+  iconInnerCompact: {
+    width: 18,
+    height: 18,
+    borderRadius: 6,
   },
   label: {
     fontSize: 10,
@@ -242,36 +276,49 @@ const miniStyles = StyleSheet.create({
 // ─── Main Header ───
 interface PremiumArticleHeaderProps {
   title?: string;
+  mode?: 'articles' | 'tablettes' | 'pc';
   statsMode?: 'full' | 'totalOnly';
   totalArticles: number;
   stockOK: number;
   alertes: number;
+  pcHot?: number;
+  pcReconditioning?: number;
+  pcAvailable?: number;
   onAdd: () => void;
   onBack?: () => void;
   onTotalPress?: () => void;
   onStockOKPress?: () => void;
   onAlertesPress?: () => void;
+  onAvailablePress?: () => void;
 }
 
 const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
   title = 'Articles',
+  mode = 'articles',
   statsMode = 'full',
   totalArticles,
   stockOK,
   alertes,
+  pcHot = 0,
+  pcReconditioning = 0,
+  pcAvailable = 0,
   onAdd,
   onBack,
   onTotalPress,
   onStockOKPress,
   onAlertesPress,
+  onAvailablePress,
 }) => {
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
   const { colors, isDark } = useTheme();
+  const isTabletMode = mode === 'tablettes' || statsMode === 'totalOnly';
+  const isPCMode = mode === 'pc';
 
   return (
     <View style={[
       styles.headerCard,
+      isPCMode && styles.headerCardCompact,
       {
         backgroundColor: colors.surface,
         borderColor: isDark ? colors.borderSubtle : colors.borderMedium,
@@ -318,7 +365,7 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
               >
                 <View style={styles.titleIconInner}>
                   <Icon
-                    name={statsMode === 'totalOnly' ? 'tablet-cellphone' : 'cube-outline'}
+                    name={isTabletMode ? 'tablet-cellphone' : isPCMode ? 'laptop' : 'cube-outline'}
                     size={tablet ? 16 : 14}
                     color="#007A39"
                   />
@@ -329,17 +376,6 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
               {title}
             </Text>
           </View>
-          {statsMode === 'totalOnly' && (
-            <LinearGradient
-              colors={isDark ? ['rgba(0,122,57,0.25)', 'rgba(5,150,105,0.22)'] : ['#E8F8F0', '#DDF5E8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.tabletteTagPill}
-            >
-              <View style={styles.tabletteTagDot} />
-              <Text style={styles.tabletteTagText}>PARC TABLETTE</Text>
-            </LinearGradient>
-          )}
         </View>
 
         <View style={styles.spacer} />
@@ -349,17 +385,50 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
       <View style={[
         styles.statsRow,
         tablet && { gap: premiumSpacing.md },
-        statsMode === 'totalOnly' && styles.statsRowSingle,
+        (isTabletMode || isPCMode) && styles.statsRowSingle,
+        isPCMode && styles.statsRowPc,
       ]}>
         <MiniStatCard
           value={totalArticles}
-          label={statsMode === 'totalOnly' ? 'Tablettes' : 'Total'}
+          label={isTabletMode ? 'Tablettes' : isPCMode ? 'PC portables' : 'Total'}
           configKey="total"
-          iconOverride={statsMode === 'totalOnly' ? 'tablet-cellphone' : undefined}
-          showcaseMode={statsMode === 'totalOnly'}
+          iconOverride={isTabletMode ? 'tablet-cellphone' : isPCMode ? 'laptop' : undefined}
+          showcaseMode={isTabletMode}
+          pcGridMode={isPCMode}
+          compactMode={isPCMode}
           onPress={onTotalPress}
         />
-        {statsMode === 'full' && (
+        {isPCMode ? (
+          <>
+            <MiniStatCard
+              value={pcHot}
+              label="A chaud"
+              configKey="stockOK"
+              iconOverride="flash-outline"
+              pcGridMode={isPCMode}
+              compactMode={isPCMode}
+              onPress={onStockOKPress}
+            />
+            <MiniStatCard
+              value={pcReconditioning}
+              label="A reusiner"
+              configKey="alertes"
+              iconOverride="wrench-outline"
+              pcGridMode={isPCMode}
+              compactMode={isPCMode}
+              onPress={onAlertesPress}
+            />
+            <MiniStatCard
+              value={pcAvailable}
+              label="Disponible"
+              configKey="available"
+              iconOverride="check-circle-outline"
+              pcGridMode={isPCMode}
+              compactMode={isPCMode}
+              onPress={onAvailablePress}
+            />
+          </>
+        ) : statsMode === 'full' && (
           <>
             <MiniStatCard
               value={stockOK}
@@ -395,6 +464,12 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 4,
   },
+  headerCardCompact: {
+    paddingTop: 14,
+    paddingBottom: 12,
+    paddingHorizontal: 14,
+    paddingLeft: 18,
+  },
   accentBar: {
     position: 'absolute',
     left: 0,
@@ -408,7 +483,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: premiumSpacing.md,
+    marginBottom: premiumSpacing.sm,
   },
   backButton: {
     width: 40,
@@ -462,28 +537,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: -0.5,
   },
-  tabletteTagPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(0,122,57,0.2)',
-  },
-  tabletteTagDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#059669',
-  },
-  tabletteTagText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1,
-    color: '#007A39',
-  },
   statsRow: {
     flexDirection: 'row',
     gap: premiumSpacing.sm + 2,
@@ -493,6 +546,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: premiumSpacing.xs,
+  },
+  statsRowPc: {
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'stretch',
+    rowGap: premiumSpacing.xs,
   },
 });
 

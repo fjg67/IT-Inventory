@@ -3,7 +3,7 @@
 // IT-Inventory Application
 // ============================================
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -42,6 +42,7 @@ import {
 } from 'react-native-vision-camera';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { selectIsSuperviseur } from '@/store/slices/authSlice';
+import { notifyPCStatusChange } from '@/services/pcStatusNotificationService';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { clearScannedArticle, clearLastBarcode, setBarcode, addToHistoryAndSave, loadScanHistory, persistScanHistory, ScanHistoryItem } from '@/store/slices/scanSlice';
 import { useBarcodeScanner } from '@/modules/DataWedgeModule';
@@ -160,6 +161,7 @@ export const ScanMouvementScreen: React.FC = () => {
   const siteActif = useAppSelector(state => state.site.siteActif);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const isSuperviseur = useAppSelector(selectIsSuperviseur);
+  const currentTechnicien = useAppSelector((state) => state.auth.currentTechnicien);
   const { lastBarcode, isScanning, history } = useAppSelector(state => state.scan);
 
   const [article, setArticle] = useState<Article | null>(null);
@@ -167,6 +169,12 @@ export const ScanMouvementScreen: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [isStatusUpdating, setIsStatusUpdating] = useState(false);
+  const [pcActionTransition, setPcActionTransition] = useState<{
+    icon: string;
+    label: string;
+    gradient: [string, string];
+  } | null>(null);
   const cameraReadyRef = useRef(false);
   const lastScannedRef = useRef<{ value: string; at: number } | null>(null);
   const isProcessingRef = useRef(false);
@@ -228,6 +236,8 @@ export const ScanMouvementScreen: React.FC = () => {
   // Scan line animation
   const scanLineY = useSharedValue(0);
   const pulseScale = useSharedValue(1);
+  const actionTransitionOpacity = useSharedValue(0);
+  const actionTransitionScale = useSharedValue(0.92);
 
   useEffect(() => {
     // Scan line loops
@@ -253,6 +263,11 @@ export const ScanMouvementScreen: React.FC = () => {
 
   const frameAnimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
+  }));
+
+  const actionTransitionStyle = useAnimatedStyle(() => ({
+    opacity: actionTransitionOpacity.value,
+    transform: [{ scale: actionTransitionScale.value }],
   }));
 
   // ===== Camera code scanner (validation par consensus) =====
@@ -379,9 +394,17 @@ export const ScanMouvementScreen: React.FC = () => {
     Vibration.vibrate(10);
     navigation.navigate('Articles', {
       screen: 'ArticleDetail',
-      params: { articleId: article.id },
+      params: { articleId: article.id, sourceTab: isScannedPC ? 'PC' : 'Articles' },
     });
   };
+
+  const navigateToPCDetails = useCallback(() => {
+    if (!article) return;
+    navigation.navigate('Articles', {
+      screen: 'ArticleDetail',
+      params: { articleId: article.id, sourceTab: 'PC' },
+    });
+  }, [article, navigation]);
 
   const handleReset = useCallback(() => {
     setArticle(null);
@@ -405,6 +428,91 @@ export const ScanMouvementScreen: React.FC = () => {
   }, [lastBarcode, searchArticle, handleReset]);
 
   const isLowStock = article && (article.quantiteActuelle ?? 0) < article.stockMini;
+
+  const getPCStatus = useCallback((description?: string) => {
+    const normalized = (description ?? '').toLowerCase();
+    if (normalized.includes('disponible')) return 'Disponible';
+    if (normalized.includes('reusin') || normalized.includes('recondition')) return 'À reusiner';
+    if (normalized.includes('a chaud') || normalized.includes('à chaud')) return 'À chaud';
+    return null;
+  }, []);
+
+  const isScannedPC = useMemo(() => {
+    if (!article) return false;
+    const values = [article.typeArticle, article.sousType, article.famille]
+      .filter((v): v is string => !!v)
+      .map((v) => v.toLowerCase());
+
+    return values.some((v) =>
+      v === 'pc' ||
+      v.includes('pc portable') ||
+      v.includes('portable siège') ||
+      v.includes('portable agence') ||
+      v.includes('pc disponible'),
+    );
+  }, [article]);
+
+  const scannedPCStatus = useMemo(() => getPCStatus(article?.description), [article?.description, getPCStatus]);
+
+  const handleSetPCStatus = useCallback(async (
+    nextStatus: 'À chaud' | 'À reusiner' | 'Disponible',
+    options?: { openDetailsAfter?: boolean },
+  ) => {
+    if (!article) return;
+
+    try {
+      setIsStatusUpdating(true);
+      const nextFamily = nextStatus === 'Disponible' ? 'PC disponible' : 'PC portable';
+      await articleRepository.update(article.id, {
+        description: `Statut: ${nextStatus}`,
+        famille: nextFamily,
+      });
+
+      setArticle((prev) => prev ? {
+        ...prev,
+        description: `Statut: ${nextStatus}`,
+        famille: nextFamily,
+        dateModification: new Date(),
+      } : prev);
+
+      Vibration.vibrate(16);
+
+      const techName = currentTechnicien
+        ? `${currentTechnicien.prenom} ${currentTechnicien.nom}`.trim()
+        : 'Technicien inconnu';
+      notifyPCStatusChange({
+        article: { ...article, description: `Statut: ${nextStatus}`, famille: nextFamily },
+        nextStatus,
+        technicienName: techName,
+      });
+
+      if (options?.openDetailsAfter) {
+        const transitionConfig =
+          nextStatus === 'Disponible'
+            ? { icon: 'check-circle-outline', label: 'Disponible', gradient: ['#3B82F6', '#2563EB'] as [string, string] }
+            : nextStatus === 'À chaud'
+              ? { icon: 'flash-outline', label: 'À chaud', gradient: ['#10B981', '#059669'] as [string, string] }
+              : { icon: 'wrench-outline', label: 'À reusiner', gradient: ['#F59E0B', '#D97706'] as [string, string] };
+
+        setPcActionTransition(transitionConfig);
+        actionTransitionOpacity.value = 0;
+        actionTransitionScale.value = 0.92;
+        actionTransitionOpacity.value = withTiming(1, { duration: 180 });
+        actionTransitionScale.value = withTiming(1, { duration: 240, easing: Easing.out(Easing.cubic) });
+
+        await new Promise((resolve) => setTimeout(resolve, 520));
+        navigateToPCDetails();
+        actionTransitionOpacity.value = withTiming(0, { duration: 140 });
+        setPcActionTransition(null);
+      }
+    } catch (error) {
+      console.warn('[Scan] Erreur MAJ statut PC:', error);
+      setErrorMsg(`Impossible de passer le PC en ${nextStatus}`);
+      setScanStatus('error');
+    } finally {
+      setIsStatusUpdating(false);
+    }
+  }, [actionTransitionOpacity, actionTransitionScale, article, navigateToPCDetails]);
 
   // Corner color
   const cornerColor =
@@ -674,91 +782,188 @@ export const ScanMouvementScreen: React.FC = () => {
 
           {/* Quick Actions - design premium */}
           <Animated.View entering={FadeInUp.delay(250).duration(400)} style={styles.quickActions}>
-            {!isSuperviseur && (
-              <TouchableOpacity
-                style={styles.qAction}
-                activeOpacity={0.8}
-                onPress={() => handleMouvement('entree')}
-              >
-                <LinearGradient
-                  colors={['#10B981', '#059669']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.qActionGrad}
-                >
-                  <View style={styles.qActionIconWrap}>
-                    <View style={styles.qActionIconInner}>
-                      <Icon name="arrow-up-bold" size={20} color="#10B981" />
-                    </View>
-                  </View>
-                  <Text style={styles.qActionLabel}>Entrée</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
+            {isScannedPC ? (
+              <>
+                {!isSuperviseur && (
+                  <TouchableOpacity
+                    style={styles.qAction}
+                    activeOpacity={0.8}
+                    disabled={isStatusUpdating || scannedPCStatus === 'Disponible'}
+                    onPress={() => handleSetPCStatus('Disponible', { openDetailsAfter: true })}
+                  >
+                    <LinearGradient
+                      colors={['#3B82F6', '#2563EB']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[styles.qActionGrad, (isStatusUpdating || scannedPCStatus === 'Disponible') && styles.qActionDisabled]}
+                    >
+                      <View style={styles.qActionIconWrap}>
+                        <View style={styles.qActionIconInner}>
+                          <Icon name="check-circle-outline" size={20} color="#3B82F6" />
+                        </View>
+                      </View>
+                      <Text style={styles.qActionLabel}>Disponible</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
 
-            {!isSuperviseur && (
-              <TouchableOpacity
-                style={styles.qAction}
-                activeOpacity={0.8}
-                onPress={() => handleMouvement('sortie')}
-              >
-                <LinearGradient
-                  colors={['#EF4444', '#DC2626']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.qActionGrad}
-                >
-                  <View style={styles.qActionIconWrap}>
-                    <View style={styles.qActionIconInner}>
-                      <Icon name="arrow-down-bold" size={20} color="#EF4444" />
-                    </View>
-                  </View>
-                  <Text style={styles.qActionLabel}>Sortie</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
+                {!isSuperviseur && (
+                  <TouchableOpacity
+                    style={styles.qAction}
+                    activeOpacity={0.8}
+                    disabled={isStatusUpdating || scannedPCStatus === 'À chaud'}
+                    onPress={() => handleSetPCStatus('À chaud', { openDetailsAfter: true })}
+                  >
+                    <LinearGradient
+                      colors={['#10B981', '#059669']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[styles.qActionGrad, (isStatusUpdating || scannedPCStatus === 'À chaud') && styles.qActionDisabled]}
+                    >
+                      <View style={styles.qActionIconWrap}>
+                        <View style={styles.qActionIconInner}>
+                          <Icon name="flash-outline" size={20} color="#10B981" />
+                        </View>
+                      </View>
+                      <Text style={styles.qActionLabel}>À chaud</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
 
-            {!isSuperviseur && (
-              <TouchableOpacity
-                style={styles.qAction}
-                activeOpacity={0.8}
-                onPress={() => handleMouvement('ajustement')}
-              >
-                <LinearGradient
-                  colors={['#F59E0B', '#D97706']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.qActionGrad}
-                >
-                  <View style={styles.qActionIconWrap}>
-                    <View style={styles.qActionIconInner}>
-                      <Icon name="swap-vertical" size={20} color="#F59E0B" />
-                    </View>
-                  </View>
-                  <Text style={styles.qActionLabel}>Ajustement</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
+                {!isSuperviseur && (
+                  <TouchableOpacity
+                    style={styles.qAction}
+                    activeOpacity={0.8}
+                    disabled={isStatusUpdating || scannedPCStatus === 'À reusiner'}
+                    onPress={() => handleSetPCStatus('À reusiner', { openDetailsAfter: true })}
+                  >
+                    <LinearGradient
+                      colors={['#F59E0B', '#D97706']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[styles.qActionGrad, (isStatusUpdating || scannedPCStatus === 'À reusiner') && styles.qActionDisabled]}
+                    >
+                      <View style={styles.qActionIconWrap}>
+                        <View style={styles.qActionIconInner}>
+                          <Icon name="wrench-outline" size={20} color="#F59E0B" />
+                        </View>
+                      </View>
+                      <Text style={styles.qActionLabel}>À reusiner</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
 
-            <TouchableOpacity
-              style={styles.qAction}
-              activeOpacity={0.8}
-              onPress={handleViewDetails}
-            >
-              <LinearGradient
-                colors={['#3B82F6', '#2563EB']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.qActionGrad}
-              >
-                <View style={styles.qActionIconWrap}>
-                  <View style={styles.qActionIconInner}>
-                    <Icon name="eye-outline" size={20} color="#3B82F6" />
-                  </View>
-                </View>
-                <Text style={styles.qActionLabel}>Détails</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                {!isSuperviseur && (
+                  <TouchableOpacity
+                    style={styles.qAction}
+                    activeOpacity={0.8}
+                    onPress={() => handleMouvement('sortie')}
+                  >
+                    <LinearGradient
+                      colors={['#EF4444', '#DC2626']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.qActionGrad}
+                    >
+                      <View style={styles.qActionIconWrap}>
+                        <View style={styles.qActionIconInner}>
+                          <Icon name="arrow-down-bold" size={20} color="#EF4444" />
+                        </View>
+                      </View>
+                      <Text style={styles.qActionLabel}>Sortie</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <>
+                {!isSuperviseur && (
+                  <TouchableOpacity
+                    style={styles.qAction}
+                    activeOpacity={0.8}
+                    onPress={() => handleMouvement('entree')}
+                  >
+                    <LinearGradient
+                      colors={['#10B981', '#059669']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.qActionGrad}
+                    >
+                      <View style={styles.qActionIconWrap}>
+                        <View style={styles.qActionIconInner}>
+                          <Icon name="arrow-up-bold" size={20} color="#10B981" />
+                        </View>
+                      </View>
+                      <Text style={styles.qActionLabel}>Entrée</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
+
+                {!isSuperviseur && (
+                  <TouchableOpacity
+                    style={styles.qAction}
+                    activeOpacity={0.8}
+                    onPress={() => handleMouvement('sortie')}
+                  >
+                    <LinearGradient
+                      colors={['#EF4444', '#DC2626']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.qActionGrad}
+                    >
+                      <View style={styles.qActionIconWrap}>
+                        <View style={styles.qActionIconInner}>
+                          <Icon name="arrow-down-bold" size={20} color="#EF4444" />
+                        </View>
+                      </View>
+                      <Text style={styles.qActionLabel}>Sortie</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
+
+                {!isSuperviseur && (
+                  <TouchableOpacity
+                    style={styles.qAction}
+                    activeOpacity={0.8}
+                    onPress={() => handleMouvement('ajustement')}
+                  >
+                    <LinearGradient
+                      colors={['#F59E0B', '#D97706']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.qActionGrad}
+                    >
+                      <View style={styles.qActionIconWrap}>
+                        <View style={styles.qActionIconInner}>
+                          <Icon name="swap-vertical" size={20} color="#F59E0B" />
+                        </View>
+                      </View>
+                      <Text style={styles.qActionLabel}>Ajustement</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                  style={styles.qAction}
+                  activeOpacity={0.8}
+                  onPress={handleViewDetails}
+                >
+                  <LinearGradient
+                    colors={['#3B82F6', '#2563EB']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.qActionGrad}
+                  >
+                    <View style={styles.qActionIconWrap}>
+                      <View style={styles.qActionIconInner}>
+                        <Icon name="eye-outline" size={20} color="#3B82F6" />
+                      </View>
+                    </View>
+                    <Text style={styles.qActionLabel}>Détails</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </>
+            )}
           </Animated.View>
 
           {/* New scan button premium */}
@@ -798,6 +1003,28 @@ export const ScanMouvementScreen: React.FC = () => {
 
       </ScrollView>
       {/* fin darkOverlay */}
+
+      {pcActionTransition ? (
+        <View pointerEvents="none" style={styles.pcTransitionOverlay}>
+          <Animated.View style={[styles.pcTransitionCard, actionTransitionStyle]}>
+            <LinearGradient
+              colors={pcActionTransition.gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.pcTransitionGradient}
+            >
+              <View style={styles.pcTransitionIconShell}>
+                <View style={styles.pcTransitionIconInner}>
+                  <Icon name={pcActionTransition.icon} size={26} color="#FFFFFF" />
+                </View>
+              </View>
+              <Text style={styles.pcTransitionEyebrow}>MISE A JOUR DU PC</Text>
+              <Text style={styles.pcTransitionTitle}>{pcActionTransition.label}</Text>
+              <Text style={styles.pcTransitionSubtitle}>Ouverture de la fiche avec le nouveau statut</Text>
+            </LinearGradient>
+          </Animated.View>
+        </View>
+      ) : null}
 
       {/* ===== HISTORY MODAL ===== */}
       <Modal visible={showHistory} transparent animationType="slide" onRequestClose={() => setShowHistory(false)}>
@@ -1284,6 +1511,9 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 18,
   },
+  qActionDisabled: {
+    opacity: 0.45,
+  },
   qActionIconWrap: {
     width: 46,
     height: 46,
@@ -1306,6 +1536,67 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.3,
+  },
+  pcTransitionOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(2,6,23,0.56)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  pcTransitionCard: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: 28,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    elevation: 18,
+  },
+  pcTransitionGradient: {
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  pcTransitionIconShell: {
+    width: 74,
+    height: 74,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  pcTransitionIconInner: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pcTransitionEyebrow: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.76)',
+    letterSpacing: 1.4,
+    marginBottom: 8,
+  },
+  pcTransitionTitle: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  pcTransitionSubtitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.86)',
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 18,
   },
 
   // ===== NEW SCAN - PREMIUM =====
