@@ -1,17 +1,6 @@
-import React, { useEffect } from 'react';
-import { TextStyle } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedProps,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
+import React, { useEffect, useRef, useState } from 'react';
+import { Text, TextStyle } from 'react-native';
 import { premiumAnimation } from '../../../../constants/premiumTheme';
-
-// On crée un composant texte animé compatible reanimated
-const AnimatedTextInput = Animated.createAnimatedComponent(
-  require('react-native').TextInput,
-);
 
 interface AnimatedCounterProps {
   /** Valeur cible du compteur */
@@ -37,37 +26,47 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   prefix = '',
   suffix = '',
 }) => {
-  const animatedValue = useSharedValue(0);
+  const [displayValue, setDisplayValue] = useState<number>(value);
+  const fromValueRef = useRef<number>(value);
+  const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    animatedValue.value = withTiming(value, {
-      duration,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [value, duration, animatedValue]);
+    const start = Date.now();
+    const from = fromValueRef.current;
+    const to = value;
 
-  const animatedProps = useAnimatedProps(() => {
-    const current = Math.round(animatedValue.value);
-    return {
-      text: `${prefix}${current}${suffix}`,
-      defaultValue: `${prefix}${current}${suffix}`,
-    } as any;
-  });
+    if (frameRef.current != null) {
+      cancelAnimationFrame(frameRef.current);
+    }
 
-  return (
-    <AnimatedTextInput
-      underlineColorAndroid="transparent"
-      editable={false}
-      style={[
-        {
-          padding: 0,
-          margin: 0,
-        },
-        style,
-      ]}
-      animatedProps={animatedProps}
-    />
-  );
+    const animate = () => {
+      const elapsed = Date.now() - start;
+      const t = Math.min(1, elapsed / Math.max(1, duration));
+      const eased = 1 - Math.pow(1 - t, 3); // cubic-out
+      const next = Math.round(from + (to - from) * eased);
+
+      setDisplayValue(next);
+
+      if (t < 1) {
+        frameRef.current = requestAnimationFrame(animate);
+      } else {
+        frameRef.current = null;
+        fromValueRef.current = to;
+      }
+    };
+
+    frameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (frameRef.current != null) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+      fromValueRef.current = value;
+    };
+  }, [value, duration]);
+
+  return <Text style={style}>{`${prefix}${displayValue}${suffix}`}</Text>;
 };
 
 export default AnimatedCounter;

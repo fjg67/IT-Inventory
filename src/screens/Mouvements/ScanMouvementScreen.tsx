@@ -329,7 +329,7 @@ export const ScanMouvementScreen: React.FC = () => {
 
     try {
       console.log('[Scan] Recherche article pour code-barres:', barcode);
-      const result = await articleRepository.findByReference(barcode, effectiveSiteId);
+      const result = await articleRepository.findByReferenceOrBarcode(barcode, effectiveSiteId);
       if (result) {
         console.log('[Scan] Article trouvé:', result.nom);
         setArticle(result);
@@ -346,7 +346,7 @@ export const ScanMouvementScreen: React.FC = () => {
       } else {
         console.log('[Scan] Article non trouvé pour:', barcode);
         setScanStatus('error');
-        setErrorMsg(`Article non trouvé : ${barcode}`);
+        setErrorMsg(`Article non trouvé (référence/asset) : ${barcode}`);
         Vibration.vibrate(50);
         // Ajouter à l'historique (non trouvé)
         dispatch(addToHistoryAndSave({
@@ -370,7 +370,7 @@ export const ScanMouvementScreen: React.FC = () => {
       // Toujours débloquer le traitement pour permettre un nouveau scan
       isProcessingRef.current = false;
     }
-  }, [siteActif, dispatch]);
+  }, [effectiveSiteId, dispatch]);
 
   useEffect(() => {
     if (lastBarcode && siteActif) {

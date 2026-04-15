@@ -259,14 +259,14 @@ export const MouvementFormScreen: React.FC = () => {
 
   const searchByBarcode = async () => {
     if (!barcodeInput.trim() || !effectiveSiteId) return;
-    const result = await articleRepository.findByReference(barcodeInput.trim(), effectiveSiteId);
+    const result = await articleRepository.findByReferenceOrBarcode(barcodeInput.trim(), effectiveSiteId);
     if (result) {
       setArticle(result);
       setBarcodeInput('');
       setSuggestions([]);
       setErrors({});
     } else {
-      setErrors({ barcode: 'Article non trouvé pour cette référence' });
+      setErrors({ barcode: 'Article non trouvé pour cette référence ou asset' });
     }
   };
 
@@ -279,7 +279,7 @@ export const MouvementFormScreen: React.FC = () => {
     console.log('[MouvementForm] Recherche article pour:', barcode);
     setBarcodeInput(barcode);
     try {
-      const result = await articleRepository.findByReference(barcode, effectiveSiteId);
+      const result = await articleRepository.findByReferenceOrBarcode(barcode, effectiveSiteId);
       if (result) {
         console.log('[MouvementForm] Article trouvé:', result.nom);
         setArticle(result);

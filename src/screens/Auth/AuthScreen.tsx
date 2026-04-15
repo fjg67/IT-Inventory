@@ -70,6 +70,14 @@ const getInitials = (technicien: Technicien): string => {
   return toAbbreviation(fullName, 3, '?');
 };
 
+const normalizeForMatch = (value?: string | null): string => (
+  (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toUpperCase()
+);
+
 const MFA_SETUP_VIEWED_KEY_PREFIX = '@it-inventory/mfa-setup-viewed/';
 
 const getMfaSetupViewedStorageKey = (config: ProtectedProfileMfaConfig): string => (
@@ -122,6 +130,29 @@ export const AuthScreen: React.FC = () => {
   const parentSiteId = params.parentSiteId;
   const { techniciens, isLoading, error } = useAppSelector(state => state.auth);
   const siteActif = useAppSelector(state => state.site.siteActif);
+  const visibleTechniciens = useMemo(() => {
+    const normalizedSiteName = normalizeForMatch(siteActif?.nom);
+    const isStockOrTcsSite =
+      normalizedSiteName.includes('STOCK 5') ||
+      normalizedSiteName.includes('STOCK 8') ||
+      normalizedSiteName.includes('TCS');
+
+    if (isStockOrTcsSite) {
+      return techniciens.filter((technicien) => {
+        const initials = normalizeForMatch(getInitials(technicien));
+        return initials !== 'BI' && initials !== 'EB';
+      });
+    }
+
+    if (!normalizedSiteName.includes('EPINAL')) {
+      return techniciens;
+    }
+
+    return techniciens.filter((technicien) => {
+      const initials = normalizeForMatch(getInitials(technicien));
+      return initials === 'BI' || initials === 'EB';
+    });
+  }, [siteActif?.nom, techniciens]);
 
   // Modal state
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -563,8 +594,8 @@ export const AuthScreen: React.FC = () => {
 
   const renderFooter = useCallback(
     () =>
-      techniciens.length > 0 ? (
-        <Animated.View entering={FadeInUp.delay(1200 + techniciens.length * 120).duration(400)}>
+      visibleTechniciens.length > 0 ? (
+        <Animated.View entering={FadeInUp.delay(1200 + visibleTechniciens.length * 120).duration(400)}>
           <TouchableOpacity
             style={[styles.addButton, { borderColor: isDark ? colors.primaryGlow : '#C8E6C9', backgroundColor: isDark ? colors.surfaceElevated : '#FAFBFF' }]}
             onPress={() => {
@@ -580,7 +611,7 @@ export const AuthScreen: React.FC = () => {
           </TouchableOpacity>
         </Animated.View>
       ) : null,
-    [techniciens.length],
+    [visibleTechniciens.length],
   );
 
   // Helper for input border
@@ -590,7 +621,7 @@ export const AuthScreen: React.FC = () => {
     return isDark ? colors.borderStrong : '#E2E8F0';
   };
 
-  if (isLoading && techniciens.length === 0 && !isCreating) {
+  if (isLoading && visibleTechniciens.length === 0 && !isCreating) {
     return <FullScreenLoading message="Chargement des profils..." />;
   }
 
@@ -675,7 +706,7 @@ export const AuthScreen: React.FC = () => {
       <Animated.View entering={FadeIn.delay(900).duration(400)} style={styles.instructionWrap}>
         <View style={[styles.instructionDot, { backgroundColor: isDark ? colors.primaryGlow : '#B2DFDB' }]} />
         <Text style={[styles.instruction, { color: colors.textSecondary }]}>
-          {techniciens.length > 0
+          {visibleTechniciens.length > 0
             ? 'Sélectionnez votre profil pour continuer'
             : 'Bienvenue sur IT-Inventory'}
         </Text>
@@ -692,7 +723,7 @@ export const AuthScreen: React.FC = () => {
 
       {/* Liste profils */}
       <FlatList
-        data={techniciens}
+        data={visibleTechniciens}
         keyExtractor={item => item.id.toString()}
         renderItem={renderTechnicien}
         contentContainerStyle={[styles.list, isTablet && { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16, maxWidth: 640, alignSelf: 'center' }]}

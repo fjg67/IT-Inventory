@@ -190,6 +190,7 @@ export interface ArticleFilters {
   typeArticle?: string[] | null;
   sousType?: string[] | null;
   marque?: string[] | null;
+  modele?: string[] | null;
   emplacement?: string[] | null;
 }
 

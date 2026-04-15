@@ -28,7 +28,7 @@ import Animated, {
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const { width: SW, height: SH } = Dimensions.get('window');
+const { width: SW } = Dimensions.get('window');
 
 // ===== PALETTE — Light =====
 const INDIGO = '#007A39';
@@ -46,7 +46,7 @@ const SPARK_SEEDS = Array.from({ length: NUM_SPARKS }, (_, i) => {
     targetX: Math.cos(angle) * radius,
     targetY: Math.sin(angle) * radius,
     size: 4 + Math.random() * 6,
-    delay: 300 + Math.random() * 300,
+    delay: 180 + Math.random() * 240,
     color: [INDIGO, VIOLET, BLUE, CYAN, EMERALD, '#A78BFA'][Math.floor(Math.random() * 6)],
   };
 });
@@ -54,22 +54,9 @@ const SPARK_SEEDS = Array.from({ length: NUM_SPARKS }, (_, i) => {
 // ===== RING SEEDS =====
 const NUM_RINGS = 3;
 const RING_SEEDS = Array.from({ length: NUM_RINGS }, (_, i) => ({
-  delay: 200 + i * 200,
-  maxScale: 3.2 + i * 1.6,
-  borderWidth: 2 - i * 0.4,
-}));
-
-// ===== CONFETTI SEEDS =====
-const NUM_CONFETTI = 12;
-const CONFETTI_SEEDS = Array.from({ length: NUM_CONFETTI }, (_, i) => ({
-  startX: (Math.random() - 0.5) * SW * 0.8,
-  targetY: -(80 + Math.random() * 200),
-  driftX: (Math.random() - 0.5) * 100,
-  size: 6 + Math.random() * 4,
-  delay: 400 + Math.random() * 400,
-  rotation: Math.random() * 360,
-  color: [INDIGO, VIOLET, BLUE, CYAN, EMERALD, '#F59E0B', '#EC4899'][Math.floor(Math.random() * 7)],
-  isSquare: Math.random() > 0.5,
+  delay: 120 + i * 130,
+  maxScale: 2.8 + i * 1.2,
+  borderWidth: 1.8 - i * 0.35,
 }));
 
 // ===== LETTER ANIMATION =====
@@ -89,10 +76,10 @@ const AnimatedLetter: React.FC<{
       scale.value = 0.5;
       return;
     }
-    const d = 850 + index * 50;
-    translateY.value = withDelay(d, withSpring(0, { damping: 12, stiffness: 110 }));
-    opacity.value = withDelay(d, withTiming(1, { duration: 200 }));
-    scale.value = withDelay(d, withSpring(1, { damping: 9, stiffness: 130 }));
+    const d = 560 + index * 36;
+    translateY.value = withDelay(d, withSpring(0, { damping: 13, stiffness: 150 }));
+    opacity.value = withDelay(d, withTiming(1, { duration: 170 }));
+    scale.value = withDelay(d, withSpring(1, { damping: 10, stiffness: 160 }));
   }, [trigger]);
 
   const style = useAnimatedStyle(() => ({
@@ -127,24 +114,24 @@ const Spark: React.FC<{
     }
     translateX.value = withDelay(
       seed.delay,
-      withTiming(seed.targetX, { duration: 700, easing: Easing.out(Easing.cubic) }),
+      withTiming(seed.targetX, { duration: 520, easing: Easing.out(Easing.cubic) }),
     );
     translateY.value = withDelay(
       seed.delay,
-      withTiming(seed.targetY, { duration: 700, easing: Easing.out(Easing.cubic) }),
+      withTiming(seed.targetY, { duration: 520, easing: Easing.out(Easing.cubic) }),
     );
     opacity.value = withDelay(
       seed.delay,
       withSequence(
-        withTiming(0.9, { duration: 120 }),
-        withDelay(350, withTiming(0, { duration: 300 })),
+        withTiming(0.9, { duration: 90 }),
+        withDelay(220, withTiming(0, { duration: 220 })),
       ),
     );
     scale.value = withDelay(
       seed.delay,
       withSequence(
-        withSpring(1.3, { damping: 5 }),
-        withDelay(250, withTiming(0, { duration: 250 })),
+        withSpring(1.25, { damping: 6, stiffness: 170 }),
+        withDelay(170, withTiming(0, { duration: 180 })),
       ),
     );
   }, [trigger]);
@@ -167,64 +154,6 @@ const Spark: React.FC<{
   return <Animated.View style={style} />;
 };
 
-// ===== CONFETTI COMPONENT =====
-const Confetti: React.FC<{
-  seed: (typeof CONFETTI_SEEDS)[0];
-  trigger: boolean;
-}> = ({ seed, trigger }) => {
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const opacity = useSharedValue(0);
-  const rotate = useSharedValue(0);
-
-  useEffect(() => {
-    if (!trigger) {
-      translateX.value = 0;
-      translateY.value = 0;
-      opacity.value = 0;
-      rotate.value = 0;
-      return;
-    }
-    translateX.value = withDelay(
-      seed.delay,
-      withTiming(seed.driftX, { duration: 1200, easing: Easing.out(Easing.quad) }),
-    );
-    translateY.value = withDelay(
-      seed.delay,
-      withTiming(seed.targetY, { duration: 1200, easing: Easing.out(Easing.quad) }),
-    );
-    opacity.value = withDelay(
-      seed.delay,
-      withSequence(
-        withTiming(0.8, { duration: 150 }),
-        withDelay(600, withTiming(0, { duration: 400 })),
-      ),
-    );
-    rotate.value = withDelay(
-      seed.delay,
-      withTiming(seed.rotation, { duration: 1200 }),
-    );
-  }, [trigger]);
-
-  const style = useAnimatedStyle(() => ({
-    position: 'absolute' as const,
-    left: SW / 2 + seed.startX,
-    top: SH * 0.45,
-    width: seed.size,
-    height: seed.isSquare ? seed.size : seed.size * 0.5,
-    borderRadius: seed.isSquare ? 2 : seed.size,
-    backgroundColor: seed.color,
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { rotate: `${rotate.value}deg` },
-    ],
-    opacity: opacity.value,
-  }));
-
-  return <Animated.View style={style} />;
-};
-
 // ===== EXPANDING RING =====
 const ExpandingRing: React.FC<{
   seed: (typeof RING_SEEDS)[0];
@@ -241,13 +170,13 @@ const ExpandingRing: React.FC<{
     }
     scale.value = withDelay(
       seed.delay,
-      withTiming(seed.maxScale, { duration: 1100, easing: Easing.out(Easing.cubic) }),
+      withTiming(seed.maxScale, { duration: 780, easing: Easing.out(Easing.cubic) }),
     );
     opacity.value = withDelay(
       seed.delay,
       withSequence(
-        withTiming(0.4, { duration: 200 }),
-        withTiming(0, { duration: 900 }),
+        withTiming(0.34, { duration: 140 }),
+        withTiming(0, { duration: 640 }),
       ),
     );
   }, [trigger]);
@@ -258,7 +187,7 @@ const ExpandingRing: React.FC<{
     height: 100,
     borderRadius: 50,
     borderWidth: seed.borderWidth,
-    borderColor: 'rgba(79, 70, 229, 0.3)',
+    borderColor: 'rgba(0, 122, 57, 0.24)',
     transform: [{ scale: scale.value }],
     opacity: opacity.value,
   }));
@@ -290,13 +219,18 @@ export const SuccessOverlay: React.FC<SuccessOverlayProps> = ({
   const dividerWidth = useSharedValue(0);
   const userY = useSharedValue(16);
   const userOpacity = useSharedValue(0);
+  const panelScale = useSharedValue(0.9);
+  const panelLift = useSharedValue(22);
+  const panelOpacity = useSharedValue(0);
   const overlayOpacity = useSharedValue(1);
 
   const triggerComplete = useCallback(() => {
     onAnimationComplete();
   }, [onAnimationComplete]);
 
-  const welcomeText = 'Bienvenue !';
+  const welcomeText = 'Bienvenue';
+  const cleanUserName = userName?.trim();
+  const showUserBadge = Boolean(cleanUserName && !/^technicien$/i.test(cleanUserName));
 
   useEffect(() => {
     if (!visible) {
@@ -311,65 +245,72 @@ export const SuccessOverlay: React.FC<SuccessOverlayProps> = ({
       dividerWidth.value = 0;
       userY.value = 16;
       userOpacity.value = 0;
+      panelScale.value = 0.9;
+      panelLift.value = 22;
+      panelOpacity.value = 0;
       overlayOpacity.value = 1;
       return;
     }
 
     // Phase 1 — White background sweep
     bgProgress.value = withTiming(1, {
-      duration: 350,
+      duration: 220,
       easing: Easing.bezier(0.4, 0, 0.2, 1),
     });
 
     // Phase 2 — Shield icon
-    Vibration.vibrate([0, 15, 80, 15]);
+    Vibration.vibrate([0, 12, 40, 10]);
     shieldScale.value = withDelay(
-      150,
-      withSpring(1, { damping: 11, stiffness: 130 }),
+      70,
+      withSpring(1, { damping: 11, stiffness: 150 }),
     );
     shieldRotate.value = withDelay(
-      150,
-      withSpring(0, { damping: 14 }),
+      70,
+      withSpring(0, { damping: 15, stiffness: 130 }),
     );
 
     // Phase 3 — Morph → check
     morphProgress.value = withDelay(
-      550,
-      withTiming(1, { duration: 400, easing: Easing.bezier(0.4, 0, 0.2, 1) }),
+      260,
+      withTiming(1, { duration: 300, easing: Easing.bezier(0.4, 0, 0.2, 1) }),
     );
 
     // Glow
     glowScale.value = withDelay(
-      450,
+      220,
       withSequence(
-        withSpring(1.6, { damping: 8 }),
-        withTiming(1.2, { duration: 600 }),
+        withSpring(1.5, { damping: 9, stiffness: 120 }),
+        withTiming(1.15, { duration: 420 }),
       ),
     );
     glowOpacity.value = withDelay(
-      450,
+      220,
       withSequence(
-        withTiming(0.35, { duration: 200 }),
-        withTiming(0.08, { duration: 800 }),
+        withTiming(0.28, { duration: 140 }),
+        withTiming(0.05, { duration: 620 }),
       ),
     );
 
+    panelScale.value = withDelay(90, withSpring(1, { damping: 14, stiffness: 140 }));
+    panelLift.value = withDelay(90, withSpring(0, { damping: 16, stiffness: 150 }));
+    panelOpacity.value = withDelay(90, withTiming(1, { duration: 220 }));
+
     // Phase 4 — Text
-    subtitleY.value = withDelay(700, withSpring(0, { damping: 16 }));
-    subtitleOpacity.value = withDelay(700, withTiming(1, { duration: 250 }));
+    subtitleY.value = withDelay(420, withSpring(0, { damping: 17, stiffness: 140 }));
+    subtitleOpacity.value = withDelay(420, withTiming(1, { duration: 180 }));
 
     dividerWidth.value = withDelay(
-      1150,
-      withTiming(1, { duration: 450, easing: Easing.bezier(0.4, 0, 0.2, 1) }),
+      760,
+      withTiming(1, { duration: 260, easing: Easing.bezier(0.4, 0, 0.2, 1) }),
     );
 
-    userY.value = withDelay(1250, withSpring(0, { damping: 16 }));
-    userOpacity.value = withDelay(1250, withTiming(1, { duration: 250 }));
+    userY.value = withDelay(860, withSpring(0, { damping: 16, stiffness: 140 }));
+    userOpacity.value = withDelay(860, withTiming(1, { duration: 180 }));
 
     // Phase 5 — Fade out
     overlayOpacity.value = withDelay(
-      2600,
-      withTiming(0, { duration: 500 }, (finished) => {
+      1900,
+      withTiming(0, { duration: 340 }, (finished) => {
         if (finished) {
           runOnJS(triggerComplete)();
         }
@@ -426,6 +367,11 @@ export const SuccessOverlay: React.FC<SuccessOverlayProps> = ({
     opacity: overlayOpacity.value,
   }));
 
+  const panelStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: panelScale.value }, { translateY: panelLift.value }],
+    opacity: panelOpacity.value,
+  }));
+
   if (!visible) return null;
 
   return (
@@ -448,13 +394,9 @@ export const SuccessOverlay: React.FC<SuccessOverlayProps> = ({
           ))}
         </View>
 
-        {/* Confetti */}
-        {CONFETTI_SEEDS.map((seed, i) => (
-          <Confetti key={i} seed={seed} trigger={visible} />
-        ))}
-
         {/* Central content */}
-        <View style={styles.centerContent}>
+        <Animated.View style={[styles.centerPanel, panelStyle]}>
+          <View style={styles.centerContent}>
           {/* Glow orb */}
           <Animated.View style={[styles.glowOrb, glowStyle]} />
 
@@ -491,13 +433,16 @@ export const SuccessOverlay: React.FC<SuccessOverlayProps> = ({
           <Animated.View style={[styles.divider, dividerStyle]} />
 
           {/* User badge */}
-          <Animated.View style={userStyle}>
-            <View style={styles.userBadge}>
-              <Icon name="account-circle-outline" size={18} color="#007A39" />
-              <Text style={styles.userText}>{userName}</Text>
-            </View>
-          </Animated.View>
-        </View>
+          {showUserBadge ? (
+            <Animated.View style={userStyle}>
+              <View style={styles.userBadge}>
+                <Icon name="account-circle-outline" size={18} color="#007A39" />
+                <Text style={styles.userText}>{cleanUserName}</Text>
+              </View>
+            </Animated.View>
+          ) : null}
+          </View>
+        </Animated.View>
       </Animated.View>
     </Modal>
   );
@@ -515,6 +460,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  centerPanel: {
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,122,57,0.14)',
+    paddingHorizontal: 32,
+    paddingVertical: 28,
+    borderRadius: 28,
+    shadowColor: '#0B1B12',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 26,
+    elevation: 16,
+  },
   sparksContainer: {
     position: 'absolute',
     justifyContent: 'center',
@@ -526,19 +484,19 @@ const styles = StyleSheet.create({
   },
   glowOrb: {
     position: 'absolute',
-    top: -25,
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+    top: -18,
+    width: 132,
+    height: 132,
+    borderRadius: 66,
     backgroundColor: '#E8F5E9',
     shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 50,
+    shadowOpacity: 0.2,
+    shadowRadius: 36,
     elevation: 10,
   },
   iconContainer: {
-    marginBottom: 28,
+    marginBottom: 24,
     shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.3,
@@ -560,29 +518,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   subtitleText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
     color: '#007A39',
-    letterSpacing: 2.5,
+    letterSpacing: 2.4,
     textTransform: 'uppercase',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   letterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 12,
   },
   letterChar: {
-    fontSize: 38,
+    fontSize: 40,
     fontWeight: '800',
     color: '#1E293B',
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   divider: {
     height: 2,
     borderRadius: 1,
     backgroundColor: '#C8E6C9',
-    marginBottom: 18,
+    marginBottom: 10,
   },
   userBadge: {
     flexDirection: 'row',

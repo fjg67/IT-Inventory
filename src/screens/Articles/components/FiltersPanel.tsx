@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 import Animated, {
   FadeIn,
@@ -28,6 +28,7 @@ export const SORT_LABELS: Record<SortOption, string> = {
 
 interface FiltersPanelProps {
   sortBy: SortOption;
+  sortLabel?: string;
   showStockFaible: boolean;
   showStockFaibleChip?: boolean;
   filtersLabel?: string;
@@ -41,6 +42,7 @@ interface FiltersPanelProps {
 
 const FiltersPanel: React.FC<FiltersPanelProps> = ({
   sortBy,
+  sortLabel,
   showStockFaible,
   showStockFaibleChip = true,
   filtersLabel = 'Filtres',
@@ -77,17 +79,19 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
     <View style={[styles.container, tablet && { paddingHorizontal: premiumSpacing.xl }]}>
       {/* Row 1: Sort + Filters */}
       <View style={styles.dropdownRow}>
-        <TouchableOpacity
-          style={[
+        <Pressable
+          style={({ pressed }) => ([
             styles.dropdown,
             {
-              backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
+              backgroundColor: pressed
+                ? (isDark ? 'rgba(255,255,255,0.08)' : '#F8FAFC')
+                : (isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF'),
               borderColor: colors.borderSubtle,
             },
             tablet && { height: 46, paddingHorizontal: premiumSpacing.lg },
-          ]}
+            pressed && styles.dropdownPressed,
+          ])}
           onPress={() => { Vibration.vibrate(10); onSortPress(); }}
-          activeOpacity={0.7}
         >
           <View style={[styles.dropdownIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' }]}>
             <Icon name="sort" size={14} color={colors.textSecondary} />
@@ -96,23 +100,26 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
             style={[styles.dropdownText, { color: colors.textPrimary }, tablet && { fontSize: 14 }]}
             numberOfLines={1}
           >
-            {SORT_LABELS[sortBy]}
+            {sortLabel ?? SORT_LABELS[sortBy]}
           </Text>
           <Icon name="chevron-down" size={16} color={colors.textMuted} />
-        </TouchableOpacity>
+          <View style={[styles.dropdownAccent, { backgroundColor: colors.primary }]} />
+        </Pressable>
 
         {onFiltersPress ? (
-          <TouchableOpacity
-            style={[
+          <Pressable
+            style={({ pressed }) => ([
               styles.dropdown,
               {
-                backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
-                borderColor: activeFiltersCount > 0 ? colors.primary + '40' : colors.borderSubtle,
+                backgroundColor: pressed
+                  ? (isDark ? 'rgba(255,255,255,0.08)' : '#F8FAFC')
+                  : (isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF'),
+                borderColor: activeFiltersCount > 0 ? colors.primary + '50' : colors.borderSubtle,
               },
               tablet && { height: 46, paddingHorizontal: premiumSpacing.lg },
-            ]}
+              pressed && styles.dropdownPressed,
+            ])}
             onPress={() => { Vibration.vibrate(10); onFiltersPress(); }}
-            activeOpacity={0.7}
           >
             <View
               style={[
@@ -147,7 +154,8 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
             ) : (
               <Icon name="chevron-down" size={16} color={colors.textMuted} />
             )}
-          </TouchableOpacity>
+            {activeFiltersCount > 0 && <View style={[styles.dropdownAccent, { backgroundColor: colors.primary }]} />}
+          </Pressable>
         ) : null}
       </View>
 
@@ -233,8 +241,8 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: premiumSpacing.lg,
-    paddingVertical: 10,
-    gap: 10,
+    paddingVertical: 12,
+    gap: 12,
   },
   dropdownRow: {
     flexDirection: 'row',
@@ -244,28 +252,43 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 1.2,
     paddingHorizontal: 12,
-    height: 42,
+    height: 44,
     gap: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  dropdownPressed: {
+    transform: [{ scale: 0.992 }],
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   dropdownIconWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dropdownText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '800',
     flex: 1,
+  },
+  dropdownAccent: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 3,
+    opacity: 0.95,
   },
   filterCountBadge: {
     width: 20,
@@ -282,15 +305,15 @@ const styles = StyleSheet.create({
   chipsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 6,
+    paddingLeft: 7,
     paddingRight: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingVertical: 7,
+    borderRadius: 999,
     borderWidth: 1,
     gap: 6,
   },
@@ -303,7 +326,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   chipActiveIndicator: {
     width: 6,
@@ -316,13 +339,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingVertical: 8,
+    borderRadius: 999,
     borderWidth: 1,
   },
   resetText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   TextInput,
@@ -35,6 +35,8 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
   placeholder = 'Rechercher par référence ou nom...',
 }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const [localValue, setLocalValue] = useState(value);
+  const previousExternalValueRef = useRef(value);
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
   const { colors, isDark } = useTheme();
@@ -56,25 +58,34 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
 
   const handleClear = useCallback(() => {
     Vibration.vibrate(10);
+    setLocalValue('');
     onClear();
   }, [onClear]);
+
+  useEffect(() => {
+    // Sync only when parent value actually changes (external reset/update).
+    if (value !== previousExternalValueRef.current) {
+      previousExternalValueRef.current = value;
+      setLocalValue(value);
+    }
+  }, [value]);
 
   return (
     <View
       style={[
         styles.container,
         {
-          backgroundColor: colors.surface,
+          backgroundColor: isFocused ? colors.backgroundSubtle : colors.surface,
           borderColor: isFocused
             ? colors.primary + '60'
             : isDark ? colors.borderSubtle : colors.borderMedium,
           shadowColor: isFocused
             ? colors.primary
             : '#000',
-          shadowOpacity: isFocused ? 0.15 : 0.04,
-          shadowRadius: isFocused ? 12 : 4,
+          shadowOpacity: isFocused ? 0.18 : 0.05,
+          shadowRadius: isFocused ? 14 : 5,
         },
-        tablet && { height: 56, paddingHorizontal: premiumSpacing.lg },
+        tablet && { height: 58, paddingHorizontal: premiumSpacing.lg },
       ]}
     >
       {/* Search icon with animated container */}
@@ -105,8 +116,11 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
           { color: colors.textPrimary },
           tablet && { fontSize: 16 },
         ]}
-        value={value}
-        onChangeText={onChangeText}
+        value={localValue}
+        onChangeText={(text) => {
+          setLocalValue(text);
+          onChangeText(text);
+        }}
         placeholder={placeholder}
         placeholderTextColor={colors.textMuted}
         onFocus={handleFocus}
@@ -115,7 +129,7 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
         autoCorrect={false}
       />
 
-      {value.length > 0 && (
+      {localValue.length > 0 && (
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(150)}
@@ -148,32 +162,32 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1.5,
-    paddingHorizontal: 14,
-    height: 50,
+    paddingHorizontal: 16,
+    height: 52,
     gap: 10,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
   searchIconWrap: {},
   searchIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   input: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '400',
+    fontWeight: '500',
     padding: 0,
   },
   clearButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },

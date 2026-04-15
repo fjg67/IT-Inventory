@@ -35,9 +35,17 @@ const STAT_CONFIGS: Record<string, StatConfig> = {
     icon: 'alert-circle-outline',
     gradient: ['#F59E0B', '#D97706'],
   },
+  processing: {
+    icon: 'cog-play-outline',
+    gradient: ['#F97316', '#EA580C'],
+  },
   available: {
     icon: 'check-circle-outline',
     gradient: ['#3B82F6', '#2563EB'],
+  },
+  sent: {
+    icon: 'send-outline',
+    gradient: ['#E11D48', '#BE123C'],
   },
 };
 
@@ -45,7 +53,7 @@ const STAT_CONFIGS: Record<string, StatConfig> = {
 interface MiniStatProps {
   value: number;
   label: string;
-  configKey: 'total' | 'stockOK' | 'alertes' | 'available';
+  configKey: 'total' | 'stockOK' | 'alertes' | 'processing' | 'available' | 'sent';
   iconOverride?: string;
   showcaseMode?: boolean;
   pcGridMode?: boolean;
@@ -65,6 +73,7 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
 }) => {
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
+  const pcDenseMode = pcGridMode && !tablet;
   const { colors, isDark } = useTheme();
   const cfg = STAT_CONFIGS[configKey];
   const accentColor = cfg.gradient[0];
@@ -74,7 +83,7 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
       style={[
         miniStyles.wrapper,
         showcaseMode && miniStyles.wrapperShowcase,
-        pcGridMode && !tablet && miniStyles.wrapperPcGrid,
+        pcDenseMode && miniStyles.wrapperPcGridDense,
       ]}
       activeOpacity={0.7}
       onPress={() => {
@@ -86,6 +95,7 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
         miniStyles.card,
         showcaseMode && miniStyles.cardShowcase,
         compactMode && miniStyles.cardCompact,
+        pcDenseMode && miniStyles.cardPcDense,
         {
           backgroundColor: colors.surface,
           borderColor: isDark ? colors.borderSubtle : colors.borderMedium,
@@ -117,7 +127,7 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
             <View style={[miniStyles.iconInner, showcaseMode && miniStyles.iconInnerShowcase, compactMode && miniStyles.iconInnerCompact]}>
               <Icon
                 name={iconOverride ?? cfg.icon}
-                size={compactMode ? (tablet ? 13 : 12) : showcaseMode ? (tablet ? 18 : 16) : (tablet ? 14 : 12)}
+                size={compactMode ? (tablet ? 12 : 10) : showcaseMode ? (tablet ? 18 : 16) : (tablet ? 14 : 12)}
                 color={accentColor}
               />
             </View>
@@ -128,7 +138,7 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
         <AnimatedCounter
           value={value}
           style={{
-            fontSize: compactMode ? (tablet ? 22 : 20) : showcaseMode ? (tablet ? 34 : 28) : (tablet ? 30 : 24),
+            fontSize: compactMode ? (tablet ? 20 : 16) : showcaseMode ? (tablet ? 34 : 28) : (tablet ? 30 : 24),
             fontWeight: '900',
             color: colors.textPrimary,
             letterSpacing: -1,
@@ -140,6 +150,7 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
           style={[
             miniStyles.label,
             showcaseMode && miniStyles.labelShowcase,
+            compactMode && miniStyles.labelCompact,
             { color: colors.textMuted },
             tablet && { fontSize: 11 },
           ]}
@@ -166,6 +177,10 @@ const miniStyles = StyleSheet.create({
     flexBasis: '48%',
     maxWidth: '48%',
   },
+  wrapperPcGridDense: {
+    flexBasis: '30.5%',
+    maxWidth: '30.5%',
+  },
   card: {
     alignItems: 'center',
     borderRadius: 18,
@@ -183,36 +198,40 @@ const miniStyles = StyleSheet.create({
   cardShowcase: {
     width: '100%',
     minWidth: 220,
-    borderRadius: 20,
-    paddingTop: 16,
-    paddingBottom: 14,
+    borderRadius: 22,
+    paddingTop: 18,
+    paddingBottom: 16,
     shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowRadius: 14,
+    elevation: 5,
   },
   cardCompact: {
     borderRadius: 14,
-    paddingTop: 10,
-    paddingBottom: 9,
+    paddingTop: 8,
+    paddingBottom: 7,
     paddingHorizontal: 6,
+  },
+  cardPcDense: {
+    minHeight: 82,
+    borderRadius: 14,
   },
   showcaseOrb: {
     position: 'absolute',
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    top: -30,
-    right: -24,
-    backgroundColor: 'rgba(0,122,57,0.08)',
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    top: -34,
+    right: -28,
+    backgroundColor: 'rgba(0,122,57,0.1)',
   },
   accentBar: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: 4,
-    borderTopLeftRadius: 18,
-    borderBottomLeftRadius: 18,
+    width: 5,
+    borderTopLeftRadius: 22,
+    borderBottomLeftRadius: 22,
   },
   iconShadow: {
     shadowOffset: { width: 0, height: 3 },
@@ -239,9 +258,9 @@ const miniStyles = StyleSheet.create({
     borderRadius: 14,
   },
   iconPillCompact: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 8,
   },
   iconInner: {
     width: 20,
@@ -257,8 +276,8 @@ const miniStyles = StyleSheet.create({
     borderRadius: 9,
   },
   iconInnerCompact: {
-    width: 18,
-    height: 18,
+    width: 16,
+    height: 16,
     borderRadius: 6,
   },
   label: {
@@ -269,7 +288,12 @@ const miniStyles = StyleSheet.create({
     marginTop: 2,
   },
   labelShowcase: {
-    letterSpacing: 0.9,
+    letterSpacing: 1,
+  },
+  labelCompact: {
+    fontSize: 9,
+    letterSpacing: 0.3,
+    marginTop: 1,
   },
 });
 
@@ -283,13 +307,30 @@ interface PremiumArticleHeaderProps {
   alertes: number;
   pcHot?: number;
   pcReconditioning?: number;
+  pcProcessing?: number;
   pcAvailable?: number;
+  pcSent?: number;
+  pcFocusedStats?: {
+    label: string;
+    total: number;
+    agence: number;
+    siege: number;
+  } | null;
+  pcFocusedModels?: Array<{ label: string; count: number }>;
+  activePCModelLabel?: string | null;
+  tabletDecommissionedCount?: number;
+  tabletDecommissionedNames?: string[];
+  activeTabletFilter?: 'all' | 'active' | 'decommissioned';
   onAdd: () => void;
   onBack?: () => void;
   onTotalPress?: () => void;
   onStockOKPress?: () => void;
   onAlertesPress?: () => void;
+  onProcessingPress?: () => void;
   onAvailablePress?: () => void;
+  onSentPress?: () => void;
+  onPCModelPress?: (label: string) => void;
+  onTabletFilterChange?: (next: 'all' | 'active' | 'decommissioned') => void;
 }
 
 const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
@@ -301,24 +342,39 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
   alertes,
   pcHot = 0,
   pcReconditioning = 0,
+  pcProcessing = 0,
   pcAvailable = 0,
+  pcSent = 0,
+  pcFocusedStats = null,
+  pcFocusedModels = [],
+  activePCModelLabel = null,
+  tabletDecommissionedCount = 0,
+  tabletDecommissionedNames = [],
+  activeTabletFilter = 'all',
   onAdd,
   onBack,
   onTotalPress,
   onStockOKPress,
   onAlertesPress,
+  onProcessingPress,
   onAvailablePress,
+  onSentPress,
+  onPCModelPress,
+  onTabletFilterChange,
 }) => {
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
   const { colors, isDark } = useTheme();
   const isTabletMode = mode === 'tablettes' || statsMode === 'totalOnly';
   const isPCMode = mode === 'pc';
+  const showPCFocusedStats = isPCMode && !!pcFocusedStats;
+  const showPCModelsSection = showPCFocusedStats && pcFocusedModels.length > 0;
 
   return (
     <View style={[
       styles.headerCard,
       isPCMode && styles.headerCardCompact,
+      isTabletMode && styles.headerCardTabletMode,
       {
         backgroundColor: colors.surface,
         borderColor: isDark ? colors.borderSubtle : colors.borderMedium,
@@ -332,8 +388,15 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
         style={styles.accentBar}
       />
 
+      {isTabletMode && (
+        <>
+          <View pointerEvents="none" style={styles.tabletDecoOrb} />
+          <View pointerEvents="none" style={styles.tabletDecoRing} />
+        </>
+      )}
+
       {/* Top Row: back + title */}
-      <View style={styles.topRow}>
+      <View style={[styles.topRow, isTabletMode && styles.topRowTablet]}>
         {onBack ? (
           <TouchableOpacity
             onPress={() => {
@@ -381,13 +444,102 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
         <View style={styles.spacer} />
       </View>
 
+      {showPCModelsSection && (
+        <View style={styles.focusedModelsWrap}>
+          <View style={styles.sectionHeadingRow}>
+            <View style={styles.sectionDot} />
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Modeles</Text>
+            <View style={[styles.sectionDivider, { backgroundColor: isDark ? colors.borderSubtle : colors.borderMedium }]} />
+          </View>
+          <View style={styles.focusedModelsGrid}>
+            {pcFocusedModels.map((item) => (
+              <TouchableOpacity
+                key={item.label}
+                activeOpacity={0.82}
+                onPress={() => {
+                  Vibration.vibrate(10);
+                  onPCModelPress?.(item.label);
+                }}
+                style={[
+                  styles.focusedModelCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor:
+                      activePCModelLabel === item.label
+                        ? '#0EA5E9'
+                        : isDark
+                          ? colors.borderSubtle
+                          : colors.borderMedium,
+                  },
+                  activePCModelLabel === item.label && styles.focusedModelCardActive,
+                ]}
+              >
+                <LinearGradient
+                  colors={activePCModelLabel === item.label ? ['#0284C7', '#0369A1'] : ['#0EA5E9', '#0284C7']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={styles.focusedModelAccent}
+                />
+                <View style={styles.focusedModelIconWrap}>
+                  <LinearGradient colors={['#0EA5E9', '#0284C7']} style={styles.focusedModelIconPill}>
+                    <View style={styles.focusedModelIconInner}>
+                      <Icon name="laptop" size={12} color="#0369A1" />
+                    </View>
+                  </LinearGradient>
+                </View>
+                <Text style={[styles.focusedModelCountText, { color: colors.textPrimary }]}>{item.count}</Text>
+                <Text style={[styles.focusedModelCardLabel, { color: colors.textMuted }]} numberOfLines={2}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
+
       {/* Mini Stats */}
+      {showPCFocusedStats && (
+        <View style={styles.sectionHeadingRow}>
+          <View style={[styles.sectionDot, styles.sectionDotStats]} />
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Repartition</Text>
+          <View style={[styles.sectionDivider, { backgroundColor: isDark ? colors.borderSubtle : colors.borderMedium }]} />
+        </View>
+      )}
       <View style={[
         styles.statsRow,
         tablet && { gap: premiumSpacing.md },
-        (isTabletMode || isPCMode) && styles.statsRowSingle,
+        isTabletMode && styles.statsRowSingle,
         isPCMode && styles.statsRowPc,
       ]}>
+        {showPCFocusedStats ? (
+          <>
+            <MiniStatCard
+              value={pcFocusedStats.total}
+              label={pcFocusedStats.label}
+              configKey="total"
+              iconOverride="counter"
+              pcGridMode={isPCMode}
+              compactMode={isPCMode}
+            />
+            <MiniStatCard
+              value={pcFocusedStats.agence}
+              label="Portable agence"
+              configKey="stockOK"
+              iconOverride="office-building-outline"
+              pcGridMode={isPCMode}
+              compactMode={isPCMode}
+            />
+            <MiniStatCard
+              value={pcFocusedStats.siege}
+              label="Portable siège"
+              configKey="available"
+              iconOverride="office-building"
+              pcGridMode={isPCMode}
+              compactMode={isPCMode}
+            />
+          </>
+        ) : (
+          <>
         <MiniStatCard
           value={totalArticles}
           label={isTabletMode ? 'Tablettes' : isPCMode ? 'PC portables' : 'Total'}
@@ -419,6 +571,15 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
               onPress={onAlertesPress}
             />
             <MiniStatCard
+              value={pcProcessing}
+              label="En usinage"
+              configKey="processing"
+              iconOverride="cog-play-outline"
+              pcGridMode={isPCMode}
+              compactMode={isPCMode}
+              onPress={onProcessingPress}
+            />
+            <MiniStatCard
               value={pcAvailable}
               label="Disponible"
               configKey="available"
@@ -426,6 +587,15 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
               pcGridMode={isPCMode}
               compactMode={isPCMode}
               onPress={onAvailablePress}
+            />
+            <MiniStatCard
+              value={pcSent}
+              label={pcSent > 1 ? 'Envoyés' : 'Envoyé'}
+              configKey="sent"
+              iconOverride="send-outline"
+              pcGridMode={isPCMode}
+              compactMode={isPCMode}
+              onPress={onSentPress}
             />
           </>
         ) : statsMode === 'full' && (
@@ -444,14 +614,72 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
             />
           </>
         )}
+          </>
+        )}
       </View>
+
+      {isTabletMode && (
+        <View style={styles.tabletStatusPanel}>
+          <View style={styles.tabletStatusFiltersRow}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => onTabletFilterChange?.('all')}
+              style={[
+                styles.tabletStatusChip,
+                {
+                  backgroundColor: activeTabletFilter === 'all' ? '#E8F5E9' : colors.backgroundSubtle,
+                  borderColor: activeTabletFilter === 'all' ? '#007A39' : colors.borderSubtle,
+                },
+              ]}
+            >
+              <Text style={[styles.tabletStatusChipText, { color: activeTabletFilter === 'all' ? '#007A39' : colors.textSecondary }]}>Toutes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => onTabletFilterChange?.('active')}
+              style={[
+                styles.tabletStatusChip,
+                {
+                  backgroundColor: activeTabletFilter === 'active' ? '#ECFDF5' : colors.backgroundSubtle,
+                  borderColor: activeTabletFilter === 'active' ? '#10B981' : colors.borderSubtle,
+                },
+              ]}
+            >
+              <Text style={[styles.tabletStatusChipText, { color: activeTabletFilter === 'active' ? '#047857' : colors.textSecondary }]}>Actives</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => onTabletFilterChange?.('decommissioned')}
+              style={[
+                styles.tabletStatusChip,
+                {
+                  backgroundColor: activeTabletFilter === 'decommissioned' ? '#FEF3C7' : colors.backgroundSubtle,
+                  borderColor: activeTabletFilter === 'decommissioned' ? '#D97706' : colors.borderSubtle,
+                },
+              ]}
+            >
+              <Icon name="power-plug-off-outline" size={12} color={activeTabletFilter === 'decommissioned' ? '#B45309' : colors.textMuted} />
+              <Text style={[styles.tabletStatusChipText, { color: activeTabletFilter === 'decommissioned' ? '#B45309' : colors.textSecondary }]}>
+                Décom {tabletDecommissionedCount}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {tabletDecommissionedNames.length > 0 && (
+            <Text numberOfLines={1} style={[styles.tabletStatusHint, { color: colors.textMuted }]}>
+              Décommissionnées: {tabletDecommissionedNames.join(', ')}
+            </Text>
+          )}
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   headerCard: {
-    marginHorizontal: premiumSpacing.lg,
     marginTop: premiumSpacing.lg,
     borderRadius: 20,
     borderWidth: 1,
@@ -465,10 +693,18 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   headerCardCompact: {
-    paddingTop: 14,
-    paddingBottom: 12,
-    paddingHorizontal: 14,
-    paddingLeft: 18,
+    paddingTop: 12,
+    paddingBottom: 10,
+    paddingHorizontal: 12,
+    paddingLeft: 16,
+  },
+  headerCardTabletMode: {
+    borderRadius: 24,
+    paddingTop: 20,
+    paddingBottom: 18,
+    shadowOpacity: 0.11,
+    shadowRadius: 16,
+    elevation: 6,
   },
   accentBar: {
     position: 'absolute',
@@ -479,11 +715,33 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderBottomLeftRadius: 20,
   },
+  tabletDecoOrb: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    top: -70,
+    right: -48,
+    backgroundColor: 'rgba(15,118,110,0.08)',
+  },
+  tabletDecoRing: {
+    position: 'absolute',
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    top: -36,
+    right: -30,
+    borderWidth: 1,
+    borderColor: 'rgba(0,122,57,0.12)',
+  },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: premiumSpacing.sm,
+  },
+  topRowTablet: {
+    marginBottom: premiumSpacing.md,
   },
   backButton: {
     width: 40,
@@ -537,6 +795,105 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: -0.5,
   },
+  focusedModelsWrap: {
+    marginBottom: 8,
+    paddingHorizontal: 2,
+    gap: 4,
+  },
+  sectionHeadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  sectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#0284C7',
+  },
+  sectionDotStats: {
+    backgroundColor: '#059669',
+  },
+  sectionTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionDivider: {
+    flex: 1,
+    height: 1,
+    opacity: 0.8,
+  },
+  focusedModelsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    justifyContent: 'flex-start',
+  },
+  focusedModelCard: {
+    width: '31.8%',
+    minHeight: 92,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  focusedModelCardActive: {
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  focusedModelAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  focusedModelIconWrap: {
+    marginBottom: 6,
+  },
+  focusedModelIconPill: {
+    width: 30,
+    height: 30,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  focusedModelIconInner: {
+    width: 18,
+    height: 18,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  focusedModelCountText: {
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    lineHeight: 28,
+  },
+  focusedModelCardLabel: {
+    marginTop: 2,
+    fontSize: 9,
+    fontWeight: '700',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
   statsRow: {
     flexDirection: 'row',
     gap: premiumSpacing.sm + 2,
@@ -548,10 +905,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: premiumSpacing.xs,
   },
   statsRowPc: {
+    width: '100%',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'stretch',
-    rowGap: premiumSpacing.xs,
+    gap: 6,
+    rowGap: 6,
+    paddingHorizontal: 2,
+  },
+  tabletStatusPanel: {
+    marginTop: 10,
+    gap: 8,
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 2,
+  },
+  tabletStatusFiltersRow: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
+  tabletStatusChip: {
+    minHeight: 34,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  tabletStatusChipText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  tabletStatusHint: {
+    width: '100%',
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

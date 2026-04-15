@@ -255,11 +255,43 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message, m
   return (
     <View style={splashStyles.container}>
       <LinearGradient
-        colors={['#0B1120', '#111B33', '#162044']}
+        colors={[
+          colors.backgroundDark,
+          '#123020',
+          colors.primaryDark,
+        ]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={splashStyles.gradient}
       >
+        {/* App atmosphere layers (Scan/Mouvements style) */}
+        <LinearGradient
+          colors={['rgba(16,185,129,0.14)', 'rgba(16,185,129,0.03)', 'transparent']}
+          locations={[0, 0.45, 1]}
+          start={{ x: 0.2, y: 0.1 }}
+          end={{ x: 0.8, y: 0.75 }}
+          style={splashStyles.atmoTop}
+        />
+        <LinearGradient
+          colors={['rgba(59,130,246,0.10)', 'rgba(59,130,246,0.04)', 'transparent']}
+          locations={[0, 0.55, 1]}
+          start={{ x: 0.7, y: 0.2 }}
+          end={{ x: 0.1, y: 0.9 }}
+          style={splashStyles.atmoBottom}
+        />
+
+        <LinearGradient
+          colors={[
+            'rgba(255,255,255,0.02)',
+            'rgba(255,255,255,0)',
+            'rgba(0,0,0,0.28)',
+          ]}
+          locations={[0, 0.55, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={splashStyles.vignetteLayer}
+        />
+
         {/* Floating decorative orbs */}
         <View style={splashStyles.orb1} />
         <View style={splashStyles.orb2} />
@@ -282,7 +314,7 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message, m
             <Animated.View style={[splashStyles.rotatingHalo, logoRotateStyle]} />
             <Animated.View style={iconStyle}>
               <LinearGradient
-                colors={['rgba(59,130,246,0.95)', 'rgba(0,122,57,0.95)', 'rgba(139,92,246,0.95)']}
+                colors={['rgba(0,92,43,0.98)', 'rgba(0,122,57,0.98)', 'rgba(17,200,118,0.98)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={splashStyles.iconCircle}
@@ -302,6 +334,10 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message, m
           <Animated.View entering={FadeInUp.delay(400).duration(600)}>
             <Text style={splashStyles.appName}>IT-Inventory</Text>
             <Text style={splashStyles.appTagline}>Gestion de stock intelligente</Text>
+            <View style={splashStyles.statusBadge}>
+              <Icon name="shield-check-outline" size={12} color="#8EF0BC" />
+              <Text style={splashStyles.statusBadgeText}>Connexion securisee</Text>
+            </View>
           </Animated.View>
 
           {/* Loading indicator */}
@@ -310,12 +346,17 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message, m
             <View style={splashStyles.progressTrack}>
               <Animated.View style={[splashStyles.progressFill, progressStyle]}>
                 <LinearGradient
-                  colors={['#00A651', '#007A39']}
+                  colors={['#11C876', '#007A39']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={splashStyles.progressGradient}
                 />
               </Animated.View>
+            </View>
+
+            <View style={splashStyles.progressMetaRow}>
+              <Text style={splashStyles.progressMetaText}>Initialisation</Text>
+              <Text style={splashStyles.progressMetaText}>En cours</Text>
             </View>
 
             {/* Message with animated dots */}
@@ -337,7 +378,7 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message, m
         {/* Bottom watermark */}
         <Animated.View entering={FadeIn.delay(1000).duration(800)} style={splashStyles.footer}>
           <View style={splashStyles.footerLine} />
-          <Text style={splashStyles.footerText}>IT-Inventory</Text>
+          <Text style={splashStyles.footerText}>IT-Inventory Mobile</Text>
           <View style={splashStyles.footerLine} />
         </Animated.View>
       </LinearGradient>
@@ -357,33 +398,54 @@ const splashStyles = StyleSheet.create({
     overflow: 'hidden',
   },
 
+  // App atmosphere
+  atmoTop: {
+    position: 'absolute',
+    top: -90,
+    left: -70,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+  },
+  atmoBottom: {
+    position: 'absolute',
+    right: -90,
+    bottom: -120,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+  },
+  vignetteLayer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+
   // Floating orbs
   orb1: {
     position: 'absolute',
-    top: '12%',
-    right: -30,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(0, 122, 57, 0.06)',
+    top: '10%',
+    right: -20,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: 'rgba(0, 122, 57, 0.14)',
   },
   orb2: {
     position: 'absolute',
-    bottom: '18%',
-    left: -50,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(59, 130, 246, 0.05)',
+    bottom: '8%',
+    left: -60,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   orb3: {
     position: 'absolute',
-    top: '40%',
-    left: '15%',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+    top: '53%',
+    left: '18%',
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: 'rgba(78, 179, 90, 0.16)',
   },
 
   // Center
@@ -395,110 +457,146 @@ const splashStyles = StyleSheet.create({
   // Rings
   ringsContainer: {
     position: 'absolute',
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     alignItems: 'center',
     justifyContent: 'center',
   },
   ring: {
     position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 122, 57, 0.25)',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    borderWidth: 1.2,
+    borderColor: 'rgba(17, 200, 118, 0.24)',
   },
 
   // Glow
   glowCircle: {
     position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(0, 122, 57, 0.15)',
+    width: 136,
+    height: 136,
+    borderRadius: 68,
+    backgroundColor: 'rgba(17, 200, 118, 0.16)',
   },
 
   // Icon
   iconWrapper: {
-    marginBottom: 32,
+    marginBottom: 30,
     shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
     elevation: 15,
   },
   rotatingHalo: {
     position: 'absolute',
-    width: 102,
-    height: 102,
-    borderRadius: 51,
-    borderWidth: 1.4,
-    borderColor: 'rgba(129, 140, 248, 0.35)',
-    borderStyle: 'dashed',
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    borderWidth: 1,
+    borderColor: 'rgba(17, 200, 118, 0.32)',
   },
   iconCircle: {
-    width: 82,
-    height: 82,
-    borderRadius: 26,
+    width: 86,
+    height: 86,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 1,
   },
   iconInnerPlate: {
-    width: 62,
-    height: 62,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    width: 66,
+    height: 66,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.14)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
+    borderColor: 'rgba(255,255,255,0.28)',
   },
   brandLogo: {
-    width: 46,
-    height: 46,
+    width: 50,
+    height: 50,
   },
 
   // Text
   appName: {
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: -1,
+    letterSpacing: -0.9,
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   appTagline: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: 'rgba(148, 163, 184, 0.7)',
-    letterSpacing: 1.5,
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(148, 163, 184, 0.86)',
+    letterSpacing: 1.3,
     textAlign: 'center',
     textTransform: 'uppercase',
-    marginBottom: 48,
+    marginBottom: 14,
+  },
+  statusBadge: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(142, 240, 188, 0.32)',
+    backgroundColor: 'rgba(17, 200, 118, 0.12)',
+    marginBottom: 42,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    color: '#8EF0BC',
+    textTransform: 'uppercase',
   },
 
   // Loading section
   loadingSection: {
     alignItems: 'center',
-    width: 200,
+    width: 230,
   },
 
   // Progress bar
   progressTrack: {
     width: '100%',
-    height: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderRadius: 2,
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.09)',
+    borderRadius: 99,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 99,
     overflow: 'hidden',
   },
   progressGradient: {
     flex: 1,
+  },
+  progressMetaRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressMetaText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'rgba(186, 203, 220, 0.65)',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 
   // Message row
@@ -509,8 +607,8 @@ const splashStyles = StyleSheet.create({
   },
   loadingMessage: {
     fontSize: 13,
-    color: 'rgba(148, 163, 184, 0.6)',
-    fontWeight: '500',
+    color: 'rgba(186, 203, 220, 0.72)',
+    fontWeight: '600',
     letterSpacing: 0.3,
   },
   dotsRow: {
@@ -519,10 +617,10 @@ const splashStyles = StyleSheet.create({
     marginLeft: 2,
   },
   dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: 'rgba(148, 163, 184, 0.6)',
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(186, 203, 220, 0.72)',
   },
 
   // Footer
@@ -534,15 +632,15 @@ const splashStyles = StyleSheet.create({
     gap: 12,
   },
   footerLine: {
-    width: 30,
+    width: 32,
     height: 1,
-    backgroundColor: 'rgba(148, 163, 184, 0.15)',
+    backgroundColor: 'rgba(148, 163, 184, 0.18)',
   },
   footerText: {
     fontSize: 11,
-    color: 'rgba(148, 163, 184, 0.25)',
+    color: 'rgba(148, 163, 184, 0.35)',
     fontWeight: '600',
-    letterSpacing: 2,
+    letterSpacing: 1.6,
     textTransform: 'uppercase',
   },
 });

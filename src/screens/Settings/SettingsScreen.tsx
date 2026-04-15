@@ -790,7 +790,7 @@ const headerStyles = StyleSheet.create({
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
-  const { isTablet, contentMaxWidth } = useResponsive();
+  const { isTablet } = useResponsive();
   const { colors, isDark, theme, themeMode, setThemeMode, toggleTheme } = useTheme();
 
   const technicien = useAppSelector(state => state.auth.currentTechnicien);
@@ -1211,7 +1211,6 @@ export const SettingsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scrollContent,
-          contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const } : {},
         ]}
         refreshControl={
           <RefreshControl
@@ -1222,74 +1221,108 @@ export const SettingsScreen: React.FC = () => {
           />
         }
       >
-        {/* ===== SECTION CONFORMITÉ DU STOCK (Crédit Agricole Style) ===== */}
-        <View style={[styles.stockComplianceCard, { backgroundColor: colors.surface, borderColor: isDark ? 'rgba(0,122,57,0.22)' : 'rgba(0,122,57,0.16)' }]}>
+        {/* ===== SECTION CONFORMITÉ DU STOCK ===== */}
+        <View style={[styles.stockComplianceCard, { backgroundColor: colors.surface, borderColor: isDark ? 'rgba(0,122,57,0.24)' : 'rgba(0,122,57,0.14)' }]}>
           <LinearGradient
-            colors={['#00A651', '#007A39']}
+            colors={isDark ? ['rgba(0,166,81,0.24)', 'rgba(0,122,57,0.04)'] : ['#ECFDF3', '#F8FFFB']}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.stockComplianceTopBar}
-          />
+            end={{ x: 1, y: 1 }}
+            style={styles.stockComplianceHero}
+          >
+            <View style={styles.stockComplianceGlowPrimary} />
+            <View style={styles.stockComplianceGlowSecondary} />
 
-          <View style={styles.stockComplianceHeader}>
-            <View style={styles.stockComplianceHeaderTitleWrap}>
-              <Icon name="shield-check-outline" size={20} color="#00A651" />
-              <Text style={[styles.stockComplianceTitle, { color: colors.textPrimary }]}>Conformité du stock</Text>
-            </View>
-            <Text style={[styles.stockComplianceSubtitle, { color: colors.textMuted }]}>État général de votre inventaire</Text>
+            <View style={styles.stockComplianceTopRow}>
+              <View style={styles.stockComplianceIdentityRow}>
+                <LinearGradient
+                  colors={['#00A651', '#007A39']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.stockComplianceHeroIcon}
+                >
+                  <View style={styles.stockComplianceHeroIconInner}>
+                    <Icon name="shield-check-outline" size={18} color="#007A39" />
+                  </View>
+                </LinearGradient>
 
-            <View style={[styles.stockComplianceStatusBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,122,57,0.06)' }]}>
-              <View style={[styles.stockComplianceStatusDot, { backgroundColor: complianceStatusColor }]} />
-              <Text style={[styles.stockComplianceStatusText, { color: colors.textPrimary }]}>{complianceStatusLabel}</Text>
-            </View>
-          </View>
-
-          <View style={[styles.stockComplianceInfoCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.025)' }]}>
-            <View style={styles.stockComplianceInfoRow}>
-              <View style={styles.stockComplianceInfoLeft}>
-                <Icon name="calendar-clock-outline" size={15} color={colors.textSecondary} />
-                <Text style={[styles.stockComplianceInfoLabel, { color: colors.textSecondary }]}>Dernier inventaire</Text>
+                <View style={styles.stockComplianceTitleBlock}>
+                  <Text style={[styles.stockComplianceEyebrow, { color: colors.textMuted }]}>Audit inventaire</Text>
+                  <Text style={[styles.stockComplianceTitle, { color: colors.textPrimary }]}>Pulse du stock</Text>
+                  <Text style={[styles.stockComplianceSubtitle, { color: colors.textSecondary }]}>Vue rapide de la fiabilité du site actif</Text>
+                </View>
               </View>
-              <Text style={[styles.stockComplianceInfoValue, { color: colors.textPrimary }]}>{lastRecountDateLabel}</Text>
+
+              <View style={[styles.stockComplianceStatusBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFFCC' }]}>
+                <View style={[styles.stockComplianceStatusDot, { backgroundColor: complianceStatusColor }]} />
+                <Text style={[styles.stockComplianceStatusText, { color: colors.textPrimary }]}>{complianceStatusLabel}</Text>
+              </View>
             </View>
 
-            <View style={styles.stockComplianceInfoRow}>
-              <View style={styles.stockComplianceInfoLeft}>
-                <Icon name="timer-sand" size={15} color={colors.textSecondary} />
-                <Text style={[styles.stockComplianceInfoLabel, { color: colors.textSecondary }]}>Jours écoulés</Text>
+            <View style={styles.stockComplianceSnapshotRow}>
+              <View style={styles.stockComplianceSnapshotMain}>
+                <Text style={[styles.stockComplianceSnapshotValue, { color: colors.textPrimary }]}>
+                  {daysSinceRecount == null ? '—' : `${daysSinceRecount} j`}
+                </Text>
+                <Text style={[styles.stockComplianceSnapshotLabel, { color: colors.textSecondary }]}>depuis le dernier contrôle</Text>
               </View>
-              <Text style={[styles.stockComplianceInfoValue, { color: colors.textPrimary }]}>{daysSinceRecount == null ? '—' : `${daysSinceRecount} j`}</Text>
+
+              <View style={[styles.stockComplianceSitePill, { backgroundColor: isDark ? 'rgba(15,23,42,0.34)' : 'rgba(255,255,255,0.86)', borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,122,57,0.10)' }]}>
+                <Icon name="map-marker-radius-outline" size={14} color="#007A39" />
+                <Text style={[styles.stockComplianceSiteText, { color: colors.textPrimary }]} numberOfLines={1}>{siteActif?.nom ?? 'Site non sélectionné'}</Text>
+              </View>
+            </View>
+          </LinearGradient>
+
+          <View style={styles.stockComplianceMetricGrid}>
+            <View style={[styles.stockComplianceMetricCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FAFBFC', borderColor: colors.borderSubtle }]}>
+              <View style={[styles.stockComplianceMetricIconWrap, { backgroundColor: isDark ? 'rgba(59,130,246,0.16)' : '#DBEAFE' }]}>
+                <Icon name="calendar-star" size={15} color="#2563EB" />
+              </View>
+              <Text style={[styles.stockComplianceMetricLabel, { color: colors.textMuted }]}>Dernier inventaire</Text>
+              <Text style={[styles.stockComplianceMetricValue, { color: colors.textPrimary }]}>{lastRecountDateLabel}</Text>
             </View>
 
-            <View style={styles.stockComplianceInfoRow}>
-              <View style={styles.stockComplianceInfoLeft}>
-                <Icon name="map-marker-outline" size={15} color={colors.textSecondary} />
-                <Text style={[styles.stockComplianceInfoLabel, { color: colors.textSecondary }]}>Site</Text>
+            <View style={[styles.stockComplianceMetricCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FAFBFC', borderColor: colors.borderSubtle }]}>
+              <View style={[styles.stockComplianceMetricIconWrap, { backgroundColor: isDark ? 'rgba(245,158,11,0.16)' : '#FEF3C7' }]}>
+                <Icon name="timer-sand" size={15} color="#D97706" />
               </View>
-              <Text style={[styles.stockComplianceInfoValue, { color: colors.textPrimary }]} numberOfLines={1}>{siteActif?.nom ?? 'Non sélectionné'}</Text>
+              <Text style={[styles.stockComplianceMetricLabel, { color: colors.textMuted }]}>Jours écoulés</Text>
+              <Text style={[styles.stockComplianceMetricValue, { color: colors.textPrimary }]}>{daysSinceRecount == null ? '—' : `${daysSinceRecount} j`}</Text>
+            </View>
+
+            <View style={[styles.stockComplianceMetricCardWide, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FAFBFC', borderColor: colors.borderSubtle }]}>
+              <View style={[styles.stockComplianceMetricIconWrap, { backgroundColor: isDark ? 'rgba(16,185,129,0.16)' : '#D1FAE5' }]}>
+                <Icon name="radar" size={15} color="#059669" />
+              </View>
+              <Text style={[styles.stockComplianceMetricLabel, { color: colors.textMuted }]}>Niveau de conformité</Text>
+              <Text style={[styles.stockComplianceMetricValue, { color: colors.textPrimary }]}>{complianceStatusLabel}</Text>
             </View>
           </View>
 
           <View style={styles.stockComplianceActions}>
             <TouchableOpacity
-              style={[styles.stockComplianceActionSecondary, { borderColor: '#00A651' }, isDark && { backgroundColor: 'rgba(0,122,57,0.09)' }]}
+              style={[styles.stockComplianceActionSecondary, { borderColor: '#00A651', backgroundColor: isDark ? 'rgba(0,122,57,0.08)' : '#F6FFFA' }]}
               onPress={handleShowComplianceDetails}
-              activeOpacity={0.7}
+              activeOpacity={0.78}
             >
-              <Text style={styles.stockComplianceActionSecondaryText}>Détails</Text>
+              <Icon name="chart-box-outline" size={15} color="#00A651" />
+              <Text style={styles.stockComplianceActionSecondaryText}>Explorer</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.stockComplianceActionPrimary, verifyingCompliance && { opacity: 0.6 }]}
               onPress={handleVerifyCompliance}
               disabled={verifyingCompliance}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
               <LinearGradient colors={['#00A651', '#007A39']} style={styles.stockComplianceActionPrimaryGradient} />
               {verifyingCompliance ? (
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
-                <Text style={styles.stockComplianceActionPrimaryText}>Vérifier</Text>
+                <>
+                  <Icon name="shield-refresh-outline" size={16} color="#FFFFFF" />
+                  <Text style={styles.stockComplianceActionPrimaryText}>Relancer le contrôle</Text>
+                </>
               )}
             </TouchableOpacity>
           </View>
@@ -2561,7 +2594,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 24,
     marginBottom: 10,
-    marginLeft: 16,
+    marginLeft: 0,
     gap: 10,
   },
   sectionAccentBar: {
@@ -2579,7 +2612,7 @@ const styles = StyleSheet.create({
   // ===== CARD =====
   card: {
     borderRadius: 18,
-    marginHorizontal: 16,
+    marginHorizontal: 0,
     marginBottom: 10,
     padding: 16,
     borderWidth: 1,
@@ -2809,7 +2842,7 @@ const styles = StyleSheet.create({
   // ===== VERSION =====
   versionCard: {
     borderRadius: 18,
-    marginHorizontal: 16,
+    marginHorizontal: 0,
     marginBottom: 10,
     padding: 16,
     borderWidth: 1,
@@ -2841,7 +2874,7 @@ const styles = StyleSheet.create({
 
   // ===== CREATOR CARD =====
   creatorCard: {
-    marginHorizontal: 16,
+    marginHorizontal: 0,
     marginBottom: 10,
     borderRadius: 18,
     padding: 16,
@@ -2909,7 +2942,7 @@ const styles = StyleSheet.create({
 
   // ===== LOGOUT CARD =====
   logoutCard: {
-    marginHorizontal: 16,
+    marginHorizontal: 0,
     marginTop: 24,
     borderRadius: 16,
     overflow: 'hidden',
@@ -3297,49 +3330,99 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stockComplianceCard: {
-    marginHorizontal: 16,
+    marginHorizontal: 0,
     marginVertical: 12,
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 24,
+    padding: 14,
     overflow: 'hidden',
   },
-  stockComplianceTopBar: {
+  stockComplianceHero: {
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    overflow: 'hidden',
+  },
+  stockComplianceGlowPrimary: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
+    top: -38,
+    right: -24,
+    width: 124,
+    height: 124,
+    borderRadius: 62,
+    backgroundColor: 'rgba(0,166,81,0.12)',
   },
-  stockComplianceHeader: {
-    marginTop: 6,
-    marginBottom: 14,
+  stockComplianceGlowSecondary: {
+    position: 'absolute',
+    bottom: -34,
+    left: -18,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(37,99,235,0.08)',
   },
-  stockComplianceHeaderTitleWrap: {
+  stockComplianceTopRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  stockComplianceIdentityRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    flex: 1,
+  },
+  stockComplianceHeroIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 16,
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    shadowColor: '#007A39',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  stockComplianceHeroIconInner: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stockComplianceTitleBlock: {
+    flex: 1,
+  },
+  stockComplianceEyebrow: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
     marginBottom: 4,
   },
   stockComplianceTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: -0.2,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.7,
   },
   stockComplianceSubtitle: {
-    fontSize: 12,
-    fontWeight: '400',
-    letterSpacing: 0.1,
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 18,
   },
   stockComplianceStatusBadge: {
-    marginTop: 10,
-    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 999,
     gap: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
   stockComplianceStatusDot: {
     width: 8,
@@ -3348,62 +3431,112 @@ const styles = StyleSheet.create({
   },
   stockComplianceStatusText: {
     fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.15,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
-  stockComplianceInfoCard: {
-    borderRadius: 12,
+  stockComplianceSnapshotRow: {
+    marginTop: 18,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  stockComplianceSnapshotMain: {
+    flex: 1,
+  },
+  stockComplianceSnapshotValue: {
+    fontSize: 34,
+    fontWeight: '900',
+    letterSpacing: -1.2,
+    lineHeight: 38,
+  },
+  stockComplianceSnapshotLabel: {
+    marginTop: 2,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  stockComplianceSitePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    borderRadius: 999,
+    borderWidth: 1,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 9,
+    maxWidth: '54%',
+  },
+  stockComplianceSiteText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  stockComplianceMetricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 12,
     marginBottom: 14,
   },
-  stockComplianceInfoRow: {
-    flexDirection: 'row',
+  stockComplianceMetricCard: {
+    width: '48%',
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  stockComplianceMetricCardWide: {
+    width: '100%',
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  stockComplianceMetricIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 9,
+    justifyContent: 'center',
+    marginBottom: 10,
   },
-  stockComplianceInfoLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    minWidth: 110,
-  },
-  stockComplianceInfoLabel: {
+  stockComplianceMetricLabel: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
+    marginBottom: 5,
   },
-  stockComplianceInfoValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    maxWidth: '56%',
-    textAlign: 'right',
+  stockComplianceMetricValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
   },
   stockComplianceActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
   stockComplianceActionSecondary: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 14,
+    borderRadius: 16,
     borderWidth: 1.5,
+    gap: 8,
   },
   stockComplianceActionSecondaryText: {
     color: '#00A651',
     fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    fontWeight: '800',
+    letterSpacing: 0.15,
   },
   stockComplianceActionPrimary: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
+    borderRadius: 16,
     overflow: 'hidden',
-    minHeight: 44,
+    minHeight: 50,
+    gap: 8,
   },
   stockComplianceActionPrimaryGradient: {
     ...StyleSheet.absoluteFillObject,
@@ -3411,8 +3544,8 @@ const styles = StyleSheet.create({
   stockComplianceActionPrimaryText: {
     color: '#FFF',
     fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    fontWeight: '800',
+    letterSpacing: 0.15,
     zIndex: 1,
   },
 });

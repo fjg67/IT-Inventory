@@ -292,7 +292,7 @@ export const LoginScreen: React.FC = () => {
     }
 
     setSuccess(true);
-    const displayName = technicien?.nom || technicien?.matricule || 'Technicien';
+    const displayName = technicien?.nom || technicien?.prenom || technicien?.matricule || '';
     setLoggedUserName(displayName);
     setTimeout(() => setShowSuccessOverlay(true), 600);
   }, [maybeEnableBiometricAfterPasswordLogin]);
@@ -307,7 +307,7 @@ export const LoginScreen: React.FC = () => {
     if (passwordRef.current === MASTER_PASSWORD) {
       setLoading(false);
       setSuccess(true);
-      setLoggedUserName('Technicien');
+      setLoggedUserName('');
       setTimeout(() => setShowSuccessOverlay(true), 600);
       return;
     }
@@ -335,7 +335,7 @@ export const LoginScreen: React.FC = () => {
   const handleMasterLoginSuccess = useCallback(() => {
     setLoading(false);
     setSuccess(true);
-    setLoggedUserName('Technicien');
+    setLoggedUserName('');
     setTimeout(() => setShowSuccessOverlay(true), 600);
   }, []);
 

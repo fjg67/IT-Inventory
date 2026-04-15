@@ -46,7 +46,7 @@ import SkeletonLoader from './components/SkeletonLoader';
 export const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
-  const { isTablet, contentMaxWidth, spacing } = useResponsive();
+  const { isTablet, spacing } = useResponsive();
   const { colors, gradients, isDark } = useTheme();
 
   // Store
@@ -171,10 +171,10 @@ export const DashboardScreen: React.FC = () => {
         contentContainerStyle={[
           styles.scrollContent,
           {
-            padding: spacing.lg,
+            paddingHorizontal: 0,
             paddingTop: spacing.xl,
+            paddingBottom: spacing.lg,
           },
-          contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const } : {},
         ]}
         refreshControl={
           <RefreshControl

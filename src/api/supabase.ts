@@ -72,6 +72,7 @@ export const tables = {
   journalModifications: 'AuditLog',
   loginHistory: 'LoginHistory',
   inventoryRecount: 'InventoryRecount',
+  pcSentHistory: 'PCSentHistory',
 } as const;
 
 // Export du client

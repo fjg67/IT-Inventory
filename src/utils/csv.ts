@@ -7,6 +7,7 @@ import Share from 'react-native-share';
 import { Platform, Alert } from 'react-native';
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { ExportOptions, Article, Mouvement } from '@/types';
+import { SentPCRecord } from '@/services/pcSentService';
 
 const EXPORT_DIR = Platform.OS === 'android' 
   ? RNFS.DownloadDirectoryPath 
@@ -215,6 +216,50 @@ export async function exportJournal(dateDebut?: Date): Promise<string> {
 
   const csvContent = [toCSVRow(headers), ...rows.map(toCSVRow)].join('\n');
   const filename = generateFilename('journal_modifications');
+  const filepath = `${EXPORT_DIR}/${filename}`;
+  await RNFS.writeFile(filepath, csvContent, 'utf8');
+  return filepath;
+}
+
+/**
+ * Export des PC envoyés en CSV
+ */
+export async function exportSentPCsCSV(rows: SentPCRecord[], sourceSiteName?: string): Promise<string> {
+  const generatedAt = new Date();
+  const headers = [
+    'Date envoi',
+    'Hostname',
+    'Asset',
+    'Marque',
+    'Modèle',
+    'Agence source',
+    'EDS source',
+    'EDS destination',
+    'Envoyé par',
+  ];
+
+  const csvRows = rows.map((row) => [
+    row.sentAt,
+    row.hostname,
+    row.asset ?? '',
+    row.brand ?? '',
+    row.model ?? '',
+    row.sourceSiteName ?? sourceSiteName ?? '',
+    row.sourceAgencyEds ?? '',
+    row.destinationAgencyEds,
+    row.sentByName ?? '',
+  ]);
+
+  const lines: string[] = [];
+  lines.push(toCSVRow(['Export généré le', generatedAt.toLocaleString('fr-FR')]));
+  lines.push(toCSVRow(['Site source', sourceSiteName ?? '']));
+  lines.push(toCSVRow(['Nombre de PC envoyés', rows.length]));
+  lines.push(toCSVRow(['']));
+  lines.push(toCSVRow(headers));
+  csvRows.forEach((line) => lines.push(toCSVRow(line)));
+
+  const csvContent = ['\uFEFF' + lines.join('\n')].join('');
+  const filename = generateFilename('pc_envoyes');
   const filepath = `${EXPORT_DIR}/${filename}`;
   await RNFS.writeFile(filepath, csvContent, 'utf8');
   return filepath;

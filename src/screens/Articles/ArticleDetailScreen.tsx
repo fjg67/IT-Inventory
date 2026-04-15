@@ -68,6 +68,7 @@ const getInitials = (name: string) => {
 const getInventoryStatus = (description?: string) => {
   const normalized = (description ?? '').toLowerCase();
   if (normalized.includes('disponible')) return 'Disponible';
+  if (normalized.includes('usinage') || normalized.includes('en train d\'usiner')) return 'En usinage';
   if (normalized.includes('reusin') || normalized.includes('recondition')) return 'A reusiner';
   if (normalized.includes('a chaud') || normalized.includes('à chaud')) return 'A chaud';
   return null;
@@ -148,9 +149,78 @@ export const ArticleDetailScreen: React.FC = () => {
       value.includes('pc disponible'),
     );
   }, [article]);
+  const isTabletArticle = useMemo(() => {
+    if (!article) return false;
+
+    const values = [article.typeArticle, article.sousType, article.famille]
+      .filter((value): value is string => !!value)
+      .map((value) => value.toLowerCase());
+
+    return values.some((value) => value.includes('tablette'));
+  }, [article]);
+  const isTabletDecommissioned = useMemo(() => {
+    if (!isTabletArticle) return false;
+    const normalized = (article?.description ?? '').toLowerCase();
+    return normalized.includes('decommission') || normalized.includes('décommission');
+  }, [article?.description, isTabletArticle]);
+  const tabletDecommissionDateText = useMemo(() => {
+    if (!article?.dateModification) return 'Date de décommission inconnue';
+
+    const date = new Date(article.dateModification);
+    return `Décommissionnée le ${date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })}`;
+  }, [article?.dateModification]);
+  const headerGradient = useMemo(() => {
+    if (isTabletArticle) return ['#0F3D35', '#0F766E', '#0EA5A8'];
+    if (isPCArticle) return ['#0F172A', '#1E293B'];
+    return gradient;
+  }, [gradient, isPCArticle, isTabletArticle]);
   const isPCAvailable = isPCArticle && inventoryStatus === 'Disponible';
+  const isPCProcessing = isPCArticle && inventoryStatus === 'En usinage';
   const isPCReconditioning = isPCArticle && inventoryStatus === 'A reusiner';
   const isPCHot = isPCArticle && inventoryStatus === 'A chaud';
+  const pcStatusMeta = useMemo(() => {
+    if (isPCAvailable) {
+      return {
+        label: 'Disponible',
+        icon: 'check-circle-outline',
+        gradient: ['#3B82F6', '#2563EB'] as [string, string],
+        tone: '#2563EB',
+        bg: '#DBEAFE',
+      };
+    }
+
+    if (isPCProcessing) {
+      return {
+        label: 'En usinage',
+        icon: 'cog-play-outline',
+        gradient: ['#F97316', '#EA580C'] as [string, string],
+        tone: '#EA580C',
+        bg: '#FFF7ED',
+      };
+    }
+
+    if (isPCReconditioning) {
+      return {
+        label: 'A reusiner',
+        icon: 'wrench-outline',
+        gradient: ['#F59E0B', '#D97706'] as [string, string],
+        tone: '#D97706',
+        bg: '#FFFBEB',
+      };
+    }
+
+    return {
+      label: 'A chaud',
+      icon: 'flash-outline',
+      gradient: ['#10B981', '#059669'] as [string, string],
+      tone: '#059669',
+      bg: '#ECFDF5',
+    };
+  }, [isPCAvailable, isPCProcessing, isPCReconditioning]);
 
   // Navigation
   const handleMouvement = (type: 'entree' | 'sortie' | 'ajustement') => {
@@ -199,6 +269,32 @@ export const ArticleDetailScreen: React.FC = () => {
     navigation.navigate('ArticleEdit', { articleId });
   };
 
+  const handleDecommissionTablet = useCallback(async () => {
+    if (!article || isTabletDecommissioned) return;
+
+    try {
+      const currentDescription = (article.description ?? '').trim();
+      const nextDescription = currentDescription.toLowerCase().includes('décommission') || currentDescription.toLowerCase().includes('decommission')
+        ? currentDescription
+        : `Statut: Décommissionnée${currentDescription ? ` | ${currentDescription}` : ''}`;
+
+      await articleRepository.update(article.id, {
+        description: nextDescription,
+      });
+
+      setArticle((prev) => prev ? {
+        ...prev,
+        description: nextDescription,
+        dateModification: new Date(),
+      } : prev);
+
+      Vibration.vibrate(16);
+      Alert.alert('Succès', 'Tablette décommissionnée avec succès.');
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible de décommissionner la tablette.');
+    }
+  }, [article, isTabletDecommissioned]);
+
   const quickActions = useMemo(() => {
     if (isPCArticle) {
       return [
@@ -233,13 +329,27 @@ export const ArticleDetailScreen: React.FC = () => {
       ];
     }
 
+    if (isTabletArticle) {
+      return [
+        {
+          icon: isTabletDecommissioned ? 'check-decagram' : 'power-plug-off-outline',
+          label: isTabletDecommissioned ? 'Décommissionnée' : 'Décommissionner',
+          gradient: isTabletDecommissioned
+            ? (['#10B981', '#059669'] as [string, string])
+            : (['#D97706', '#B45309'] as [string, string]),
+          onPress: handleDecommissionTablet,
+          disabled: isTabletDecommissioned,
+        },
+      ];
+    }
+
     return [
       { icon: 'arrow-up-bold', label: 'Entrée', gradient: ['#10B981', '#059669'] as [string, string], onPress: () => handleMouvement('entree'), disabled: false },
       { icon: 'arrow-down-bold', label: 'Sortie', gradient: ['#EF4444', '#DC2626'] as [string, string], onPress: () => handleMouvement('sortie'), disabled: stockActuel === 0 },
       { icon: 'tune-vertical', label: 'Ajustement', gradient: ['#F59E0B', '#D97706'] as [string, string], onPress: () => handleMouvement('ajustement'), disabled: false },
       { icon: 'swap-horizontal', label: 'Transfert', gradient: ['#8B5CF6', '#6D28D9'] as [string, string], onPress: handleTransfert, disabled: false },
     ];
-  }, [handleMouvement, handleTransfert, handleUpdatePCStatus, isPCArticle, isPCAvailable, isPCHot, isPCReconditioning, isUpdatingPCStatus, stockActuel]);
+  }, [handleMouvement, handleTransfert, handleUpdatePCStatus, isPCArticle, isTabletArticle, isTabletDecommissioned, handleDecommissionTablet, isPCAvailable, isPCHot, isPCReconditioning, isUpdatingPCStatus, stockActuel]);
 
   const handleBack = useCallback(() => {
     Vibration.vibrate(10);
@@ -340,9 +450,11 @@ export const ArticleDetailScreen: React.FC = () => {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: 40 }, isTablet && contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : undefined]}>
         {/* ===== HERO HEADER ===== */}
-        <LinearGradient colors={gradient} style={styles.header}>
+        <LinearGradient colors={headerGradient} style={[styles.header, isTabletArticle && styles.headerTablet]}>
           {/* Glass overlay for depth */}
-          <View style={styles.headerOverlay} />
+          <View style={[styles.headerOverlay, isTabletArticle && styles.headerOverlayTablet]} />
+          {isTabletArticle && <View pointerEvents="none" style={styles.headerTabletOrb} />}
+          {isTabletArticle && <View pointerEvents="none" style={styles.headerTabletOrbSecondary} />}
 
           {/* Nav */}
           <View style={styles.headerNav}>
@@ -380,41 +492,117 @@ export const ArticleDetailScreen: React.FC = () => {
           </Animated.View>
 
           {/* Ref + Name */}
-          <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.headerInfo}>
-            <View style={styles.refBadge}>
-              <Icon name="barcode" size={12} color="rgba(255,255,255,0.85)" />
-              <Text style={styles.refText}>{article.reference}</Text>
-            </View>
+          <Animated.View entering={FadeInUp.delay(300).duration(400)} style={[styles.headerInfo, isTabletArticle && styles.headerInfoTablet]}>
+            <View style={isTabletArticle ? styles.headerTabletPanel : undefined}>
+            {isTabletArticle ? (
+              <View style={[styles.refBadge, styles.refBadgeTablet]}>
+                <Icon name="tablet-cellphone" size={12} color="rgba(255,255,255,0.92)" />
+                <Text style={styles.refText}>Fiche Tablette</Text>
+              </View>
+            ) : (
+              <View style={styles.refBadge}>
+                <Icon name="barcode" size={12} color="rgba(255,255,255,0.85)" />
+                <Text style={styles.refText}>{article.reference}</Text>
+              </View>
+            )}
             <Text style={styles.headerName} numberOfLines={2}>{article.nom}</Text>
-            {article.categorieNom ? (
+            {isTabletArticle && (
+              <Text style={styles.headerTabletSubtitle} numberOfLines={1}>
+                {siteActif?.nom ?? 'Site non defini'}
+              </Text>
+            )}
+            {isTabletArticle && (
+              <View style={styles.headerBadgeRow}>
+                {article.barcode ? (
+                  <View style={styles.headerPill}>
+                    <Icon name="tag-outline" size={11} color="rgba(255,255,255,0.94)" />
+                    <Text style={styles.headerPillText}>Asset {article.barcode}</Text>
+                  </View>
+                ) : null}
+                {article.marque ? (
+                  <View style={styles.headerPill}>
+                    <Icon name="domain" size={11} color="rgba(255,255,255,0.94)" />
+                    <Text style={styles.headerPillText}>{article.marque}</Text>
+                  </View>
+                ) : null}
+              </View>
+            )}
+            {article.categorieNom && !isTabletArticle ? (
               <View style={styles.catBadge}>
                 <Icon name="folder-outline" size={11} color="rgba(255,255,255,0.9)" />
                 <Text style={styles.catText}>{article.categorieNom}</Text>
               </View>
             ) : null}
+            </View>
           </Animated.View>
         </LinearGradient>
 
-        {/* ===== STAT CARDS (floating) ===== */}
-        <Animated.View entering={FadeInUp.delay(200).duration(400)} style={styles.statsRow}>
-          {[
-            { icon: 'package-variant', gradient: ['#3B82F6', '#2563EB'], value: stockActuel, label: 'Stock actuel', valueColor: isCritical ? '#EF4444' : isLowStock ? '#F59E0B' : colors.textPrimary },
-            { icon: 'alert-circle-outline', gradient: ['#F59E0B', '#D97706'], value: article.stockMini, label: 'Stock mini', valueColor: colors.textPrimary },
-            { icon: 'swap-vertical', gradient: ['#8B5CF6', '#6D28D9'], value: historique.length, label: 'Mouvements', valueColor: colors.textPrimary },
-          ].map((stat, idx) => (
-            <View key={idx} style={[styles.statCard, { backgroundColor: colors.surface }]}>
-              <View style={styles.statIconWrap}>
-                <LinearGradient colors={stat.gradient} style={styles.statIconGrad}>
-                  <View style={styles.statIconInner}>
-                    <Icon name={stat.icon} size={16} color={stat.gradient[0]} />
-                  </View>
-                </LinearGradient>
+        {/* ===== HEADER PANEL ===== */}
+        {isPCArticle ? (
+          <Animated.View entering={FadeInUp.delay(200).duration(400)} style={styles.pcHeroWrap}>
+            <View style={[styles.pcHeroCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+              <LinearGradient
+                colors={pcStatusMeta.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={styles.pcHeroAccent}
+              />
+
+              <View style={styles.pcHeroTopRow}>
+                <View style={[styles.pcStatusBadge, { backgroundColor: pcStatusMeta.bg }]}> 
+                  <Icon name={pcStatusMeta.icon} size={13} color={pcStatusMeta.tone} />
+                  <Text style={[styles.pcStatusText, { color: pcStatusMeta.tone }]}>{pcStatusMeta.label}</Text>
+                </View>
+                <Text style={[styles.pcHeroMetaText, { color: colors.textMuted }]}>Maj {article.dateModification ? formatRelDate(new Date(article.dateModification)) : 'inconnue'}</Text>
               </View>
-              <Text style={[styles.statValue, { color: stat.valueColor }]}>{stat.value}</Text>
-              <Text style={[styles.statLabel, { color: colors.textMuted }]}>{stat.label}</Text>
+
+              <View style={styles.pcHeroStatsRow}>
+                <View style={[styles.pcMiniPill, { backgroundColor: colors.backgroundSubtle, borderColor: colors.borderSubtle }]}> 
+                  <Icon name="laptop" size={13} color={colors.primary} />
+                  <Text numberOfLines={1} style={[styles.pcMiniPillText, { color: colors.textPrimary }]}>
+                    {article.modele || article.nom}
+                  </Text>
+                </View>
+
+                <View style={[styles.pcMiniPill, { backgroundColor: colors.backgroundSubtle, borderColor: colors.borderSubtle }]}> 
+                  <Icon name="office-building" size={13} color={colors.info} />
+                  <Text numberOfLines={1} style={[styles.pcMiniPillText, { color: colors.textPrimary }]}>
+                    {siteActif?.nom ?? 'Site non defini'}
+                  </Text>
+                </View>
+
+                <View style={[styles.pcMiniPill, { backgroundColor: colors.backgroundSubtle, borderColor: colors.borderSubtle }]}> 
+                  <Icon name="history" size={13} color={colors.textSecondary} />
+                  <Text numberOfLines={1} style={[styles.pcMiniPillText, { color: colors.textPrimary }]}>
+                    {historique.length} mouvement{historique.length > 1 ? 's' : ''}
+                  </Text>
+                </View>
+              </View>
             </View>
-          ))}
-        </Animated.View>
+          </Animated.View>
+        ) : !isTabletArticle ? (
+          <Animated.View entering={FadeInUp.delay(200).duration(400)} style={[styles.statsRow, isTabletArticle && styles.statsRowTablet]}>
+            {[
+              { icon: 'package-variant', gradient: ['#3B82F6', '#2563EB'], value: stockActuel, label: 'Stock actuel', valueColor: isCritical ? '#EF4444' : isLowStock ? '#F59E0B' : colors.textPrimary },
+              { icon: 'alert-circle-outline', gradient: ['#F59E0B', '#D97706'], value: article.stockMini, label: 'Stock mini', valueColor: colors.textPrimary },
+              { icon: 'swap-vertical', gradient: ['#8B5CF6', '#6D28D9'], value: historique.length, label: 'Mouvements', valueColor: colors.textPrimary },
+            ].map((stat, idx) => (
+              <View key={idx} style={[styles.statCard, isTabletArticle && styles.statCardTablet, { backgroundColor: colors.surface }]}>
+                {isTabletArticle && <View style={styles.statCardTopLine} />}
+                <View style={styles.statIconWrap}>
+                  <LinearGradient colors={stat.gradient} style={styles.statIconGrad}>
+                    <View style={styles.statIconInner}>
+                      <Icon name={stat.icon} size={16} color={stat.gradient[0]} />
+                    </View>
+                  </LinearGradient>
+                </View>
+                <Text style={[styles.statValue, { color: stat.valueColor }]}>{stat.value}</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>{stat.label}</Text>
+              </View>
+            ))}
+          </Animated.View>
+        ) : null}
+        )}
 
         {/* ===== ALERTE STOCK ===== */}
         {isLowStock && (
@@ -454,15 +642,15 @@ export const ArticleDetailScreen: React.FC = () => {
         <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.section}>
           <View style={styles.sectionHeader}>
             <LinearGradient colors={['#007A39', '#007A39']} style={styles.sectionAccent} />
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Informations</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{isTabletArticle ? 'Fiche tablette' : 'Informations'}</Text>
           </View>
-          <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-            <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+          <View style={[styles.infoCard, isTabletArticle && styles.infoCardTablet, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
+            <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
               <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Référence</Text>
               <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{article.reference}</Text>
             </View>
             {article.codeFamille ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+              <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Code famille</Text>
                 <View style={[styles.infoTagBadge, { backgroundColor: colors.badge }]}>
                   <Icon name="tag-outline" size={13} color={colors.primary} />
@@ -471,7 +659,7 @@ export const ArticleDetailScreen: React.FC = () => {
               </View>
             ) : null}
             {article.famille ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+              <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Famille</Text>
                 <View style={[styles.infoTagBadge, { backgroundColor: `${colors.mouvementTransfert}1A` }]}>
                   <Icon name="shape-outline" size={13} color={colors.mouvementTransfert} />
@@ -480,7 +668,7 @@ export const ArticleDetailScreen: React.FC = () => {
               </View>
             ) : null}
             {article.typeArticle ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+              <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Type</Text>
                 <View style={[styles.infoTagBadge, { backgroundColor: colors.infoBg }]}>
                   <Icon name="format-list-bulleted-type" size={13} color={colors.info} />
@@ -489,7 +677,7 @@ export const ArticleDetailScreen: React.FC = () => {
               </View>
             ) : null}
             {article.sousType ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+              <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Sous-type</Text>
                 <View style={[styles.infoTagBadge, { backgroundColor: colors.warningBg }]}>
                   <Icon name="tag-text-outline" size={13} color={colors.warning} />
@@ -498,7 +686,7 @@ export const ArticleDetailScreen: React.FC = () => {
               </View>
             ) : null}
             {article.marque ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+              <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Marque</Text>
                 <View style={[styles.infoTagBadge, { backgroundColor: colors.infoBg }]}>
                   <Icon name="domain" size={13} color={colors.secondary} />
@@ -507,7 +695,7 @@ export const ArticleDetailScreen: React.FC = () => {
               </View>
             ) : null}
             {article.modele ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+              <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Modèle</Text>
                 <View style={[styles.infoTagBadge, { backgroundColor: colors.successBg }]}>
                   <Icon name="laptop" size={13} color={colors.success} />
@@ -516,7 +704,7 @@ export const ArticleDetailScreen: React.FC = () => {
               </View>
             ) : null}
             {article.barcode ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+              <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Asset</Text>
                 <View style={[styles.infoTagBadge, { backgroundColor: colors.infoBg }]}>
                   <Icon name="tag-outline" size={13} color={colors.info} />
@@ -525,16 +713,16 @@ export const ArticleDetailScreen: React.FC = () => {
               </View>
             ) : null}
             {inventoryStatus ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+              <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Statut</Text>
-                <View style={[styles.infoTagBadge, { backgroundColor: inventoryStatus === 'A chaud' ? colors.successBg : inventoryStatus === 'Disponible' ? '#DBEAFE' : colors.warningBg }]}>
-                  <Icon name={inventoryStatus === 'A chaud' ? 'flash-outline' : inventoryStatus === 'Disponible' ? 'check-circle-outline' : 'wrench-outline'} size={13} color={inventoryStatus === 'A chaud' ? colors.success : inventoryStatus === 'Disponible' ? '#2563EB' : colors.warning} />
-                  <Text style={[styles.infoTagText, { color: inventoryStatus === 'A chaud' ? colors.success : inventoryStatus === 'Disponible' ? '#2563EB' : colors.warning }]}>{inventoryStatus}</Text>
+                <View style={[styles.infoTagBadge, { backgroundColor: inventoryStatus === 'A chaud' ? colors.successBg : inventoryStatus === 'Disponible' ? '#DBEAFE' : inventoryStatus === 'En usinage' ? '#FFF7ED' : colors.warningBg }]}>
+                  <Icon name={inventoryStatus === 'A chaud' ? 'flash-outline' : inventoryStatus === 'Disponible' ? 'check-circle-outline' : inventoryStatus === 'En usinage' ? 'cog-play-outline' : 'wrench-outline'} size={13} color={inventoryStatus === 'A chaud' ? colors.success : inventoryStatus === 'Disponible' ? '#2563EB' : inventoryStatus === 'En usinage' ? '#EA580C' : colors.warning} />
+                  <Text style={[styles.infoTagText, { color: inventoryStatus === 'A chaud' ? colors.success : inventoryStatus === 'Disponible' ? '#2563EB' : inventoryStatus === 'En usinage' ? '#EA580C' : colors.warning }]}>{inventoryStatus}</Text>
                 </View>
               </View>
             ) : null}
             {article.emplacement ? (
-              <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+              <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Emplacement</Text>
                 <View style={[styles.infoTagBadge, { backgroundColor: colors.successBg }]}>
                   <Icon name="map-marker" size={13} color={colors.success} />
@@ -542,12 +730,12 @@ export const ArticleDetailScreen: React.FC = () => {
                 </View>
               </View>
             ) : null}
-            <View style={[styles.infoRow, { borderBottomColor: colors.borderSubtle }]}>
+            <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
               <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Site</Text>
               <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{siteActif?.nom ?? '—'}</Text>
             </View>
             {article.description ? (
-              <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
+              <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomWidth: 0 }]}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Description</Text>
                 <Text style={[styles.infoValue, { color: colors.textPrimary, flex: 1, textAlign: 'right' }]} numberOfLines={3}>
                   {article.description}
@@ -558,6 +746,7 @@ export const ArticleDetailScreen: React.FC = () => {
         </Animated.View>
 
         {/* ===== EXPORT CSV ===== */}
+        {!isTabletArticle && (
         <Animated.View entering={FadeInUp.delay(350).duration(400)} style={styles.section}>
           <TouchableOpacity
             style={[styles.exportCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}
@@ -597,9 +786,10 @@ export const ArticleDetailScreen: React.FC = () => {
             </View>
           </TouchableOpacity>
         </Animated.View>
+        )}
 
         {/* ===== ACTIONS RAPIDES ===== */}
-        {!isSuperviseur && (
+        {!isSuperviseur && (!isTabletArticle || !isTabletDecommissioned) && (
           <Animated.View entering={FadeInUp.delay(400).duration(400)} style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#10B981', '#059669']} style={styles.sectionAccent} />
@@ -609,7 +799,7 @@ export const ArticleDetailScreen: React.FC = () => {
               {quickActions.map((action) => (
                 <TouchableOpacity
                   key={action.label}
-                  style={[styles.actionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }, action.disabled && { opacity: 0.4 }]}
+                  style={[styles.actionCard, quickActions.length === 1 && styles.actionCardSingle, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }, action.disabled && { opacity: 0.4 }]}
                   activeOpacity={0.7}
                   onPress={action.onPress}
                   disabled={action.disabled}
@@ -630,6 +820,8 @@ export const ArticleDetailScreen: React.FC = () => {
                   <Text style={[styles.actionLabel, { color: action.gradient[0] }]}>{action.label}</Text>
                   {isPCArticle && action.disabled ? (
                     <Text style={[styles.actionHint, { color: colors.textMuted }]}>Actuel</Text>
+                  ) : isTabletArticle && action.disabled ? (
+                    <Text style={[styles.actionHint, { color: colors.textMuted }]}>Déjà fait</Text>
                   ) : null}
                 </TouchableOpacity>
               ))}
@@ -637,7 +829,31 @@ export const ArticleDetailScreen: React.FC = () => {
           </Animated.View>
         )}
 
+        {!isSuperviseur && isTabletArticle && isTabletDecommissioned && (
+          <Animated.View entering={FadeInUp.delay(400).duration(400)} style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <LinearGradient colors={['#D97706', '#B45309']} style={styles.sectionAccent} />
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Statut tablette</Text>
+            </View>
+            <View style={[styles.tabletStatusCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}> 
+              <View style={styles.tabletStatusIconWrap}>
+                <LinearGradient colors={['#D97706', '#B45309']} style={styles.tabletStatusIconGrad}>
+                  <View style={styles.tabletStatusIconInner}>
+                    <Icon name="check-decagram" size={18} color="#B45309" />
+                  </View>
+                </LinearGradient>
+              </View>
+              <View style={styles.tabletStatusTextWrap}>
+                <Text style={[styles.tabletStatusTitle, { color: colors.textPrimary }]}>Tablette décommissionnée</Text>
+                <Text style={[styles.tabletStatusSub, { color: colors.textMuted }]}>{tabletDecommissionDateText}</Text>
+                <Text style={[styles.tabletStatusSub, { color: colors.textMuted }]}>Aucune action rapide disponible.</Text>
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
         {/* ===== HISTORIQUE ===== */}
+        {!isTabletArticle && (
         <Animated.View entering={FadeInUp.delay(500).duration(400)} style={styles.section}>
           <View style={styles.sectionHeader}>
             <LinearGradient colors={['#005C2B', '#007A39']} style={styles.sectionAccent} />
@@ -722,6 +938,7 @@ export const ArticleDetailScreen: React.FC = () => {
             </View>
           )}
         </Animated.View>
+        )}
       </ScrollView>
     </View>
   );
@@ -741,9 +958,35 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 32,
     overflow: 'hidden',
   },
+  headerTablet: {
+    paddingBottom: 38,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
+  },
   headerOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.08)',
+  },
+  headerOverlayTablet: {
+    backgroundColor: 'rgba(8,15,30,0.18)',
+  },
+  headerTabletOrb: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    top: -64,
+    right: -50,
+    backgroundColor: 'rgba(148,244,229,0.2)',
+  },
+  headerTabletOrbSecondary: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    bottom: -46,
+    left: -28,
+    backgroundColor: 'rgba(15,23,42,0.2)',
   },
   headerNav: {
     flexDirection: 'row',
@@ -815,6 +1058,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
+  headerInfoTablet: {
+    width: '100%',
+    paddingHorizontal: 10,
+  },
+  headerTabletPanel: {
+    width: '100%',
+    alignItems: 'center',
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
   refBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -826,6 +1083,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
+  },
+  refBadgeTablet: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(255,255,255,0.16)',
   },
   refText: {
     fontSize: 12,
@@ -840,6 +1101,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
     letterSpacing: -0.3,
+  },
+  headerTabletSubtitle: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  headerBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  headerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  headerPillText: {
+    color: 'rgba(255,255,255,0.96)',
+    fontSize: 11,
+    fontWeight: '700',
   },
   catBadge: {
     flexDirection: 'row',
@@ -859,11 +1149,85 @@ const styles = StyleSheet.create({
   },
 
   // ===== STATS =====
+  pcHeroWrap: {
+    marginHorizontal: 16,
+    marginTop: -22,
+  },
+  pcHeroCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  pcHeroAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  pcHeroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 10,
+  },
+  pcStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  pcStatusText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  pcHeroMetaText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  pcHeroStatsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  pcMiniPill: {
+    flex: 1,
+    minHeight: 36,
+    borderRadius: 11,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+  },
+  pcMiniPillText: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '700',
+  },
   statsRow: {
     flexDirection: 'row',
     marginHorizontal: 16,
     marginTop: -22,
     gap: 10,
+  },
+  statsRowTablet: {
+    marginHorizontal: 14,
+    marginTop: -26,
+    gap: 8,
   },
   statCard: {
     flex: 1,
@@ -878,6 +1242,20 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.04)',
+  },
+  statCardTablet: {
+    borderRadius: 18,
+    paddingTop: 16,
+  },
+  statCardTopLine: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    top: 0,
+    height: 3,
+    borderBottomLeftRadius: 3,
+    borderBottomRightRadius: 3,
+    backgroundColor: 'rgba(15,118,110,0.22)',
   },
   statIconWrap: {
     marginBottom: 8,
@@ -996,6 +1374,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  infoCardTablet: {
+    borderRadius: 18,
+    paddingTop: 6,
+    paddingBottom: 4,
+  },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1003,6 +1386,10 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     paddingHorizontal: 14,
     borderBottomWidth: 1,
+  },
+  infoRowTablet: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   infoLabel: { fontSize: 13, fontWeight: '500' },
   infoValue: { fontSize: 14, fontWeight: '600' },
@@ -1089,6 +1476,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  actionCardSingle: {
+    width: '100%',
+  },
   actionAccentStrip: {
     position: 'absolute',
     left: 0,
@@ -1124,6 +1514,49 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     marginTop: 4,
     textTransform: 'uppercase',
+  },
+  tabletStatusCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  tabletStatusIconWrap: {},
+  tabletStatusIconGrad: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
+  },
+  tabletStatusIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabletStatusTextWrap: {
+    flex: 1,
+  },
+  tabletStatusTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  tabletStatusSub: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '600',
   },
 
   // ===== EMPTY =====

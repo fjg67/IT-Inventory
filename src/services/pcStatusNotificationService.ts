@@ -14,6 +14,10 @@ export interface PCStatusNotificationPayload {
   article: Article;
   nextStatus: PCNextStatus;
   technicienName: string;
+  technicienAcronym?: string;
+  sourceAgencyName?: string;
+  sourceAgencyEds?: string;
+  destinationAgencyEds?: string;
 }
 
 const STATUS_EMOJI: Record<PCNextStatus, string> = {
@@ -37,7 +41,15 @@ function buildTitle(nextStatus: PCNextStatus): string {
 }
 
 function buildBody(payload: PCStatusNotificationPayload): string {
-  const { article, nextStatus, technicienName } = payload;
+  const {
+    article,
+    nextStatus,
+    technicienName,
+    technicienAcronym,
+    sourceAgencyName,
+    sourceAgencyEds,
+    destinationAgencyEds,
+  } = payload;
 
   const hostname = article.nom?.trim() || article.reference?.trim() || 'Inconnu';
   const asset = article.barcode?.trim() || '—';
@@ -54,8 +66,10 @@ function buildBody(payload: PCStatusNotificationPayload): string {
     `Catégorie: ${categorie}`,
     `Modèle   : ${modeleLine}`,
     `Emplacement: ${emplacement}`,
+    ...(sourceAgencyName ? [`Agence source: ${sourceAgencyName}${sourceAgencyEds ? ` (EDS ${sourceAgencyEds})` : ''}`] : []),
+    ...(destinationAgencyEds ? [`Agence destination: EDS ${destinationAgencyEds}`] : []),
     `Statut   → ${nextStatus}`,
-    `Technicien: ${technicienName}`,
+    `Technicien: ${technicienName}${technicienAcronym ? ` (${technicienAcronym})` : ''}`,
   ];
 
   return lines.join('\n');

@@ -24,6 +24,7 @@ export type ArticleFilterKey =
   | 'typeArticle'
   | 'sousType'
   | 'marque'
+  | 'modele'
   | 'emplacement';
 
 interface FilterRowConfig {
@@ -39,6 +40,7 @@ const ROWS: FilterRowConfig[] = [
   { key: 'typeArticle', label: 'Type', icon: 'format-list-bulleted-type', iconColor: '#06B6D4' },
   { key: 'sousType', label: 'Sous-type', icon: 'tag-text-outline', iconColor: '#F59E0B' },
   { key: 'marque', label: 'Marque', icon: 'domain', iconColor: '#2563EB' },
+  { key: 'modele', label: 'Modèle', icon: 'laptop', iconColor: '#7C3AED' },
   { key: 'emplacement', label: 'Emplacement', icon: 'map-marker', iconColor: '#10B981' },
 ];
 
@@ -60,8 +62,13 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
+  const isTabletFilterSheet =
+    !!allowedKeys &&
+    allowedKeys.length === 2 &&
+    allowedKeys.includes('marque') &&
+    allowedKeys.includes('emplacement');
   const isPCFilterSheet =
-    allowedKeys?.length === 3 &&
+    !!allowedKeys &&
     allowedKeys.includes('sousType') &&
     allowedKeys.includes('marque') &&
     allowedKeys.includes('emplacement');
@@ -70,17 +77,31 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
     ? ROWS
         .filter((row) => allowedKeys.includes(row.key))
         .map((row) =>
-          isPCFilterSheet && row.key === 'sousType'
-            ? { ...row, label: 'Catégorie' }
+          isTabletFilterSheet
+            ? row.key === 'marque'
+              ? { ...row, label: 'Constructeur tablette' }
+              : row.key === 'emplacement'
+                ? { ...row, label: 'Zone de stockage' }
+                : row
+            : isPCFilterSheet
+            ? row.key === 'sousType'
+              ? { ...row, label: 'Portable agence / siège' }
+              : row.key === 'marque'
+                ? { ...row, label: 'Constructeur' }
+                : row.key === 'modele'
+                  ? { ...row, label: 'Modèle PC' }
+                : row.key === 'emplacement'
+                  ? { ...row, label: 'Zone / EDS' }
+                  : row
             : row,
         )
     : ROWS;
 
   const subtitleText =
-    visibleRows.length === 2 && visibleRows.some((r) => r.key === 'marque') && visibleRows.some((r) => r.key === 'emplacement')
-      ? 'Marque et emplacement des tablettes'
+    isTabletFilterSheet
+      ? 'Constructeur et zone de stockage des tablettes'
       : isPCFilterSheet
-        ? 'Catégorie, marque et emplacement du parc PC'
+        ? 'Type de parc, constructeur, modèle et zone de stockage du parc PC'
       : 'Code famille, famille, type, sous-type, marque, emplacement';
 
   const handleRowPress = (key: ArticleFilterKey) => {
@@ -105,7 +126,9 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
           <View style={[styles.handle, { backgroundColor: colors.borderSubtle }]} />
           <View style={styles.titleRow}>
             <Icon name="filter-variant" size={24} color={colors.primary} />
-            <Text style={[styles.title, { color: colors.textPrimary }]}>Filtrer par</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>
+              {isTabletFilterSheet ? 'Filtrer les tablettes' : isPCFilterSheet ? 'Filtrer le parc PC' : 'Filtrer par'}
+            </Text>
           </View>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             {subtitleText}

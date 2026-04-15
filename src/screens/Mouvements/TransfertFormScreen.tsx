@@ -177,7 +177,7 @@ export const TransfertFormScreen: React.FC = () => {
     if (!effectiveSiteId) return;
     setSearchQuery(barcode);
     try {
-      const result = await articleRepository.findByReference(barcode, effectiveSiteId);
+      const result = await articleRepository.findByReferenceOrBarcode(barcode, effectiveSiteId);
       if (result) {
         setArticle(result);
         setSearchQuery('');

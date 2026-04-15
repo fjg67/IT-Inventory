@@ -56,6 +56,18 @@ export interface MouvementStats {
   transferts: number;
 }
 
+export interface TechnicienMouvementStat {
+  technicienId: string;
+  technicienNom: string;
+  total: number;
+  entrees: number;
+  sorties: number;
+  ajustements: number;
+  transferts: number;
+}
+
+type TrendMetric = 'total' | 'entrees' | 'sorties' | 'ajustements' | 'transferts';
+
 // Mapping DB types (ENTRY/EXIT/ADJUSTMENT/TRANSFER) <-> App types (entree/sortie/ajustement/transfert_*)
 const DB_TYPE_TO_APP: Record<string, MouvementType> = {
   ENTRY: MouvementType.ENTREE,
@@ -84,6 +96,25 @@ function mapDbTypeToApp(dbType: string): MouvementType {
 
 function mapAppTypeToDb(appType: string): string {
   return APP_TYPE_TO_DB[appType] ?? appType;
+}
+
+function matchesTrendMetric(dbType: string, metric: TrendMetric): boolean {
+  if (metric === 'total') return true;
+
+  const normalized = String(dbType ?? '').toUpperCase();
+  if (metric === 'entrees') return normalized === 'ENTRY' || normalized === 'ENTREE';
+  if (metric === 'sorties') return normalized === 'EXIT' || normalized === 'SORTIE';
+  if (metric === 'ajustements') return normalized === 'ADJUSTMENT' || normalized === 'AJUSTEMENT';
+  if (metric === 'transferts') {
+    return (
+      normalized === 'TRANSFER' ||
+      normalized === 'TRANSFERT' ||
+      normalized === 'TRANSFERT_DEPART' ||
+      normalized === 'TRANSFERT_ARRIVEE'
+    );
+  }
+
+  return true;
 }
 
 function mapRowToMouvement(row: MouvementRow, stockAvant = 0, stockApres = 0): Mouvement {
@@ -288,7 +319,8 @@ export const mouvementRepository = {
   async findAll(
     siteId?: string | number,
     page = 0,
-    limit = APP_CONFIG.pagination.defaultLimit,
+    limit: number = APP_CONFIG.pagination.defaultLimit,
+    options?: { includeStockLevels?: boolean },
   ): Promise<PaginatedResult<Mouvement>> {
     const supabase = getSupabaseClient();
     const from = page * limit;
@@ -309,8 +341,12 @@ export const mouvementRepository = {
     if (error) throw new Error(error.message);
     const total = count ?? 0;
     const enriched = await enrichWithRelations((data ?? []) as MouvementRow[]);
+    const includeStockLevels = options?.includeStockLevels ?? true;
+    const mappedData = includeStockLevels
+      ? await computeStockLevels(enriched)
+      : enriched.map((row) => mapRowToMouvement(row, 0, 0));
     return {
-      data: await computeStockLevels(enriched),
+      data: mappedData,
       total,
       page,
       limit,
@@ -580,38 +616,159 @@ export const mouvementRepository = {
    * Nombre de mouvements par jour sur les 7 derniers jours.
    */
   async getCountPerDayLast7(siteId: string | number): Promise<number[]> {
+    return this.getCountPerDay(siteId, 7);
+  },
+
+  /**
+   * Nombre de mouvements par jour sur une fenêtre glissante de `days` jours.
+   */
+  async getCountPerDay(
+    siteId: string | number,
+    days: number,
+    metric: TrendMetric = 'total',
+  ): Promise<number[]> {
+    const safeDays = Math.max(1, Math.floor(days));
     const supabase = getSupabaseClient();
     const now = new Date();
-    const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6, 0, 0, 0, 0);
+    const startDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - (safeDays - 1),
+      0,
+      0,
+      0,
+      0,
+    );
     const siteIds = await getEffectiveSiteIds(siteId);
 
     const { data, error } = await supabase
       .from(tables.mouvements)
-      .select('createdAt')
+      .select('createdAt, type')
       .in('fromSiteId', siteIds)
       .gte('createdAt', startDate.toISOString())
       .order('createdAt', { ascending: true });
 
     if (error) {
-      console.warn('[mouvementRepository] getCountPerDayLast7 error:', error.message);
-      return Array(7).fill(0);
+      console.warn('[mouvementRepository] getCountPerDay error:', error.message);
+      return Array(safeDays).fill(0);
     }
 
     const countsByDay: Record<string, number> = {};
     for (const row of data ?? []) {
+      if (!matchesTrendMetric((row as any).type, metric)) continue;
       const d = new Date(row.createdAt);
       const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       countsByDay[dayKey] = (countsByDay[dayKey] ?? 0) + 1;
     }
 
     const result: number[] = [];
-    for (let i = 6; i >= 0; i--) {
+    for (let i = safeDays - 1; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
       const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       result.push(countsByDay[dayKey] ?? 0);
     }
 
     return result;
+  },
+
+  /**
+   * Classement des mouvements par technicien.
+   * days: nombre de jours glissants (ex: 7, 30). Si undefined, renvoie tout l'historique.
+   */
+  async getTechnicienStats(
+    siteId?: string | number,
+    days?: number,
+  ): Promise<TechnicienMouvementStat[]> {
+    try {
+      const supabase = getSupabaseClient();
+      const siteIds = siteId != null ? await getEffectiveSiteIds(siteId) : null;
+
+      let query = supabase
+        .from(tables.mouvements)
+        .select('userId, type, createdAt');
+
+      if (siteIds) {
+        query = query.in('fromSiteId', siteIds);
+      }
+
+      if (typeof days === 'number' && Number.isFinite(days) && days > 0) {
+        const since = new Date();
+        since.setHours(0, 0, 0, 0);
+        since.setDate(since.getDate() - (days - 1));
+        query = query.gte('createdAt', since.toISOString());
+      }
+
+      const { data, error } = await query;
+      if (error) throw new Error(error.message);
+
+      const totals = new Map<string, TechnicienMouvementStat>();
+      const userIds = new Set<string>();
+
+      for (const row of data ?? []) {
+        const rawUserId = String((row as any).userId ?? '').trim();
+        if (!rawUserId) continue;
+
+        userIds.add(rawUserId);
+
+        if (!totals.has(rawUserId)) {
+          totals.set(rawUserId, {
+            technicienId: rawUserId,
+            technicienNom: 'Technicien inconnu',
+            total: 0,
+            entrees: 0,
+            sorties: 0,
+            ajustements: 0,
+            transferts: 0,
+          });
+        }
+
+        const item = totals.get(rawUserId)!;
+        item.total += 1;
+
+        const normalized = String((row as any).type ?? '').toUpperCase();
+        if (normalized === 'ENTRY' || normalized === 'ENTREE') {
+          item.entrees += 1;
+        } else if (normalized === 'EXIT' || normalized === 'SORTIE') {
+          item.sorties += 1;
+        } else if (normalized === 'ADJUSTMENT' || normalized === 'AJUSTEMENT') {
+          item.ajustements += 1;
+        } else if (
+          normalized === 'TRANSFER' ||
+          normalized === 'TRANSFERT' ||
+          normalized === 'TRANSFERT_DEPART' ||
+          normalized === 'TRANSFERT_ARRIVEE'
+        ) {
+          item.transferts += 1;
+        }
+      }
+
+      if (userIds.size === 0) return [];
+
+      const { data: usersData } = await supabase
+        .from(tables.techniciens)
+        .select('id, name')
+        .in('id', [...userIds]);
+
+      const usersMap = new Map<string, string>();
+      for (const u of (usersData ?? []) as any[]) {
+        usersMap.set(String(u.id), String(u.name ?? '').trim());
+      }
+
+      const rows = [...totals.values()].map((item) => ({
+        ...item,
+        technicienNom: usersMap.get(item.technicienId) || item.technicienNom,
+      }));
+
+      rows.sort((a, b) => {
+        if (b.total !== a.total) return b.total - a.total;
+        return a.technicienNom.localeCompare(b.technicienNom, 'fr');
+      });
+
+      return rows;
+    } catch (error) {
+      console.warn('[mouvementRepository] getTechnicienStats failed:', error);
+      return [];
+    }
   },
 };
 

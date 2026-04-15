@@ -1,0 +1,42 @@
+{
+  "name": "stockpro-notifications",
+  "version": "1.0.0",
+  "description": "Scripts pour envoyer les emails et notifications push de v2.15",
+  "scripts": {
+    "start": "node scripts/validate-notification-setup.js",
+    "check": "node scripts/validate-notification-setup.js",
+    "install:emails": "npm install dotenv @supabase/supabase-js nodemailer",
+    "install:sendgrid": "npm install @sendgrid/mail",
+    "setup:env": "cp .env.example .env && echo '✅ Fichier .env créé. Remplissez vos données.'",
+    "send:emails": "node scripts/send-update-emails.js",
+    "send:emails:test": "DRY_RUN=true node scripts/send-update-emails.js",
+    "deploy:notification-function": "supabase functions deploy send-update-notification",
+    "db:setup": "supabase db push",
+    "db:reset": "supabase db reset",
+    "logs:emails": "echo 'Voir les résultats dans Supabase: SELECT * FROM email_campaigns ORDER BY created_at DESC;'",
+    "logs:notifications": "echo 'Voir les résultats dans Supabase: SELECT * FROM notification_campaigns ORDER BY created_at DESC;'",
+    "help": "cat NOTIFICATION_GUIDE.md",
+    "quick-start": "cat QUICK_START_NOTIFICATIONS.md"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.3.1",
+    "nodemailer": "^6.9.7"
+  },
+  "optionalDependencies": {
+    "@sendgrid/mail": "^7.7.1"
+  },
+  "devDependencies": {
+    "supabase": "^1.128.0"
+  },
+  "keywords": [
+    "stockpro",
+    "notifications",
+    "email",
+    "push",
+    "firebase",
+    "supabase"
+  ],
+  "author": "StockPro",
+  "license": "MIT"
+}

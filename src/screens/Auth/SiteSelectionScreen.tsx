@@ -64,6 +64,22 @@ const getSiteConfig = (siteName: string) => {
   return DEFAULT_CONFIG;
 };
 
+const getSiteSubtitle = (site: Site): string => {
+  const rawAddress = (site.adresse ?? '').trim();
+  if (!rawAddress) return 'Site de travail';
+
+  // Hide EB/BI profile labels from the card subtitle while keeping useful address text.
+  const sanitized = rawAddress
+    .replace(/\bprofil\s*(eb|bi)\b/gi, '')
+    .replace(/\b(eb|bi)\b/gi, '')
+    .replace(/\s*([,;|/\-])\s*/g, '$1 ')
+    .replace(/^[,;|/\-]\s*|\s*[,;|/\-]$/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  return sanitized || 'Site de travail';
+};
+
 // ==================== DECORATIVE ELEMENTS ====================
 const BLOBS = [
   { size: 300, x: -100, y: -40, colors: ['rgba(59,130,246,0.06)', 'rgba(59,130,246,0)'] as const },
@@ -182,6 +198,7 @@ export const SiteSelectionScreen: React.FC = () => {
   const renderSiteCard = useCallback(
     ({ item, index }: { item: Site; index: number }) => {
       const config = getSiteConfig(item.nom);
+      const subtitle = getSiteSubtitle(item);
       return (
         <Animated.View entering={FadeInUp.delay(800 + index * 150).duration(500)}>
           <TouchableOpacity
@@ -214,18 +231,12 @@ export const SiteSelectionScreen: React.FC = () => {
               >
                 {item.nom}
               </Text>
-              {item.adresse ? (
-                <Text
-                  style={[styles.siteAddress, { color: colors.textMuted }]}
-                  numberOfLines={1}
-                >
-                  {item.adresse}
-                </Text>
-              ) : (
-                <Text style={[styles.siteAddress, { color: colors.textMuted }]}>
-                  Site de travail
-                </Text>
-              )}
+              <Text
+                style={[styles.siteAddress, { color: colors.textMuted }]}
+                numberOfLines={1}
+              >
+                {subtitle}
+              </Text>
             </View>
 
             {/* Chevron */}

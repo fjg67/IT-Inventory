@@ -34,6 +34,7 @@ import {
   ArticleDetailScreen,
   ArticleEditScreen,
   MouvementsListScreen,
+  MouvementsStatsScreen,
   MouvementFormScreen,
   TransfertFormScreen,
   ScanMouvementScreen,
@@ -123,6 +124,7 @@ const TablettesNavigator: React.FC = () => (
 const MouvementsNavigator: React.FC = () => (
   <MouvementsStack.Navigator screenOptions={{ headerShown: false }}>
     <MouvementsStack.Screen name="MouvementsList" component={MouvementsListScreen} />
+    <MouvementsStack.Screen name="MouvementsStats" component={MouvementsStatsScreen} />
     <MouvementsStack.Screen name="MouvementForm" component={MouvementFormScreen} />
     <MouvementsStack.Screen name="TransfertForm" component={TransfertFormScreen} />
     <MouvementsStack.Screen name="ScanMouvement" component={ScanMouvementScreen} />

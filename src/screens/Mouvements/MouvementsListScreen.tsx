@@ -3,7 +3,7 @@
 // IT-Inventory Application
 // ============================================
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,11 +16,17 @@ import {
   Modal,
   TouchableWithoutFeedback,
   TextInput,
+  Pressable,
 } from 'react-native';
 import Animated, {
+  Easing,
   FadeIn,
   FadeInUp,
   SlideInRight,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -33,7 +39,6 @@ import type { MouvementStats } from '@/database/repositories/mouvementRepository
 import { formatTimeParis, formatRelativeDateParis, formatDateTimeParis } from '@/utils/dateUtils';
 import { toAbbreviation } from '@/utils/abbreviation';
 import { Mouvement } from '@/types';
-import { useResponsive } from '@/utils/responsive';
 import { useTheme } from '@/theme';
 import {
   premiumSpacing,
@@ -70,25 +75,74 @@ const groupMouvementsByDate = (mouvements: Mouvement[]): { label: string; date: 
 // ==================== TYPES FILTER ====================
 type QuickTypeFilter = 'all' | 'entree' | 'sortie' | 'ajustement' | 'transfert';
 
+type CachedMouvementsState = {
+  mouvements: Mouvement[];
+  totalMouvements: number;
+  realStats: MouvementStats;
+};
+
+const mouvementsScreenCache: Record<string, CachedMouvementsState> = {};
+
+const getCacheKey = (siteId?: string | number): string => String(siteId ?? 'all');
+
+function dedupeMouvementsById(items: Mouvement[]): Mouvement[] {
+  const seen = new Set<string>();
+  const result: Mouvement[] = [];
+
+  for (const item of items) {
+    const id = String(item.id ?? '');
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    result.push(item);
+  }
+
+  return result;
+}
+
+function computeStatsFromMouvements(items: Mouvement[], total?: number): MouvementStats {
+  let entrees = 0;
+  let sorties = 0;
+  let ajustements = 0;
+  let transferts = 0;
+
+  for (const m of items) {
+    if (m.type === 'entree') entrees += 1;
+    else if (m.type === 'sortie') sorties += 1;
+    else if (m.type === 'ajustement') ajustements += 1;
+    else if (m.type === 'transfert_depart' || m.type === 'transfert_arrivee') transferts += 1;
+  }
+
+  return {
+    total: total ?? items.length,
+    entrees,
+    sorties,
+    ajustements,
+    transferts,
+  };
+}
+
 
 // ==================== MAIN SCREEN ====================
 export const MouvementsListScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const isSuperviseur = useAppSelector(selectIsSuperviseur);
-  const { isTablet, contentMaxWidth } = useResponsive();
   const { colors, isDark } = useTheme();
+  const cacheKey = useMemo(() => getCacheKey(effectiveSiteId ?? undefined), [effectiveSiteId]);
+  const cachedState = mouvementsScreenCache[cacheKey];
 
-  const [mouvements, setMouvements] = useState<Mouvement[]>([]);
-  const [totalMouvements, setTotalMouvements] = useState(0);
-  const [realStats, setRealStats] = useState<MouvementStats>({
-    total: 0,
-    entrees: 0,
-    sorties: 0,
-    ajustements: 0,
-    transferts: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  const [mouvements, setMouvements] = useState<Mouvement[]>(cachedState?.mouvements ?? []);
+  const [totalMouvements, setTotalMouvements] = useState(cachedState?.totalMouvements ?? 0);
+  const [realStats, setRealStats] = useState<MouvementStats>(
+    cachedState?.realStats ?? {
+      total: 0,
+      entrees: 0,
+      sorties: 0,
+      ajustements: 0,
+      transferts: 0,
+    },
+  );
+  const [isLoading, setIsLoading] = useState(!cachedState);
   const [refreshing, setRefreshing] = useState(false);
 
   // Filters
@@ -101,39 +155,109 @@ export const MouvementsListScreen: React.FC = () => {
 
   // Detail modal
   const [selectedMouvement, setSelectedMouvement] = useState<Mouvement | null>(null);
+  const isLoadingRef = useRef(false);
+  const loadSeqRef = useRef(0);
+  const loaderSweep = useSharedValue(0);
+
+  useEffect(() => {
+    loaderSweep.value = withRepeat(
+      withTiming(1, { duration: 1300, easing: Easing.linear }),
+      -1,
+      false,
+    );
+  }, [loaderSweep]);
+
+  const loaderSweepStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -240 + loaderSweep.value * 520 }],
+    opacity: 0.42,
+  }));
 
   // ==================== DATA LOADING ====================
   const loadMouvements = useCallback(async (silent = false) => {
-    if (!silent) setIsLoading(true);
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
+    const seq = ++loadSeqRef.current;
+
+    if (!silent && !mouvementsScreenCache[cacheKey]) setIsLoading(true);
     try {
-      const result = await mouvementRepository.findAll(effectiveSiteId ?? undefined, 0, 50);
-      setMouvements(result.data);
-      setTotalMouvements(result.total);
+      const pageSize = 200;
+      const firstPage = await mouvementRepository.findAll(
+        effectiveSiteId ?? undefined,
+        0,
+        pageSize,
+        { includeStockLevels: false },
+      );
+
+      const allMouvements: Mouvement[] = dedupeMouvementsById([...firstPage.data]);
+      const resolvedTotal = firstPage.total || firstPage.data.length;
+
+      if (seq !== loadSeqRef.current) return;
+
+      setMouvements(allMouvements);
+      setTotalMouvements(resolvedTotal);
+      setRealStats(computeStatsFromMouvements(allMouvements, resolvedTotal));
+      setIsLoading(false);
 
       try {
         const statsResult = await mouvementRepository.getStats(effectiveSiteId ?? undefined);
         setRealStats(statsResult);
       } catch (statsError) {
         console.warn('[MouvementsListScreen] getStats failed, fallback to loaded page counts:', statsError);
-        setRealStats({
-          total: result.total,
-          entrees: result.data.filter(m => m.type === 'entree').length,
-          sorties: result.data.filter(m => m.type === 'sortie').length,
-          ajustements: result.data.filter(m => m.type === 'ajustement').length,
-          transferts: result.data.filter(m => m.type === 'transfert_depart' || m.type === 'transfert_arrivee').length,
-        });
       }
+
+      if (firstPage.hasMore) {
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+          const result = await mouvementRepository.findAll(
+            effectiveSiteId ?? undefined,
+            page,
+            pageSize,
+            { includeStockLevels: false },
+          );
+
+          if (seq !== loadSeqRef.current) return;
+
+          const merged = dedupeMouvementsById([...allMouvements, ...result.data]);
+          allMouvements.length = 0;
+          allMouvements.push(...merged);
+
+          setMouvements((prev) => dedupeMouvementsById([...prev, ...result.data]));
+
+          hasMore = result.hasMore;
+          page += 1;
+
+          // Safety guard to prevent endless loops if backend metadata is inconsistent.
+          if (page > 200) {
+            hasMore = false;
+          }
+        }
+      }
+
+      const finalStats = computeStatsFromMouvements(allMouvements, resolvedTotal);
+      if (seq !== loadSeqRef.current) return;
+      setRealStats(finalStats);
+
+      mouvementsScreenCache[cacheKey] = {
+        mouvements: allMouvements,
+        totalMouvements: resolvedTotal,
+        realStats: finalStats,
+      };
     } catch (error) {
       console.warn('[MouvementsListScreen] Erreur chargement mouvements:', error);
     } finally {
+      if (seq === loadSeqRef.current) {
+        isLoadingRef.current = false;
+      }
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [effectiveSiteId]);
+  }, [cacheKey, effectiveSiteId]);
 
   useEffect(() => {
-    loadMouvements();
-  }, [effectiveSiteId, loadMouvements]);
+    loadMouvements(Boolean(mouvementsScreenCache[cacheKey]));
+  }, [cacheKey, loadMouvements]);
 
   useFocusEffect(
     useCallback(() => {
@@ -209,7 +333,7 @@ export const MouvementsListScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scrollContent,
-          isTablet && contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const } : undefined,
+          undefined,
         ]}
         refreshControl={
           <RefreshControl
@@ -252,15 +376,26 @@ export const MouvementsListScreen: React.FC = () => {
                   </Text>
                 </View>
               </View>
-              <TouchableOpacity
-                onPress={() => {
-                  Vibration.vibrate(10);
-                  setShowSearch(!showSearch);
-                }}
-                style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(0,122,57,0.08)' }]}
-              >
-                <Icon name={showSearch ? 'close' : 'magnify'} size={20} color={colors.primary} />
-              </TouchableOpacity>
+              <View style={styles.headerActions}>
+                <TouchableOpacity
+                  onPress={() => {
+                    Vibration.vibrate(10);
+                    navigation.navigate('MouvementsStats');
+                  }}
+                  style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(16,185,129,0.16)' : 'rgba(0,122,57,0.10)' }]}
+                >
+                  <Icon name="chart-bar" size={18} color={colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    Vibration.vibrate(10);
+                    setShowSearch(!showSearch);
+                  }}
+                  style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(0,122,57,0.08)' }]}
+                >
+                  <Icon name={showSearch ? 'close' : 'magnify'} size={20} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Mini stats */}
@@ -311,46 +446,12 @@ export const MouvementsListScreen: React.FC = () => {
         )}
 
         {/* ===== QUICK FILTERS ===== */}
-        <View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filtersScroll}
-          >
-            {([
-              { key: 'all' as QuickTypeFilter, label: 'Tous', icon: 'format-list-bulleted', color: '#007A39' },
-              { key: 'entree' as QuickTypeFilter, label: 'Entrées', icon: 'arrow-up-bold', color: '#10B981' },
-              { key: 'sortie' as QuickTypeFilter, label: 'Sorties', icon: 'arrow-down-bold', color: '#EF4444' },
-              { key: 'ajustement' as QuickTypeFilter, label: 'Ajustements', icon: 'swap-vertical', color: '#F59E0B' },
-              { key: 'transfert' as QuickTypeFilter, label: 'Transferts', icon: 'swap-horizontal', color: '#8B5CF6' },
-            ]).map(f => {
-              const isActive = typeFilter === f.key;
-              return (
-                <TouchableOpacity
-                  key={f.key}
-                  style={[
-                    styles.filterChip,
-                    {
-                      backgroundColor: isActive
-                        ? (isDark ? `${f.color}20` : `${f.color}12`)
-                        : colors.surface,
-                      borderColor: isActive ? f.color : colors.borderSubtle,
-                    },
-                  ]}
-                  onPress={() => {
-                    Vibration.vibrate(10);
-                    setTypeFilter(f.key);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.filterDot, { backgroundColor: isActive ? f.color : colors.textMuted }]} />
-                  <Text style={[styles.filterChipText, { color: isActive ? f.color : colors.textSecondary }]}>
-                    {f.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-
+        <View style={styles.filtersSection}>
+          <View style={styles.filtersHeaderRow}>
+            <View style={styles.filtersHeaderLeft}>
+              <Text style={[styles.filtersTitle, { color: colors.textPrimary }]}>Filtres rapides</Text>
+              <Text style={[styles.filtersSubtitle, { color: colors.textMuted }]}>Affichage immediat de tous les types</Text>
+            </View>
             {hasActiveFilters && (
               <TouchableOpacity
                 style={[styles.resetBtn, { backgroundColor: isDark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.06)' }]}
@@ -364,21 +465,114 @@ export const MouvementsListScreen: React.FC = () => {
                 <Text style={styles.resetBtnText}>Reset</Text>
               </TouchableOpacity>
             )}
-          </ScrollView>
+          </View>
+          <View style={styles.filtersScroll}>
+            {([
+              { key: 'all' as QuickTypeFilter, label: 'Tous', icon: 'format-list-bulleted', color: '#007A39', count: stats.total },
+              { key: 'entree' as QuickTypeFilter, label: 'Entrées', icon: 'arrow-up-bold', color: '#10B981', count: stats.entrees },
+              { key: 'sortie' as QuickTypeFilter, label: 'Sorties', icon: 'arrow-down-bold', color: '#EF4444', count: stats.sorties },
+              { key: 'ajustement' as QuickTypeFilter, label: 'Ajustements', icon: 'swap-vertical', color: '#F59E0B', count: stats.ajustements },
+              { key: 'transfert' as QuickTypeFilter, label: 'Transferts', icon: 'swap-horizontal', color: '#8B5CF6', count: stats.transferts },
+            ]).map((f, index) => {
+              const isActive = typeFilter === f.key;
+              return (
+                <Animated.View
+                  key={f.key}
+                  entering={FadeInUp.delay(90 + index * 35).duration(320)}
+                >
+                  <TouchableOpacity
+                    style={[
+                      styles.filterChip,
+                      {
+                        backgroundColor: isActive
+                          ? (isDark ? `${f.color}20` : `${f.color}12`)
+                          : colors.surface,
+                        borderColor: isActive ? f.color : colors.borderSubtle,
+                      },
+                    ]}
+                    onPress={() => {
+                      Vibration.vibrate(10);
+                      setTypeFilter(f.key);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[
+                      styles.filterIconWrap,
+                      {
+                        backgroundColor: isActive
+                          ? (isDark ? `${f.color}26` : `${f.color}16`)
+                          : (isDark ? 'rgba(148,163,184,0.16)' : 'rgba(148,163,184,0.10)'),
+                      },
+                    ]}>
+                      <Icon name={f.icon} size={13} color={isActive ? f.color : colors.textMuted} />
+                    </View>
+                    <Text style={[styles.filterChipText, { color: isActive ? f.color : colors.textSecondary }]}>
+                      {f.label}
+                    </Text>
+                    <View style={[
+                      styles.filterCountBadge,
+                      {
+                        backgroundColor: isActive
+                          ? (isDark ? `${f.color}2A` : `${f.color}18`)
+                          : (isDark ? 'rgba(148,163,184,0.16)' : 'rgba(148,163,184,0.10)'),
+                      },
+                    ]}>
+                      <Text style={[styles.filterCountText, { color: isActive ? f.color : colors.textMuted }]}>{f.count}</Text>
+                    </View>
+                    {isActive && <View style={[styles.filterActiveGlow, { backgroundColor: f.color }]} />}
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })}
+          </View>
         </View>
 
         {/* ===== CONTENT ===== */}
         {isLoading ? (
-          /* Skeleton */
-          <View style={styles.skeletonContainer}>
-            {[0, 1, 2, 3, 4].map(i => (
-              <View key={i}>
-                <View style={[styles.skeletonCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-                  <View style={[styles.skeletonDot, { backgroundColor: colors.skeleton }]} />
+          <View style={styles.loaderArena}>
+            <LinearGradient
+              colors={isDark ? ['rgba(16,185,129,0.14)', 'rgba(2,6,23,0.02)'] : ['#ECFDF5', '#F8FAFC']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.loaderHero, { borderColor: colors.borderSubtle }]}
+            >
+              <View style={styles.loaderHeroTop}>
+                <View style={[styles.loaderHeroIcon, { backgroundColor: isDark ? 'rgba(0,122,57,0.18)' : 'rgba(0,122,57,0.10)' }]}>
+                  <Icon name="swap-vertical" size={16} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.loaderHeroTitle, { color: colors.textPrimary }]}>Chargement des mouvements</Text>
+                  <Text style={[styles.loaderHeroSubtitle, { color: colors.textMuted }]}>Mise a jour des donnees en cours...</Text>
+                </View>
+              </View>
+              <View style={[styles.loaderProgressTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#D7E3DA' }]}>
+                <Animated.View style={[styles.loaderProgressSweep, loaderSweepStyle]}>
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0)', 'rgba(16,185,129,0.85)', 'rgba(255,255,255,0)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={StyleSheet.absoluteFillObject}
+                  />
+                </Animated.View>
+              </View>
+            </LinearGradient>
+
+            {[0, 1, 2, 3].map(i => (
+              <View key={`loader-${i}`}>
+                <View style={[styles.loaderCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}> 
+                  <LinearGradient
+                    colors={['#007A39', '#007A39']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={styles.loaderCardAccent}
+                  />
+
+                  <View style={[styles.loaderAvatar, { backgroundColor: colors.skeleton }]} />
+
                   <View style={{ flex: 1 }}>
-                    <View style={[styles.skeletonLine, { width: '70%', backgroundColor: colors.skeleton }]} />
-                    <View style={[styles.skeletonLine, { width: '45%', marginTop: 8, backgroundColor: colors.skeleton }]} />
-                    <View style={[styles.skeletonLine, { width: '55%', marginTop: 8, backgroundColor: colors.skeleton }]} />
+                    <View style={[styles.loaderLine, { width: '72%', backgroundColor: colors.skeleton }]} />
+                    <View style={[styles.loaderLine, { width: '46%', marginTop: 8, backgroundColor: colors.skeleton }]} />
+                    <View style={[styles.loaderLine, { width: '58%', marginTop: 8, backgroundColor: colors.skeleton }]} />
                   </View>
                 </View>
               </View>
@@ -459,9 +653,21 @@ export const MouvementsListScreen: React.FC = () => {
                     <View
                       key={mouvement.id}
                     >
-                      <TouchableOpacity
-                        style={[styles.mouvCard, { backgroundColor: colors.surface, borderColor: isDark ? colors.borderSubtle : colors.borderMedium, shadowColor: '#000' }]}
-                        activeOpacity={0.7}
+                      <Pressable
+                        style={({ pressed }) => ([
+                          styles.mouvCard,
+                          {
+                            backgroundColor: pressed
+                              ? (isDark ? `${cfg.color}14` : '#FFFFFF')
+                              : colors.surface,
+                            borderColor: pressed
+                              ? cfg.color
+                              : (isDark ? colors.borderSubtle : colors.borderMedium),
+                            shadowColor: cfg.color,
+                          },
+                          pressed && styles.mouvCardPressed,
+                        ])}
+                        android_ripple={{ color: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.06)' }}
                         onPress={() => {
                           Vibration.vibrate(10);
                           setSelectedMouvement(mouvement);
@@ -496,20 +702,27 @@ export const MouvementsListScreen: React.FC = () => {
                               <Text style={[styles.mouvArticleName, { color: colors.textPrimary }]} numberOfLines={1}>
                                 {mouvement.article?.nom || 'Article inconnu'}
                               </Text>
-                              <View style={[styles.mouvRefBadge, { backgroundColor: isDark ? colors.borderSubtle : '#F1F5F9' }]}>
+                              <View style={[styles.mouvRefBadge, {
+                                backgroundColor: isDark ? 'rgba(148,163,184,0.14)' : '#EEF2F7',
+                                borderColor: isDark ? 'rgba(148,163,184,0.22)' : '#D7E0EA',
+                              }]}>
                                 <Icon name="barcode" size={12} color={colors.textMuted} />
                                 <Text style={[styles.mouvRef, { color: colors.textMuted }]} numberOfLines={1}>
                                   {mouvement.article?.reference || 'N/A'}
                                 </Text>
                               </View>
                             </View>
-                            <Text style={[styles.mouvQty, { color: cfg.color }]}>
-                              {cfg.prefix}{Math.abs(mouvement.quantite)}
-                            </Text>
+                            <View style={[styles.mouvQtyBadge, { backgroundColor: isDark ? `${cfg.color}24` : `${cfg.color}14` }]}>
+                              <Text style={[styles.mouvQty, { color: cfg.color }]}>
+                                {cfg.prefix}{Math.abs(mouvement.quantite)}
+                              </Text>
+                            </View>
                           </View>
 
                           <View style={styles.mouvBottom}>
-                            <View style={[styles.mouvTypeBadge, { backgroundColor: isDark ? `${cfg.color}20` : `${cfg.color}10` }]}>
+                            <View style={styles.mouvTagsRow}>
+                            <View style={[styles.mouvTypeBadge, { backgroundColor: isDark ? `${cfg.color}22` : `${cfg.color}11` }]}>
+                              <Icon name={cfg.icon} size={11} color={cfg.color} />
                               <View style={[styles.mouvTypeDot, { backgroundColor: cfg.color }]} />
                               <Text style={[styles.mouvTypeBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
                             </View>
@@ -521,21 +734,27 @@ export const MouvementsListScreen: React.FC = () => {
                                 </Text>
                               </View>
                             )}
+                            </View>
                             <View style={styles.mouvMeta}>
+                              <Icon name="clock-time-four-outline" size={12} color={colors.textMuted} />
                               <Text style={[styles.mouvMetaText, { color: colors.textMuted }]}>
                                 {formatTime(new Date(mouvement.dateMouvement))}
                               </Text>
                               {mouvement.technicien && (
-                                <Text style={[styles.mouvMetaText, { color: colors.textMuted }]}>
-                                  {' · '}{toAbbreviation(`${mouvement.technicien.prenom || ''} ${mouvement.technicien.nom || ''}`, 3, 'N/A')}
-                                </Text>
+                                <View style={[styles.mouvTechBadge, { backgroundColor: isDark ? 'rgba(148,163,184,0.14)' : '#EEF2F7' }]}>
+                                  <Text style={[styles.mouvTechBadgeText, { color: colors.textMuted }]}>
+                                    {toAbbreviation(`${mouvement.technicien.prenom || ''} ${mouvement.technicien.nom || ''}`, 3, 'N/A')}
+                                  </Text>
+                                </View>
                               )}
                             </View>
                           </View>
                         </View>
 
-                        <Icon name="chevron-right" size={16} color={colors.borderMedium} style={{ marginLeft: 4 }} />
-                      </TouchableOpacity>
+                        <View style={[styles.mouvChevronWrap, { backgroundColor: isDark ? 'rgba(148,163,184,0.12)' : '#F1F5F9' }]}>
+                          <Icon name="chevron-right" size={16} color={colors.borderMedium} />
+                        </View>
+                      </Pressable>
                     </View>
                   );
                 })}
@@ -773,7 +992,7 @@ const styles = StyleSheet.create({
 
   // ===== HEADER =====
   headerWrap: {
-    paddingHorizontal: premiumSpacing.lg,
+    paddingHorizontal: 0,
     paddingTop: premiumSpacing.xl + 24,
   },
   header: {
@@ -842,6 +1061,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   miniStatsRow: {
     flexDirection: 'row',
     gap: 8,
@@ -879,7 +1103,7 @@ const styles = StyleSheet.create({
 
   // ===== SEARCH =====
   searchWrap: {
-    paddingHorizontal: premiumSpacing.lg,
+    paddingHorizontal: 0,
     marginTop: premiumSpacing.md,
   },
   searchContainer: {
@@ -909,28 +1133,79 @@ const styles = StyleSheet.create({
   },
 
   // ===== FILTERS =====
+  filtersSection: {
+    marginTop: 2,
+  },
+  filtersHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  filtersHeaderLeft: {
+    flex: 1,
+    minWidth: 0,
+  },
+  filtersTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  filtersSubtitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
+  },
   filtersScroll: {
-    paddingHorizontal: premiumSpacing.lg,
-    paddingVertical: premiumSpacing.md,
+    paddingHorizontal: 0,
+    paddingTop: 10,
+    paddingBottom: premiumSpacing.md,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    gap: 6,
+    gap: 7,
+    minHeight: 38,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  filterDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  filterIconWrap: {
+    width: 20,
+    height: 20,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterChipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  filterCountBadge: {
+    minWidth: 22,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  filterCountText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  filterActiveGlow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 2,
+    opacity: 0.95,
   },
   resetBtn: {
     flexDirection: 'row',
@@ -946,33 +1221,83 @@ const styles = StyleSheet.create({
     color: '#EF4444',
   },
 
-  // ===== SKELETON =====
-  skeletonContainer: {
-    paddingHorizontal: premiumSpacing.lg,
+  // ===== LOADER THEME APP =====
+  loaderArena: {
+    paddingHorizontal: 0,
     paddingTop: 8,
     gap: 10,
   },
-  skeletonCard: {
+  loaderHero: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    overflow: 'hidden',
+    marginBottom: 4,
+  },
+  loaderHeroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  loaderHeroIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loaderHeroTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  loaderHeroSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  loaderProgressTrack: {
+    height: 7,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  loaderProgressSweep: {
+    ...StyleSheet.absoluteFillObject,
+    width: 120,
+  },
+  loaderCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
     gap: 12,
+    overflow: 'hidden',
   },
-  skeletonDot: {
+  loaderCardAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  loaderAvatar: {
     width: 38,
     height: 38,
     borderRadius: 12,
   },
-  skeletonLine: {
+  loaderLine: {
     height: 12,
     borderRadius: 6,
   },
 
   // ===== EMPTY STATE =====
   emptyContainer: {
-    paddingHorizontal: premiumSpacing.lg,
+    paddingHorizontal: 0,
     paddingTop: premiumSpacing.xxxl,
   },
   emptyCard: {
@@ -1046,7 +1371,7 @@ const styles = StyleSheet.create({
 
   // ===== TIMELINE =====
   timelineContainer: {
-    paddingHorizontal: premiumSpacing.lg,
+    paddingHorizontal: 0,
     paddingTop: 4,
   },
   dateHeaderRow: {
@@ -1088,6 +1413,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+  },
+  mouvCardPressed: {
+    transform: [{ scale: 0.988 }],
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    elevation: 5,
   },
   mouvAccent: {
     position: 'absolute',
@@ -1152,16 +1483,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
+    borderWidth: 1,
+  },
+  mouvQtyBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 1,
   },
   mouvQty: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
   mouvBottom: {
+    gap: 7,
+  },
+  mouvTagsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    flexWrap: 'wrap',
+    gap: 7,
   },
   mouvTypeBadge: {
     flexDirection: 'row',
@@ -1184,21 +1526,40 @@ const styles = StyleSheet.create({
   mouvMeta: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 5,
   },
   mouvMetaText: {
     fontSize: 11,
-    fontWeight: '400',
+    fontWeight: '500',
+  },
+  mouvTechBadge: {
+    marginLeft: 3,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  mouvTechBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   mouvTransferRoute: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    marginLeft: 6,
   },
   mouvTransferRouteText: {
     fontSize: 10,
     fontWeight: '500',
     maxWidth: 140,
+  },
+  mouvChevronWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
   },
 
   // ===== FAB =====

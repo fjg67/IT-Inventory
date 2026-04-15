@@ -163,6 +163,18 @@ export const ArticleEditScreen: React.FC = () => {
   const [showAddFamilleModal, setShowAddFamilleModal] = useState(false);
   const [addFamilleInput, setAddFamilleInput] = useState('');
   const [showAddTypeModal, setShowAddTypeModal] = useState(false);
+
+  const isPCEditMode = useMemo(() => {
+    if (!isEditing) return false;
+    const candidates = [familleParam, famille, typeArticle, sousType, nom]
+      .filter((value): value is string => !!value)
+      .map((value) => value.toLowerCase());
+    return candidates.some((value) =>
+      value.includes('pc') ||
+      value.includes('portable') ||
+      value.includes('laptop')
+    );
+  }, [isEditing, familleParam, famille, typeArticle, sousType, nom]);
   const [addTypeInput, setAddTypeInput] = useState('');
   const [addingRefOption, setAddingRefOption] = useState(false);
 
@@ -652,7 +664,13 @@ export const ArticleEditScreen: React.FC = () => {
 
       {/* ===== IMMERSIVE HEADER ===== */}
       <LinearGradient
-        colors={isEditing ? ['#007A39', '#8B5CF6', '#A78BFA'] : ['#3B82F6', '#007A39', '#8B5CF6']}
+        colors={
+          isPCEditMode
+            ? ['#0A7A48', '#0B6B8A', '#0C5E73']
+            : isEditing
+              ? ['#006D34', '#0F766E', '#1D4ED8']
+              : ['#007A39', '#0E7490', '#2563EB']
+        }
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -664,6 +682,7 @@ export const ArticleEditScreen: React.FC = () => {
         <View style={styles.headerDeco4} />
         <View style={styles.headerDeco5} />
         <View style={styles.headerDeco6} />
+        <View style={styles.headerBottomSheen} />
 
         <View style={styles.headerRow}>
           <TouchableOpacity
@@ -677,14 +696,14 @@ export const ArticleEditScreen: React.FC = () => {
             <View style={styles.headerBadge}>
               <View style={styles.headerBadgeDot} />
               <Text style={styles.headerBadgeText}>
-                {isEditing ? 'ÉDITION' : 'CRÉATION'}
+                {isPCEditMode ? 'PC ÉDITION' : isEditing ? 'ÉDITION' : 'CRÉATION'}
               </Text>
             </View>
             <Text style={styles.headerTitle}>
-              {isEditing ? 'Modifier l\'article' : 'Nouvel Article'}
+              {isPCEditMode ? 'Modifier le poste' : isEditing ? 'Modifier l\'article' : 'Nouvel Article'}
             </Text>
             <Text style={styles.headerSubtitle}>
-              {isEditing ? 'Mise à jour des informations' : 'Ajouter au stock IT'}
+              {isPCEditMode ? 'Fiche parc PC' : isEditing ? 'Mise à jour des informations' : 'Ajouter au stock IT'}
             </Text>
           </View>
 
@@ -693,10 +712,27 @@ export const ArticleEditScreen: React.FC = () => {
               colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.05)']}
               style={styles.headerIconGradient}
             >
-              <Icon name={isEditing ? 'pencil-outline' : 'plus-circle-outline'} size={24} color="#FFF" />
+              <Icon name={isPCEditMode ? 'laptop' : isEditing ? 'pencil-outline' : 'plus-circle-outline'} size={24} color="#FFF" />
             </LinearGradient>
           </View>
         </View>
+
+        {isPCEditMode && (
+          <View style={styles.pcHeroPillsRow}>
+            <View style={styles.pcHeroPill}>
+              <Icon name="barcode" size={12} color="rgba(255,255,255,0.92)" />
+              <Text style={styles.pcHeroPillText}>{reference || 'Référence'}</Text>
+            </View>
+            <View style={styles.pcHeroPill}>
+              <Icon name="domain" size={12} color="rgba(255,255,255,0.92)" />
+              <Text style={styles.pcHeroPillText}>{marque || 'Marque'}</Text>
+            </View>
+            <View style={styles.pcHeroPill}>
+              <Icon name="map-marker-outline" size={12} color="rgba(255,255,255,0.92)" />
+              <Text style={styles.pcHeroPillText}>{siteActif?.nom || 'Site'}</Text>
+            </View>
+          </View>
+        )}
       </LinearGradient>
 
       <KeyboardAvoidingView
@@ -711,20 +747,21 @@ export const ArticleEditScreen: React.FC = () => {
           {/* ===== SECTION: INFORMATIONS PRINCIPALES ===== */}
           <Animated.View entering={FadeInUp.delay(50).springify()} style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
-              <LinearGradient colors={['#007A39', '#007A39']} style={styles.sectionAccent} />
+              <LinearGradient colors={isPCEditMode ? ['#0EA5E9', '#0284C7'] : ['#007A39', '#007A39']} style={styles.sectionAccent} />
               <View style={styles.sectionIconPill}>
-                <LinearGradient colors={['#007A39', '#007A39']} style={styles.sectionIconGrad}>
+                <LinearGradient colors={isPCEditMode ? ['#0EA5E9', '#0284C7'] : ['#007A39', '#007A39']} style={styles.sectionIconGrad}>
                   <View style={styles.sectionIconInner}>
-                    <Icon name="information-outline" size={15} color="#007A39" />
+                    <Icon name={isPCEditMode ? 'laptop' : 'information-outline'} size={15} color={isPCEditMode ? '#0284C7' : '#007A39'} />
                   </View>
                 </LinearGradient>
               </View>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Informations principales</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{isPCEditMode ? 'Identité du poste' : 'Informations principales'}</Text>
             </View>
             <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-              <LinearGradient colors={['#007A39', '#007A39']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
+              <LinearGradient colors={isPCEditMode ? ['#0EA5E9', '#0284C7'] : ['#007A39', '#007A39']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
 
             {/* --- REFERENCE --- */}
+            {!isPCEditMode && (
             <View style={styles.fieldGroup}>
               <View style={styles.labelRow}>
                 <Text style={[styles.label, { color: colors.textPrimary }]}>Référence</Text>
@@ -783,11 +820,12 @@ export const ArticleEditScreen: React.FC = () => {
                 </Animated.View>
               )}
             </View>
+            )}
 
             {/* --- NOM --- */}
             <View style={styles.fieldGroup}>
               <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: colors.textPrimary }]}>Nom</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>{isPCEditMode ? 'Hostname' : 'Nom'}</Text>
                 <Text style={[styles.required, { color: colors.danger }]}>*</Text>
               </View>
               <View style={[
@@ -796,7 +834,7 @@ export const ArticleEditScreen: React.FC = () => {
               ]}>
                 <TextInput
                   style={[styles.inputText, { color: colors.textPrimary }]}
-                  placeholder="Désignation de l'article"
+                  placeholder={isPCEditMode ? 'Hostname du poste (ex: KSAOP...)' : 'Désignation de l\'article'}
                   placeholderTextColor={colors.textMuted}
                   value={nom}
                   onChangeText={setNom}
@@ -807,6 +845,7 @@ export const ArticleEditScreen: React.FC = () => {
             </View>
 
             {/* Code Famille */}
+            {!isPCEditMode && (
             <View style={[styles.fieldGroup, { marginTop: 16 }]}>
               <View style={styles.labelRow}>
                 <Text style={[styles.label, { color: colors.textPrimary }]}>Code Famille</Text>
@@ -824,8 +863,10 @@ export const ArticleEditScreen: React.FC = () => {
                 <Icon name="chevron-down" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
+            )}
 
             {/* Famille */}
+            {!isPCEditMode && (
             <View style={[styles.fieldGroup, { marginTop: 16 }]}>
               <View style={styles.labelRow}>
                 <Text style={[styles.label, { color: colors.textPrimary }]}>Famille</Text>
@@ -857,26 +898,28 @@ export const ArticleEditScreen: React.FC = () => {
                 <Icon name="chevron-down" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
+            )}
             </View>
           </Animated.View>
 
           {/* ===== SECTION: CLASSIFICATION ===== */}
           <Animated.View entering={FadeInUp.delay(150).springify()} style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
-              <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.sectionAccent} />
+              <LinearGradient colors={isPCEditMode ? ['#14B8A6', '#0F766E'] : ['#8B5CF6', '#7C3AED']} style={styles.sectionAccent} />
               <View style={styles.sectionIconPill}>
-                <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.sectionIconGrad}>
+                <LinearGradient colors={isPCEditMode ? ['#14B8A6', '#0F766E'] : ['#8B5CF6', '#7C3AED']} style={styles.sectionIconGrad}>
                   <View style={styles.sectionIconInner}>
-                    <Icon name="shape-outline" size={15} color="#8B5CF6" />
+                    <Icon name={isPCEditMode ? 'monitor-dashboard' : 'shape-outline'} size={15} color={isPCEditMode ? '#0F766E' : '#8B5CF6'} />
                   </View>
                 </LinearGradient>
               </View>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Classification</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{isPCEditMode ? 'Affectation matérielle' : 'Classification'}</Text>
             </View>
             <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-              <LinearGradient colors={['#8B5CF6', '#7C3AED']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
+              <LinearGradient colors={isPCEditMode ? ['#14B8A6', '#0F766E'] : ['#8B5CF6', '#7C3AED']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
 
             {/* Type */}
+            {!isPCEditMode && (
             <View style={styles.fieldGroup}>
               <View style={styles.labelRow}>
                 <Text style={[styles.label, { color: colors.textPrimary }]}>Type</Text>
@@ -908,8 +951,10 @@ export const ArticleEditScreen: React.FC = () => {
                 <Icon name="chevron-down" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
+            )}
 
             {/* Sous-type */}
+            {!isPCEditMode && (
             <View style={[styles.fieldGroup, { marginTop: 16 }]}>
               <View style={styles.labelRow}>
                 <Text style={[styles.label, { color: colors.textPrimary }]}>Sous-type</Text>
@@ -941,6 +986,7 @@ export const ArticleEditScreen: React.FC = () => {
                 <Icon name="chevron-down" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
+            )}
 
             {/* Marque */}
             <View style={[styles.fieldGroup, { marginTop: 16 }]}>
@@ -1092,6 +1138,7 @@ export const ArticleEditScreen: React.FC = () => {
           )}
 
           {/* ===== SECTION: STOCK ===== */}
+          {!isPCEditMode && (
           <Animated.View entering={FadeInUp.delay(250).springify()} style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#10B981', '#059669']} style={styles.sectionAccent} />
@@ -1167,6 +1214,7 @@ export const ArticleEditScreen: React.FC = () => {
             </View>
             </View>
           </Animated.View>
+          )}
 
           {/* ===== SECTION: INFORMATIONS COMPLÉMENTAIRES ===== */}
           <Animated.View entering={FadeInUp.delay(350).springify()} style={styles.sectionWrap}>
@@ -1323,7 +1371,7 @@ export const ArticleEditScreen: React.FC = () => {
               <>
                 <Icon name="check-circle-outline" size={24} color="#FFF" />
                 <Text style={styles.submitText}>
-                  {isEditing ? 'Mettre à jour' : 'Créer l\'article'}
+                  {isPCEditMode ? 'Mettre à jour le poste' : isEditing ? 'Mettre à jour' : 'Créer l\'article'}
                 </Text>
               </>
             )}
@@ -2331,7 +2379,7 @@ const styles = StyleSheet.create({
   // ===== PREMIUM HEADER =====
   header: {
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 44) + 12 : 54,
-    paddingBottom: 30,
+    paddingBottom: 34,
     paddingHorizontal: 20,
     overflow: 'hidden',
   },
@@ -2341,67 +2389,80 @@ const styles = StyleSheet.create({
   },
   headerDeco1: {
     position: 'absolute',
-    top: -50,
-    right: -40,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    top: -58,
+    right: -52,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    backgroundColor: 'rgba(255,255,255,0.09)',
   },
   headerDeco2: {
     position: 'absolute',
-    bottom: -60,
-    left: -50,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    bottom: -74,
+    left: -68,
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   headerDeco3: {
     position: 'absolute',
-    top: 30,
-    left: '35%' as any,
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    top: 16,
+    left: '30%' as any,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   headerDeco4: {
     position: 'absolute',
-    top: -10,
-    right: 80,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    top: 10,
+    right: 66,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   headerDeco5: {
     position: 'absolute',
-    bottom: 15,
-    right: 50,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    bottom: 18,
+    right: 34,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.16)',
   },
   headerDeco6: {
     position: 'absolute',
-    top: 50,
-    left: 30,
-    width: 8,
-    height: 8,
+    top: 64,
+    left: 20,
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.20)',
+  },
+  headerBottomSheen: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.24)',
   },
   backBtn: {
     width: 44,
     height: 44,
     borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#062B22',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 5,
   },
   headerCenter: {
     flex: 1,
@@ -2411,14 +2472,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
     marginBottom: 8,
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.20)',
   },
   headerBadgeDot: {
     width: 7,
@@ -2427,23 +2488,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#4ADE80',
   },
   headerBadgeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '800',
     color: 'rgba(255,255,255,0.92)',
-    letterSpacing: 1.2,
+    letterSpacing: 0.8,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 23,
+    fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
+    textShadowColor: 'rgba(0,0,0,0.16)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.65)',
+    color: 'rgba(255,255,255,0.78)',
     marginTop: 4,
-    letterSpacing: 0.2,
+    letterSpacing: 0.15,
   },
   headerIconWrap: {
     marginLeft: 8,
@@ -2453,10 +2517,38 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.24)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#062B22',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  pcHeroPillsRow: {
+    marginTop: 14,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  pcHeroPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  pcHeroPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.96)',
+    maxWidth: 150,
   },
 
   // ===== PREMIUM SECTIONS =====
