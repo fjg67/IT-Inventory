@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   SafeAreaView,
   ScrollView,
@@ -58,6 +59,13 @@ const BARCODE_TYPES = [
   'ean-13', 'ean-8', 'upc-a', 'upc-e', 'code-128', 'code-39', 'code-93',
   'qr', 'data-matrix', 'itf', 'pdf-417', 'aztec',
 ] as const;
+
+const TRANSFER_VIOLET = '#7C3AED';
+const TRANSFER_VIOLET_DEEP = '#5B21B6';
+const TRANSFER_VIOLET_SOFT = '#F3E8FF';
+const TRANSFER_VIOLET_DARK_SOFT = 'rgba(124,58,237,0.16)';
+const TRANSFER_VIOLET_LINE = 'rgba(124,58,237,0.28)';
+const TRANSFER_VIOLET_ALT = '#A855F7';
 
 export const TransfertFormScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -371,7 +379,7 @@ export const TransfertFormScreen: React.FC = () => {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <LinearGradient
-            colors={['#3B82F6', '#007A39']}
+            colors={[TRANSFER_VIOLET, TRANSFER_VIOLET_DEEP]}
             style={styles.headerIconBg}
           >
             <Icon name="swap-horizontal" size={18} color="#FFF" />
@@ -399,9 +407,15 @@ export const TransfertFormScreen: React.FC = () => {
                 shadowColor: colors.success,
               }]}>
                 <View style={styles.articleCardTop}>
-                  <View style={[styles.articleIconCircle, { backgroundColor: colors.primaryGlow }]}>
-                    <Icon name="package-variant-closed" size={22} color={colors.primary} />
-                  </View>
+                  {article.photoUrl ? (
+                    <View style={[styles.articleIconCircle, styles.articleImageCircle]}>
+                      <Image source={{ uri: article.photoUrl }} style={styles.articleThumbImage} resizeMode="cover" />
+                    </View>
+                  ) : (
+                    <View style={[styles.articleIconCircle, { backgroundColor: colors.primaryGlow }]}>
+                      <Icon name="package-variant-closed" size={22} color={colors.primary} />
+                    </View>
+                  )}
                   <View style={styles.articleInfo}>
                     <Text style={[styles.articleRef, { color: colors.textMuted }]}>{article.reference}</Text>
                     <Text style={[styles.articleName, { color: colors.textPrimary }]} numberOfLines={2}>{article.nom}</Text>
@@ -429,8 +443,8 @@ export const TransfertFormScreen: React.FC = () => {
               {/* Search bar */}
               <View style={styles.searchSection}>
                 <View style={styles.siteLabelRow}>
-                  <View style={[styles.siteLabelIcon, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : '#E8F5E9' }]}>
-                    <Icon name="magnify" size={16} color={colors.primary} />
+                  <View style={[styles.siteLabelIcon, { backgroundColor: isDark ? TRANSFER_VIOLET_DARK_SOFT : TRANSFER_VIOLET_SOFT }]}>
+                    <Icon name="magnify" size={16} color={TRANSFER_VIOLET} />
                   </View>
                   <Text style={[styles.siteLabel, { color: colors.textPrimary }]}>Rechercher un article</Text>
                 </View>
@@ -460,7 +474,7 @@ export const TransfertFormScreen: React.FC = () => {
                   activeOpacity={0.7}
                 >
                   <LinearGradient
-                    colors={['#3B82F6', '#007A39']}
+                    colors={[TRANSFER_VIOLET, TRANSFER_VIOLET_DEEP]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.scanButtonGradient}
@@ -490,9 +504,15 @@ export const TransfertFormScreen: React.FC = () => {
                         onPress={() => handleSelectArticle(a)}
                         activeOpacity={0.6}
                       >
-                        <View style={[styles.suggestionIcon, { backgroundColor: colors.background }]}>
-                          <Icon name="package-variant-closed" size={18} color={colors.textSecondary} />
-                        </View>
+                        {a.photoUrl ? (
+                          <View style={[styles.suggestionIcon, styles.suggestionImageWrap]}>
+                            <Image source={{ uri: a.photoUrl }} style={styles.suggestionThumbImage} resizeMode="cover" />
+                          </View>
+                        ) : (
+                          <View style={[styles.suggestionIcon, { backgroundColor: colors.background }]}>
+                            <Icon name="package-variant-closed" size={18} color={colors.textSecondary} />
+                          </View>
+                        )}
                         <View style={styles.suggestionInfo}>
                           <Text style={[styles.suggestionRef, { color: colors.textMuted }]}>{a.reference}</Text>
                           <Text style={[styles.suggestionName, { color: colors.textPrimary }]} numberOfLines={1}>{a.nom}</Text>
@@ -521,16 +541,16 @@ export const TransfertFormScreen: React.FC = () => {
           {/* ===== TRANSFER DIRECTION ===== */}
           <Animated.View entering={ZoomIn.delay(150).duration(300)} style={styles.arrowSection}>
             <View style={styles.arrowLine}>
-              <View style={[styles.arrowDot, { backgroundColor: '#3B82F6' }]} />
+              <View style={[styles.arrowDot, { backgroundColor: TRANSFER_VIOLET }]} />
               <View style={[styles.arrowDash, { backgroundColor: colors.borderMedium }]} />
               <LinearGradient
-                colors={['#3B82F6', '#007A39']}
+                colors={[TRANSFER_VIOLET, TRANSFER_VIOLET_ALT]}
                 style={styles.arrowCircle}
               >
                 <Icon name="arrow-down" size={22} color="#FFF" />
               </LinearGradient>
               <View style={[styles.arrowDash, { backgroundColor: colors.borderMedium }]} />
-              <View style={[styles.arrowDot, { backgroundColor: '#007A39' }]} />
+              <View style={[styles.arrowDot, { backgroundColor: TRANSFER_VIOLET_ALT }]} />
             </View>
           </Animated.View>
 
@@ -538,8 +558,8 @@ export const TransfertFormScreen: React.FC = () => {
           <Animated.View entering={FadeInUp.delay(100).duration(400)}>
             <View style={styles.siteSection}>
               <View style={styles.siteLabelRow}>
-                <View style={[styles.siteLabelIcon, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
-                  <Icon name="login" size={16} color="#3B82F6" />
+                <View style={[styles.siteLabelIcon, { backgroundColor: isDark ? TRANSFER_VIOLET_DARK_SOFT : TRANSFER_VIOLET_SOFT }]}>
+                  <Icon name="login" size={16} color={TRANSFER_VIOLET} />
                 </View>
                 <Text style={[styles.siteLabel, { color: colors.textPrimary }]}>Site de départ</Text>
               </View>
@@ -553,20 +573,20 @@ export const TransfertFormScreen: React.FC = () => {
                       style={[
                         styles.siteChip,
                         {
-                          backgroundColor: selected ? (isDark ? 'rgba(59,130,246,0.15)' : '#EFF6FF') : colors.surface,
-                          borderColor: selected ? '#3B82F6' : colors.borderSubtle,
+                          backgroundColor: selected ? (isDark ? TRANSFER_VIOLET_DARK_SOFT : TRANSFER_VIOLET_SOFT) : colors.surface,
+                          borderColor: selected ? TRANSFER_VIOLET : colors.borderSubtle,
                         },
                       ]}
                       activeOpacity={0.7}
                     >
-                      <View style={[styles.siteChipDot, { backgroundColor: selected ? '#3B82F6' : colors.borderMedium }]} />
+                      <View style={[styles.siteChipDot, { backgroundColor: selected ? TRANSFER_VIOLET : colors.borderMedium }]} />
                       <Text style={[
                         styles.siteChipText,
-                        { color: selected ? '#3B82F6' : colors.textSecondary, fontWeight: selected ? '700' : '500' },
+                        { color: selected ? TRANSFER_VIOLET : colors.textSecondary, fontWeight: selected ? '700' : '500' },
                       ]} numberOfLines={1}>
                         {site.nom}
                       </Text>
-                      {selected && <Icon name="check-circle" size={16} color="#3B82F6" />}
+                      {selected && <Icon name="check-circle" size={16} color={TRANSFER_VIOLET} />}
                     </TouchableOpacity>
                   );
                 })}
@@ -584,8 +604,8 @@ export const TransfertFormScreen: React.FC = () => {
           <Animated.View entering={FadeInUp.delay(150).duration(400)}>
             <View style={styles.siteSection}>
               <View style={styles.siteLabelRow}>
-                <View style={[styles.siteLabelIcon, { backgroundColor: 'rgba(99,102,241,0.12)' }]}>
-                  <Icon name="logout" size={16} color="#007A39" />
+                <View style={[styles.siteLabelIcon, { backgroundColor: isDark ? 'rgba(168,85,247,0.18)' : 'rgba(168,85,247,0.14)' }]}>
+                  <Icon name="logout" size={16} color={TRANSFER_VIOLET_ALT} />
                 </View>
                 <Text style={[styles.siteLabel, { color: colors.textPrimary }]}>Site de destination</Text>
               </View>
@@ -599,20 +619,20 @@ export const TransfertFormScreen: React.FC = () => {
                       style={[
                         styles.siteChip,
                         {
-                          backgroundColor: selected ? (isDark ? 'rgba(0,122,57,0.15)' : '#E8F5E9') : colors.surface,
-                          borderColor: selected ? '#007A39' : colors.borderSubtle,
+                          backgroundColor: selected ? (isDark ? 'rgba(168,85,247,0.18)' : 'rgba(168,85,247,0.14)') : colors.surface,
+                          borderColor: selected ? TRANSFER_VIOLET_ALT : colors.borderSubtle,
                         },
                       ]}
                       activeOpacity={0.7}
                     >
-                      <View style={[styles.siteChipDot, { backgroundColor: selected ? '#007A39' : colors.borderMedium }]} />
+                      <View style={[styles.siteChipDot, { backgroundColor: selected ? TRANSFER_VIOLET_ALT : colors.borderMedium }]} />
                       <Text style={[
                         styles.siteChipText,
-                        { color: selected ? '#007A39' : colors.textSecondary, fontWeight: selected ? '700' : '500' },
+                        { color: selected ? TRANSFER_VIOLET_ALT : colors.textSecondary, fontWeight: selected ? '700' : '500' },
                       ]} numberOfLines={1}>
                         {site.nom}
                       </Text>
-                      {selected && <Icon name="check-circle" size={16} color="#007A39" />}
+                      {selected && <Icon name="check-circle" size={16} color={TRANSFER_VIOLET_ALT} />}
                     </TouchableOpacity>
                   );
                 })}
@@ -630,8 +650,8 @@ export const TransfertFormScreen: React.FC = () => {
           <Animated.View entering={FadeInUp.delay(200).duration(400)}>
             <View style={styles.siteSection}>
               <View style={styles.siteLabelRow}>
-                <View style={[styles.siteLabelIcon, { backgroundColor: 'rgba(16,185,129,0.12)' }]}>
-                  <Icon name="counter" size={16} color="#10B981" />
+                <View style={[styles.siteLabelIcon, { backgroundColor: isDark ? TRANSFER_VIOLET_DARK_SOFT : TRANSFER_VIOLET_SOFT }]}>
+                  <Icon name="counter" size={16} color={TRANSFER_VIOLET} />
                 </View>
                 <Text style={[styles.siteLabel, { color: colors.textPrimary }]}>Quantité à transférer</Text>
               </View>
@@ -682,8 +702,8 @@ export const TransfertFormScreen: React.FC = () => {
           <Animated.View entering={FadeInUp.delay(250).duration(400)}>
             <View style={styles.siteSection}>
               <View style={styles.siteLabelRow}>
-                <View style={[styles.siteLabelIcon, { backgroundColor: 'rgba(245,158,11,0.12)' }]}>
-                  <Icon name="text-box-outline" size={16} color="#F59E0B" />
+                <View style={[styles.siteLabelIcon, { backgroundColor: isDark ? TRANSFER_VIOLET_DARK_SOFT : TRANSFER_VIOLET_SOFT }]}>
+                  <Icon name="text-box-outline" size={16} color={TRANSFER_VIOLET_ALT} />
                 </View>
                 <Text style={[styles.siteLabel, { color: colors.textPrimary }]}>Commentaire</Text>
                 <Text style={[styles.optionalTag, { color: colors.textMuted }]}>optionnel</Text>
@@ -706,10 +726,10 @@ export const TransfertFormScreen: React.FC = () => {
           {/* ===== RÉSUMÉ ===== */}
           {article && siteDepartId && siteArriveeId && (
             <Animated.View entering={FadeInUp.delay(300).duration(400)}>
-              <View style={[styles.summaryCard, { backgroundColor: isDark ? 'rgba(0,122,57,0.08)' : '#E8F5E9', borderColor: isDark ? 'rgba(0,122,57,0.2)' : '#B2DFDB' }]}>
+              <View style={[styles.summaryCard, { backgroundColor: isDark ? TRANSFER_VIOLET_DARK_SOFT : TRANSFER_VIOLET_SOFT, borderColor: isDark ? TRANSFER_VIOLET_LINE : 'rgba(124,58,237,0.22)' }]}>
                 <View style={styles.summaryHeader}>
-                  <Icon name="clipboard-check-outline" size={18} color={colors.primary} />
-                  <Text style={[styles.summaryTitle, { color: colors.primary }]}>Résumé du transfert</Text>
+                  <Icon name="clipboard-check-outline" size={18} color={TRANSFER_VIOLET} />
+                  <Text style={[styles.summaryTitle, { color: TRANSFER_VIOLET }]}>Résumé du transfert</Text>
                 </View>
                 <View style={styles.summaryBody}>
                   <View style={styles.summaryItem}>
@@ -754,7 +774,7 @@ export const TransfertFormScreen: React.FC = () => {
               style={{ opacity: canSubmit ? 1 : 0.45 }}
             >
               <LinearGradient
-                colors={canSubmit ? ['#3B82F6', '#007A39'] : [colors.borderMedium, colors.borderMedium]}
+                colors={canSubmit ? [TRANSFER_VIOLET, TRANSFER_VIOLET_DEEP] : [colors.borderMedium, colors.borderMedium]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.submitBtn}
@@ -811,10 +831,10 @@ export const TransfertFormScreen: React.FC = () => {
             {/* Scan frame */}
             <View style={styles.cameraFrameWrap}>
               <View style={styles.cameraFrame}>
-                <View style={[styles.cameraCorner, styles.camCTL, { borderColor: '#3B82F6' }]} />
-                <View style={[styles.cameraCorner, styles.camCTR, { borderColor: '#3B82F6' }]} />
-                <View style={[styles.cameraCorner, styles.camCBL, { borderColor: '#3B82F6' }]} />
-                <View style={[styles.cameraCorner, styles.camCBR, { borderColor: '#3B82F6' }]} />
+                <View style={[styles.cameraCorner, styles.camCTL, { borderColor: TRANSFER_VIOLET }]} />
+                <View style={[styles.cameraCorner, styles.camCTR, { borderColor: TRANSFER_VIOLET }]} />
+                <View style={[styles.cameraCorner, styles.camCBL, { borderColor: TRANSFER_VIOLET }]} />
+                <View style={[styles.cameraCorner, styles.camCBR, { borderColor: TRANSFER_VIOLET }]} />
               </View>
             </View>
 
@@ -900,6 +920,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  articleImageCircle: {
+    backgroundColor: '#EDE9FE',
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.24)',
+  },
+  articleThumbImage: {
+    width: '100%',
+    height: '100%',
   },
   articleInfo: {
     flex: 1,
@@ -982,6 +1012,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  suggestionImageWrap: {
+    backgroundColor: '#EDE9FE',
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.22)',
+  },
+  suggestionThumbImage: {
+    width: '100%',
+    height: '100%',
   },
   suggestionInfo: {
     flex: 1,
@@ -1023,6 +1063,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 12,
     overflow: 'hidden',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.26,
+    shadowRadius: 16,
+    elevation: 6,
   },
   scanButtonGradient: {
     flexDirection: 'row',
@@ -1235,6 +1280,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
     marginTop: 4,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
   },
   summaryHeader: {
     flexDirection: 'row',
@@ -1283,6 +1333,11 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 16,
     borderRadius: 14,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.34,
+    shadowRadius: 18,
+    elevation: 8,
   },
   submitBtnText: {
     color: '#FFF',

@@ -6,7 +6,7 @@ import React, { useEffect } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 
@@ -220,6 +220,16 @@ export const AppNavigator: React.FC = () => {
   const [isInitializing, setIsInitializing] = React.useState(true);
   const [onboardingSeen, setOnboardingSeen] = React.useState(false);
   const [forceUpdate, setForceUpdate] = React.useState<VersionCheckResult | null>(null);
+  const appStateRef = React.useRef<AppStateStatus>(AppState.currentState);
+
+  const runVersionCheck = React.useCallback(async () => {
+    try {
+      const versionResult = await checkAppVersion();
+      setForceUpdate(versionResult.updateRequired ? versionResult : null);
+    } catch (error) {
+      console.warn('[AppNavigator] checkAppVersion error:', error);
+    }
+  }, []);
 
   // Réseau : écouter NetInfo et vérifier l'accès Supabase
   useEffect(() => {
@@ -276,10 +286,7 @@ export const AppNavigator: React.FC = () => {
         console.log('[AppNavigator] Stored data loaded');
 
         // Vérifier la version minimum
-        const versionResult = await checkAppVersion();
-        if (versionResult.updateRequired) {
-          setForceUpdate(versionResult);
-        }
+        await runVersionCheck();
 
         const onboardingDone = await AsyncStorage.getItem('@it-inventory/onboarding_seen');
         if (onboardingDone === 'true') {
@@ -293,7 +300,22 @@ export const AppNavigator: React.FC = () => {
     };
 
     initializeApp().catch(console.error);
-  }, [dispatch]);
+  }, [dispatch, runVersionCheck]);
+
+  // Re-vérifier la version quand l'app revient au premier plan
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      const wasBackground = appStateRef.current === 'background' || appStateRef.current === 'inactive';
+      if (wasBackground && nextState === 'active') {
+        runVersionCheck().catch(() => {});
+      }
+      appStateRef.current = nextState;
+    });
+
+    return () => {
+      sub.remove();
+    };
+  }, [runVersionCheck]);
 
   useEffect(() => {
     if (isAuthenticated) {

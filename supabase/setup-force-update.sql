@@ -13,7 +13,7 @@ create table if not exists public."AppConfig" (
 -- 2) Upsert minimum required app version
 -- Any app with APP_CONFIG.version < this value will be blocked by ForceUpdateScreen.
 insert into public."AppConfig" ("key", "value")
-values ('min_app_version', '2.23')
+values ('min_app_version', '2.24')
 on conflict ("key")
 do update set
   "value" = excluded."value",

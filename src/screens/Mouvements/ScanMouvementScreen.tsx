@@ -175,6 +175,8 @@ export const ScanMouvementScreen: React.FC = () => {
     label: string;
     gradient: [string, string];
   } | null>(null);
+  const overlayScrollRef = useRef<ScrollView | null>(null);
+  const quickActionsYRef = useRef<number | null>(null);
   const cameraReadyRef = useRef(false);
   const lastScannedRef = useRef<{ value: string; at: number } | null>(null);
   const isProcessingRef = useRef(false);
@@ -270,6 +272,18 @@ export const ScanMouvementScreen: React.FC = () => {
     transform: [{ scale: actionTransitionScale.value }],
   }));
 
+  const scrollToQuickActions = useCallback((attempt: number = 0) => {
+    const y = quickActionsYRef.current;
+    if (y != null && overlayScrollRef.current) {
+      overlayScrollRef.current.scrollTo({ y: Math.max(y - 18, 0), animated: true });
+      return;
+    }
+
+    if (attempt < 8) {
+      setTimeout(() => scrollToQuickActions(attempt + 1), 60);
+    }
+  }, []);
+
   // ===== Camera code scanner (validation par consensus) =====
   const scanConsensusRef = useRef<{ value: string; count: number }>({ value: '', count: 0 });
   const SCAN_CONSENSUS_THRESHOLD = 3;
@@ -335,6 +349,9 @@ export const ScanMouvementScreen: React.FC = () => {
         setArticle(result);
         setScanStatus('success');
         Vibration.vibrate(50);
+        setTimeout(() => {
+          scrollToQuickActions();
+        }, 80);
         // Ajouter à l'historique (trouvé)
         dispatch(addToHistoryAndSave({
           barcode,
@@ -416,6 +433,7 @@ export const ScanMouvementScreen: React.FC = () => {
     isProcessingRef.current = false;
     dispatch(clearScannedArticle());
     dispatch(clearLastBarcode());
+    overlayScrollRef.current?.scrollTo({ y: 0, animated: true });
   }, [dispatch]);
 
   // Réessayer la recherche avec le dernier code scanné
@@ -544,6 +562,7 @@ export const ScanMouvementScreen: React.FC = () => {
 
       {/* ===== OVERLAY SOMBRE SEMI-TRANSPARENT ===== */}
       <ScrollView
+        ref={overlayScrollRef}
         style={styles.darkOverlay}
         contentContainerStyle={styles.darkOverlayContent}
         showsVerticalScrollIndicator={false}
@@ -798,7 +817,13 @@ export const ScanMouvementScreen: React.FC = () => {
           </LinearGradient>
 
           {/* Quick Actions - design premium */}
-          <Animated.View entering={FadeInUp.delay(250).duration(400)} style={styles.quickActions}>
+          <Animated.View
+            entering={FadeInUp.delay(250).duration(400)}
+            style={styles.quickActions}
+            onLayout={(event) => {
+              quickActionsYRef.current = event.nativeEvent.layout.y;
+            }}
+          >
             {isScannedPC ? (
               <>
                 {!isSuperviseur && (
