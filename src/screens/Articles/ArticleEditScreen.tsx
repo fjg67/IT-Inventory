@@ -24,6 +24,7 @@ import {
 import Animated, {
   FadeInUp,
   FadeInDown,
+  FadeOutUp,
   FadeIn,
   ZoomIn,
   SlideInRight,
@@ -50,6 +51,25 @@ const REF_SCAN_CODE_TYPES = [
   'ean-13', 'ean-8', 'upc-a', 'upc-e', 'code-128', 'code-39', 'code-93',
   'qr', 'data-matrix', 'itf', 'pdf-417', 'aztec',
 ] as const;
+
+type HeaderConsumableIcon = {
+  icon: string;
+  top: number;
+  left?: number;
+  right?: number;
+  rotate: string;
+  size: number;
+  opacity: number;
+};
+
+const HEADER_CONSUMABLE_ICONS: HeaderConsumableIcon[] = [
+  { icon: 'mouse', top: 26, left: 30, rotate: '-10deg', size: 14, opacity: 0.24 },
+  { icon: 'keyboard-outline', top: 18, right: 34, rotate: '8deg', size: 14, opacity: 0.23 },
+  { icon: 'usb-port', top: 168, left: 42, rotate: '-8deg', size: 13, opacity: 0.22 },
+  { icon: 'cable-data', top: 160, right: 32, rotate: '10deg', size: 14, opacity: 0.22 },
+  { icon: 'headset', top: 98, right: 20, rotate: '-9deg', size: 14, opacity: 0.2 },
+  { icon: 'battery-charging', top: 98, left: 18, rotate: '9deg', size: 13, opacity: 0.19 },
+];
 
 // ==================== MAIN SCREEN ====================
 export const ArticleEditScreen: React.FC = () => {
@@ -78,6 +98,7 @@ export const ArticleEditScreen: React.FC = () => {
     if (selectedSubSiteId) return selectedSubSiteId; // Sous-site déjà choisi dans le Dashboard
     return localTargetSiteId ?? effectiveSiteId;
   }, [hasChildSites, selectedSubSiteId, localTargetSiteId, effectiveSiteId]);
+  const isArticleCreateMode = !isEditing && !isPCEditMode;
 
   // ===== Data =====
   const [sites, setSites] = useState<Site[]>([]);
@@ -103,6 +124,7 @@ export const ArticleEditScreen: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [refStatus, setRefStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [showHeroBanner, setShowHeroBanner] = useState(true);
 
   // Modals
   const [showScanRefModal, setShowScanRefModal] = useState(false);
@@ -246,7 +268,6 @@ export const ArticleEditScreen: React.FC = () => {
     { value: 'Filtre confidentialité 15.6"', label: 'Filtre confidentialité 15.6"', icon: 'eye-off', color: '#DC2626' },
     { value: 'Filtre confidentialité 16"', label: 'Filtre confidentialité 16"', icon: 'eye-off', color: '#B91C1C' },
     { value: 'Filtre confidentialité VIP', label: 'Filtre confidentialité VIP', icon: 'eye-off-outline', color: '#9F1239' },
-    { value: 'Tablette', label: 'Tablette', icon: 'tablet', color: '#06B6D4' },
     { value: 'Pour présentation', label: 'Pour présentation', icon: 'presentation', color: '#F97316' },
     { value: 'Kit clavier souris', label: 'Kit clavier souris', icon: 'keyboard-variant', color: '#A855F7' },
     { value: 'Clavier / Souris', label: 'Clavier / Souris', icon: 'mouse', color: '#007A39' },
@@ -276,15 +297,21 @@ export const ArticleEditScreen: React.FC = () => {
   ];
 
   const filteredTypes = useMemo(() => {
-    if (!typeSearch.trim()) return TYPE_OPTIONS;
+    const sortedTypes = [...TYPE_OPTIONS].sort((a, b) =>
+      a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' }),
+    );
+    if (!typeSearch.trim()) return sortedTypes;
     const s = typeSearch.toLowerCase();
-    return TYPE_OPTIONS.filter(t => t.label.toLowerCase().includes(s));
-  }, [typeSearch]);
+    return sortedTypes.filter(t => t.label.toLowerCase().includes(s));
+  }, [TYPE_OPTIONS, typeSearch]);
 
   const filteredSousTypes = useMemo(() => {
-    if (!sousTypeSearch.trim()) return SOUS_TYPE_OPTIONS;
+    const sortedSousTypes = [...SOUS_TYPE_OPTIONS].sort((a, b) =>
+      a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' }),
+    );
+    if (!sousTypeSearch.trim()) return sortedSousTypes;
     const s = sousTypeSearch.toLowerCase();
-    return SOUS_TYPE_OPTIONS.filter(t => t.label.toLowerCase().includes(s));
+    return sortedSousTypes.filter(t => t.label.toLowerCase().includes(s));
   }, [sousTypeSearch]);
 
   const EMPLACEMENT_OPTIONS: { value: string; label: string; icon: string; color: string; bgColor: string; emoji: string; etage: string; zone: string }[] = [
@@ -351,6 +378,11 @@ export const ArticleEditScreen: React.FC = () => {
     { value: 'Ergotron', label: 'Ergotron', icon: 'arm-flex', color: '#F97316', initials: 'ER' },
     { value: 'Fujitsu', label: 'Fujitsu', icon: 'server', color: '#E4002B', initials: 'FU' },
   ];
+
+  const sortedMarqueOptions = useMemo(
+    () => [...MARQUE_OPTIONS].sort((a, b) => a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' })),
+    [MARQUE_OPTIONS],
+  );
 
   // ===== Computed =====
   const isFormValid = useMemo(() => {
@@ -647,6 +679,15 @@ export const ArticleEditScreen: React.FC = () => {
     }
   };
 
+  const handleFormScroll = useCallback((event: any) => {
+    const y = event?.nativeEvent?.contentOffset?.y ?? 0;
+    if (y > 16 && showHeroBanner) {
+      setShowHeroBanner(false);
+    } else if (y <= 16 && !showHeroBanner) {
+      setShowHeroBanner(true);
+    }
+  }, [showHeroBanner]);
+
   // ===== Loading =====
   if (isLoading) {
     return (
@@ -663,77 +704,135 @@ export const ArticleEditScreen: React.FC = () => {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* ===== IMMERSIVE HEADER ===== */}
-      <LinearGradient
-        colors={
-          isPCEditMode
-            ? ['#0A7A48', '#0B6B8A', '#0C5E73']
-            : isEditing
-              ? ['#006D34', '#0F766E', '#1D4ED8']
-              : ['#007A39', '#0E7490', '#2563EB']
-        }
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        {/* Geometric decorations */}
-        <View style={styles.headerDeco1} />
-        <View style={styles.headerDeco2} />
-        <View style={styles.headerDeco3} />
-        <View style={styles.headerDeco4} />
-        <View style={styles.headerDeco5} />
-        <View style={styles.headerDeco6} />
-        <View style={styles.headerBottomSheen} />
-
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => { Vibration.vibrate(10); navigation.goBack(); }}
+      {showHeroBanner ? (
+        <Animated.View entering={FadeInDown.duration(220)} exiting={FadeOutUp.duration(180)}>
+          <LinearGradient
+            colors={
+              isPCEditMode
+                ? ['#0B2F22', '#005C2B', '#007A39']
+                : isEditing
+                  ? ['#0C2A1F', '#006034', '#008E4A']
+                  : ['#163D2F', '#1B6C4B', '#2D966B']
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0.95 }}
+            style={styles.header}
           >
-            <Icon name="arrow-left" size={20} color="#FFF" />
-          </TouchableOpacity>
-
-          <View style={styles.headerCenter}>
-            <View style={styles.headerBadge}>
-              <View style={styles.headerBadgeDot} />
-              <Text style={styles.headerBadgeText}>
-                {isPCEditMode ? 'PC ÉDITION' : isEditing ? 'ÉDITION' : 'CRÉATION'}
-              </Text>
-            </View>
-            <Text style={styles.headerTitle}>
-              {isPCEditMode ? 'Modifier le poste' : isEditing ? 'Modifier l\'article' : 'Nouvel Article'}
-            </Text>
-            <Text style={styles.headerSubtitle}>
-              {isPCEditMode ? 'Fiche parc PC' : isEditing ? 'Mise à jour des informations' : 'Ajouter au stock IT'}
-            </Text>
-          </View>
-
-          <View style={styles.headerIconWrap}>
+            {/* Geometric decorations */}
+            <View style={styles.headerDeco1} />
+            <View style={styles.headerDeco2} />
             <LinearGradient
-              colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.05)']}
-              style={styles.headerIconGradient}
-            >
-              <Icon name={isPCEditMode ? 'laptop' : isEditing ? 'pencil-outline' : 'plus-circle-outline'} size={24} color="#FFF" />
-            </LinearGradient>
-          </View>
-        </View>
+              colors={['rgba(255,255,255,0.20)', 'rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.headerLightSweep}
+            />
+            <LinearGradient
+              colors={['rgba(2,26,18,0)', 'rgba(2,26,18,0.24)']}
+              start={{ x: 0.2, y: 0.1 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.headerDepthSweep}
+            />
+            <View style={styles.headerDiagonalGlow} />
+            <View style={styles.headerVignette} />
+            <View style={styles.headerBottomSheen} />
+            {!isPCEditMode ? (
+              <>
+                <View style={styles.headerConsumablesBackdrop} pointerEvents="none">
+                  {HEADER_CONSUMABLE_ICONS.map((item, index) => (
+                    <View
+                      key={`${item.icon}-${index}`}
+                      style={[
+                        styles.headerConsumableGhost,
+                        {
+                          top: item.top,
+                          left: item.left,
+                          right: item.right,
+                          opacity: item.opacity,
+                          transform: [{ rotate: item.rotate }],
+                        },
+                      ]}
+                    >
+                      <Icon name={item.icon} size={item.size} color="rgba(255,255,255,0.96)" />
+                    </View>
+                  ))}
+                </View>
+                <View style={styles.headerConsumableCenterCalm} />
+                <View style={styles.headerConsumableGlow} />
+                <View style={styles.headerConsumableTag}>
+                  <Icon name="package-variant-closed" size={11} color="#FDE68A" />
+                  <Text style={styles.headerConsumableTagText}>Collection consommables</Text>
+                </View>
+              </>
+            ) : null}
 
-        {isPCEditMode && (
-          <View style={styles.pcHeroPillsRow}>
-            <View style={styles.pcHeroPill}>
-              <Icon name="barcode" size={12} color="rgba(255,255,255,0.92)" />
-              <Text style={styles.pcHeroPillText}>{reference || 'Référence'}</Text>
+            <View style={styles.headerRow}>
+              <TouchableOpacity
+                style={styles.backBtn}
+                onPress={() => { Vibration.vibrate(10); navigation.goBack(); }}
+              >
+                <Icon name="arrow-left" size={20} color="#FFF" />
+              </TouchableOpacity>
+
+              <View style={styles.headerCenter}>
+                <LinearGradient
+                  colors={['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.04)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.headerTextCard}
+                >
+                  <View style={styles.headerBadge}>
+                    <View style={styles.headerBadgeDot} />
+                    <Text style={styles.headerBadgeText}>
+                      {isPCEditMode ? 'PC ÉDITION' : isEditing ? 'ÉDITION' : 'CRÉATION'}
+                    </Text>
+                  </View>
+                  <Text style={styles.headerTitle}>
+                    {isPCEditMode ? 'Modifier le poste' : isEditing ? 'Modifier l\'article' : 'Nouvel Article'}
+                  </Text>
+                  <Text style={styles.headerSubtitle}>
+                    {isPCEditMode ? 'Fiche parc PC' : isEditing ? 'Mise à jour des informations' : 'Ajouter au stock IT'}
+                  </Text>
+                  {isArticleCreateMode ? (
+                    <View style={styles.headerContextRow}>
+                      <Icon name="label-outline" size={12} color="rgba(255,255,255,0.85)" />
+                      <Text style={styles.headerContextText}>Création d'article consommable</Text>
+                    </View>
+                  ) : null}
+                </LinearGradient>
+              </View>
+
+              {!isArticleCreateMode ? (
+                <View style={styles.headerIconWrap}>
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.26)', 'rgba(255,255,255,0.08)']}
+                    style={styles.headerIconGradient}
+                  >
+                    <Icon name={isPCEditMode ? 'laptop' : 'pencil-outline'} size={24} color="#FFF" />
+                  </LinearGradient>
+                </View>
+              ) : null}
             </View>
-            <View style={styles.pcHeroPill}>
-              <Icon name="domain" size={12} color="rgba(255,255,255,0.92)" />
-              <Text style={styles.pcHeroPillText}>{marque || 'Marque'}</Text>
-            </View>
-            <View style={styles.pcHeroPill}>
-              <Icon name="map-marker-outline" size={12} color="rgba(255,255,255,0.92)" />
-              <Text style={styles.pcHeroPillText}>{siteActif?.nom || 'Site'}</Text>
-            </View>
-          </View>
-        )}
-      </LinearGradient>
+
+            {isPCEditMode && (
+              <View style={styles.pcHeroPillsRow}>
+                <View style={styles.pcHeroPill}>
+                  <Icon name="barcode" size={12} color="rgba(255,255,255,0.92)" />
+                  <Text style={styles.pcHeroPillText}>{reference || 'Référence'}</Text>
+                </View>
+                <View style={styles.pcHeroPill}>
+                  <Icon name="domain" size={12} color="rgba(255,255,255,0.92)" />
+                  <Text style={styles.pcHeroPillText}>{marque || 'Marque'}</Text>
+                </View>
+                <View style={styles.pcHeroPill}>
+                  <Icon name="map-marker-outline" size={12} color="rgba(255,255,255,0.92)" />
+                  <Text style={styles.pcHeroPillText}>{siteActif?.nom || 'Site'}</Text>
+                </View>
+              </View>
+            )}
+          </LinearGradient>
+        </Animated.View>
+      ) : null}
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -743,6 +842,8 @@ export const ArticleEditScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, isTablet && contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : undefined]}
           keyboardShouldPersistTaps="handled"
+          onScroll={handleFormScroll}
+          scrollEventThrottle={16}
         >
           {/* ===== SECTION: INFORMATIONS PRINCIPALES ===== */}
           <Animated.View entering={FadeInUp.delay(50).springify()} style={styles.sectionWrap}>
@@ -1023,7 +1124,7 @@ export const ArticleEditScreen: React.FC = () => {
             </View>
 
             {/* Site */}
-            {!isEditing && siteActif && (
+            {!isEditing && siteActif && !(hasChildSites && !selectedSubSiteId) && (
               <View style={[styles.fieldGroup, { marginTop: 16 }]}>
                 <View style={styles.labelRow}>
                   <Text style={[styles.label, { color: colors.textPrimary }]}>Site</Text>
@@ -1149,7 +1250,7 @@ export const ArticleEditScreen: React.FC = () => {
                   </View>
                 </LinearGradient>
               </View>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Stock</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Niveaux de stock</Text>
             </View>
             <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
               <LinearGradient colors={['#10B981', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
@@ -2021,7 +2122,7 @@ export const ArticleEditScreen: React.FC = () => {
 
                   <View style={{ height: 1, backgroundColor: '#F3F4F6', marginVertical: 8, marginHorizontal: 4 }} />
 
-                  {MARQUE_OPTIONS.map((m, index) => {
+                  {sortedMarqueOptions.map((m, index) => {
                     const selected = marque === m.value;
                     return (
                       <Animated.View key={m.value} entering={FadeInUp.delay(index * 40).duration(300)}>
@@ -2379,7 +2480,7 @@ const styles = StyleSheet.create({
   // ===== PREMIUM HEADER =====
   header: {
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 44) + 12 : 54,
-    paddingBottom: 34,
+    paddingBottom: 30,
     paddingHorizontal: 20,
     overflow: 'hidden',
   },
@@ -2389,57 +2490,88 @@ const styles = StyleSheet.create({
   },
   headerDeco1: {
     position: 'absolute',
-    top: -58,
-    right: -52,
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    backgroundColor: 'rgba(255,255,255,0.09)',
+    top: -86,
+    right: -56,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   headerDeco2: {
     position: 'absolute',
-    bottom: -74,
-    left: -68,
-    width: 190,
-    height: 190,
-    borderRadius: 95,
+    bottom: -88,
+    left: -84,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
     backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  headerLightSweep: {
+    position: 'absolute',
+    top: -26,
+    left: -40,
+    width: 300,
+    height: 170,
+    borderRadius: 48,
+    transform: [{ rotate: '-10deg' }],
+  },
+  headerDepthSweep: {
+    position: 'absolute',
+    right: -20,
+    bottom: -10,
+    width: 250,
+    height: 170,
+    borderTopLeftRadius: 110,
   },
   headerDeco3: {
     position: 'absolute',
-    top: 16,
-    left: '30%' as any,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    top: 30,
+    left: '34%' as any,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   headerDeco4: {
     position: 'absolute',
-    top: 10,
-    right: 66,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    top: 14,
+    right: 74,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   headerDeco5: {
     position: 'absolute',
-    bottom: 18,
-    right: 34,
-    width: 12,
-    height: 12,
+    bottom: 24,
+    right: 42,
+    width: 10,
+    height: 10,
     borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    backgroundColor: 'rgba(255,255,255,0.22)',
   },
   headerDeco6: {
     position: 'absolute',
-    top: 64,
-    left: 20,
-    width: 7,
-    height: 7,
+    top: 66,
+    left: 28,
+    width: 8,
+    height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.20)',
+    backgroundColor: 'rgba(255,255,255,0.24)',
+  },
+  headerDiagonalGlow: {
+    position: 'absolute',
+    top: -34,
+    right: -88,
+    width: 280,
+    height: 176,
+    borderRadius: 48,
+    transform: [{ rotate: '-15deg' }],
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  headerVignette: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.04)',
   },
   headerBottomSheen: {
     position: 'absolute',
@@ -2447,84 +2579,167 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.24)',
+    backgroundColor: 'rgba(255,255,255,0.30)',
+  },
+  headerConsumablesBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  headerConsumableGhost: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerConsumableCenterCalm: {
+    position: 'absolute',
+    left: '14%' as any,
+    right: '14%' as any,
+    top: 54,
+    height: 130,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(5,24,17,0.34)',
+  },
+  headerConsumableGlow: {
+    position: 'absolute',
+    right: -64,
+    top: -26,
+    width: 262,
+    height: 148,
+    borderRadius: 44,
+    backgroundColor: 'rgba(245,158,11,0.09)',
+    transform: [{ rotate: '-8deg' }],
+  },
+  headerConsumableTag: {
+    position: 'absolute',
+    right: 16,
+    top: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(253,230,138,0.34)',
+    backgroundColor: 'rgba(120,53,15,0.30)',
+  },
+  headerConsumableTagText: {
+    color: '#FDE68A',
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.15,
   },
   backBtn: {
     width: 44,
     height: 44,
     borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.16)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
+    borderColor: 'rgba(255,255,255,0.36)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#062B22',
+    shadowColor: '#003D2C',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
     elevation: 5,
   },
   headerCenter: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 14,
+    marginRight: 10,
+  },
+  headerTextCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
   },
   headerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: 999,
-    paddingHorizontal: 11,
+    paddingHorizontal: 10,
     paddingVertical: 5,
     marginBottom: 8,
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.20)',
+    borderColor: 'rgba(255,255,255,0.22)',
   },
   headerBadgeDot: {
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: '#4ADE80',
+    backgroundColor: '#86EFAC',
   },
   headerBadgeText: {
     fontSize: 11,
     fontWeight: '800',
-    color: 'rgba(255,255,255,0.92)',
-    letterSpacing: 0.8,
+    color: 'rgba(255,255,255,0.96)',
+    letterSpacing: 1,
   },
   headerTitle: {
     fontSize: 23,
     fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: -0.5,
-    textShadowColor: 'rgba(0,0,0,0.16)',
+    letterSpacing: -0.45,
+    textShadowColor: 'rgba(0,0,0,0.24)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    textShadowRadius: 5,
   },
   headerSubtitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.78)',
-    marginTop: 4,
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.88)',
+    marginTop: 5,
+    letterSpacing: 0.15,
+  },
+  headerContextRow: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+  },
+  headerContextText: {
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 10.5,
+    fontWeight: '600',
     letterSpacing: 0.15,
   },
   headerIconWrap: {
     marginLeft: 8,
   },
   headerIconGradient: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 50,
+    height: 50,
+    borderRadius: 17,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.24)',
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(255,255,255,0.34)',
+    backgroundColor: 'rgba(255,255,255,0.16)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#062B22',
+    shadowColor: '#003D2C',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
     elevation: 5,
   },
   pcHeroPillsRow: {

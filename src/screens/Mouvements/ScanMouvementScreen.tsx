@@ -669,8 +669,14 @@ export const ScanMouvementScreen: React.FC = () => {
       {/* ===== ARTICLE RESULT CARD - PREMIUM ===== */}
       {article && scanStatus === 'success' && (
         <Animated.View entering={FadeInUp.delay(100).duration(500)} style={styles.resultArea}>
+          <View style={styles.resultAura} />
           {/* Carte principale */}
-          <View style={styles.resultCard}>
+          <LinearGradient
+            colors={['rgba(15,23,42,0.94)', 'rgba(17,24,39,0.92)', 'rgba(15,23,42,0.96)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.resultCard}
+          >
             {/* Left accent bar */}
             <LinearGradient
               colors={['#3B82F6', '#007A39']}
@@ -678,6 +684,17 @@ export const ScanMouvementScreen: React.FC = () => {
               end={{ x: 0, y: 1 }}
               style={styles.resultAccentBar}
             />
+
+            <View style={styles.resultTopBadgeRow}>
+              <View style={styles.resultFoundPill}>
+                <Icon name="check-decagram" size={13} color="#22D3EE" />
+                <Text style={styles.resultFoundPillText}>Article detecte</Text>
+              </View>
+              <View style={styles.resultSitePill}>
+                <Icon name="map-marker-outline" size={12} color="rgba(255,255,255,0.74)" />
+                <Text style={styles.resultSitePillText}>{siteActif?.nom ?? 'Site inconnu'}</Text>
+              </View>
+            </View>
 
             {/* Header avec photo ou icône */}
             <View style={styles.resultCardTop}>
@@ -778,7 +795,7 @@ export const ScanMouvementScreen: React.FC = () => {
                 )}
               </View>
             </Animated.View>
-          </View>
+          </LinearGradient>
 
           {/* Quick Actions - design premium */}
           <Animated.View entering={FadeInUp.delay(250).duration(400)} style={styles.quickActions}>
@@ -1299,12 +1316,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 20,
   },
+  resultAura: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+    top: -8,
+    height: 120,
+    borderRadius: 30,
+    backgroundColor: 'rgba(14,165,233,0.18)',
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.28,
+    shadowRadius: 28,
+    elevation: 0,
+  },
   resultCard: {
-    backgroundColor: 'rgba(15,23,42,0.92)',
     borderRadius: 22,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(148,163,184,0.24)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
@@ -1321,18 +1351,59 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 22,
     borderBottomLeftRadius: 22,
   },
+  resultTopBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  resultFoundPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(34,211,238,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(34,211,238,0.28)',
+  },
+  resultFoundPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#67E8F9',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  resultSitePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  resultSitePillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.82)',
+    maxWidth: 130,
+  },
   resultCardTop: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   resultPhotoWrapper: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 64,
+    height: 64,
+    borderRadius: 18,
     overflow: 'hidden',
     marginRight: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(255,255,255,0.24)',
   },
   resultPhoto: {
     width: '100%',
@@ -1344,9 +1415,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   resultIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 64,
+    height: 64,
+    borderRadius: 18,
     overflow: 'hidden',
     marginRight: 14,
   },
@@ -1358,9 +1429,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   resultIconInner: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1378,10 +1449,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(59,130,246,0.15)',
+    backgroundColor: 'rgba(59,130,246,0.20)',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(96,165,250,0.24)',
   },
   resultRefText: {
     fontSize: 11,
@@ -1391,11 +1464,11 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   resultName: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#FFFFFF',
     lineHeight: 22,
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   },
   resultMeta: {
     flexDirection: 'row',
@@ -1407,12 +1480,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(148,163,184,0.16)',
     paddingHorizontal: 9,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(148,163,184,0.24)',
   },
   resultMetaText: {
     fontSize: 11,
@@ -1430,7 +1503,7 @@ const styles = StyleSheet.create({
   resultDivider: {
     height: 1,
     marginVertical: 16,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(148,163,184,0.28)',
     borderRadius: 1,
   },
   resultStockRow: {
@@ -1470,9 +1543,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
     borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   resultStockIndicatorText: {
     fontSize: 12,
@@ -1491,7 +1569,7 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 14,
+    marginTop: 16,
     gap: 10,
   },
   qAction: {
@@ -1508,8 +1586,10 @@ const styles = StyleSheet.create({
   qActionGrad: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
+    paddingVertical: 19,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
   },
   qActionDisabled: {
     opacity: 0.45,
@@ -1518,7 +1598,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -1601,7 +1681,7 @@ const styles = StyleSheet.create({
 
   // ===== NEW SCAN - PREMIUM =====
   newScanBtn: {
-    marginTop: 14,
+    marginTop: 16,
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',

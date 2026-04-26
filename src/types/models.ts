@@ -188,6 +188,7 @@ export interface ArticleFilters {
   codeFamille?: string[] | null;
   famille?: string[] | null;
   typeArticle?: string[] | null;
+  excludeTypeArticle?: string[] | null;
   sousType?: string[] | null;
   marque?: string[] | null;
   modele?: string[] | null;

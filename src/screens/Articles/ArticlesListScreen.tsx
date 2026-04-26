@@ -33,6 +33,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   Easing,
+  FadeInUp,
 } from 'react-native-reanimated';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -194,12 +195,12 @@ const DeleteModalContent: React.FC<DeleteModalContentProps> = ({
 
       {/* Title */}
       <Text style={[styles.deleteTitle, { color: colors.textPrimary }]}>
-        Décommissionner cette tablette ?
+        Décommissionner cet article ?
       </Text>
 
       {/* Message */}
       <Text style={[styles.deleteMessage, { color: colors.textSecondary }]}>
-        La tablette restera visible dans le parc, mais sera marquée comme décommissionnée.
+        L'article restera visible dans le parc, mais sera marqué comme décommissionné.
       </Text>
 
       {/* Action Buttons */}
@@ -255,8 +256,12 @@ interface PCActionModalContentProps {
   sourceAgencyEds?: string;
   destinationEds?: string;
   destinationEdsError?: string | null;
+  recipientName?: string;
+  recipientNameError?: string | null;
   onDestinationEdsChange?: (value: string) => void;
   onClearDestinationEdsError?: () => void;
+  onRecipientNameChange?: (value: string) => void;
+  onClearRecipientNameError?: () => void;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -272,8 +277,12 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
   sourceAgencyEds,
   destinationEds,
   destinationEdsError,
+  recipientName,
+  recipientNameError,
   onDestinationEdsChange,
   onClearDestinationEdsError,
+  onRecipientNameChange,
+  onClearRecipientNameError,
   onCancel,
   onConfirm,
 }) => {
@@ -366,10 +375,33 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
               />
             </View>
 
-            {destinationEdsError ? (
+            <View style={styles.pcActionInputBlock}>
+              <Text style={[styles.pcActionInputLabel, { color: colors.textSecondary }]}>Personne destinataire</Text>
+              <TextInput
+                value={recipientName ?? ''}
+                onChangeText={(value) => {
+                  onRecipientNameChange?.(value);
+                  if (recipientNameError) onClearRecipientNameError?.();
+                }}
+                placeholder="Ex: Marie Dupont"
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="words"
+                autoCorrect={false}
+                style={[
+                  styles.pcActionInput,
+                  {
+                    color: colors.textPrimary,
+                    backgroundColor: colors.surface,
+                    borderColor: recipientNameError ? '#DC2626' : colors.borderSubtle,
+                  },
+                ]}
+              />
+            </View>
+
+            {destinationEdsError || recipientNameError ? (
               <View style={styles.pcActionErrorRow}>
                 <Icon name="alert-circle-outline" size={13} color="#DC2626" />
-                <Text style={styles.pcActionErrorText}>{destinationEdsError}</Text>
+                <Text style={styles.pcActionErrorText}>{destinationEdsError ?? recipientNameError}</Text>
               </View>
             ) : null}
           </View>
@@ -417,9 +449,100 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
   );
 };
 
+interface DeletePCModalContentProps {
+  colors: any;
+  isDark: boolean;
+  isDeleting: boolean;
+  scaleAnim: Animated.Shared<number>;
+  articleLabel: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+const DeletePCModalContent: React.FC<DeletePCModalContentProps> = ({
+  colors,
+  isDark,
+  isDeleting,
+  scaleAnim,
+  articleLabel,
+  onCancel,
+  onConfirm,
+}) => {
+  const scaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scaleAnim.value }],
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.deleteModalContent,
+        {
+          backgroundColor: colors.surface,
+          borderColor: isDark ? 'rgba(239,68,68,0.22)' : 'rgba(239,68,68,0.16)',
+        },
+        scaleStyle,
+      ]}
+    >
+      <View pointerEvents="none" style={[styles.deleteOrbOne, { backgroundColor: isDark ? 'rgba(239,68,68,0.10)' : 'rgba(239,68,68,0.08)' }]} />
+      <View pointerEvents="none" style={[styles.deleteOrbTwo, { backgroundColor: isDark ? 'rgba(239,68,68,0.06)' : 'rgba(239,68,68,0.05)' }]} />
+
+      <View style={[styles.deleteIconWrap, { backgroundColor: isDark ? 'rgba(239,68,68,0.16)' : '#FEF2F2', borderColor: 'rgba(239,68,68,0.22)' }]}>
+        <Icon name="delete-outline" size={32} color="#EF4444" />
+      </View>
+
+      <Text style={[styles.deleteTitle, { color: colors.textPrimary }]}>
+        Supprimer ce PC ?
+      </Text>
+      <Text style={[styles.deleteMessage, { color: colors.textSecondary }]}>
+        <Text style={{ fontWeight: '700', color: colors.textPrimary }}>{articleLabel}</Text>
+        {' '}sera retiré définitivement du parc.
+      </Text>
+
+      <View style={styles.deleteActionsRow}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          disabled={isDeleting}
+          onPress={onCancel}
+          style={[
+            styles.deleteBtn,
+            styles.deleteBtnCancel,
+            { backgroundColor: isDark ? 'rgba(100,116,139,0.12)' : '#F1F5F9', borderColor: isDark ? 'rgba(100,116,139,0.2)' : '#CBD5E1' },
+          ]}
+        >
+          <Text style={[styles.deleteBtnCancelText, { color: colors.textSecondary }]}>Annuler</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.85}
+          disabled={isDeleting}
+          onPress={onConfirm}
+          style={[styles.deleteBtn, styles.deleteBtnConfirm]}
+        >
+          <LinearGradient
+            colors={['#DC2626', '#B91C1C']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.deleteBtnGradient}
+          >
+            {isDeleting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <Icon name="delete-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.deleteBtnConfirmText}>Supprimer</Text>
+              </>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
+};
+
 export const ArticlesListScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const SENT_PC_SOURCE_AGENCY_LABEL = 'Siege Strasbourg';
   
   // DEBUG MASSIF
   console.log('=== [ArticlesListScreen] MOUNT ===');
@@ -435,11 +558,9 @@ export const ArticlesListScreen: React.FC = () => {
   const lockPresetTypeArticle = route.params?.lockPresetTypeArticle === true || route.params?.params?.lockPresetTypeArticle === true;
   const presetTypeValues = presetTypeArticle ? [presetTypeArticle] : null;
   const normalizedPresetType = (presetTypeArticle ?? '').toLowerCase().trim();
-  const isTabletTab =
-    lockPresetTypeArticle &&
-    normalizedPresetType === 'tablette';
+  const isTabletTab = false;
   const isPCTab = lockPresetTypeArticle && normalizedPresetType === 'pc';
-  const isManagedInventoryTab = isTabletTab || isPCTab;
+  const isManagedInventoryTab = isPCTab;
 
   // Debug logging
   useEffect(() => {
@@ -449,7 +570,12 @@ export const ArticlesListScreen: React.FC = () => {
     console.log('[ArticlesListScreen] lockPresetTypeArticle:', lockPresetTypeArticle);
   }, [isTabletTab, isPCTab, presetTypeArticle, lockPresetTypeArticle]);
   const siteActif = useAppSelector((state) => state.site.siteActif);
+  const childSites = useAppSelector((state) => state.site.childSites);
+  const selectedSubSiteId = useAppSelector((state) => state.site.selectedSubSiteId);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
+  const effectiveSiteName = selectedSubSiteId != null
+    ? (childSites.find(s => s.id === selectedSubSiteId)?.nom ?? siteActif?.nom ?? null)
+    : (siteActif?.nom ?? null);
   const isSuperviseur = useAppSelector(selectIsSuperviseur);
   const currentTechnicien = useAppSelector((state) => state.auth.currentTechnicien);
   const { isTablet, contentMaxWidth, rv } = useResponsive();
@@ -505,6 +631,9 @@ export const ArticlesListScreen: React.FC = () => {
   const [quickPCCategory, setQuickPCCategory] = useState<(typeof PC_CATEGORY_OPTIONS)[number]['value']>('Portable siège');
   const [quickPCModel, setQuickPCModel] = useState<string>(PC_CATEGORY_OPTIONS[0].models[0]);
   const [quickPCStatus, setQuickPCStatus] = useState<(typeof PC_STATUS_OPTIONS)[number]>('À chaud');
+  const [quickHostnameError, setQuickHostnameError] = useState<string | null>(null);
+  const [quickAssetError, setQuickAssetError] = useState<string | null>(null);
+  const [isQuickDuplicateChecking, setIsQuickDuplicateChecking] = useState(false);
   const [isQuickSaving, setIsQuickSaving] = useState(false);
   const [scanTarget, setScanTarget] = useState<'hostname' | 'asset' | null>(null);
   const scanTargetRef = useRef<'hostname' | 'asset' | null>(null);
@@ -525,11 +654,17 @@ export const ArticlesListScreen: React.FC = () => {
   });
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Delete modal state
+  // Delete modal state (article decommission)
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteArticleId, setDeleteArticleId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const scaleAnim = useSharedValue(0);
+
+  // Delete PC modal state
+  const [deletePCModalVisible, setDeletePCModalVisible] = useState(false);
+  const [deletePCArticleId, setDeletePCArticleId] = useState<number | null>(null);
+  const [isDeletingPC, setIsDeletingPC] = useState(false);
+  const deletePCScaleAnim = useSharedValue(0);
   const [pcActionModal, setPCActionModal] = useState<{
     visible: boolean;
     type: 'sent' | 'available' | 'hot';
@@ -542,8 +677,12 @@ export const ArticlesListScreen: React.FC = () => {
   const [isPCActionSubmitting, setIsPCActionSubmitting] = useState(false);
   const [destinationAgencyEds, setDestinationAgencyEds] = useState('');
   const [destinationAgencyEdsError, setDestinationAgencyEdsError] = useState<string | null>(null);
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientNameError, setRecipientNameError] = useState<string | null>(null);
   const pcActionScaleAnim = useSharedValue(0);
   const quickModalIntro = useSharedValue(0);
+  const quickFeedbackAnim = useSharedValue(0);
+  const quickFeedbackPulse = useSharedValue(0);
 
   const quickModalIntroStyle = useAnimatedStyle(() => ({
     opacity: quickModalIntro.value,
@@ -553,6 +692,39 @@ export const ArticlesListScreen: React.FC = () => {
     ],
   }));
 
+  const quickFeedbackWrapStyle = useAnimatedStyle(() => ({
+    opacity: quickFeedbackAnim.value,
+    transform: [
+      { translateY: (1 - quickFeedbackAnim.value) * 28 },
+      { scale: 0.92 + quickFeedbackAnim.value * 0.08 },
+    ],
+  }));
+
+  const quickFeedbackTabletAuraStyle = useAnimatedStyle(() => ({
+    opacity: 0.16 + quickFeedbackPulse.value * 0.42,
+    transform: [{ scale: 0.76 + quickFeedbackPulse.value * 0.34 }],
+  }));
+
+  const quickFeedbackTabletIconStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: (1 - quickFeedbackPulse.value) * 4 },
+      { scale: 0.9 + quickFeedbackPulse.value * 0.12 },
+    ],
+  }));
+
+  useEffect(() => {
+    if (!quickFeedback.visible) {
+      quickFeedbackAnim.value = withTiming(0, { duration: 180, easing: Easing.in(Easing.cubic) });
+      quickFeedbackPulse.value = withTiming(0, { duration: 140, easing: Easing.in(Easing.cubic) });
+      return;
+    }
+
+    quickFeedbackAnim.value = 0;
+    quickFeedbackPulse.value = 0;
+    quickFeedbackAnim.value = withTiming(1, { duration: 340, easing: Easing.out(Easing.cubic) });
+    quickFeedbackPulse.value = withTiming(1, { duration: quickFeedback.type === 'success' ? 520 : 220, easing: Easing.out(Easing.cubic) });
+  }, [quickFeedback.visible, quickFeedback.type, quickFeedbackAnim, quickFeedbackPulse]);
+
   const selectedPCActionArticle = useMemo(
     () => articles.find((a) => String(a.id) === String(pcActionModal.articleId)) ?? null,
     [articles, pcActionModal.articleId],
@@ -561,10 +733,10 @@ export const ArticlesListScreen: React.FC = () => {
   // Emplacements dynamiques du site actif
   const [siteEmplacements, setSiteEmplacements] = useState<string[]>([]);
 
+
   // Calculer si le FAB doit être affiché
   const showFAB = useMemo(() => {
-    // Strictement: afficher FAB SEULEMENT si ce n'est vraiment pas le mode Tablette
-    const shouldShow = !isSuperviseur && (lockPresetTypeArticle !== true || (presetTypeArticle ?? '').toLowerCase().trim() !== 'tablette');
+    const shouldShow = !isSuperviseur;
     console.log('[ArticlesListScreen.showFAB] DEBUG:', {
       shouldShow,
       isSuperviseur,
@@ -573,7 +745,7 @@ export const ArticlesListScreen: React.FC = () => {
       isTabletTab,
     });
     return shouldShow;
-  }, [isSuperviseur, lockPresetTypeArticle, presetTypeArticle, isTabletTab]);
+  }, [isSuperviseur, isTabletTab]);
 
   const quickPCModelOptions = useMemo(() => {
     return PC_CATEGORY_OPTIONS.find((option) => option.value === quickPCCategory)?.models ?? PC_CATEGORY_OPTIONS[0].models;
@@ -585,6 +757,88 @@ export const ArticlesListScreen: React.FC = () => {
       setQuickPCModel(quickPCModelOptions[0]);
     }
   }, [isPCTab, quickPCModel, quickPCModelOptions]);
+
+  const handleQuickHostnameChange = useCallback((value: string) => {
+    setQuickHostname(value.toUpperCase());
+  }, [isPCTab]);
+
+  const handleQuickAssetChange = useCallback((value: string) => {
+    setQuickAsset(value.toUpperCase());
+  }, []);
+
+  useEffect(() => {
+    if (!quickAddVisible || !isPCTab) {
+      setQuickHostnameError(null);
+      setQuickAssetError(null);
+      setIsQuickDuplicateChecking(false);
+      return;
+    }
+
+    const normalizedHostname = quickHostname.trim().toUpperCase();
+    const normalizedAsset = quickAsset.trim().toUpperCase();
+
+    if (!normalizedHostname && !normalizedAsset) {
+      setQuickHostnameError(null);
+      setQuickAssetError(null);
+      setIsQuickDuplicateChecking(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setIsQuickDuplicateChecking(true);
+      try {
+        let hostnameError: string | null = null;
+        let assetError: string | null = null;
+
+        if (normalizedHostname) {
+          const existingHostname = await articleRepository.findByReference(normalizedHostname);
+          if (existingHostname) {
+            hostnameError = `Hostname deja utilise: ${normalizedHostname}`;
+          }
+        }
+
+        if (normalizedAsset) {
+          const existingAsset = await articleRepository.findByReferenceOrBarcode(normalizedAsset);
+          const existingBarcode = String(existingAsset?.barcode ?? '').trim().toUpperCase();
+          if (existingAsset && existingBarcode === normalizedAsset) {
+            assetError = `Asset deja utilise: ${normalizedAsset}`;
+          }
+        }
+
+        if (!cancelled) {
+          setQuickHostnameError(hostnameError);
+          setQuickAssetError(assetError);
+        }
+      } catch (error) {
+        console.error('Erreur verification doublons PC:', error);
+      } finally {
+        if (!cancelled) {
+          setIsQuickDuplicateChecking(false);
+        }
+      }
+    }, 280);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [quickAddVisible, isPCTab, quickHostname, quickAsset]);
+
+  const isQuickSubmitBlocked = useMemo(() => {
+    if (isQuickSaving) return true;
+    if (!quickHostname.trim() || !quickAsset.trim()) return true;
+    if (isPCTab && (isQuickDuplicateChecking || !!quickHostnameError || !!quickAssetError)) return true;
+    return false;
+  }, [
+    isQuickSaving,
+    quickHostname,
+    quickAsset,
+    isPCTab,
+    isQuickDuplicateChecking,
+    quickHostnameError,
+    quickAssetError,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -778,11 +1032,13 @@ export const ArticlesListScreen: React.FC = () => {
       try {
         let result: PaginatedResult<Article>;
         const f = filtersRef.current;
+        const EXCLUDED_ARTICLE_TYPES = ['PC'];
         const serverFilters = isManagedInventoryTab
           ? { ...f, searchQuery: '' }
-          : f;
+          : { ...f, excludeTypeArticle: EXCLUDED_ARTICLE_TYPES };
 
         const hasFilter =
+          !isManagedInventoryTab ||
           serverFilters.searchQuery ||
           serverFilters.stockFaible ||
           (serverFilters.codeFamille && serverFilters.codeFamille.length > 0) ||
@@ -1010,9 +1266,9 @@ export const ArticlesListScreen: React.FC = () => {
       famille: 'Famille',
       typeArticle: 'Type',
       sousType: isPCTab ? 'Portable agence / siège' : 'Sous-type',
-      marque: isTabletTab ? 'Constructeur tablette' : isPCTab ? 'Constructeur' : 'Marque',
+      marque: isPCTab ? 'Constructeur' : 'Marque',
       modele: isPCTab ? 'Modèle PC' : 'Modèle',
-      emplacement: isTabletTab ? 'Zone de stockage' : isPCTab ? 'Zone / EDS' : 'Emplacement',
+      emplacement: isPCTab ? 'Zone / EDS' : 'Emplacement',
     };
     return {
       key: activeFilterModal,
@@ -1056,12 +1312,13 @@ export const ArticlesListScreen: React.FC = () => {
       .map((row) => {
         const sentAt = new Date(row.sentAt || row.createdAt);
         const sourceLabel = row.sourceSiteName ? ` par ${row.sourceSiteName}` : '';
+        const recipientLabel = row.recipientName ? ` | Destinataire: ${row.recipientName}` : '';
 
         return {
           id: `sent-${row.id}`,
           reference: row.asset?.trim() || row.hostname,
           nom: row.hostname,
-          description: `Envoyé vers EDS ${row.destinationAgencyEds}${sourceLabel}`,
+          description: `Envoyé vers EDS ${row.destinationAgencyEds}${sourceLabel}${recipientLabel}`,
           barcode: row.asset,
           famille: 'PC portable',
           typeArticle: 'PC',
@@ -1239,10 +1496,10 @@ export const ArticlesListScreen: React.FC = () => {
     (articleId: number) => {
       navigation.navigate('ArticleDetail', {
         articleId,
-        sourceTab: isTabletTab ? 'Tablette' : isPCTab ? 'PC' : 'Articles',
+        sourceTab: isPCTab ? 'PC' : 'Articles',
       });
     },
-    [navigation, isTabletTab, isPCTab],
+    [navigation, isPCTab],
   );
 
   const handleSentArticlePress = useCallback((_articleId: number) => {
@@ -1257,7 +1514,7 @@ export const ArticlesListScreen: React.FC = () => {
 
     setExportingSentCsv(true);
     try {
-      const filepath = await exportSentPCsCSV(pcSentHistory, siteActif?.nom ?? undefined);
+      const filepath = await exportSentPCsCSV(pcSentHistory, SENT_PC_SOURCE_AGENCY_LABEL);
       await shareExportedFile(filepath);
       showQuickFeedback('success', 'Export CSV prêt', 'Le fichier PC envoyés a été généré.');
     } catch (error) {
@@ -1266,7 +1523,7 @@ export const ArticlesListScreen: React.FC = () => {
     } finally {
       setExportingSentCsv(false);
     }
-  }, [pcSentHistory, siteActif, showQuickFeedback]);
+  }, [pcSentHistory, showQuickFeedback]);
 
   const handleDecommissionTablet = useCallback(
     (articleId: number) => {
@@ -1279,6 +1536,43 @@ export const ArticlesListScreen: React.FC = () => {
     },
     [scaleAnim],
   );
+
+  const handleDeletePC = useCallback(
+    (articleId: number) => {
+      setDeletePCArticleId(articleId);
+      setDeletePCModalVisible(true);
+      deletePCScaleAnim.value = withTiming(1, { duration: 380, easing: Easing.elastic(1.2) });
+    },
+    [deletePCScaleAnim],
+  );
+
+  const cancelDeletePC = useCallback(() => {
+    deletePCScaleAnim.value = withTiming(0, { duration: 200, easing: Easing.ease });
+    setTimeout(() => {
+      setDeletePCModalVisible(false);
+      setDeletePCArticleId(null);
+    }, 200);
+  }, [deletePCScaleAnim]);
+
+  const confirmDeletePC = useCallback(async () => {
+    if (!deletePCArticleId) return;
+    const article = articles.find((a) => a.id === deletePCArticleId);
+    const label = article?.nom || article?.reference || 'ce PC';
+    setIsDeletingPC(true);
+    try {
+      await articleRepository.deactivate(deletePCArticleId);
+      setArticles((prev) => prev.filter((a) => a.id !== deletePCArticleId));
+      setDeletePCModalVisible(false);
+      deletePCScaleAnim.value = 0;
+      setDeletePCArticleId(null);
+      loadStats();
+      showQuickFeedback('success', 'Supprimé', `${label} a été retiré du parc.`);
+    } catch (err: any) {
+      showQuickFeedback('error', 'Erreur', err?.message || 'Impossible de supprimer ce PC.');
+    } finally {
+      setIsDeletingPC(false);
+    }
+  }, [articles, deletePCArticleId, deletePCScaleAnim, loadStats, showQuickFeedback]);
 
   const confirmDecommissionTablet = useCallback(async () => {
     if (!deleteArticleId) return;
@@ -1313,10 +1607,10 @@ export const ArticlesListScreen: React.FC = () => {
       scaleAnim.value = 0;
       setDeleteArticleId(null);
 
-      showQuickFeedback('success', 'Succès', 'Tablette décommissionnée avec succès');
+      showQuickFeedback('success', 'Succès', 'Article décommissionné avec succès');
     } catch (err: any) {
       console.error('[ArticlesListScreen.confirmDecommissionTablet] Error:', err);
-      const errorMsg = err?.message || 'Impossible de décommissionner la tablette';
+      const errorMsg = err?.message || 'Impossible de décommissionner cet article';
       showQuickFeedback('error', 'Erreur', errorMsg);
     } finally {
       setIsDeleting(false);
@@ -1341,7 +1635,7 @@ export const ArticlesListScreen: React.FC = () => {
     }
 
     navigation.navigate('ArticleEdit');
-  }, [navigation, isManagedInventoryTab]);
+  }, [navigation, isManagedInventoryTab, isPCTab]);
 
   useEffect(() => {
     if (!quickAddVisible) return;
@@ -1356,90 +1650,74 @@ export const ArticlesListScreen: React.FC = () => {
   const handleQuickAddTablet = useCallback(async () => {
     const hostname = quickHostname.trim();
     const asset = quickAsset.trim();
-    const isPC = isPCTab;
+    const isPC = true;
 
     if (!hostname) {
-      Alert.alert('Champ requis', `Le hostname du ${isPC ? 'PC' : 'portable'} est obligatoire.`);
+      showQuickFeedback('error', 'Champ requis', 'Le hostname du PC est obligatoire.');
       return;
     }
     if (!asset) {
-      Alert.alert('Champ requis', `L'asset du ${isPC ? 'PC' : 'portable'} est obligatoire.`);
+      showQuickFeedback('error', 'Champ requis', "L'asset du PC est obligatoire.");
       return;
     }
     if (!effectiveSiteId) {
-      Alert.alert('Site manquant', 'Aucun site actif sélectionné.');
+      showQuickFeedback('error', 'Site manquant', 'Aucun site actif sélectionné.');
+      return;
+    }
+    if (isPCTab && isQuickDuplicateChecking) {
+      showQuickFeedback('error', 'Verification en cours', 'Patientez pendant la verification des doublons.');
+      return;
+    }
+    if (isPCTab && (quickHostnameError || quickAssetError)) {
+      showQuickFeedback('error', 'Doublon detecte', 'Hostname ou asset deja utilise.');
       return;
     }
 
     setIsQuickSaving(true);
     try {
       const normalizedHostname = hostname.toUpperCase();
-      const existing = await articleRepository.findByReference(normalizedHostname);
+      const normalizedAsset = asset.toUpperCase();
 
-      let articleId: string | number;
-
-      if (isPC) {
-        const pcPayload = {
-          nom: normalizedHostname,
-          description: `Statut: ${quickPCStatus}`,
-          barcode: asset.toUpperCase(),
-          famille: 'PC portable',
-          typeArticle: presetTypeArticle ?? 'PC',
-          sousType: quickPCCategory,
-          marque: getBrandFromModel(quickPCModel),
-          modele: quickPCModel,
-          stockMini: 0,
-          unite: 'unité',
-        };
-
-        if (existing) {
-          articleId = existing.id;
-          await articleRepository.update(existing.id, pcPayload);
-        } else {
-          articleId = await articleRepository.create({
-            reference: normalizedHostname,
-            ...pcPayload,
-          });
+      if (isPCTab) {
+        const existingHostname = await articleRepository.findByReference(normalizedHostname);
+        if (existingHostname) {
+          setQuickHostnameError(`Hostname deja utilise: ${normalizedHostname}`);
+          throw new Error('Hostname deja utilise.');
         }
-      } else {
-        const tabletteFamille = 'Tablette';
-        const tabletteCodeFamille = '50';
 
-        if (existing) {
-          articleId = existing.id;
-          await articleRepository.update(existing.id, {
-            nom: normalizedHostname,
-            description: `Asset: ${asset.toUpperCase()}`,
-            barcode: asset.toUpperCase(),
-            codeFamille: tabletteCodeFamille,
-            famille: tabletteFamille,
-            typeArticle: presetTypeArticle ?? 'Tablette',
-            sousType: 'Tablette',
-            marque: 'Samsung',
-            stockMini: 0,
-            unite: 'unité',
-          });
-        } else {
-          articleId = await articleRepository.create({
-            reference: normalizedHostname,
-            nom: normalizedHostname,
-            description: `Asset: ${asset.toUpperCase()}`,
-            barcode: asset.toUpperCase(),
-            codeFamille: tabletteCodeFamille,
-            famille: tabletteFamille,
-            typeArticle: presetTypeArticle ?? 'Tablette',
-            sousType: 'Tablette',
-            marque: 'Samsung',
-            stockMini: 0,
-            unite: 'unité',
-          });
+        const existingAsset = await articleRepository.findByReferenceOrBarcode(normalizedAsset);
+        const existingBarcode = String(existingAsset?.barcode ?? '').trim().toUpperCase();
+        if (existingAsset && existingBarcode === normalizedAsset) {
+          setQuickAssetError(`Asset deja utilise: ${normalizedAsset}`);
+          throw new Error('Asset deja utilise.');
         }
       }
+
+      const pcPayload = {
+        nom: normalizedHostname,
+        description: `Statut: ${quickPCStatus}`,
+        barcode: normalizedAsset,
+        famille: 'PC portable',
+        typeArticle: presetTypeArticle ?? 'PC',
+        sousType: quickPCCategory,
+        marque: getBrandFromModel(quickPCModel),
+        modele: quickPCModel,
+        stockMini: 0,
+        unite: 'unité',
+        ...(effectiveSiteName ? { emplacement: effectiveSiteName } : {}),
+      };
+
+      const articleId = await articleRepository.create({
+        reference: normalizedHostname,
+        ...pcPayload,
+      });
 
       await stockRepository.createOrUpdate(articleId, effectiveSiteId, 1);
 
       setQuickHostname('');
       setQuickAsset('');
+      setQuickHostnameError(null);
+      setQuickAssetError(null);
       setQuickPCCategory('Portable siège');
       setQuickPCModel(PC_CATEGORY_OPTIONS[0].models[0]);
       setQuickPCStatus('À chaud');
@@ -1452,29 +1730,27 @@ export const ArticlesListScreen: React.FC = () => {
       showQuickFeedback(
         'success',
         'Synchronisation OK',
-        existing
-          ? isPC
-            ? 'PC mis à jour en base et stock synchronisé.'
-            : 'Tablette mise à jour en base et stock synchronisé.'
-          : isPC
-            ? 'PC ajouté en base et stock mis à jour.'
-            : 'Tablette ajoutée en base et stock mis à jour.',
+        'PC ajoute en base et stock mis a jour.',
       );
     } catch (error) {
-      console.error(`Erreur ajout ${isPC ? 'PC' : 'tablette'}:`, error);
+      console.error('Erreur ajout PC:', error);
       const message = error instanceof Error ? error.message : 'Erreur inconnue';
-      showQuickFeedback('error', 'Echec de synchronisation', `Impossible d'ajouter le ${isPC ? 'PC' : 'portable'}. ${message}`);
+      showQuickFeedback('error', 'Echec de synchronisation', `Impossible d'ajouter le PC. ${message}`);
     } finally {
       setIsQuickSaving(false);
     }
   }, [
-    isPCTab,
     quickHostname,
     quickAsset,
     quickPCCategory,
     quickPCModel,
     quickPCStatus,
     effectiveSiteId,
+    effectiveSiteName,
+    isPCTab,
+    isQuickDuplicateChecking,
+    quickHostnameError,
+    quickAssetError,
     presetTypeArticle,
     loadArticles,
     loadStats,
@@ -1486,15 +1762,19 @@ export const ArticlesListScreen: React.FC = () => {
     if (type === 'sent') {
       setDestinationAgencyEds('');
       setDestinationAgencyEdsError(null);
+      setRecipientName('');
+      setRecipientNameError(null);
     } else {
       setDestinationAgencyEds('');
       setDestinationAgencyEdsError(null);
+      setRecipientName('');
+      setRecipientNameError(null);
     }
     pcActionScaleAnim.value = withTiming(1, {
       duration: 380,
       easing: Easing.elastic(1.08),
     });
-  }, [articles, pcActionScaleAnim]);
+  }, [pcActionScaleAnim]);
 
   const closePCActionModal = useCallback(() => {
     pcActionScaleAnim.value = withTiming(0, {
@@ -1506,6 +1786,8 @@ export const ArticlesListScreen: React.FC = () => {
       setIsPCActionSubmitting(false);
       setDestinationAgencyEds('');
       setDestinationAgencyEdsError(null);
+      setRecipientName('');
+      setRecipientNameError(null);
     }, 180);
   }, [pcActionScaleAnim]);
 
@@ -1514,17 +1796,24 @@ export const ArticlesListScreen: React.FC = () => {
 
     if (pcActionModal.type === 'sent') {
       const normalizedDestinationEds = destinationAgencyEds.trim();
+      const normalizedRecipientName = recipientName.trim();
       if (!/^\d{1,3}$/.test(normalizedDestinationEds)) {
         setDestinationAgencyEdsError('Renseignez un numéro EDS valide (max 3 chiffres).');
         return;
       }
+      if (normalizedRecipientName.length < 2) {
+        setRecipientNameError('Renseignez le nom de la personne destinataire.');
+        return;
+      }
       setDestinationAgencyEdsError(null);
+      setRecipientNameError(null);
     }
 
     setIsPCActionSubmitting(true);
     try {
       if (pcActionModal.type === 'sent') {
         const normalizedDestinationEds = destinationAgencyEds.trim();
+        const normalizedRecipientName = recipientName.trim();
         const targetArticleSent = articles.find((a) => String(a.id) === String(pcActionModal.articleId));
         if (targetArticleSent) {
           const techName = currentTechnicien
@@ -1538,16 +1827,17 @@ export const ArticlesListScreen: React.FC = () => {
             model: targetArticleSent.modele?.trim(),
             brand: targetArticleSent.marque?.trim(),
             sourceSiteId: String(effectiveSiteId),
-            sourceSiteName: siteActif?.nom ?? undefined,
+            sourceSiteName: SENT_PC_SOURCE_AGENCY_LABEL,
             sourceAgencyEds: siteActif?.edsNumber != null ? String(siteActif.edsNumber) : undefined,
             destinationAgencyEds: normalizedDestinationEds,
+            recipientName: normalizedRecipientName,
             sentByUserId: currentTechnicien?.id != null ? String(currentTechnicien.id) : undefined,
             sentByName: techName,
           });
         }
 
         await articleRepository.update(pcActionModal.articleId, {
-          description: `Statut: Envoyé | EDS destination: ${normalizedDestinationEds}`,
+          description: `Statut: Envoyé | EDS destination: ${normalizedDestinationEds} | Destinataire: ${normalizedRecipientName}`,
           famille: 'PC envoyé',
           emplacement: `EDS ${normalizedDestinationEds}`,
         });
@@ -1555,7 +1845,7 @@ export const ArticlesListScreen: React.FC = () => {
           String(article.id) === String(pcActionModal.articleId)
             ? {
                 ...article,
-                description: `Statut: Envoyé | EDS destination: ${normalizedDestinationEds}`,
+                description: `Statut: Envoyé | EDS destination: ${normalizedDestinationEds} | Destinataire: ${normalizedRecipientName}`,
                 famille: 'PC envoyé',
                 emplacement: `EDS ${normalizedDestinationEds}`,
                 dateModification: new Date(),
@@ -1572,24 +1862,24 @@ export const ArticlesListScreen: React.FC = () => {
             nextStatus: 'Envoyé',
             technicienName: techName,
             technicienAcronym: techAcronym,
-            sourceAgencyName: siteActif?.nom,
+            sourceAgencyName: SENT_PC_SOURCE_AGENCY_LABEL,
             sourceAgencyEds: siteActif?.edsNumber != null ? String(siteActif.edsNumber) : undefined,
             destinationAgencyEds: normalizedDestinationEds,
           });
 
           const hostname = targetArticleSent.nom?.trim() || targetArticleSent.reference?.trim() || 'PC inconnu';
-          const sourceAgencyLabel = siteActif?.nom?.trim() || 'Agence inconnue';
+          const sourceAgencyLabel = SENT_PC_SOURCE_AGENCY_LABEL;
           const sourceEdsLabel = siteActif?.edsNumber ? ` (EDS ${siteActif.edsNumber})` : '';
           showQuickFeedback(
             'success',
             'PC envoyé',
-            `${hostname} envoyé par ${sourceAgencyLabel}${sourceEdsLabel} vers l'agence EDS ${normalizedDestinationEds}.`,
+            `${hostname} envoyé par ${sourceAgencyLabel}${sourceEdsLabel} vers l'agence EDS ${normalizedDestinationEds} pour ${normalizedRecipientName}.`,
           );
         } else {
           showQuickFeedback(
             'success',
             'PC envoyé',
-            `Le PC a été marqué envoyé vers l'agence EDS ${normalizedDestinationEds}.`,
+            `Le PC a été marqué envoyé vers l'agence EDS ${normalizedDestinationEds} pour ${normalizedRecipientName}.`,
           );
         }
         await loadSentHistory();
@@ -1666,7 +1956,7 @@ export const ArticlesListScreen: React.FC = () => {
         ),
       );
     }
-  }, [pcActionModal, articles, currentTechnicien, destinationAgencyEds, effectiveSiteId, siteActif, loadStats, loadSentHistory, showQuickFeedback, closePCActionModal]);
+  }, [pcActionModal, articles, currentTechnicien, destinationAgencyEds, recipientName, effectiveSiteId, siteActif, loadStats, loadSentHistory, showQuickFeedback, closePCActionModal]);
 
   const handleMarkPCSent = useCallback((articleId: number | string) => {
     openPCActionModal('sent', articleId);
@@ -1764,8 +2054,11 @@ export const ArticlesListScreen: React.FC = () => {
 
   // ===== RENDER =====
   const renderArticle = useCallback(
-    ({ item }: { item: Article }) => (
-      <View style={[styles.cardWrapper, isTablet && styles.cardWrapperTablet]}>
+    ({ item, index }: { item: Article; index: number }) => (
+      <Animated.View
+        entering={FadeInUp.delay(Math.min(index, 10) * 40).duration(320)}
+        style={[styles.cardWrapper, isTablet && styles.cardWrapperTablet]}
+      >
         <PremiumArticleCard 
           article={item} 
           onPress={isPCTab && pcStatusFilter === 'Envoyé' ? handleSentArticlePress : handleArticlePress}
@@ -1773,8 +2066,9 @@ export const ArticlesListScreen: React.FC = () => {
           onMarkSent={isPCTab ? handleMarkPCSent : undefined}
           onMarkAvailable={isPCTab ? handleMarkPCAvailable : undefined}
           onMarkHot={isPCTab ? handleMarkPCHot : undefined}
+          onDelete={isPCTab ? handleDeletePC : undefined}
         />
-      </View>
+      </Animated.View>
     ),
     [handleArticlePress, handleSentArticlePress, pcStatusFilter, isTabletTab, handleDecommissionTablet, isPCTab, handleMarkPCSent, handleMarkPCAvailable, handleMarkPCHot, isTablet],
   );
@@ -1794,18 +2088,18 @@ export const ArticlesListScreen: React.FC = () => {
       <ArticleEmptyState
         type={emptyType}
         searchQuery={searchQuery}
-        onAction={isTabletTab ? undefined : emptyAction}
-        mode={isTabletTab ? 'tablettes' : isPCTab ? 'pc' : 'articles'}
+        onAction={emptyAction}
+        mode={isPCTab ? 'pc' : 'articles'}
       />
     );
-  }, [isLoading, emptyType, searchQuery, emptyAction, isTabletTab, isPCTab]);
+  }, [isLoading, emptyType, searchQuery, emptyAction, isPCTab]);
 
   const renderListHeader = useCallback(() => (
     <>
       <PremiumArticleHeader
-        title={isTabletTab ? 'Tablettes' : isPCTab ? 'Parc PC' : 'Articles'}
-        mode={isTabletTab ? 'tablettes' : isPCTab ? 'pc' : 'articles'}
-        statsMode={isTabletTab ? 'totalOnly' : 'full'}
+        title={isPCTab ? 'Parc PC' : 'Articles'}
+        mode={isPCTab ? 'pc' : 'articles'}
+        statsMode={'full'}
         totalArticles={totalArticles}
         stockOK={stockOK}
         alertes={alertes}
@@ -1830,11 +2124,7 @@ export const ArticlesListScreen: React.FC = () => {
             : []
         }
         activePCModelLabel={filters.modele?.[0] ?? null}
-        tabletDecommissionedCount={tabletDecommissionedStats.count}
-        tabletDecommissionedNames={tabletDecommissionedStats.names}
-        activeTabletFilter={tabletStatusFilter}
         onAdd={handleAdd}
-        onTabletFilterChange={(next) => setTabletStatusFilter(next)}
         onPCModelPress={(label) => {
           setFilters((prev) => {
             const isSameModel = prev.modele?.length === 1 && prev.modele[0] === label;
@@ -1849,24 +2139,20 @@ export const ArticlesListScreen: React.FC = () => {
           setPcStatusFilter(null);
         }}
         onStockOKPress={
-          isTabletTab
-            ? undefined
-            : isPCTab
-              ? () => setPcStatusFilter((prev) => prev === 'À chaud' ? null : 'À chaud')
-              : () => {
-                  if (filters.stockFaible) {
-                    setFilters(prev => ({ ...prev, stockFaible: false }));
-                  }
+          isPCTab
+            ? () => setPcStatusFilter((prev) => prev === 'À chaud' ? null : 'À chaud')
+            : () => {
+                if (filters.stockFaible) {
+                  setFilters(prev => ({ ...prev, stockFaible: false }));
                 }
+              }
         }
         onAlertesPress={
-          isTabletTab
-            ? undefined
-            : isPCTab
-              ? () => setPcStatusFilter((prev) => prev === 'À reusiner' ? null : 'À reusiner')
-              : () => {
-                  setFilters(prev => ({ ...prev, stockFaible: !prev.stockFaible }));
-                }
+          isPCTab
+            ? () => setPcStatusFilter((prev) => prev === 'À reusiner' ? null : 'À reusiner')
+            : () => {
+                setFilters(prev => ({ ...prev, stockFaible: !prev.stockFaible }));
+              }
         }
         onProcessingPress={
           isPCTab
@@ -1883,6 +2169,7 @@ export const ArticlesListScreen: React.FC = () => {
             ? () => setPcStatusFilter((prev) => prev === 'Envoyé' ? null : 'Envoyé')
             : undefined
         }
+        isSyncing={refreshing}
       />
 
       <View style={[
@@ -1985,7 +2272,7 @@ export const ArticlesListScreen: React.FC = () => {
         sortLabel={currentSortLabel}
         showStockFaible={filters.stockFaible}
         showStockFaibleChip={!isManagedInventoryTab}
-        filtersLabel={isTabletTab ? 'Filtres tablette' : isPCTab ? 'Filtres PC' : 'Filtres'}
+        filtersLabel={isPCTab ? 'Filtres PC' : 'Filtres'}
         hasActiveFilters={hasActiveFilters}
         activeFiltersCount={activeFiltersCount}
         onSortPress={() => setSortModalVisible(true)}
@@ -2035,12 +2322,13 @@ export const ArticlesListScreen: React.FC = () => {
         backgroundColor={colors.primary}
       />
 
-      {renderListHeader()}
-
       {/* Articles List */}
       <View style={styles.listContainer}>
       {isLoading ? (
-        <SkeletonArticleList count={6} />
+        <>
+          {renderListHeader()}
+          <SkeletonArticleList count={6} />
+        </>
       ) : (
         <FlashList<Article>
           data={displayedArticles}
@@ -2053,6 +2341,7 @@ export const ArticlesListScreen: React.FC = () => {
             isTabletTab && styles.listContentTablet,
             contentMaxWidth && !isPCTab ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const } : {},
           ] as any}
+          ListHeaderComponent={renderListHeader()}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={renderFooter}
@@ -2072,28 +2361,28 @@ export const ArticlesListScreen: React.FC = () => {
       )}
       </View>
 
-      {/* Bouton Ajouter Tablette - UNIQUEMENT en mode Tablette */}
+      {/* Bouton d'ajout dédié */}
       {!isSuperviseur && isTabletTab && (
-        <View style={styles.tabletteAddFabWrap}>
+        <View style={styles.mobileAddFabWrap}>
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handleAdd}
-            style={styles.tabletteAddFab}
+            style={styles.mobileAddFab}
           >
             <LinearGradient
               colors={['#007A39', '#059669']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.tabletteAddFabGradient}
+              style={styles.mobileAddFabGradient}
             >
               <Icon name="plus" size={20} color="#FFFFFF" />
-              <Text style={styles.tabletteAddFabText}>Ajouter une tablette</Text>
+              <Text style={styles.mobileAddFabText}>Ajouter un article</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* FAB Multi-Action – MASQUÉ en mode Tablette */}
+      {/* FAB Multi-Action */}
       {showFAB && (
         <FABMultiAction onScan={handleScan} onAdd={handleAdd} />
       )}
@@ -2135,7 +2424,7 @@ export const ArticlesListScreen: React.FC = () => {
       )}
       <FilterModal
         visible={sortModalVisible}
-        title={isTabletTab ? 'Trier les tablettes' : isPCTab ? 'Trier les PC' : 'Trier par'}
+        title={isPCTab ? 'Trier les PC' : 'Trier par'}
         options={sortOptions}
         selectedValue={sortBy}
         onSelect={handleSortSelect}
@@ -2213,7 +2502,7 @@ export const ArticlesListScreen: React.FC = () => {
                     </View>
                   </View>
 
-                  <Text style={[styles.quickModalTitle, { color: colors.textPrimary }]}>{isPCTab ? 'Ajouter un PC portable' : 'Ajouter une tablette'}</Text>
+                  <Text style={[styles.quickModalTitle, { color: colors.textPrimary }]}>{isPCTab ? 'Ajouter un PC portable' : 'Ajouter un article'}</Text>
                   <Text style={[styles.quickModalSubtitle, { color: colors.textSecondary }]}>{isPCTab ? 'Catégorie, modèle, statut, hostname et asset obligatoires' : 'Hostname et Asset obligatoires'}</Text>
                   <View style={[styles.quickSectionDivider, { backgroundColor: colors.borderSubtle }]} />
 
@@ -2308,17 +2597,21 @@ export const ArticlesListScreen: React.FC = () => {
                   <Text style={[styles.quickLabel, { color: colors.textPrimary }]}>Hostname <Text style={{ color: '#EF4444' }}>*</Text></Text>
                   <View style={[
                     styles.quickInputRow,
-                    { borderColor: !quickHostname.trim() ? colors.borderSubtle : '#007A39', backgroundColor: colors.backgroundSubtle },
+                    {
+                      borderColor: quickHostnameError ? '#DC2626' : !quickHostname.trim() ? colors.borderSubtle : '#007A39',
+                      backgroundColor: quickHostnameError ? 'rgba(220,38,38,0.06)' : colors.backgroundSubtle,
+                    },
                   ]}>
                     <View style={styles.quickInputIconWrap}>
                       <Icon name="laptop" size={16} color="#007A39" />
                     </View>
                     <TextInput
                       value={quickHostname}
-                      onChangeText={setQuickHostname}
+                      onChangeText={handleQuickHostnameChange}
                       editable={!isQuickSaving}
-                      placeholder={isPCTab ? getQuickHostnamePlaceholder(quickPCCategory) : 'Ex: TC22-STRAS-014'}
+                      placeholder={isPCTab ? getQuickHostnamePlaceholder(quickPCCategory) : 'Ex: TMAOP00123'}
                       placeholderTextColor={colors.textMuted}
+                      keyboardType={isPCTab ? 'default' : 'number-pad'}
                       autoCapitalize="characters"
                       autoCorrect={false}
                       style={[
@@ -2326,51 +2619,63 @@ export const ArticlesListScreen: React.FC = () => {
                         { color: colors.textPrimary },
                       ]}
                     />
-                    <TouchableOpacity
-                      onPress={async () => {
-                        Vibration.vibrate(15);
-                        if (!camDevice) {
-                          Alert.alert('Caméra indisponible', "Aucune caméra n'a été détectée.");
-                          return;
-                        }
-                        if (!hasCamPermission) {
-                          const granted = await requestCamPermission();
-                          if (!granted) {
-                            Alert.alert(
-                              'Accès à la caméra',
-                              "L'accès à la caméra est nécessaire pour scanner.",
-                              [
-                                { text: 'Annuler', style: 'cancel' },
-                                { text: 'Paramètres', onPress: () => Linking.openSettings() },
-                              ],
-                            );
+                    {isPCTab && (
+                      <TouchableOpacity
+                        onPress={async () => {
+                          Vibration.vibrate(15);
+                          if (!camDevice) {
+                            Alert.alert('Caméra indisponible', "Aucune caméra n'a été détectée.");
                             return;
                           }
-                        }
-                        setScanTarget('hostname');
-                      }}
-                      disabled={isQuickSaving}
-                      style={styles.quickScanBtn}
-                      activeOpacity={0.75}
-                    >
-                      <View style={styles.quickScanBtnInner}>
-                        <Icon name="barcode-scan" size={19} color="#007A39" />
-                      </View>
-                    </TouchableOpacity>
+                          if (!hasCamPermission) {
+                            const granted = await requestCamPermission();
+                            if (!granted) {
+                              Alert.alert(
+                                'Accès à la caméra',
+                                "L'accès à la caméra est nécessaire pour scanner.",
+                                [
+                                  { text: 'Annuler', style: 'cancel' },
+                                  { text: 'Paramètres', onPress: () => Linking.openSettings() },
+                                ],
+                              );
+                              return;
+                            }
+                          }
+                          setScanTarget('hostname');
+                        }}
+                        disabled={isQuickSaving}
+                        style={styles.quickScanBtn}
+                        activeOpacity={0.75}
+                      >
+                        <View style={styles.quickScanBtnInner}>
+                          <Icon name="barcode-scan" size={19} color="#007A39" />
+                        </View>
+                      </TouchableOpacity>
+                    )}
                   </View>
-                  <Text style={[styles.quickHint, { color: colors.textMuted }]}>{isPCTab ? getQuickHostnameHint(quickPCCategory) : 'Exemple: code parc ou hostname MDM'}</Text>
+                  {quickHostnameError ? (
+                    <View style={styles.quickFieldError}>
+                      <Icon name="alert-circle" size={14} color="#DC2626" />
+                      <Text style={styles.quickFieldErrorText}>{quickHostnameError}</Text>
+                    </View>
+                  ) : (
+                    <Text style={[styles.quickHint, { color: colors.textMuted }]}>{isPCTab ? getQuickHostnameHint(quickPCCategory) : 'Format requis: TMAOP00...'}</Text>
+                  )}
 
                   <Text style={[styles.quickLabel, { color: colors.textPrimary }]}>Asset</Text>
                   <View style={[
                     styles.quickInputRow,
-                    { borderColor: colors.borderSubtle, backgroundColor: colors.backgroundSubtle },
+                    {
+                      borderColor: quickAssetError ? '#DC2626' : colors.borderSubtle,
+                      backgroundColor: quickAssetError ? 'rgba(220,38,38,0.06)' : colors.backgroundSubtle,
+                    },
                   ]}>
                     <View style={styles.quickInputIconWrap}>
                       <Icon name="tag-outline" size={16} color="#007A39" />
                     </View>
                     <TextInput
                       value={quickAsset}
-                      onChangeText={setQuickAsset}
+                      onChangeText={handleQuickAssetChange}
                       editable={!isQuickSaving}
                       placeholder={isPCTab ? 'Ex: AO44XXXX' : 'Ex: AST-001245'}
                       placeholderTextColor={colors.textMuted}
@@ -2413,6 +2718,18 @@ export const ArticlesListScreen: React.FC = () => {
                       </View>
                     </TouchableOpacity>
                   </View>
+                  {quickAssetError ? (
+                    <View style={styles.quickFieldError}>
+                      <Icon name="alert-circle" size={14} color="#DC2626" />
+                      <Text style={styles.quickFieldErrorText}>{quickAssetError}</Text>
+                    </View>
+                  ) : null}
+                  {isPCTab && isQuickDuplicateChecking && !quickHostnameError && !quickAssetError ? (
+                    <View style={styles.quickFieldInfo}>
+                      <ActivityIndicator size="small" color="#007A39" />
+                      <Text style={styles.quickFieldInfoText}>Verification des doublons en cours...</Text>
+                    </View>
+                  ) : null}
                   {isPCTab && (
                     <Text style={[styles.quickHint, { color: colors.textMuted }]}>Le modèle et le statut seront visibles directement sur la carte PC.</Text>
                   )}
@@ -2429,12 +2746,12 @@ export const ArticlesListScreen: React.FC = () => {
 
                     <TouchableOpacity
                       activeOpacity={0.85}
-                      disabled={isQuickSaving}
+                      disabled={isQuickSubmitBlocked}
                       onPress={handleQuickAddTablet}
-                      style={[styles.quickBtn, styles.quickBtnPrimary]}
+                      style={[styles.quickBtn, styles.quickBtnPrimary, isQuickSubmitBlocked && styles.quickBtnPrimaryDisabled]}
                     >
                       <LinearGradient
-                        colors={['#007A39', '#059669']}
+                        colors={isQuickSubmitBlocked ? ['#94A3B8', '#64748B'] : ['#007A39', '#059669']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={styles.quickBtnPrimaryGradient}
@@ -2508,7 +2825,7 @@ export const ArticlesListScreen: React.FC = () => {
         onRequestClose={() => setQuickFeedback((prev) => ({ ...prev, visible: false }))}
       >
         <View style={styles.feedbackOverlay} pointerEvents="box-none">
-          <View style={styles.feedbackWrap}>
+          <Animated.View style={[styles.feedbackWrap, quickFeedbackWrapStyle]}>
             <LinearGradient
               colors={
                 quickFeedback.type === 'success'
@@ -2520,30 +2837,43 @@ export const ArticlesListScreen: React.FC = () => {
               style={styles.feedbackCard}
             >
               <View style={styles.feedbackRow}>
-                <View
-                  style={[
-                    styles.feedbackIconBubble,
-                    {
-                      backgroundColor:
-                        quickFeedback.type === 'success'
-                          ? 'rgba(16,185,129,0.26)'
-                          : 'rgba(239,68,68,0.26)',
-                    },
-                  ]}
-                >
-                  <Icon
-                    name={quickFeedback.type === 'success' ? 'check-decagram' : 'alert-octagon'}
-                    size={20}
-                    color="#FFFFFF"
-                  />
-                </View>
+                {quickFeedback.type === 'success' ? (
+                  <View style={styles.feedbackTabletIconWrap}>
+                    <Animated.View style={[styles.feedbackTabletAura, quickFeedbackTabletAuraStyle]} />
+                    <Animated.View
+                      style={[
+                        styles.feedbackIconBubble,
+                        styles.feedbackTabletBubble,
+                        quickFeedbackTabletIconStyle,
+                      ]}
+                    >
+                      <Icon name="tablet-cellphone" size={19} color="#FFFFFF" />
+                      <View style={styles.feedbackTabletCheckDot}>
+                        <Icon name="check-bold" size={9} color="#064E3B" />
+                      </View>
+                    </Animated.View>
+                  </View>
+                ) : (
+                  <View
+                    style={[
+                      styles.feedbackIconBubble,
+                      { backgroundColor: 'rgba(239,68,68,0.26)' },
+                    ]}
+                  >
+                    <Icon
+                      name="alert-octagon"
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                  </View>
+                )}
                 <View style={styles.feedbackTextCol}>
                   <Text style={styles.feedbackTitle}>{quickFeedback.title}</Text>
                   <Text style={styles.feedbackMessage}>{quickFeedback.message}</Text>
                 </View>
               </View>
             </LinearGradient>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
@@ -2561,12 +2891,16 @@ export const ArticlesListScreen: React.FC = () => {
             isSubmitting={isPCActionSubmitting}
             actionType={pcActionModal.type}
             articleLabel={selectedPCActionArticle?.nom || selectedPCActionArticle?.reference || undefined}
-            sourceAgencyLabel={siteActif?.nom || undefined}
+            sourceAgencyLabel={SENT_PC_SOURCE_AGENCY_LABEL}
             sourceAgencyEds={siteActif?.edsNumber != null ? String(siteActif.edsNumber) : undefined}
             destinationEds={destinationAgencyEds}
             destinationEdsError={destinationAgencyEdsError}
+            recipientName={recipientName}
+            recipientNameError={recipientNameError}
             onDestinationEdsChange={setDestinationAgencyEds}
             onClearDestinationEdsError={() => setDestinationAgencyEdsError(null)}
+            onRecipientNameChange={setRecipientName}
+            onClearRecipientNameError={() => setRecipientNameError(null)}
             onCancel={closePCActionModal}
             onConfirm={confirmPCAction}
           />
@@ -2588,6 +2922,26 @@ export const ArticlesListScreen: React.FC = () => {
             scaleAnim={scaleAnim}
             onCancel={cancelDeleteTablet}
             onConfirm={confirmDecommissionTablet}
+          />
+        </View>
+      </Modal>
+
+      {/* Delete PC Modal */}
+      <Modal
+        visible={deletePCModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelDeletePC}
+      >
+        <View style={[styles.deleteModalBackdrop, { backgroundColor: isDark ? 'rgba(5,5,10,0.85)' : 'rgba(0,0,0,0.72)' }]}>
+          <DeletePCModalContent
+            colors={colors}
+            isDark={isDark}
+            isDeleting={isDeletingPC}
+            scaleAnim={deletePCScaleAnim}
+            articleLabel={articles.find((a) => a.id === deletePCArticleId)?.nom || articles.find((a) => a.id === deletePCArticleId)?.reference || 'ce PC'}
+            onCancel={cancelDeletePC}
+            onConfirm={confirmDeletePC}
           />
         </View>
       </Modal>
@@ -2887,6 +3241,35 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 5,
   },
+  quickFieldError: {
+    marginTop: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.32)',
+    backgroundColor: 'rgba(239,68,68,0.08)',
+    paddingVertical: 7,
+    paddingHorizontal: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  quickFieldErrorText: {
+    color: '#B91C1C',
+    fontSize: 12.5,
+    fontWeight: '700',
+    flex: 1,
+  },
+  quickFieldInfo: {
+    marginTop: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  quickFieldInfoText: {
+    color: '#007A39',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   quickChoiceRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -3095,6 +3478,10 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 6,
   },
+  quickBtnPrimaryDisabled: {
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   quickBtnPrimaryGradient: {
     width: '100%',
     minHeight: 56,
@@ -3219,6 +3606,40 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  feedbackTabletIconWrap: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feedbackTabletAura: {
+    position: 'absolute',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(52,211,153,0.55)',
+  },
+  feedbackTabletBubble: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(16,185,129,0.32)',
+    borderWidth: 1,
+    borderColor: 'rgba(167,243,208,0.36)',
+  },
+  feedbackTabletCheckDot: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#A7F3D0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(6,78,59,0.24)',
   },
   feedbackTextCol: {
     flex: 1,
@@ -3395,13 +3816,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.2,
   },
-  tabletteAddFabWrap: {
+  mobileAddFabWrap: {
     position: 'absolute',
     right: premiumSpacing.lg,
     bottom: 26,
     zIndex: 10,
   },
-  tabletteAddFab: {
+  mobileAddFab: {
     overflow: 'hidden',
     borderRadius: 18,
     shadowColor: '#007A39',
@@ -3410,7 +3831,7 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 10,
   },
-  tabletteAddFabGradient: {
+  mobileAddFabGradient: {
     minHeight: 58,
     paddingHorizontal: 20,
     paddingVertical: 14,
@@ -3420,7 +3841,7 @@ const styles = StyleSheet.create({
     gap: 11,
     borderRadius: 18,
   },
-  tabletteAddFabText: {
+  mobileAddFabText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '800',

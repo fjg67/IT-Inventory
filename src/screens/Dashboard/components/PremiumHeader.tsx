@@ -7,7 +7,7 @@ import {
   Vibration,
 } from 'react-native';
 import Animated, {
-  FadeInDown,
+  FadeIn,
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
@@ -92,7 +92,7 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
 
   return (
     <Animated.View
-      entering={FadeInDown.duration(600).springify()}
+      entering={FadeIn.duration(220)}
       style={[styles.outerWrap, { backgroundColor: colors.surface, borderColor: isDark ? colors.borderSubtle : colors.borderMedium }]}
     >
       {/* Left gradient accent bar */}
@@ -104,28 +104,22 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
       />
 
       <View style={styles.container}>
-        {/* ===== Top Row: Date + Status ===== */}
+        {/* ===== Top Row: Date ===== */}
         <View style={styles.topRow}>
           <View style={styles.dateWrap}>
             <Icon name="calendar-month-outline" size={12} color={colors.textMuted} />
             <Text style={[styles.dateText, { color: colors.textMuted }]}>{dateStr}</Text>
           </View>
-          <LinearGradient
-            colors={['#10B981', '#059669']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.statusBadge}
-          >
-            <View style={styles.statusBadgeDot} />
-            <Text style={styles.statusBadgeText}>En ligne</Text>
-          </LinearGradient>
         </View>
 
         {/* ===== Main Row: Avatar + Info ===== */}
         <View style={styles.mainRow}>
           {/* Avatar */}
           <View style={styles.avatarContainer}>
-            <View style={[styles.iconPillShadow, { shadowColor: '#007A39' }]}>
+            <Animated.View
+              entering={FadeIn.delay(80).duration(180)}
+              style={[styles.iconPillShadow, { shadowColor: '#007A39' }]}
+            >
               <LinearGradient
                 colors={['#007A39', '#005C2B']}
                 start={{ x: 0, y: 0 }}
@@ -136,7 +130,7 @@ const PremiumHeader: React.FC<PremiumHeaderProps> = ({
                   <Text style={[styles.avatarText, isTablet && { fontSize: fs(17) }]}>{initials}</Text>
                 </View>
               </LinearGradient>
-            </View>
+            </Animated.View>
             {/* Online dot */}
             <Animated.View style={[styles.onlineDot, statusDotStyle]}>
               <View style={[styles.onlineDotInner, { borderColor: colors.surface }]} />
@@ -216,11 +210,11 @@ const styles = StyleSheet.create({
     paddingLeft: 22,
   },
 
-  // Top row: date + status
+  // Top row: date
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     marginBottom: 14,
   },
   dateWrap: {
@@ -234,28 +228,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textTransform: 'capitalize',
   },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    gap: 5,
-  },
-  statusBadgeDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#FFFFFF',
-  },
-  statusBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-    color: '#FFFFFF',
-    textTransform: 'uppercase',
-  },
-
   // Main row: avatar + info
   mainRow: {
     flexDirection: 'row',

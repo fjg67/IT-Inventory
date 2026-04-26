@@ -91,6 +91,7 @@ export const articleRepository = {
     siteId: string | number,
     page: number = 0,
     limit: number = APP_CONFIG.pagination.defaultLimit,
+    excludeTypeArticle?: string[],
   ): Promise<PaginatedResult<Article>> {
     const supabase = getSupabaseClient();
     const stockMap = await getStockMapForSite(siteId);
@@ -98,12 +99,15 @@ export const articleRepository = {
     if (articleIds.length === 0) {
       return { data: [], total: 0, page, limit, hasMore: false };
     }
-    const { data: articles, error } = await supabase
+    let query = supabase
       .from(tables.articles)
       .select('*')
       .eq('isArchived', false)
-      .in('id', articleIds)
-      .order('name');
+      .in('id', articleIds);
+    if (excludeTypeArticle && excludeTypeArticle.length > 0) {
+      query = query.not('articleType', 'in', `(${excludeTypeArticle.map(t => `"${t}"`).join(',')})`);
+    }
+    const { data: articles, error } = await query.order('name');
     if (error) throw new Error(error.message);
     const withQty = (articles ?? []).map((a: ArticleRow) => ({
       ...a,
@@ -156,6 +160,7 @@ export const articleRepository = {
     if (filters.codeFamille && filters.codeFamille.length > 0) query = query.in('codeFamille', filters.codeFamille);
     if (filters.famille && filters.famille.length > 0) query = query.in('category', filters.famille);
     if (filters.typeArticle && filters.typeArticle.length > 0) query = query.in('articleType', filters.typeArticle);
+    if (filters.excludeTypeArticle && filters.excludeTypeArticle.length > 0) query = query.not('articleType', 'in', `(${filters.excludeTypeArticle.map(t => `"${t}"`).join(',')})`);
     if (filters.sousType && filters.sousType.length > 0) query = query.in('sousType', filters.sousType);
     if (filters.marque && filters.marque.length > 0) query = query.in('brand', filters.marque);
     if (filters.emplacement && filters.emplacement.length > 0) query = query.in('emplacement', filters.emplacement);
@@ -530,7 +535,7 @@ export const articleRepository = {
       console.log('[articleRepository.delete] Succès, articles supprimés:', deletedRows.length);
     } catch (err: any) {
       console.error('[articleRepository.delete] Error complète:', err);
-      throw new Error(err?.message || 'Erreur lors de la suppression de la tablette');
+      throw new Error(err?.message || "Erreur lors de la suppression de l'article");
     }
   },
 };

@@ -2,12 +2,13 @@ import React, { useCallback } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   Vibration,
   useWindowDimensions,
 } from 'react-native';
 import Animated, {
+  FadeIn,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
@@ -34,6 +35,7 @@ interface GlassStatCardProps {
   sparklineColor?: string;
   showDayLabels?: boolean;
   fullWidth?: boolean;
+  enteringDelay?: number;
   onPress?: () => void;
 }
 
@@ -48,6 +50,7 @@ const GlassStatCard: React.FC<GlassStatCardProps> = ({
   sparklineColor,
   showDayLabels = false,
   fullWidth = false,
+  enteringDelay = 0,
   onPress,
 }) => {
   const pressScale = useSharedValue(1);
@@ -93,17 +96,18 @@ const GlassStatCard: React.FC<GlassStatCardProps> = ({
 
   return (
     <Animated.View
+      entering={FadeIn.delay(enteringDelay).duration(220)}
       style={[
         styles.wrapper,
         fullWidth ? styles.fullWidth : styles.halfWidth,
         pressStyle,
       ]}
     >
-      <TouchableOpacity
-        activeOpacity={1}
+      <Pressable
         onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        android_ripple={{ color: `${accentColor}20`, borderless: false }}
         style={styles.touchable}
       >
         <View style={[
@@ -181,7 +185,7 @@ const GlassStatCard: React.FC<GlassStatCardProps> = ({
             </View>
           )}
         </View>
-      </TouchableOpacity>
+      </Pressable>
     </Animated.View>
   );
 };

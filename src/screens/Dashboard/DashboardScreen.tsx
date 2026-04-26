@@ -276,6 +276,7 @@ export const DashboardScreen: React.FC = () => {
               iconGradient={gradients.primary}
               value={stats.totalArticles}
               label="Articles en stock"
+              enteringDelay={0}
               sparklineData={[
                 Math.max(0, stats.totalArticles - 3),
                 Math.max(0, stats.totalArticles - 2),
@@ -297,6 +298,7 @@ export const DashboardScreen: React.FC = () => {
               }
               value={stats.articlesAlerte}
               label="Alertes stock"
+              enteringDelay={80}
               trend={stats.articlesAlerte > 0 ? 'down' : 'neutral'}
               trendValue={stats.articlesAlerte > 0 ? `${stats.articlesAlerte}` : undefined}
               sparklineData={[
@@ -331,6 +333,7 @@ export const DashboardScreen: React.FC = () => {
             sparklineColor={colors.info}
             showDayLabels
             fullWidth
+            enteringDelay={160}
             onPress={() => navigation.navigate('Mouvements')}
           />
         </View>
@@ -342,44 +345,52 @@ export const DashboardScreen: React.FC = () => {
           <SectionHeader title="Actions rapides" accentColor="#007A39" />
           <View style={[styles.actionsRow, isTablet && styles.actionsRowTablet]}>
             {!isSuperviseur && (
-              <QuickActionButton
-                icon="plus"
-                iconGradient={gradients.success}
-                label="Entrée"
-                onPress={() =>
-                  navigation.navigate('Mouvements', {
-                    screen: 'MouvementForm',
-                    params: { type: 'entree' },
-                  })
-                }
-              />
+              <View style={[styles.actionItem, isTablet && styles.actionItemTablet]}>
+                <QuickActionButton
+                  icon="plus"
+                  iconGradient={gradients.success}
+                  label="Entrée"
+                  onPress={() =>
+                    navigation.navigate('Mouvements', {
+                      screen: 'MouvementForm',
+                      params: { type: 'entree' },
+                    })
+                  }
+                />
+              </View>
             )}
             {!isSuperviseur && (
-              <QuickActionButton
-                icon="minus"
-                iconGradient={gradients.danger}
-                label="Sortie"
-                onPress={() =>
-                  navigation.navigate('Mouvements', {
-                    screen: 'MouvementForm',
-                    params: { type: 'sortie' },
-                  })
-                }
-              />
+              <View style={[styles.actionItem, isTablet && styles.actionItemTablet]}>
+                <QuickActionButton
+                  icon="minus"
+                  iconGradient={gradients.danger}
+                  label="Sortie"
+                  onPress={() =>
+                    navigation.navigate('Mouvements', {
+                      screen: 'MouvementForm',
+                      params: { type: 'sortie' },
+                    })
+                  }
+                />
+              </View>
             )}
-            <QuickActionButton
-              icon="format-list-bulleted"
-              iconGradient={gradients.primary}
-              label="Articles"
-              onPress={() => navigation.navigate('Articles')}
-            />
-            {!isSuperviseur && (
+            <View style={[styles.actionItem, isTablet && styles.actionItemTablet]}>
               <QuickActionButton
-                icon="swap-horizontal"
-                iconGradient={['#00A651', '#007A39']}
-                label="Transfert"
-                onPress={() => navigation.navigate('Mouvements', { screen: 'TransfertForm' })}
+                icon="format-list-bulleted"
+                iconGradient={gradients.primary}
+                label="Articles"
+                onPress={() => navigation.navigate('Articles')}
               />
+            </View>
+            {!isSuperviseur && (
+              <View style={[styles.actionItem, isTablet && styles.actionItemTablet]}>
+                <QuickActionButton
+                  icon="swap-horizontal"
+                  iconGradient={['#8B5CF6', '#6D28D9']}
+                  label="Transfert"
+                  onPress={() => navigation.navigate('Mouvements', { screen: 'TransfertForm' })}
+                />
+              </View>
             )}
           </View>
         </View>
@@ -565,19 +576,28 @@ const styles = StyleSheet.create({
     gap: premiumSpacing.lg,
   },
   actionsSection: {
-    marginTop: premiumSpacing.xl + 4,
+    marginTop: premiumSpacing.xxl + 8,
+    marginBottom: premiumSpacing.md,
   },
   actionsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    alignItems: 'stretch',
     gap: premiumSpacing.sm + 2,
+    marginTop: -2,
   },
   actionsRowTablet: {
     gap: premiumSpacing.lg,
     justifyContent: 'flex-start',
   },
+  actionItem: {
+    width: '48%',
+  },
+  actionItemTablet: {
+    width: '23%',
+  },
   mouvementsSection: {
-    marginTop: premiumSpacing.xxl + 4,
+    marginTop: premiumSpacing.xl + 4,
   },
   mouvementsGridTablet: {
     flexDirection: 'row',

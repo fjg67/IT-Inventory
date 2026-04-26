@@ -18,7 +18,6 @@ import {
   Vibration,
   TouchableWithoutFeedback,
   ActivityIndicator,
-  ToastAndroid,
   Platform,
 } from 'react-native';
 import Animated, {
@@ -46,6 +45,7 @@ import { InventoryRecountService, InventoryRecount } from '@/services/inventoryR
 import { AuthService } from '@/services/authService';
 import { BiometricAuthService } from '@/services/biometricAuthService';
 import { pushNotificationsService } from '@/services/pushNotificationsService';
+import { ToastContainer, useToast } from '@/components/common';
 
 // ==================== HELPERS ====================
 const AVATAR_GRADIENTS: [string, string][] = [
@@ -824,6 +824,7 @@ export const SettingsScreen: React.FC = () => {
   const [pushLoading, setPushLoading] = useState(false);
   const [complianceDetailsModalVisible, setComplianceDetailsModalVisible] = useState(false);
   const [verifyingCompliance, setVerifyingCompliance] = useState(false);
+  const { toasts, show: toastShow, dismiss: dismissToast } = useToast();
 
   // ==================== ACTIONS ====================
   const handleLogout = useCallback(() => {
@@ -989,6 +990,7 @@ export const SettingsScreen: React.FC = () => {
       setDeleting(true);
       const { getSupabaseClient, tables } = require('@/api/supabase');
       const supabase = getSupabaseClient();
+      const syntheticTechnicianId = `X${Date.now().toString().slice(-6)}${String(technicien.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 4)}`;
 
       // 1. Supprimer les mouvements du technicien
       const { error: errMouv } = await supabase
@@ -1009,7 +1011,7 @@ export const SettingsScreen: React.FC = () => {
         .from(tables.techniciens)
         .update({
           name: 'SUPPRIMÉ',
-          technicianId: null,
+          technicianId: syntheticTechnicianId,
         })
         .eq('id', technicien.id);
       if (errTech) throw new Error(errTech.message);
@@ -1038,12 +1040,8 @@ export const SettingsScreen: React.FC = () => {
   }, [technicien, dispatch]);
 
   const showToast = useCallback((msg: string) => {
-    if (Platform.OS === 'android') {
-      ToastAndroid.show(msg, ToastAndroid.SHORT);
-    } else {
-      Alert.alert('', msg);
-    }
-  }, []);
+    toastShow(msg, 'success');
+  }, [toastShow]);
 
   const handleSelectThemeMode = useCallback((mode: ThemeMode) => {
     Vibration.vibrate(10);
@@ -2573,6 +2571,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </View>
   );
 };

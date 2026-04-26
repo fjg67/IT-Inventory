@@ -1,14 +1,15 @@
 import React, { useCallback } from 'react';
-import { Text, TouchableOpacity, View, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
+import { Text, Pressable, View, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withSpring,
+  interpolate,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
-  premiumSpacing,
   premiumAnimation,
 } from '../../../constants/premiumTheme';
 import { useTheme } from '@/theme';
@@ -28,25 +29,27 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   onPress,
 }) => {
   const pressScale = useSharedValue(1);
+  const pressLift = useSharedValue(0);
   const { width: screenWidth } = useWindowDimensions();
   const tablet = checkIsTablet(screenWidth);
-  const { isDark } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const handlePressIn = useCallback(() => {
-    pressScale.value = withTiming(premiumAnimation.pressScaleSmall, {
-      duration: premiumAnimation.pressDuration,
-    });
-  }, [pressScale]);
+    pressScale.value = withTiming(0.94, { duration: premiumAnimation.pressDuration });
+    pressLift.value = withTiming(1, { duration: premiumAnimation.pressDuration });
+  }, [pressScale, pressLift]);
 
   const handlePressOut = useCallback(() => {
-    pressScale.value = withTiming(1, {
-      duration: premiumAnimation.pressDuration,
-    });
-  }, [pressScale]);
+    pressScale.value = withSpring(1, { damping: 14, stiffness: 200 });
+    pressLift.value = withTiming(0, { duration: 200 });
+  }, [pressScale, pressLift]);
 
   const pressStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pressScale.value }],
+    shadowOpacity: interpolate(pressLift.value, [0, 1], [0.06, 0.22]),
+    shadowRadius: interpolate(pressLift.value, [0, 1], [6, 16]),
   }));
+
 
   const handlePress = useCallback(() => {
     Vibration.vibrate(10);
@@ -57,38 +60,77 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   const accentEnd = (iconGradient[1] ?? iconGradient[0]) as string;
 
   return (
-    <Animated.View style={[styles.wrapper, pressStyle]}>
-      <TouchableOpacity
-        activeOpacity={1}
+    <Animated.View
+      style={[
+        styles.wrapper,
+        {
+          shadowColor: accentColor,
+        },
+        pressStyle,
+      ]}
+    >
+      <Pressable
         onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        android_ripple={{ color: accentColor + '28', borderless: false }}
         style={styles.touchable}
       >
-        {/* Full gradient background card */}
-        <LinearGradient
-          colors={isDark
-            ? [accentColor, accentEnd]
-            : [accentColor, accentEnd]
-          }
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.container, tablet && styles.containerTablet]}
+        <View
+          style={[
+            styles.container,
+            {
+              backgroundColor: isDark ? colors.surface : '#FFFFFF',
+              borderColor: isDark ? accentColor + '22' : accentColor + '18',
+            },
+            tablet && styles.containerTablet,
+          ]}
         >
-          {/* Decorative glow circle behind icon */}
-          <View style={styles.glowCircle} />
+          {/* Subtle tinted top glow */}
+          <View
+            style={[
+              styles.topGlow,
+              { backgroundColor: accentColor + (isDark ? '18' : '10') },
+            ]}
+          />
 
-          {/* Icon in frosted circle */}
-          <View style={styles.iconCircle}>
-            <Icon name={icon} size={tablet ? 26 : 24} color={accentColor} />
+          {/* Thin gradient top border strip */}
+          <LinearGradient
+            colors={[accentColor, accentEnd]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.topStrip}
+          />
+
+          {/* Icon pill */}
+          <View style={[styles.iconShadow, { shadowColor: accentColor }]}>
+            <LinearGradient
+              colors={[accentColor, accentEnd]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.iconPill, tablet && styles.iconPillTablet]}
+            >
+              <View style={styles.iconInner}>
+                <Icon name={icon} size={tablet ? 22 : 19} color="#FFFFFF" />
+              </View>
+            </LinearGradient>
           </View>
 
           {/* Label */}
-          <Text style={[styles.label, tablet && styles.labelTablet]} numberOfLines={1}>
+          <Text
+            style={[
+              styles.label,
+              { color: colors.textPrimary },
+              tablet && styles.labelTablet,
+            ]}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+          >
             {label}
           </Text>
-        </LinearGradient>
-      </TouchableOpacity>
+        </View>
+      </Pressable>
     </Animated.View>
   );
 };
@@ -96,65 +138,88 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    alignItems: 'center',
+    minWidth: 70,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 4,
+    borderRadius: 20,
   },
   touchable: {
-    alignItems: 'center',
-    width: '100%',
+    flex: 1,
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   container: {
-    alignItems: 'center',
-    borderRadius: 22,
-    paddingVertical: 18,
-    paddingHorizontal: 6,
-    width: '100%',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 14,
-    elevation: 8,
-  },
-  containerTablet: {
-    paddingVertical: premiumSpacing.lg + 2,
-    paddingHorizontal: premiumSpacing.md,
-    borderRadius: 24,
-  },
-  glowCircle: {
-    position: 'absolute',
-    top: -15,
-    right: -15,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  iconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    borderRadius: 20,
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingHorizontal: 6,
+    minHeight: 90,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  containerTablet: {
+    paddingTop: 20,
+    paddingBottom: 18,
+    borderRadius: 24,
+  },
+  topGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 48,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  topStrip: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  iconShadow: {
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+    borderRadius: 16,
+    marginBottom: 8,
+    marginTop: 1,
+  },
+  iconPill: {
+    width: 46,
+    height: 46,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconPillTablet: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+  },
+  iconInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 11,
+    fontWeight: '700',
     textAlign: 'center',
-    letterSpacing: 0.2,
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0,0,0,0.15)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    letterSpacing: 0.1,
+    lineHeight: 14,
   },
   labelTablet: {
-    fontSize: 14,
+    fontSize: 13.5,
   },
 });
 

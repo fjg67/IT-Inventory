@@ -1,6 +1,7 @@
 ﻿import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 import {
   premiumSpacing,
@@ -30,7 +31,10 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
   }, [onActionPress]);
 
   return (
-    <View style={styles.container}>
+    <Animated.View
+      entering={FadeIn.duration(180)}
+      style={styles.container}
+    >
       <View style={styles.titleRow}>
         <View style={[styles.accentBar, { backgroundColor: accentColor || colors.primary }]} />
         <Text style={[styles.title, { color: colors.textPrimary }, tablet && { fontSize: 20 }]}>{title}</Text>
@@ -49,7 +53,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
           />
         </TouchableOpacity>
       )}
-    </View>
+    </Animated.View>
   );
 };
 

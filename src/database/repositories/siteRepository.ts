@@ -47,14 +47,19 @@ export async function getEffectiveSiteIds(siteId: string | number): Promise<stri
   const key = String(siteId);
   const cached = _childSiteCache[key];
   if (cached && Date.now() - cached.ts < CHILD_CACHE_TTL) {
-    return cached.ids;
+    const normalized = cached.ids.includes(key) ? cached.ids : [key, ...cached.ids];
+    if (normalized !== cached.ids) {
+      _childSiteCache[key] = { ids: normalized, ts: cached.ts };
+    }
+    return normalized;
   }
   const supabase = getSupabaseClient();
   const { data } = await supabase
     .from(tables.sites)
     .select('id')
     .eq('parentSiteId', key);
-  const ids = data && data.length > 0 ? data.map((s: any) => s.id) : [key];
+  const childIds = data && data.length > 0 ? data.map((s: any) => String(s.id)) : [];
+  const ids = Array.from(new Set([key, ...childIds]));
   _childSiteCache[key] = { ids, ts: Date.now() };
   return ids;
 }

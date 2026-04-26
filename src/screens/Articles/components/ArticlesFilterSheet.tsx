@@ -62,11 +62,6 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
-  const isTabletFilterSheet =
-    !!allowedKeys &&
-    allowedKeys.length === 2 &&
-    allowedKeys.includes('marque') &&
-    allowedKeys.includes('emplacement');
   const isPCFilterSheet =
     !!allowedKeys &&
     allowedKeys.includes('sousType') &&
@@ -77,13 +72,7 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
     ? ROWS
         .filter((row) => allowedKeys.includes(row.key))
         .map((row) =>
-          isTabletFilterSheet
-            ? row.key === 'marque'
-              ? { ...row, label: 'Constructeur tablette' }
-              : row.key === 'emplacement'
-                ? { ...row, label: 'Zone de stockage' }
-                : row
-            : isPCFilterSheet
+          isPCFilterSheet
             ? row.key === 'sousType'
               ? { ...row, label: 'Portable agence / siège' }
               : row.key === 'marque'
@@ -98,9 +87,7 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
     : ROWS;
 
   const subtitleText =
-    isTabletFilterSheet
-      ? 'Constructeur et zone de stockage des tablettes'
-      : isPCFilterSheet
+    isPCFilterSheet
         ? 'Type de parc, constructeur, modèle et zone de stockage du parc PC'
       : 'Code famille, famille, type, sous-type, marque, emplacement';
 
@@ -127,7 +114,7 @@ const ArticlesFilterSheet: React.FC<ArticlesFilterSheetProps> = ({
           <View style={styles.titleRow}>
             <Icon name="filter-variant" size={24} color={colors.primary} />
             <Text style={[styles.title, { color: colors.textPrimary }]}>
-              {isTabletFilterSheet ? 'Filtrer les tablettes' : isPCFilterSheet ? 'Filtrer le parc PC' : 'Filtrer par'}
+              {isPCFilterSheet ? 'Filtrer le parc PC' : 'Filtrer par'}
             </Text>
           </View>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>

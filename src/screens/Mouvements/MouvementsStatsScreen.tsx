@@ -16,6 +16,7 @@ import Animated, {
   Easing,
   FadeIn,
   FadeInUp,
+  SlideInLeft,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -822,12 +823,17 @@ export const MouvementsStatsScreen: React.FC = () => {
                       { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0' },
                     ]}
                   >
-                    <LinearGradient
-                      colors={podium.stripe}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={[styles.barFill, { width: `${widthPct}%` }]}
-                    />
+                    <Animated.View
+                      entering={SlideInLeft.delay(120 + localIndex * 60).duration(450).easing(Easing.out(Easing.cubic))}
+                      style={{ width: `${widthPct}%`, overflow: 'hidden', borderRadius: 4 }}
+                    >
+                      <LinearGradient
+                        colors={podium.stripe}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={[styles.barFill, { width: '100%' }]}
+                      />
+                    </Animated.View>
                   </View>
 
                   {viewMode === 'detailed' && (

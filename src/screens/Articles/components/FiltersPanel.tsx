@@ -4,6 +4,9 @@ import { isTablet as checkIsTablet } from '../../../utils/responsive';
 import Animated, {
   FadeIn,
   FadeOut,
+  ZoomIn,
+  ZoomOut,
+  SlideInLeft,
   useSharedValue,
   useAnimatedStyle,
   withSequence,
@@ -148,9 +151,14 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
               {filtersLabel}
             </Text>
             {activeFiltersCount > 0 ? (
-              <View style={[styles.filterCountBadge, { backgroundColor: colors.primary }]}>
+              <Animated.View
+                key="badge"
+                entering={ZoomIn.duration(250).springify()}
+                exiting={ZoomOut.duration(180)}
+                style={[styles.filterCountBadge, { backgroundColor: colors.primary }]}
+              >
                 <Text style={styles.filterCountText}>{activeFiltersCount}</Text>
-              </View>
+              </Animated.View>
             ) : (
               <Icon name="chevron-down" size={16} color={colors.textMuted} />
             )}
@@ -162,7 +170,10 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
       {/* Row 2: Chips + Reset */}
       <View style={styles.chipsRow}>
         {showStockFaibleChip && (
-          <Animated.View style={chipAnimStyle}>
+          <Animated.View
+            entering={SlideInLeft.duration(300).springify().damping(16)}
+            style={chipAnimStyle}
+          >
             <TouchableOpacity
               style={[
                 styles.chip,

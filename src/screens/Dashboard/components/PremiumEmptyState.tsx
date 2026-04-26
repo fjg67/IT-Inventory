@@ -1,7 +1,16 @@
-﻿import React from 'react';
+﻿import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
+import Animated, {
+  FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 import {
   premiumSpacing,
@@ -36,6 +45,23 @@ const PremiumEmptyState: React.FC<PremiumEmptyStateProps> = ({
   const { colors, isDark } = useTheme();
   const tablet = checkIsTablet(width);
 
+  // Floating animation on the icon
+  const floatY = useSharedValue(0);
+  useEffect(() => {
+    floatY.value = withRepeat(
+      withSequence(
+        withTiming(-7, { duration: 1800, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 1800, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      false,
+    );
+  }, [floatY]);
+
+  const floatStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: floatY.value }],
+  }));
+
   return (
     <View style={[
       styles.container,
@@ -50,7 +76,7 @@ const PremiumEmptyState: React.FC<PremiumEmptyStateProps> = ({
       <View style={[styles.meshDot, styles.meshDot2, { backgroundColor: isDark ? 'rgba(0,122,57,0.06)' : 'rgba(99,102,241,0.04)' }]} />
 
       {/* Icon in rounded-square gradient pill */}
-      <View style={[styles.iconShadow, tablet && { marginBottom: premiumSpacing.xl }]}>
+      <Animated.View style={[styles.iconShadow, tablet && { marginBottom: premiumSpacing.xl }, floatStyle]}>
         <LinearGradient
           colors={['#005C2B', '#007A39']}
           start={{ x: 0, y: 0 }}
@@ -59,17 +85,22 @@ const PremiumEmptyState: React.FC<PremiumEmptyStateProps> = ({
         >
           <Icon name={icon} size={tablet ? 32 : 28} color="#FFF" />
         </LinearGradient>
-      </View>
+      </Animated.View>
 
-      <Text style={[styles.title, { color: colors.textPrimary }, tablet && { fontSize: 20 }]}>
-        {title}
-      </Text>
-      <Text style={[styles.subtitle, { color: colors.textMuted }, tablet && { fontSize: 15, lineHeight: 22 }]}>
-        {subtitle}
-      </Text>
+      <Animated.View entering={FadeInUp.delay(80).duration(350).springify().damping(18)}>
+        <Text style={[styles.title, { color: colors.textPrimary }, tablet && { fontSize: 20 }]}>
+          {title}
+        </Text>
+      </Animated.View>
+      <Animated.View entering={FadeInUp.delay(160).duration(350).springify().damping(18)}>
+        <Text style={[styles.subtitle, { color: colors.textMuted }, tablet && { fontSize: 15, lineHeight: 22 }]}>
+          {subtitle}
+        </Text>
+      </Animated.View>
 
       {/* Action button */}
       {actionLabel && onActionPress && (
+        <Animated.View entering={FadeInUp.delay(240).duration(350).springify().damping(18)}>
         <TouchableOpacity
           style={styles.actionButtonWrap}
           onPress={() => {
@@ -87,6 +118,7 @@ const PremiumEmptyState: React.FC<PremiumEmptyStateProps> = ({
             <Text style={[styles.actionLabel, tablet && { fontSize: 15 }]}>{actionLabel}</Text>
           </LinearGradient>
         </TouchableOpacity>
+        </Animated.View>
       )}
     </View>
   );

@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Vibration, useWindowDimensions } from 'react-native';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 import Animated, {
   useSharedValue,
@@ -115,11 +115,11 @@ const PremiumMouvementCard: React.FC<PremiumMouvementCardProps> = ({
 
   return (
     <Animated.View style={pressStyle}>
-      <TouchableOpacity
-        activeOpacity={1}
+      <Pressable
         onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        android_ripple={{ color: `${accentColor}30`, borderless: false }}
       >
         <View style={[
           styles.container,
@@ -184,7 +184,7 @@ const PremiumMouvementCard: React.FC<PremiumMouvementCardProps> = ({
             </View>
           </View>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     </Animated.View>
   );
 };

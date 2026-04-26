@@ -6,13 +6,15 @@ import {
   StyleSheet,
   Vibration,
   useWindowDimensions,
-} from 'react-native';
-import Animated, {
+} from 'react-native';import Animated, {
   FadeIn,
   FadeOut,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withRepeat,
+  withSequence,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
@@ -41,6 +43,11 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
   const tablet = checkIsTablet(width);
   const { colors, isDark } = useTheme();
   const iconScale = useSharedValue(1);
+  const glowOpacity = useSharedValue(0);
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
 
   const iconAnimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: iconScale.value }],
@@ -49,12 +56,22 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
   const handleFocus = useCallback(() => {
     setIsFocused(true);
     iconScale.value = withTiming(1.15, { duration: 200 });
-  }, [iconScale]);
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 900 }),
+        withTiming(0.35, { duration: 900 }),
+      ),
+      -1,
+      false,
+    );
+  }, [iconScale, glowOpacity]);
 
   const handleBlur = useCallback(() => {
     setIsFocused(false);
     iconScale.value = withTiming(1, { duration: 200 });
-  }, [iconScale]);
+    cancelAnimation(glowOpacity);
+    glowOpacity.value = withTiming(0, { duration: 300 });
+  }, [iconScale, glowOpacity]);
 
   const handleClear = useCallback(() => {
     Vibration.vibrate(10);
@@ -71,9 +88,20 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
   }, [value]);
 
   return (
-    <View
-      style={[
-        styles.container,
+    <View style={styles.glowWrapper}>
+      {/* Animated glow ring */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          styles.glowRing,
+          { borderColor: colors.primary + '55' },
+          glowStyle,
+        ]}
+      />
+      <View
+        style={[
+          styles.container,
         {
           backgroundColor: isFocused ? colors.backgroundSubtle : colors.surface,
           borderColor: isFocused
@@ -154,11 +182,20 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
           </TouchableOpacity>
         </Animated.View>
       )}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  glowWrapper: {
+    position: 'relative',
+  },
+  glowRing: {
+    borderRadius: 20,
+    borderWidth: 2.5,
+    margin: -3,
+  },
   container: {
     flexDirection: 'row',
     alignItems: 'center',

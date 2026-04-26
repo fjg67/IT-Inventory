@@ -12,7 +12,7 @@ import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 
 import { useAppSelector, useAppDispatch } from '@/store';
 import { loadStoredAuth, loadTechniciens, setRedirectToTechnicianChoiceAfterLogout } from '@/store/slices/authSlice';
-import { loadSites, loadStoredSite, loadSiblingSites } from '@/store/slices/siteSlice';
+import { loadSites, loadStoredSite } from '@/store/slices/siteSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { setNetworkState, setSupabaseReachable } from '@/store/slices/networkSlice';
 import { getSupabaseClient, tables } from '@/api/supabase';
@@ -103,23 +103,6 @@ const PCNavigator: React.FC = () => (
   </ArticlesStack.Navigator>
 );
 
-// Articles Navigator - Tablette Mode (with locked Tablette type)
-const TablettesNavigator: React.FC = () => (
-  <ArticlesStack.Navigator screenOptions={{ headerShown: false }}>
-    <ArticlesStack.Screen 
-      name="ArticlesList" 
-      component={ArticlesListScreen}
-      initialParams={{
-        presetTypeArticle: 'Tablette',
-        lockPresetTypeArticle: true,
-      }}
-    />
-    <ArticlesStack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
-    <ArticlesStack.Screen name="ArticleEdit" component={ArticleEditScreen} />
-    <ArticlesStack.Screen name="Kit" component={KitScreen} />
-  </ArticlesStack.Navigator>
-);
-
 // Mouvements Navigator
 const MouvementsNavigator: React.FC = () => (
   <MouvementsStack.Navigator screenOptions={{ headerShown: false }}>
@@ -161,35 +144,12 @@ const SettingsIcon = ({ focused }: { focused: boolean }) => (
   <TabIcon focused={focused} emoji="⚙️" label="Paramètres" />
 );
 
-const TabletteIcon = ({ focused }: { focused: boolean }) => (
-  <TabIcon focused={focused} emoji="📱" label="Tablette" />
-);
-
 const PCIcon = ({ focused }: { focused: boolean }) => (
   <TabIcon focused={focused} emoji="🖥️" label="PC" />
 );
 
 // Main Tab Navigator
 const MainNavigator: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const siteActif = useAppSelector((state) => state.site.siteActif);
-  const childSites = useAppSelector((state) => state.site.childSites);
-
-  useEffect(() => {
-    if (siteActif?.id != null) {
-      dispatch(loadSiblingSites(siteActif.id));
-    }
-  }, [dispatch, siteActif?.id]);
-
-  const isStrasbourgGeneral = React.useMemo(() => {
-    const siteName = (siteActif?.nom ?? '').toLowerCase();
-    const isNamedStrasbourg =
-      siteName.includes('strasbourg') || siteName.includes('siège') || siteName.includes('siege');
-
-    // Les sites Strasbourg sont gérés en groupe (site parent + sous-sites).
-    return isNamedStrasbourg || childSites.length > 0;
-  }, [siteActif?.nom, childSites.length]);
-
   return (
     <MainTab.Navigator
       tabBar={(props) => <PremiumTabBar {...props} />}
@@ -215,15 +175,6 @@ const MainNavigator: React.FC = () => {
       />
 
       <MainTab.Screen
-        name="PC"
-        component={PCNavigator}
-        options={{
-          tabBarIcon: PCIcon,
-          tabBarLabel: () => null,
-        }}
-      />
-
-      <MainTab.Screen
         name="Scan"
         component={ScanMouvementScreen}
         options={{
@@ -231,17 +182,14 @@ const MainNavigator: React.FC = () => {
           tabBarLabel: () => null,
         }}
       />
-
-      {isStrasbourgGeneral && (
-        <MainTab.Screen
-          name="Tablette"
-          component={TablettesNavigator}
-          options={{
-            tabBarIcon: TabletteIcon,
-            tabBarLabel: () => null,
-          }}
-        />
-      )}
+      <MainTab.Screen
+        name="PC"
+        component={PCNavigator}
+        options={{
+          tabBarIcon: PCIcon,
+          tabBarLabel: () => null,
+        }}
+      />
       <MainTab.Screen
         name="Mouvements"
         component={MouvementsNavigator}

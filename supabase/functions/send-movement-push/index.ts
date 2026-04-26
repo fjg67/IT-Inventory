@@ -36,6 +36,33 @@ type MovementRow = {
   createdAt: string;
 };
 
+function normalizeSiteName(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isEpinalSite(value?: string | null): boolean {
+  if (!value) return false;
+  const normalized = normalizeSiteName(value);
+  return normalized.includes('epinal');
+}
+
+function isExcludedForEpinal(value?: string | null): boolean {
+  if (!value) return false;
+  const normalized = normalizeSiteName(value);
+  return (
+    normalized.includes('stock 5') ||
+    normalized.includes('stock5') ||
+    normalized.includes('stock 8') ||
+    normalized.includes('stock8') ||
+    normalized.includes('tcs')
+  );
+}
+
 function toMovementLabel(type: string): { label: string; emoji: string } {
   const t = (type ?? '').toUpperCase();
   if (t === 'ENTRY') return { label: 'Entree', emoji: '🟢' };
@@ -208,10 +235,70 @@ serve(async (req) => {
       tokenRows = tokenQueryWithEnabled.data as any[];
     }
 
-    const tokens = (tokenRows ?? [])
+    const epinalMovement = isEpinalSite(fromSiteName) || isEpinalSite(toSiteName);
+
+    const tokenRowsWithSite = tokenRows ?? [];
+    let recipientSiteByUserId = new Map<string, string>();
+    if (epinalMovement) {
+      const userIds = Array.from(
+        new Set(
+          tokenRowsWithSite
+            .map((row: any) => row.userId)
+            .filter((userId: unknown): userId is string => Boolean(userId))
+            .map((userId: string) => String(userId)),
+        ),
+      );
+
+      if (userIds.length > 0) {
+        const { data: users, error: usersError } = await supabase
+          .from('User')
+          .select('id, siteId')
+          .in('id', userIds);
+        if (usersError) {
+          throw new Error(usersError.message);
+        }
+
+        const siteIds = Array.from(
+          new Set(
+            (users ?? [])
+              .map((user: any) => user.siteId)
+              .filter((siteId: unknown): siteId is string => Boolean(siteId))
+              .map((siteId: string) => String(siteId)),
+          ),
+        );
+
+        const siteNameById = new Map<string, string>();
+        if (siteIds.length > 0) {
+          const { data: sites, error: sitesError } = await supabase
+            .from('Site')
+            .select('id, name')
+            .in('id', siteIds);
+          if (sitesError) {
+            throw new Error(sitesError.message);
+          }
+          for (const site of sites ?? []) {
+            siteNameById.set(String((site as any).id), String((site as any).name ?? ''));
+          }
+        }
+
+        for (const user of users ?? []) {
+          const userId = String((user as any).id);
+          const siteId = String((user as any).siteId ?? '');
+          recipientSiteByUserId.set(userId, siteNameById.get(siteId) ?? '');
+        }
+      }
+    }
+
+    const tokens = tokenRowsWithSite
       .filter((r: any) => r.enabled !== false)
       .filter((r: any) => !body.senderDeviceId || String(r.id) !== String(body.senderDeviceId))
       .filter((r: any) => !r.userId || !actorUserId || String(r.userId) !== actorUserId)
+      .filter((r: any) => {
+        if (!epinalMovement) return true;
+        if (!r.userId) return false;
+        const recipientSiteName = recipientSiteByUserId.get(String(r.userId));
+        return !isExcludedForEpinal(recipientSiteName);
+      })
       .map((r: any) => r.token)
       .filter(Boolean);
     if (!tokens.length) {

@@ -14,6 +14,32 @@ type MovementRow = {
   createdAt: string;
 };
 
+function normalizeSiteName(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isEpinalSite(value?: string | null): boolean {
+  if (!value) return false;
+  return normalizeSiteName(value).includes('epinal');
+}
+
+function isExcludedForEpinal(value?: string | null): boolean {
+  if (!value) return false;
+  const normalized = normalizeSiteName(value);
+  return (
+    normalized.includes('stock 5') ||
+    normalized.includes('stock5') ||
+    normalized.includes('stock 8') ||
+    normalized.includes('stock8') ||
+    normalized.includes('tcs')
+  );
+}
+
 function mapDbTypeToNotifyType(type: string): 'entree' | 'sortie' | 'ajustement' | 'transfert' {
   const normalized = (type ?? '').toUpperCase();
   if (normalized === 'ENTRY') return 'entree';
@@ -47,6 +73,22 @@ async function notifyForMovement(row: MovementRow): Promise<void> {
   const articleName = (articleRes.data as any)?.name ?? 'Article inconnu';
   const fromSiteName = (fromSiteRes.data as any)?.name ?? 'Stock inconnu';
   const toSiteName = (toSiteRes.data as any)?.name;
+
+  const currentUserSiteName = currentTechnicien?.id
+    ? await supabase
+        .from(tables.techniciens)
+        .select('Site:siteId(name)')
+        .eq('id', currentTechnicien.id)
+        .maybeSingle()
+        .then((res) => ((res.data as any)?.Site?.name as string | undefined) ?? null)
+        .catch(() => null)
+    : null;
+
+  const epinalMovement = isEpinalSite(fromSiteName) || isEpinalSite(toSiteName);
+  if (epinalMovement && isExcludedForEpinal(currentUserSiteName)) {
+    return;
+  }
+
   const stockLocation = toSiteName ? `${fromSiteName} -> ${toSiteName}` : fromSiteName;
   const technicianName = (userRes.data as any)?.name ?? '';
   const technicianInitials = movementNotificationService.getInitialsFromDisplayName(technicianName);

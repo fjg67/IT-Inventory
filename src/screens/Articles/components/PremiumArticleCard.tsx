@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useMemo } from 'react';
+﻿import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,12 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withRepeat,
+  withSequence,
+  cancelAnimation,
+  ZoomIn,
 } from 'react-native-reanimated';
+import AnimatedCounter from '../../Dashboard/components/effects/AnimatedCounter';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -43,7 +48,6 @@ const MARQUE_MAP: Record<string, { color: string; initials: string }> = {
 
 const TYPE_MAP: Record<string, { icon: string; color: string }> = {
   'PC': { icon: 'laptop', color: '#007A39' },
-  'Tablette': { icon: 'tablet-cellphone', color: '#007A39' },
   'Souris': { icon: 'mouse', color: '#007A39' },
   'Clavier': { icon: 'keyboard', color: '#8B5CF6' },
   'Dock': { icon: 'dock-bottom', color: '#0EA5E9' },
@@ -99,6 +103,7 @@ interface PremiumArticleCardProps {
   onMarkSent?: (articleId: number) => void;
   onMarkAvailable?: (articleId: number) => void;
   onMarkHot?: (articleId: number) => void;
+  onDelete?: (articleId: number) => void;
 }
 
 /**
@@ -111,12 +116,15 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
   onMarkSent,
   onMarkAvailable,
   onMarkHot,
+  onDelete,
 }) => {
   const { width } = useWindowDimensions();
   const { colors, isDark } = useTheme();
   const tablet = checkIsTablet(width);
   const pressScale = useSharedValue(1);
   const pressLift = useSharedValue(0);
+  const accentPulse = useSharedValue(1);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handlePressIn = useCallback(() => {
     pressScale.value = withTiming(1.01, {
@@ -147,6 +155,10 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
 
   const liftGlowStyle = useAnimatedStyle(() => ({
     opacity: interpolate(pressLift.value, [0, 1], [0, isDark ? 0.28 : 0.2]),
+  }));
+
+  const accentBarStyle = useAnimatedStyle(() => ({
+    opacity: accentPulse.value,
   }));
 
   const handlePress = useCallback(() => {
@@ -186,6 +198,14 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
     }
   }, [onMarkHot, article.id]);
 
+  const handleDelete = useCallback((e: any) => {
+    e.stopPropagation();
+    if (onDelete) {
+      Vibration.vibrate([10, 60, 10]);
+      onDelete(article.id);
+    }
+  }, [onDelete, article.id]);
+
   // Stock config
   const stockConfig = useMemo(() => {
     const qty = article.quantiteActuelle ?? 0;
@@ -214,6 +234,22 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
       label: 'En stock',
     };
   }, [article.quantiteActuelle, article.stockMini]);
+
+  useEffect(() => {
+    if (stockConfig.label !== 'En stock') {
+      accentPulse.value = withRepeat(
+        withSequence(
+          withTiming(0.4, { duration: 650 }),
+          withTiming(1, { duration: 650 }),
+        ),
+        -1,
+        false,
+      );
+    } else {
+      cancelAnimation(accentPulse);
+      accentPulse.value = withTiming(1, { duration: 300 });
+    }
+  }, [stockConfig.label, accentPulse]);
 
   // Date relative
   const relativeDate = useMemo(() => {
@@ -275,12 +311,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
     })}`;
   }, [article.dateModification]);
 
-  const isTabletItem = useMemo(() => {
-    const values = [article.typeArticle, article.sousType, article.famille]
-      .filter((v): v is string => !!v)
-      .map((v) => v.toLowerCase());
-    return values.some((v) => v.includes('tablette'));
-  }, [article.typeArticle, article.sousType, article.famille]);
+  const isTabletItem = useMemo(() => false, []);
 
   const isTabletDecommissioned = useMemo(() => {
     if (!isTabletItem) return false;
@@ -355,12 +386,14 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
         ]}
       >
         {/* Left accent bar */}
-        <LinearGradient
-          colors={[...stockConfig.gradient]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.accentBar}
-        />
+        <Animated.View style={accentBarStyle}>
+          <LinearGradient
+            colors={[...stockConfig.gradient]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.accentBar}
+          />
+        </Animated.View>
 
         <Animated.View pointerEvents="none" style={[styles.liftGlow, { borderColor: stockConfig.color }, liftGlowStyle]} />
 
@@ -389,7 +422,17 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                     styles.photoThumb,
                     tablet && { width: 54, height: 54 },
                   ]}
+                  onLoad={() => setImageLoaded(true)}
                 />
+                {!imageLoaded && (
+                  <View
+                    style={[
+                      StyleSheet.absoluteFill,
+                      styles.shimmerOverlay,
+                      { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)' },
+                    ]}
+                  />
+                )}
               </View>
             ) : (
               <View style={[styles.iconShadow, { shadowColor: colors.primary }]}>
@@ -770,10 +813,31 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                   </Pressable>
                 </>
               )}
+              {onDelete && !isPCSent && (
+                <>
+                  <View style={[styles.pcActionDivider, { backgroundColor: isDark ? 'rgba(148,163,184,0.16)' : '#E2E8F0' }]} />
+                  <Pressable
+                    android_ripple={{ color: 'rgba(239,68,68,0.12)' }}
+                    style={({ pressed }) => [styles.pcActionBtnWrap, pressed && styles.pcActionBtnWrapPressed]}
+                    onPress={handleDelete}
+                  >
+                    <View style={[styles.pcActionBtn, { backgroundColor: isDark ? 'rgba(127,29,29,0.22)' : '#FEF2F2', borderColor: 'rgba(239,68,68,0.18)' }]}>
+                      <View style={[styles.pcActionIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : '#FFFFFF' }]}>
+                        <Icon name="delete-outline" size={13} color="#EF4444" />
+                      </View>
+                      <View style={styles.pcActionTextWrap}>
+                        <Text numberOfLines={1} style={[styles.pcActionBtnLabel, { color: '#DC2626' }]}>Supprimer</Text>
+                        <Text numberOfLines={1} style={[styles.pcActionBtnHint, { color: '#EF4444' }]}>Retirer</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                </>
+              )}
             </View>
           ) : (
             // Stock indicator for non-tablets
             <>
+              <Animated.View entering={ZoomIn.duration(350).springify().damping(14)}>
               <LinearGradient
                 colors={[...stockConfig.gradient]}
                 start={{ x: 0, y: 0 }}
@@ -786,15 +850,12 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                 <View style={styles.stockIconWrap}>
                   <Icon name={stockConfig.icon} size={12} color={stockConfig.color} />
                 </View>
-                <Text
-                  style={[
-                    styles.stockValue,
-                    tablet && { fontSize: 18 },
-                  ]}
-                >
-                  {article.quantiteActuelle ?? 0}
-                </Text>
+                <AnimatedCounter
+                  value={article.quantiteActuelle ?? 0}
+                  style={[styles.stockValue, tablet ? { fontSize: 18 } : undefined]}
+                />
               </LinearGradient>
+              </Animated.View>
               <Text
                 style={[
                   styles.stockUnit,
@@ -877,6 +938,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  shimmerOverlay: {
+    borderRadius: 14,
   },
   photoThumb: {
     width: 44,

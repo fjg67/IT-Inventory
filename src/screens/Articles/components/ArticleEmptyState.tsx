@@ -24,7 +24,7 @@ interface ArticleEmptyStateProps {
   type: EmptyType;
   searchQuery?: string;
   onAction?: () => void;
-  mode?: 'articles' | 'tablettes' | 'pc';
+  mode?: 'articles' | 'pc';
 }
 
 const EMPTY_CONFIGS: Record<EmptyType, {
@@ -69,24 +69,6 @@ const ArticleEmptyState: React.FC<ArticleEmptyStateProps> = ({
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
 
-  const tabletConfig = {
-    'no-articles': {
-      title: 'Aucune tablette trouvée',
-      subtitle: 'La liste des tablettes est vide\nAjoutez votre première tablette',
-      actionLabel: 'Ajouter une tablette',
-    },
-    'no-results': {
-      title: 'Aucun résultat',
-      subtitle: `Aucune tablette ne correspond à « ${searchQuery} »`,
-      actionLabel: 'Effacer la recherche',
-    },
-    'no-filters': {
-      title: 'Aucune tablette avec ces filtres',
-      subtitle: 'Essayez de modifier vos critères de recherche',
-      actionLabel: 'Réinitialiser les filtres',
-    },
-  } as const;
-
   const pcConfig = {
     'no-articles': {
       title: 'Aucun PC trouvé',
@@ -105,22 +87,16 @@ const ArticleEmptyState: React.FC<ArticleEmptyStateProps> = ({
     },
   } as const;
 
-  const title = mode === 'tablettes'
-    ? tabletConfig[type].title
-    : mode === 'pc'
+  const title = mode === 'pc'
       ? pcConfig[type].title
       : baseConfig.title;
-  const subtitle = mode === 'tablettes'
-    ? tabletConfig[type].subtitle
-    : mode === 'pc'
+  const subtitle = mode === 'pc'
       ? pcConfig[type].subtitle
       : (typeof baseConfig.subtitle === 'function' ? baseConfig.subtitle(searchQuery) : baseConfig.subtitle);
-  const actionLabel = mode === 'tablettes'
-    ? tabletConfig[type].actionLabel
-    : mode === 'pc'
+  const actionLabel = mode === 'pc'
       ? pcConfig[type].actionLabel
       : baseConfig.actionLabel;
-  const displayIcon = mode === 'tablettes' ? 'tablet-cellphone' : mode === 'pc' ? 'laptop' : baseConfig.icon;
+  const displayIcon = mode === 'pc' ? 'laptop' : baseConfig.icon;
 
   // Animation flottante de l'icône
   const floatY = useSharedValue(0);

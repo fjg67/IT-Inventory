@@ -5,8 +5,11 @@ import Animated, {
   useAnimatedStyle,
   withRepeat,
   withTiming,
+  withSequence,
   Easing,
+  interpolate,
 } from 'react-native-reanimated';
+import LinearGradient from 'react-native-linear-gradient';
 import {
   premiumSpacing,
   premiumBorderRadius,
@@ -15,43 +18,61 @@ import { useTheme } from '@/theme';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 
 const SkeletonCard: React.FC<{ delay: number }> = ({ delay }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
-  const opacity = useSharedValue(0.3);
+  const shimmerX = useSharedValue(-1);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      opacity.value = withRepeat(
-        withTiming(0.7, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+      shimmerX.value = withRepeat(
+        withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
         -1,
-        true,
+        false,
       );
     }, delay);
     return () => clearTimeout(timer);
-  }, [delay, opacity]);
+  }, [delay, shimmerX]);
 
-  const shimmer = useAnimatedStyle(() => ({
-    opacity: opacity.value,
+  const shimmerOverlayStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX: interpolate(shimmerX.value, [-1, 1], [-width, width]),
+      },
+    ],
   }));
+
+  const shimmerColor = isDark
+    ? 'rgba(255,255,255,0.06)'
+    : 'rgba(255,255,255,0.55)';
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }, tablet && { padding: premiumSpacing.xl }]}>
+      {/* Shimmer sweep overlay */}
+      <Animated.View pointerEvents="none" style={[styles.shimmerOverlay, shimmerOverlayStyle]}>
+        <LinearGradient
+          colors={['transparent', shimmerColor, 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.shimmerGradient}
+        />
+      </Animated.View>
+
       {/* Icon placeholder */}
-      <Animated.View style={[styles.iconPlaceholder, { backgroundColor: colors.skeleton }, tablet && { width: 56, height: 56 }, shimmer]} />
+      <View style={[styles.iconPlaceholder, { backgroundColor: colors.skeleton }, tablet && { width: 56, height: 56 }]} />
 
       {/* Content */}
       <View style={styles.content}>
-        <Animated.View style={[styles.titleLine, { backgroundColor: colors.skeleton }, tablet && { height: 16 }, shimmer]} />
-        <Animated.View style={[styles.descLine, { backgroundColor: colors.skeleton }, tablet && { height: 12 }, shimmer]} />
+        <View style={[styles.titleLine, { backgroundColor: colors.skeleton }, tablet && { height: 16 }]} />
+        <View style={[styles.descLine, { backgroundColor: colors.skeleton }, tablet && { height: 12 }]} />
         <View style={styles.footerRow}>
-          <Animated.View style={[styles.badgePlaceholder, { backgroundColor: colors.skeleton }, tablet && { height: 26, width: 80 }, shimmer]} />
-          <Animated.View style={[styles.metaPlaceholder, { backgroundColor: colors.skeleton }, tablet && { height: 14, width: 70 }, shimmer]} />
+          <View style={[styles.badgePlaceholder, { backgroundColor: colors.skeleton }, tablet && { height: 26, width: 80 }]} />
+          <View style={[styles.metaPlaceholder, { backgroundColor: colors.skeleton }, tablet && { height: 14, width: 70 }]} />
         </View>
       </View>
 
       {/* Chevron */}
-      <Animated.View style={[styles.chevronPlaceholder, { backgroundColor: colors.skeleton }, shimmer]} />
+      <View style={[styles.chevronPlaceholder, { backgroundColor: colors.skeleton }]} />
     </View>
   );
 };
@@ -64,7 +85,7 @@ const SkeletonArticleList: React.FC<SkeletonArticleListProps> = ({ count = 6 }) 
   return (
     <View style={styles.container}>
       {Array.from({ length: count }, (_, i) => (
-        <SkeletonCard key={i} delay={i * 120} />
+        <SkeletonCard key={i} delay={i * 150} />
       ))}
     </View>
   );
@@ -82,6 +103,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: premiumSpacing.lg,
     marginBottom: premiumSpacing.sm,
+    overflow: 'hidden',
+  },
+  shimmerOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: '60%',
+    zIndex: 10,
+  },
+  shimmerGradient: {
+    flex: 1,
   },
   iconPlaceholder: {
     width: 48,

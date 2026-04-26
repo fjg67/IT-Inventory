@@ -14,6 +14,9 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSpring,
+  BounceIn,
+  FadeInRight,
+  FadeOutRight,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -116,7 +119,11 @@ const FABMultiAction: React.FC<FABMultiActionProps> = ({ onScan, onAdd, onKit })
           tablet && { bottom: 116, right: 32, gap: premiumSpacing.lg },
         ]}>
           {actions.map((action, index) => (
-            <View key={action.label}>
+            <Animated.View
+              key={action.label}
+              entering={FadeInRight.delay(index * 60).duration(250).springify().damping(14)}
+              exiting={FadeOutRight.delay((actions.length - 1 - index) * 40).duration(180)}
+            >
               <TouchableOpacity
                 style={[
                   styles.secondaryAction,
@@ -154,7 +161,7 @@ const FABMultiAction: React.FC<FABMultiActionProps> = ({ onScan, onAdd, onKit })
                   {action.label}
                 </Text>
               </TouchableOpacity>
-            </View>
+            </Animated.View>
           ))}
         </View>
       )}
@@ -164,6 +171,7 @@ const FABMultiAction: React.FC<FABMultiActionProps> = ({ onScan, onAdd, onKit })
 
       {/* Main FAB */}
       <Animated.View
+        entering={BounceIn.duration(600)}
         style={[
           styles.fabContainer,
           rotationStyle,

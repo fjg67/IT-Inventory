@@ -14,6 +14,7 @@ export interface SentPCPayload {
   sourceSiteName?: string;
   sourceAgencyEds?: string;
   destinationAgencyEds: string;
+  recipientName?: string;
   sentByUserId?: string;
   sentByName?: string;
 }
@@ -29,6 +30,7 @@ export interface SentPCRecord {
   sourceSiteName?: string;
   sourceAgencyEds?: string;
   destinationAgencyEds: string;
+  recipientName?: string;
   sentByUserId?: string;
   sentByName?: string;
   sentAt: string;
@@ -46,6 +48,7 @@ interface SentPCRow {
   sourceSiteName: string | null;
   sourceAgencyEds: string | null;
   destinationAgencyEds: string;
+  recipientName: string | null;
   sentByUserId: string | null;
   sentByName: string | null;
   sentAt: string;
@@ -64,6 +67,7 @@ function mapRow(row: SentPCRow): SentPCRecord {
     sourceSiteName: row.sourceSiteName ?? undefined,
     sourceAgencyEds: row.sourceAgencyEds ?? undefined,
     destinationAgencyEds: row.destinationAgencyEds,
+    recipientName: row.recipientName ?? undefined,
     sentByUserId: row.sentByUserId ?? undefined,
     sentByName: row.sentByName ?? undefined,
     sentAt: row.sentAt,
@@ -89,6 +93,7 @@ export const pcSentService = {
         sourceSiteName: payload.sourceSiteName ?? null,
         sourceAgencyEds: payload.sourceAgencyEds ?? null,
         destinationAgencyEds: payload.destinationAgencyEds,
+        recipientName: payload.recipientName ?? null,
         sentByUserId: payload.sentByUserId ?? null,
         sentByName: payload.sentByName ?? null,
         sentAt: now,

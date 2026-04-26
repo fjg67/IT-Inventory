@@ -1,4 +1,4 @@
-﻿import React from 'react';
+﻿import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,15 @@ import {
   Vibration,
   useWindowDimensions,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  withRepeat,
+  Easing,
+  ZoomIn,
+} from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
@@ -48,6 +57,153 @@ const STAT_CONFIGS: Record<string, StatConfig> = {
     gradient: ['#E11D48', '#BE123C'],
   },
 };
+
+// ─── Stock Progress Bar ───
+interface StockProgressBarProps {
+  stockOK: number;
+  total: number;
+  alertes: number;
+}
+
+const StockProgressBar: React.FC<StockProgressBarProps> = ({ stockOK, total, alertes }) => {
+  const { colors, isDark } = useTheme();
+  const okRatio = useSharedValue(0);
+  const alertRatio = useSharedValue(0);
+
+  useEffect(() => {
+    const ok = total > 0 ? Math.max(0, Math.min(1, stockOK / total)) : 0;
+    const al = total > 0 ? Math.max(0, Math.min(1 - ok, alertes / total)) : 0;
+    okRatio.value = withDelay(200, withTiming(ok, { duration: 800, easing: Easing.out(Easing.cubic) }));
+    alertRatio.value = withDelay(350, withTiming(al, { duration: 700, easing: Easing.out(Easing.cubic) }));
+  }, [stockOK, alertes, total, okRatio, alertRatio]);
+
+  const okStyle = useAnimatedStyle(() => ({ width: `${okRatio.value * 100}%` as any }));
+  const alertStyle = useAnimatedStyle(() => ({ width: `${alertRatio.value * 100}%` as any }));
+
+  const pct = total > 0 ? Math.round((stockOK / total) * 100) : 0;
+
+  return (
+    <View style={pbStyles.wrap}>
+      <View style={pbStyles.labelRow}>
+        <Text style={[pbStyles.label, { color: colors.textMuted }]}>Taux de disponibilité</Text>
+        <Text style={[pbStyles.pct, { color: pct >= 70 ? '#10B981' : pct >= 40 ? '#F59E0B' : '#EF4444' }]}>
+          {pct}%
+        </Text>
+      </View>
+      <View style={[pbStyles.track, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' }]}>
+        <Animated.View style={[pbStyles.barOK, okStyle]} />
+        <Animated.View style={[pbStyles.barAlert, alertStyle]} />
+      </View>
+      <View style={pbStyles.legendRow}>
+        <View style={pbStyles.legendItem}>
+          <View style={[pbStyles.dot, { backgroundColor: '#10B981' }]} />
+          <Text style={[pbStyles.legendText, { color: colors.textMuted }]}>Stock OK ({stockOK})</Text>
+        </View>
+        <View style={pbStyles.legendItem}>
+          <View style={[pbStyles.dot, { backgroundColor: '#F59E0B' }]} />
+          <Text style={[pbStyles.legendText, { color: colors.textMuted }]}>Alertes ({alertes})</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const pbStyles = StyleSheet.create({
+  wrap: {
+    marginTop: 12,
+    gap: 4,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  pct: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  track: {
+    height: 7,
+    borderRadius: 4,
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  barOK: {
+    height: '100%',
+    backgroundColor: '#10B981',
+    borderRadius: 4,
+  },
+  barAlert: {
+    height: '100%',
+    backgroundColor: '#F59E0B',
+  },
+  legendRow: {
+    flexDirection: 'row',
+    gap: 14,
+    marginTop: 3,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  legendText: {
+    fontSize: 10,
+    fontWeight: '500',
+  },
+});
+
+// ─── Sync Pulse Dot ───
+interface SyncPulseDotProps { visible: boolean }
+const SyncPulseDot: React.FC<SyncPulseDotProps> = ({ visible }) => {
+  const pulse = useSharedValue(0);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (visible) {
+      opacity.value = withTiming(1, { duration: 200 });
+      pulse.value = withRepeat(
+        withTiming(1, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        true,
+      );
+    } else {
+      opacity.value = withTiming(0, { duration: 300 });
+      pulse.value = withTiming(0, { duration: 200 });
+    }
+  }, [visible, pulse, opacity]);
+
+  const dotStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 0.7 + pulse.value * 0.5 }],
+    opacity: opacity.value * (0.5 + pulse.value * 0.5),
+  }));
+
+  return (
+    <Animated.View style={[syncStyles.dot, dotStyle]} />
+  );
+};
+
+const syncStyles = StyleSheet.create({
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+  },
+});
 
 // ─── Mini Stat Card ───
 interface MiniStatProps {
@@ -135,15 +291,17 @@ const MiniStatCard: React.FC<MiniStatProps> = ({
         </View>
 
         {/* Value */}
-        <AnimatedCounter
-          value={value}
-          style={{
-            fontSize: compactMode ? (tablet ? 20 : 16) : showcaseMode ? (tablet ? 34 : 28) : (tablet ? 30 : 24),
-            fontWeight: '900',
-            color: colors.textPrimary,
-            letterSpacing: -1,
-          }}
-        />
+        <Animated.View key={value} entering={ZoomIn.duration(300).springify().damping(14)}>
+          <AnimatedCounter
+            value={value}
+            style={{
+              fontSize: compactMode ? (tablet ? 20 : 16) : showcaseMode ? (tablet ? 34 : 28) : (tablet ? 30 : 24),
+              fontWeight: '900',
+              color: colors.textPrimary,
+              letterSpacing: -1,
+            }}
+          />
+        </Animated.View>
 
         {/* Label */}
         <Text
@@ -300,7 +458,7 @@ const miniStyles = StyleSheet.create({
 // ─── Main Header ───
 interface PremiumArticleHeaderProps {
   title?: string;
-  mode?: 'articles' | 'tablettes' | 'pc';
+  mode?: 'articles' | 'pc';
   statsMode?: 'full' | 'totalOnly';
   totalArticles: number;
   stockOK: number;
@@ -331,6 +489,7 @@ interface PremiumArticleHeaderProps {
   onSentPress?: () => void;
   onPCModelPress?: (label: string) => void;
   onTabletFilterChange?: (next: 'all' | 'active' | 'decommissioned') => void;
+  isSyncing?: boolean;
 }
 
 const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
@@ -351,6 +510,7 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
   tabletDecommissionedCount = 0,
   tabletDecommissionedNames = [],
   activeTabletFilter = 'all',
+  isSyncing = false,
   onAdd,
   onBack,
   onTotalPress,
@@ -365,7 +525,7 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
   const { colors, isDark } = useTheme();
-  const isTabletMode = mode === 'tablettes' || statsMode === 'totalOnly';
+  const isTabletMode = statsMode === 'totalOnly';
   const isPCMode = mode === 'pc';
   const showPCFocusedStats = isPCMode && !!pcFocusedStats;
   const showPCModelsSection = showPCFocusedStats && pcFocusedModels.length > 0;
@@ -438,6 +598,7 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
             <Text style={[styles.title, { color: colors.textPrimary }, tablet && { fontSize: 26 }]}>
               {title}
             </Text>
+            <SyncPulseDot visible={isSyncing} />
           </View>
         </View>
 
@@ -542,9 +703,9 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
           <>
         <MiniStatCard
           value={totalArticles}
-          label={isTabletMode ? 'Tablettes' : isPCMode ? 'PC portables' : 'Total'}
+          label={isPCMode ? 'PC portables' : 'Total'}
           configKey="total"
-          iconOverride={isTabletMode ? 'tablet-cellphone' : isPCMode ? 'laptop' : undefined}
+          iconOverride={isPCMode ? 'laptop' : undefined}
           showcaseMode={isTabletMode}
           pcGridMode={isPCMode}
           compactMode={isPCMode}
@@ -617,6 +778,15 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
           </>
         )}
       </View>
+
+      {/* ─── Progress bar stock OK ─── */}
+      {!isPCMode && !isTabletMode && statsMode === 'full' && totalArticles > 0 && (
+        <StockProgressBar
+          stockOK={stockOK}
+          total={totalArticles}
+          alertes={alertes}
+        />
+      )}
 
       {isTabletMode && (
         <View style={styles.tabletStatusPanel}>

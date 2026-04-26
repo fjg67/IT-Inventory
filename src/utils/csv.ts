@@ -235,6 +235,7 @@ export async function exportSentPCsCSV(rows: SentPCRecord[], sourceSiteName?: st
     'Agence source',
     'EDS source',
     'EDS destination',
+    'Destinataire',
     'Envoyé par',
   ];
 
@@ -247,6 +248,7 @@ export async function exportSentPCsCSV(rows: SentPCRecord[], sourceSiteName?: st
     row.sourceSiteName ?? sourceSiteName ?? '',
     row.sourceAgencyEds ?? '',
     row.destinationAgencyEds,
+    row.recipientName ?? '',
     row.sentByName ?? '',
   ]);
 

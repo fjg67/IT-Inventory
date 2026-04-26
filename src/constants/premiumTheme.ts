@@ -275,6 +275,13 @@ export const premiumAnimation = {
   pressDuration: 100,
   pressScale: 0.97,
   pressScaleSmall: 0.92,
+  feedbackSuccessEnterDuration: 320,
+  feedbackSuccessExitDuration: 220,
+  feedbackSuccessInitialOffset: 38,
+  feedbackSuccessSpringDamping: 14,
+  feedbackSuccessSpringStiffness: 180,
+  feedbackErrorEnterDuration: 180,
+  feedbackErrorExitDuration: 150,
 } as const;
 
 // ==================== EXPORT COMPLET ====================

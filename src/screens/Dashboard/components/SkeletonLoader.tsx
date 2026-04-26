@@ -1,12 +1,15 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
+import LinearGradient from 'react-native-linear-gradient';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
   Easing,
+  interpolate,
+  FadeInUp,
 } from 'react-native-reanimated';
 import {
   premiumSpacing,
@@ -20,43 +23,64 @@ interface SkeletonLoaderProps {
 }
 
 /**
- * Ligne skeleton individuelle avec shimmer animé
+ * Ligne skeleton individuelle avec shimmer sweep animé
  */
-const SkeletonLine: React.FC<{ delay: number }> = ({ delay }) => {
-  const opacity = useSharedValue(0.3);
+const SkeletonLine: React.FC<{ delay: number; index: number }> = ({ delay, index }) => {
+  const shimmerX = useSharedValue(0);
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
   const { colors } = useTheme();
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      opacity.value = withRepeat(
-        withTiming(0.7, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+      shimmerX.value = withRepeat(
+        withTiming(1, { duration: 1200, easing: Easing.linear }),
         -1,
-        true,
+        false,
       );
     }, delay);
     return () => clearTimeout(timer);
-  }, [delay, opacity]);
+  }, [delay, shimmerX]);
 
   const shimmerStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
+    transform: [{ translateX: interpolate(shimmerX.value, [0, 1], [-width, width]) }],
   }));
 
+  const shimmerColor = colors.isDark
+    ? 'rgba(255,255,255,0.07)'
+    : 'rgba(255,255,255,0.5)';
+
   return (
-    <View style={[styles.skeletonRow, { backgroundColor: colors.surfaceGlass, borderColor: colors.borderSubtle }, tablet && { padding: premiumSpacing.lg }]}>
+    <Animated.View
+      entering={FadeInUp.delay(index * 80).duration(300)}
+      style={[
+        styles.skeletonRow,
+        { backgroundColor: colors.surfaceGlass, borderColor: colors.borderSubtle, overflow: 'hidden' },
+        tablet && { padding: premiumSpacing.lg },
+      ]}
+    >
+      {/* Shimmer overlay */}
+      <Animated.View style={[styles.shimmerOverlay, shimmerStyle]} pointerEvents="none">
+        <LinearGradient
+          colors={['transparent', shimmerColor, 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.shimmerGradient}
+        />
+      </Animated.View>
+
       {/* Cercle icône */}
-      <Animated.View style={[styles.skeletonCircle, { backgroundColor: colors.skeleton }, shimmerStyle, tablet && { width: 52, height: 52, borderRadius: 26 }]} />
+      <View style={[styles.skeletonCircle, { backgroundColor: colors.skeleton }, tablet && { width: 52, height: 52, borderRadius: 26 }]} />
 
       {/* Contenu */}
       <View style={styles.skeletonContent}>
-        <Animated.View style={[styles.skeletonTitle, { backgroundColor: colors.skeleton }, shimmerStyle]} />
-        <Animated.View style={[styles.skeletonSubtitle, { backgroundColor: colors.skeleton }, shimmerStyle]} />
+        <View style={[styles.skeletonTitle, { backgroundColor: colors.skeleton }]} />
+        <View style={[styles.skeletonSubtitle, { backgroundColor: colors.skeleton }]} />
       </View>
 
       {/* Badge */}
-      <Animated.View style={[styles.skeletonBadge, { backgroundColor: colors.skeleton }, shimmerStyle]} />
-    </View>
+      <View style={[styles.skeletonBadge, { backgroundColor: colors.skeleton }]} />
+    </Animated.View>
   );
 };
 
@@ -68,7 +92,7 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({ count = 3 }) => {
   return (
     <View style={styles.container}>
       {Array.from({ length: count }, (_, i) => (
-        <SkeletonLine key={i} delay={i * 150} />
+        <SkeletonLine key={i} delay={i * 150} index={i} />
       ))}
     </View>
   );
@@ -84,6 +108,14 @@ const styles = StyleSheet.create({
     borderRadius: premiumBorderRadius.lg,
     borderWidth: 1,
     padding: premiumSpacing.md,
+  },
+  shimmerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+  },
+  shimmerGradient: {
+    flex: 1,
+    width: 120,
   },
   skeletonCircle: {
     width: 44,

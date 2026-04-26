@@ -23,16 +23,15 @@ import { useTheme } from '@/theme';
 import { isTablet as checkIsTablet } from '../../utils/responsive';
 
 // ==================== CONFIG ====================
-type TabCfg = { icon: string; iconFocused: string; label: string };
+type TabCfg = { icon: string; iconFocused: string; label: string; compactLabel?: string };
 
 const TAB_CONFIG: Record<string, TabCfg> = {
-  Dashboard:  { icon: 'home-outline',       iconFocused: 'home',                    label: 'Accueil' },
-  Articles:   { icon: 'package-variant',     iconFocused: 'package-variant-closed',  label: 'Articles' },
-  PC:         { icon: 'laptop',              iconFocused: 'laptop',                  label: 'PC' },
-  Tablette:   { icon: 'tablet-cellphone',    iconFocused: 'tablet-cellphone',        label: 'Tablette' },
-  Scan:       { icon: 'barcode-scan',        iconFocused: 'barcode-scan',            label: 'Scan' },
-  Mouvements: { icon: 'swap-horizontal',     iconFocused: 'swap-horizontal',         label: 'Mouvements' },
-  Settings:   { icon: 'cog-outline',         iconFocused: 'cog',                     label: 'Réglages' },
+  Dashboard:  { icon: 'home-outline',       iconFocused: 'home',                    label: 'Accueil', compactLabel: 'Accueil' },
+  Articles:   { icon: 'package-variant',     iconFocused: 'package-variant-closed',  label: 'Articles', compactLabel: 'Articles' },
+  PC:         { icon: 'laptop',              iconFocused: 'laptop',                  label: 'PC', compactLabel: 'PC' },
+  Scan:       { icon: 'barcode-scan',        iconFocused: 'barcode-scan',            label: 'Scan', compactLabel: 'Scan' },
+  Mouvements: { icon: 'swap-horizontal',     iconFocused: 'swap-horizontal',         label: 'Mouvements', compactLabel: 'Mouv.' },
+  Settings:   { icon: 'cog-outline',         iconFocused: 'cog',                     label: 'Réglages', compactLabel: 'Régl.' },
 };
 
 // ==================== TAB ITEM STANDARD ====================
@@ -48,22 +47,27 @@ const TabItem: React.FC<TabItemProps> = ({ routeName, isFocused, onPress, onLong
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
   const { colors } = useTheme();
+  const useCompactLabel = !tablet && width < 390;
+  const label = useCompactLabel ? (config.compactLabel ?? config.label) : config.label;
 
   const iconScale = useSharedValue(1);
   const dotOpacity = useSharedValue(0);
   const dotScale = useSharedValue(0);
+  const indicatorWidth = useSharedValue(0);
 
   useEffect(() => {
     if (isFocused) {
       iconScale.value = withSpring(1.12, { damping: 12, stiffness: 150 });
       dotOpacity.value = withTiming(1, { duration: 200 });
       dotScale.value = withSpring(1, { damping: 10, stiffness: 200 });
+      indicatorWidth.value = withSpring(1, { damping: 14, stiffness: 160 });
     } else {
       iconScale.value = withTiming(1, { duration: 200 });
       dotOpacity.value = withTiming(0, { duration: 200 });
       dotScale.value = withTiming(0, { duration: 150 });
+      indicatorWidth.value = withTiming(0, { duration: 180 });
     }
-  }, [isFocused, iconScale, dotOpacity, dotScale]);
+  }, [isFocused, iconScale, dotOpacity, dotScale, indicatorWidth]);
 
   const iconAnim = useAnimatedStyle(() => ({
     transform: [{ scale: iconScale.value }],
@@ -72,6 +76,11 @@ const TabItem: React.FC<TabItemProps> = ({ routeName, isFocused, onPress, onLong
   const dotAnim = useAnimatedStyle(() => ({
     opacity: dotOpacity.value,
     transform: [{ scale: dotScale.value }],
+  }));
+
+  const indicatorAnim = useAnimatedStyle(() => ({
+    transform: [{ scaleX: indicatorWidth.value }],
+    opacity: indicatorWidth.value,
   }));
 
   const handlePress = useCallback(() => {
@@ -91,16 +100,22 @@ const TabItem: React.FC<TabItemProps> = ({ routeName, isFocused, onPress, onLong
       <Animated.View style={iconAnim}>
         <Icon
           name={isFocused ? config.iconFocused : config.icon}
-          size={tablet ? 28 : 23}
+          size={tablet ? 28 : 21}
           color={isFocused ? colors.tabBarActive : colors.tabBarInactive}
         />
       </Animated.View>
 
-      <Text style={[s.tabLabel, { color: colors.tabBarInactive }, tablet && s.tabLabelTablet, isFocused && { color: colors.tabBarActive, fontWeight: '600' as const }]} numberOfLines={1}>
-        {config.label}
+      <Text
+        style={[s.tabLabel, { color: colors.tabBarInactive }, tablet && s.tabLabelTablet, isFocused && { color: colors.tabBarActive, fontWeight: '600' as const }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+      >
+        {label}
       </Text>
 
       <Animated.View style={[s.activeDot, { backgroundColor: colors.tabBarActive }, tablet && s.activeDotTablet, dotAnim]} />
+      <Animated.View style={[s.tabIndicator, { backgroundColor: colors.tabBarActive }, indicatorAnim]} />
     </TouchableOpacity>
   );
 };
@@ -205,7 +220,7 @@ const PremiumTabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
     <View style={[s.container, { backgroundColor: colors.tabBarBackground, borderTopColor: colors.tabBarBorder }]}>
       <View style={[s.tabBar, tablet && s.tabBarTablet]}>
         {/* Groupe gauche */}
-        <View style={s.tabGroup}>
+        <View style={[s.tabGroup, { flex: leftRoutes.length }]}>
           {leftRoutes.map((route, i) => {
             const { isFocused, onPress, onLongPress } = makeHandlers(route, i);
             return (
@@ -234,7 +249,7 @@ const PremiumTabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
         })()}
 
         {/* Groupe droite */}
-        <View style={s.tabGroup}>
+        <View style={[s.tabGroup, { flex: rightRoutes.length }]}>
           {rightRoutes.map((route, i) => {
             const { isFocused, onPress, onLongPress } = makeHandlers(route, scanIndex + 1 + i);
             return (
@@ -262,7 +277,7 @@ const s = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     height: 68,
-    alignItems: 'flex-end',
+    alignItems: 'center',
     paddingBottom: Platform.OS === 'ios' ? 4 : 6,
     paddingHorizontal: premiumSpacing.xs,
   },
@@ -280,8 +295,10 @@ const s = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: premiumSpacing.sm,
+    paddingTop: premiumSpacing.sm + 2,
+    paddingBottom: premiumSpacing.xs,
     gap: 2,
+    minWidth: 0,
   },
   tabItemTablet: {
     gap: 4,
@@ -289,8 +306,10 @@ const s = StyleSheet.create({
   },
   tabLabel: {
     ...premiumTypography.small,
-    fontSize: 10.5,
+    fontSize: 9.5,
     marginTop: 2,
+    width: '100%',
+    textAlign: 'center',
   },
   tabLabelTablet: {
     fontSize: 13,
@@ -311,30 +330,36 @@ const s = StyleSheet.create({
     borderRadius: 3,
     marginTop: 4,
   },
+  tabIndicator: {
+    height: 3,
+    width: 22,
+    borderRadius: 2,
+    marginTop: 3,
+  },
 
   // === Tab groups (left / right) ===
   tabGroup: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
   },
 
   // === Scan center button ===
   scanBtnWrapper: {
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    marginTop: -22,
-    paddingHorizontal: 4,
+    justifyContent: 'center',
+    marginTop: -2,
+    paddingHorizontal: 2,
   },
   scanBtnWrapperTablet: {
-    marginTop: -28,
+    marginTop: -10,
   },
   scanGlow: {
     position: 'absolute',
-    top: -4,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    top: -2,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: 'rgba(59,130,246,0.15)',
   },
   scanGlowTablet: {
@@ -344,9 +369,9 @@ const s = StyleSheet.create({
     top: -6,
   },
   scanBtnOuter: {
-    width: 56,
-    height: 56,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 4 },
@@ -368,13 +393,13 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   scanLabel: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '500',
-    marginTop: 4,
+    marginTop: 2,
   },
   scanLabelTablet: {
     fontSize: 13,
-    marginTop: 6,
+    marginTop: 4,
   },
   scanLabelActive: {
   },

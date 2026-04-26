@@ -12,11 +12,15 @@ create table if not exists public."PCSentHistory" (
   "sourceSiteName" text,
   "sourceAgencyEds" text,
   "destinationAgencyEds" text not null,
+  "recipientName" text,
   "sentByUserId" text,
   "sentByName" text,
   "sentAt" timestamptz not null default now(),
   "createdAt" timestamptz not null default now()
 );
+
+alter table public."PCSentHistory"
+  add column if not exists "recipientName" text;
 
 create index if not exists "idx_pc_sent_source_site" on public."PCSentHistory" ("sourceSiteId");
 create index if not exists "idx_pc_sent_sent_at" on public."PCSentHistory" ("sentAt" desc);

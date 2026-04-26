@@ -21,6 +21,7 @@ import Animated, {
   FadeInUp,
   FadeIn,
   ZoomIn,
+  SlideInRight,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -149,15 +150,7 @@ export const ArticleDetailScreen: React.FC = () => {
       value.includes('pc disponible'),
     );
   }, [article]);
-  const isTabletArticle = useMemo(() => {
-    if (!article) return false;
-
-    const values = [article.typeArticle, article.sousType, article.famille]
-      .filter((value): value is string => !!value)
-      .map((value) => value.toLowerCase());
-
-    return values.some((value) => value.includes('tablette'));
-  }, [article]);
+  const isTabletArticle = useMemo(() => false, []);
   const isTabletDecommissioned = useMemo(() => {
     if (!isTabletArticle) return false;
     const normalized = (article?.description ?? '').toLowerCase();
@@ -289,9 +282,9 @@ export const ArticleDetailScreen: React.FC = () => {
       } : prev);
 
       Vibration.vibrate(16);
-      Alert.alert('Succès', 'Tablette décommissionnée avec succès.');
+      Alert.alert('Succès', 'Article décommissionné avec succès.');
     } catch (error) {
-      Alert.alert('Erreur', 'Impossible de décommissionner la tablette.');
+      Alert.alert('Erreur', "Impossible de décommissionner l'article.");
     }
   }, [article, isTabletDecommissioned]);
 
@@ -354,12 +347,11 @@ export const ArticleDetailScreen: React.FC = () => {
   const handleBack = useCallback(() => {
     Vibration.vibrate(10);
 
-    if (sourceTab === 'PC' || sourceTab === 'Tablette') {
-      const tabName = sourceTab === 'Tablette' ? 'Tablette' : 'PC';
+    if (sourceTab === 'PC') {
       const parentNav = navigation.getParent?.();
 
       if (parentNav) {
-        parentNav.navigate(tabName, { screen: 'ArticlesList' });
+        parentNav.navigate('PC', { screen: 'ArticlesList' });
       } else {
         navigation.navigate('ArticlesList');
       }
@@ -371,7 +363,7 @@ export const ArticleDetailScreen: React.FC = () => {
       return;
     }
 
-    const tabName = sourceTab === 'Tablette' ? 'Tablette' : sourceTab === 'PC' ? 'PC' : 'Articles';
+    const tabName = sourceTab === 'PC' ? 'PC' : 'Articles';
     const parentNav = navigation.getParent?.();
     if (parentNav) {
       parentNav.navigate(tabName, { screen: 'ArticlesList' });
@@ -497,7 +489,7 @@ export const ArticleDetailScreen: React.FC = () => {
             {isTabletArticle ? (
               <View style={[styles.refBadge, styles.refBadgeTablet]}>
                 <Icon name="tablet-cellphone" size={12} color="rgba(255,255,255,0.92)" />
-                <Text style={styles.refText}>Fiche Tablette</Text>
+                <Text style={styles.refText}>Fiche Article</Text>
               </View>
             ) : (
               <View style={styles.refBadge}>
@@ -602,7 +594,6 @@ export const ArticleDetailScreen: React.FC = () => {
             ))}
           </Animated.View>
         ) : null}
-        )}
 
         {/* ===== ALERTE STOCK ===== */}
         {isLowStock && (
@@ -639,10 +630,10 @@ export const ArticleDetailScreen: React.FC = () => {
         )}
 
         {/* ===== INFORMATIONS ===== */}
-        <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.section}>
+        <Animated.View entering={SlideInRight.delay(300).duration(400).springify().damping(18)} style={styles.section}>
           <View style={styles.sectionHeader}>
             <LinearGradient colors={['#007A39', '#007A39']} style={styles.sectionAccent} />
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{isTabletArticle ? 'Fiche tablette' : 'Informations'}</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{isTabletArticle ? 'Fiche article' : 'Informations'}</Text>
           </View>
           <View style={[styles.infoCard, isTabletArticle && styles.infoCardTablet, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
             <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
@@ -747,7 +738,7 @@ export const ArticleDetailScreen: React.FC = () => {
 
         {/* ===== EXPORT CSV ===== */}
         {!isTabletArticle && (
-        <Animated.View entering={FadeInUp.delay(350).duration(400)} style={styles.section}>
+        <Animated.View entering={SlideInRight.delay(350).duration(400).springify().damping(18)} style={styles.section}>
           <TouchableOpacity
             style={[styles.exportCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}
             activeOpacity={0.8}
@@ -790,7 +781,7 @@ export const ArticleDetailScreen: React.FC = () => {
 
         {/* ===== ACTIONS RAPIDES ===== */}
         {!isSuperviseur && (!isTabletArticle || !isTabletDecommissioned) && (
-          <Animated.View entering={FadeInUp.delay(400).duration(400)} style={styles.section}>
+          <Animated.View entering={SlideInRight.delay(400).duration(400).springify().damping(18)} style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#10B981', '#059669']} style={styles.sectionAccent} />
               <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{isPCArticle ? 'Actions PC' : 'Actions rapides'}</Text>
@@ -830,10 +821,10 @@ export const ArticleDetailScreen: React.FC = () => {
         )}
 
         {!isSuperviseur && isTabletArticle && isTabletDecommissioned && (
-          <Animated.View entering={FadeInUp.delay(400).duration(400)} style={styles.section}>
+          <Animated.View entering={SlideInRight.delay(400).duration(400).springify().damping(18)} style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#D97706', '#B45309']} style={styles.sectionAccent} />
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Statut tablette</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Statut</Text>
             </View>
             <View style={[styles.tabletStatusCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}> 
               <View style={styles.tabletStatusIconWrap}>
@@ -844,7 +835,7 @@ export const ArticleDetailScreen: React.FC = () => {
                 </LinearGradient>
               </View>
               <View style={styles.tabletStatusTextWrap}>
-                <Text style={[styles.tabletStatusTitle, { color: colors.textPrimary }]}>Tablette décommissionnée</Text>
+                <Text style={[styles.tabletStatusTitle, { color: colors.textPrimary }]}>Article décommissionné</Text>
                 <Text style={[styles.tabletStatusSub, { color: colors.textMuted }]}>{tabletDecommissionDateText}</Text>
                 <Text style={[styles.tabletStatusSub, { color: colors.textMuted }]}>Aucune action rapide disponible.</Text>
               </View>
@@ -854,7 +845,7 @@ export const ArticleDetailScreen: React.FC = () => {
 
         {/* ===== HISTORIQUE ===== */}
         {!isTabletArticle && (
-        <Animated.View entering={FadeInUp.delay(500).duration(400)} style={styles.section}>
+        <Animated.View entering={SlideInRight.delay(500).duration(400).springify().damping(18)} style={styles.section}>
           <View style={styles.sectionHeader}>
             <LinearGradient colors={['#005C2B', '#007A39']} style={styles.sectionAccent} />
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Historique</Text>

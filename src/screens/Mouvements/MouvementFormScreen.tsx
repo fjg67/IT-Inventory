@@ -20,6 +20,7 @@ import {
   Modal,
   Dimensions,
   Linking,
+  Image,
 } from 'react-native';
 import Animated, {
   FadeInUp,
@@ -93,6 +94,40 @@ const TYPE_CONFIG: Record<MouvementType, {
     lightColor: '#FBBF24',
     bgColor: 'rgba(245,158,11,0.08)',
     gradient: ['#FBBF24', '#F59E0B'],
+  },
+};
+
+const HEADER_THEME: Record<MouvementType, {
+  gradient: string[];
+  stepDoneGradient: string[];
+  stepActiveGradient: string[];
+  doneTextColor: string;
+  glyphTint: string;
+  glyphIcons: string[];
+}> = {
+  entree: {
+    gradient: ['#065F46', '#0E9F6E', '#34D399'],
+    stepDoneGradient: ['#34D399', '#10B981'],
+    stepActiveGradient: ['#34D399', '#059669'],
+    doneTextColor: '#6EE7B7',
+    glyphTint: 'rgba(6,78,59,0.36)',
+    glyphIcons: ['tray-arrow-down', 'package-variant-plus', 'login-variant', 'arrow-bottom-left-thick'],
+  },
+  sortie: {
+    gradient: ['#7F1D1D', '#B91C1C', '#EF4444'],
+    stepDoneGradient: ['#FB7185', '#EF4444'],
+    stepActiveGradient: ['#F87171', '#DC2626'],
+    doneTextColor: '#FCA5A5',
+    glyphTint: 'rgba(127,29,29,0.36)',
+    glyphIcons: ['tray-arrow-up', 'package-variant-remove', 'logout-variant', 'arrow-top-right-thick'],
+  },
+  ajustement: {
+    gradient: ['#92400E', '#D97706', '#F59E0B'],
+    stepDoneGradient: ['#FCD34D', '#F59E0B'],
+    stepActiveGradient: ['#FBBF24', '#D97706'],
+    doneTextColor: '#FDE68A',
+    glyphTint: 'rgba(146,64,14,0.34)',
+    glyphIcons: ['swap-vertical-circle-outline', 'tune-variant', 'wrench-cog', 'scale-balance'],
   },
 };
 
@@ -204,6 +239,9 @@ export const MouvementFormScreen: React.FC = () => {
   }, [article, type]);
 
   const typeColor = TYPE_CONFIG[type]?.color ?? colors.primary;
+  const typeGradient = TYPE_CONFIG[type]?.gradient ?? gradients.primary;
+  const typeBgColor = TYPE_CONFIG[type]?.bgColor ?? 'rgba(0,122,57,0.08)';
+  const headerTheme = HEADER_THEME[type] ?? HEADER_THEME.entree;
 
   // ===== Load article =====
   const loadArticle = useCallback(async (articleId: number) => {
@@ -457,7 +495,7 @@ export const MouvementFormScreen: React.FC = () => {
 
       {/* ===== HEADER ===== */}
       <LinearGradient
-        colors={['#005C2B', '#007A39', '#4EB35A']}
+        colors={headerTheme.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -466,6 +504,23 @@ export const MouvementFormScreen: React.FC = () => {
         <View style={styles.headerDeco1} />
         <View style={styles.headerDeco2} />
         <View style={styles.headerDeco3} />
+        <View style={styles.headerVisualLayer} pointerEvents="none">
+          {headerTheme.glyphIcons.map((iconName, index) => (
+            <View
+              key={`${iconName}-${index}`}
+              style={[
+                styles.headerVisualGlyph,
+                index === 0 && styles.headerVisualGlyphA,
+                index === 1 && styles.headerVisualGlyphB,
+                index === 2 && styles.headerVisualGlyphC,
+                index === 3 && styles.headerVisualGlyphD,
+                { backgroundColor: headerTheme.glyphTint },
+              ]}
+            >
+              <Icon name={iconName} size={14} color="rgba(255,255,255,0.9)" />
+            </View>
+          ))}
+        </View>
 
         <View style={styles.headerTop}>
           <TouchableOpacity
@@ -490,11 +545,11 @@ export const MouvementFormScreen: React.FC = () => {
               <View key={step} style={styles.stepItem}>
                 <View style={styles.stepDotRow}>
                   {done ? (
-                    <LinearGradient colors={['#34D399', '#10B981']} style={styles.stepDot}>
+                    <LinearGradient colors={headerTheme.stepDoneGradient} style={styles.stepDot}>
                       <Icon name="check" size={10} color="#FFF" />
                     </LinearGradient>
                   ) : active ? (
-                    <LinearGradient colors={['#4EB35A', '#007A39']} style={styles.stepDot}>
+                    <LinearGradient colors={headerTheme.stepActiveGradient} style={styles.stepDot}>
                       <View style={styles.stepDotActive} />
                     </LinearGradient>
                   ) : (
@@ -502,13 +557,13 @@ export const MouvementFormScreen: React.FC = () => {
                   )}
                   {i < 2 && (
                     <View style={styles.stepLineTrack}>
-                      <View style={[styles.stepLineFill, { width: done ? '100%' : '0%' }]} />
+                      <View style={[styles.stepLineFill, { width: done ? '100%' : '0%', backgroundColor: headerTheme.stepDoneGradient[0] }]} />
                     </View>
                   )}
                 </View>
                 <Text style={[
                   styles.stepLabel,
-                  done && { color: '#34D399' },
+                  done && { color: headerTheme.doneTextColor },
                   active && { color: '#FFF', fontWeight: '700' },
                   !done && !active && { color: 'rgba(255,255,255,0.45)' },
                 ]}>
@@ -538,17 +593,17 @@ export const MouvementFormScreen: React.FC = () => {
                 style={styles.scanZone}
               >
                 <LinearGradient
-                  colors={['rgba(0,122,57,0.06)', 'rgba(99,102,241,0.02)']}
+                  colors={[typeBgColor, 'rgba(99,102,241,0.02)']}
                   style={styles.scanGradient}
                 >
                   <View style={styles.scanIconPill}>
-                    <LinearGradient colors={['#007A39', '#007A39']} style={styles.scanIconGrad}>
+                    <LinearGradient colors={typeGradient} style={styles.scanIconGrad}>
                       <View style={styles.scanIconInner}>
-                        <Icon name="barcode-scan" size={32} color="#007A39" />
+                        <Icon name="barcode-scan" size={32} color={typeColor} />
                       </View>
                     </LinearGradient>
                   </View>
-                  <Text style={[styles.scanTitle, { color: colors.primary }]}>
+                  <Text style={[styles.scanTitle, { color: typeColor }]}> 
                     {isScanning ? 'Scan en cours...' : 'Appuyez pour scanner'}
                   </Text>
                   <Text style={[styles.scanSubtitle, { color: colors.textSecondary }]}>
@@ -567,8 +622,8 @@ export const MouvementFormScreen: React.FC = () => {
               {/* ===== 2. SEARCH ===== */}
               <View style={styles.searchSection}>
                 <View style={styles.searchLabelRow}>
-                  <LinearGradient colors={['#007A39', '#007A39']} style={styles.searchLabelAccent} />
-                  <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Code-barres / Référence</Text>
+                  <LinearGradient colors={typeGradient} style={styles.searchLabelAccent} />
+                  <Text style={[styles.sectionLabel, { color: typeColor }]}>Code-barres / Référence</Text>
                 </View>
                 <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
                   <Icon name="magnify" size={20} color={colors.textMuted} />
@@ -587,7 +642,7 @@ export const MouvementFormScreen: React.FC = () => {
                       <Icon name="close-circle" size={18} color={colors.textMuted} />
                     </TouchableOpacity>
                   )}
-                  {searching && <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 6 }} />}
+                  {searching && <ActivityIndicator size="small" color={typeColor} style={{ marginLeft: 6 }} />}
                 </View>
                 {errors.barcode ? (
                   <Animated.View entering={FadeIn.duration(200)} style={styles.errorRow}>
@@ -606,8 +661,16 @@ export const MouvementFormScreen: React.FC = () => {
                         onPress={() => handleSelectSuggestion(a)}
                         activeOpacity={0.6}
                       >
-                        <View style={[styles.suggestionIcon, { backgroundColor: colors.background }]}>
-                          <Icon name="package-variant-closed" size={18} color={colors.textSecondary} />
+                        <View style={[styles.suggestionIcon, { backgroundColor: colors.background }]}> 
+                          {a.photoUrl ? (
+                            <Image
+                              source={{ uri: a.photoUrl }}
+                              style={styles.suggestionImage}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <Icon name="package-variant-closed" size={18} color={colors.textSecondary} />
+                          )}
                         </View>
                         <View style={styles.suggestionInfo}>
                           <Text style={[styles.suggestionRef, { color: colors.textSecondary }]}>{a.reference}</Text>
@@ -628,16 +691,24 @@ export const MouvementFormScreen: React.FC = () => {
           {article && (
             <Animated.View entering={ZoomIn.duration(350)} style={styles.articleSection}>
               <View style={styles.articleLabelRow}>
-                <LinearGradient colors={['#10B981', '#059669']} style={styles.articleLabelDot} />
-                <Text style={[styles.articleLabelText, { color: colors.success }]}>Article sélectionné</Text>
+                <LinearGradient colors={typeGradient} style={styles.articleLabelDot} />
+                <Text style={[styles.articleLabelText, { color: typeColor }]}>Article sélectionné</Text>
               </View>
               <View style={[styles.articleCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-                <LinearGradient colors={['#10B981', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.articleCardStrip} />
+                <LinearGradient colors={typeGradient} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.articleCardStrip} />
                 <View style={styles.articleCardTop}>
                   <View style={styles.articleIconPill}>
-                    <LinearGradient colors={['#007A39', '#007A39']} style={styles.articleIconGrad}>
+                    <LinearGradient colors={typeGradient} style={styles.articleIconGrad}>
                       <View style={styles.articleIconInner}>
-                        <Icon name="package-variant-closed" size={18} color="#007A39" />
+                        {article.photoUrl ? (
+                          <Image
+                            source={{ uri: article.photoUrl }}
+                            style={styles.articleImage}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <Icon name="package-variant-closed" size={18} color={typeColor} />
+                        )}
                       </View>
                     </LinearGradient>
                   </View>
@@ -652,11 +723,11 @@ export const MouvementFormScreen: React.FC = () => {
                 <View style={styles.articleMeta}>
                   <View style={[
                     styles.stockBadge,
-                    { backgroundColor: stockActuel < (article.stockMini ?? 0) ? colors.dangerBg : 'rgba(0,122,57,0.08)' },
+                    { backgroundColor: stockActuel < (article.stockMini ?? 0) ? colors.dangerBg : typeBgColor },
                   ]}>
                     <Text style={[
                       styles.stockBadgeText,
-                      { color: stockActuel < (article.stockMini ?? 0) ? colors.danger : '#007A39' },
+                      { color: stockActuel < (article.stockMini ?? 0) ? colors.danger : typeColor },
                     ]}>
                       Stock actuel : {stockActuel} {article.unite}
                     </Text>
@@ -677,8 +748,8 @@ export const MouvementFormScreen: React.FC = () => {
           {childSites.length > 0 && !selectedSubSiteId && (
             <Animated.View entering={FadeInUp.delay(50).duration(400)} style={{ marginBottom: 16 }}>
               <View style={styles.sectionLabelRow}>
-                <LinearGradient colors={['#007A39', '#005C2B']} style={styles.sectionLabelAccent} />
-                <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Stock concerné <Text style={{ color: colors.danger }}>*</Text></Text>
+                <LinearGradient colors={typeGradient} style={styles.sectionLabelAccent} />
+                <Text style={[styles.sectionLabel, { color: typeColor }]}>Stock concerné <Text style={{ color: colors.danger }}>*</Text></Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
                 {childSites.map(site => {
@@ -695,15 +766,15 @@ export const MouvementFormScreen: React.FC = () => {
                       activeOpacity={0.7}
                     >
                       {selected ? (
-                        <LinearGradient colors={['#007A39', '#007A39']} style={styles.siteCardIconPill}>
+                        <LinearGradient colors={typeGradient} style={styles.siteCardIconPill}>
                           <View style={styles.siteCardIconInner}>
-                            <Icon name="warehouse" size={16} color="#007A39" />
+                            <Icon name="warehouse" size={16} color={typeColor} />
                           </View>
                         </LinearGradient>
                       ) : (
                         <Icon name="warehouse" size={18} color={colors.textMuted} />
                       )}
-                      <Text style={[styles.siteCardText, { color: selected ? '#007A39' : colors.textSecondary }, selected && { fontWeight: '700' }]} numberOfLines={1}>
+                      <Text style={[styles.siteCardText, { color: selected ? typeColor : colors.textSecondary }, selected && { fontWeight: '700' }]} numberOfLines={1}>
                         {site.nom}
                       </Text>
                     </TouchableOpacity>
@@ -716,8 +787,8 @@ export const MouvementFormScreen: React.FC = () => {
           {/* ===== 4. TYPE SELECTOR ===== */}
           <Animated.View entering={FadeInUp.delay(100).duration(400)}>
             <View style={styles.typeSectionHeader}>
-              <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.sectionLabelAccent} />
-              <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Type de mouvement</Text>
+              <LinearGradient colors={typeGradient} style={styles.sectionLabelAccent} />
+              <Text style={[styles.sectionLabel, { color: typeColor }]}>Type de mouvement</Text>
               <Text style={[styles.required, { color: colors.danger }]}>*</Text>
             </View>
             <View style={styles.typeGrid}>
@@ -761,8 +832,8 @@ export const MouvementFormScreen: React.FC = () => {
           {/* ===== 5. QUANTITY STEPPER ===== */}
           <Animated.View entering={FadeInUp.delay(200).duration(400)}>
             <View style={styles.typeSectionHeader}>
-              <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.sectionLabelAccent} />
-              <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Quantité</Text>
+              <LinearGradient colors={typeGradient} style={styles.sectionLabelAccent} />
+              <Text style={[styles.sectionLabel, { color: typeColor }]}>Quantité</Text>
               <Text style={[styles.required, { color: colors.danger }]}>*</Text>
             </View>
             <View style={[styles.stepperRow, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
@@ -818,8 +889,8 @@ export const MouvementFormScreen: React.FC = () => {
           {article && nouveauStock !== null && (
             <Animated.View entering={FadeInUp.delay(250).duration(400)}>
               <View style={styles.sectionLabelRow}>
-                <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.sectionLabelAccent} />
-                <Text style={[styles.sectionLabel, { color: colors.textPrimary }]}>Aperçu du stock</Text>
+                <LinearGradient colors={typeGradient} style={styles.sectionLabelAccent} />
+                <Text style={[styles.sectionLabel, { color: typeColor }]}>Aperçu du stock</Text>
               </View>
               <View style={[styles.previewCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
                 <LinearGradient colors={[typeColor, typeColor + 'CC']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.previewCardStrip} />
@@ -1035,6 +1106,39 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  headerVisualLayer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  headerVisualGlyph: {
+    position: 'absolute',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerVisualGlyphA: {
+    top: 20,
+    right: 76,
+    transform: [{ rotate: '-8deg' }],
+  },
+  headerVisualGlyphB: {
+    top: 86,
+    right: 20,
+    transform: [{ rotate: '10deg' }],
+  },
+  headerVisualGlyphC: {
+    top: 108,
+    left: 34,
+    transform: [{ rotate: '-10deg' }],
+  },
+  headerVisualGlyphD: {
+    top: 30,
+    left: '42%' as any,
+    transform: [{ rotate: '8deg' }],
   },
   headerTop: {
     flexDirection: 'row',
@@ -1257,6 +1361,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  suggestionImage: {
+    width: '100%',
+    height: '100%',
   },
   suggestionInfo: {
     flex: 1,
@@ -1339,6 +1448,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  articleImage: {
+    width: '100%',
+    height: '100%',
   },
   articleInfo: {
     flex: 1,

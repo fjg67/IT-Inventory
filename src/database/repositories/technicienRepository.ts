@@ -15,6 +15,13 @@ interface TechnicienRow {
   role?: string | null;
 }
 
+const EXCLUDED_TECHNICIAN_NAMES = new Set(['s']);
+
+function shouldExcludeTechnicien(row: TechnicienRow): boolean {
+  const normalizedName = (row.name ?? '').trim().toLowerCase();
+  return EXCLUDED_TECHNICIAN_NAMES.has(normalizedName);
+}
+
 function mapRowToTechnicien(row: TechnicienRow): Technicien {
   // Split "Prénom Nom" into separate fields
   const parts = (row.name ?? '').trim().split(/\s+/);
@@ -41,7 +48,7 @@ export const technicienRepository = {
       .neq('technicianId', 'administrateur')
       .order('name');
     if (error) throw new Error(error.message);
-    return (data ?? []).map(mapRowToTechnicien);
+    return (data ?? []).filter((row) => !shouldExcludeTechnicien(row)).map(mapRowToTechnicien);
   },
 
   async findBySite(siteId: string | number): Promise<Technicien[]> {
@@ -53,7 +60,7 @@ export const technicienRepository = {
       .neq('technicianId', 'administrateur')
       .order('name');
     if (error) throw new Error(error.message);
-    return (data ?? []).map(mapRowToTechnicien);
+    return (data ?? []).filter((row) => !shouldExcludeTechnicien(row)).map(mapRowToTechnicien);
   },
 
   async findById(id: string | number): Promise<Technicien | null> {
@@ -64,6 +71,7 @@ export const technicienRepository = {
       .eq('id', id)
       .maybeSingle();
     if (error) throw new Error(error.message);
+    if (data && shouldExcludeTechnicien(data)) return null;
     return data ? mapRowToTechnicien(data) : null;
   },
 
@@ -75,6 +83,7 @@ export const technicienRepository = {
       .eq('technicianId', matricule)
       .maybeSingle();
     if (error) throw new Error(error.message);
+    if (data && shouldExcludeTechnicien(data)) return null;
     return data ? mapRowToTechnicien(data) : null;
   },
 

@@ -55,7 +55,6 @@ export const SOUS_TYPE_OPTIONS = [
   { value: 'Filtre confidentialité 15.6"', label: 'Filtre confidentialité 15.6"' },
   { value: 'Filtre confidentialité 16"', label: 'Filtre confidentialité 16"' },
   { value: 'Filtre confidentialité VIP', label: 'Filtre confidentialité VIP' },
-  { value: 'Tablette', label: 'Tablette' },
   { value: 'Pour présentation', label: 'Pour présentation' },
   { value: 'Kit clavier souris', label: 'Kit clavier souris' },
   { value: 'Clavier / Souris', label: 'Clavier / Souris' },

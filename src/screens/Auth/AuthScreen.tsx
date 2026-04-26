@@ -42,6 +42,7 @@ import { useResponsive } from '@/utils/responsive';
 import { toAbbreviation } from '@/utils/abbreviation';
 import { useTheme } from '@/theme';
 import { SUPABASE_CONFIG } from '@/constants/config';
+import { getSupabaseClient, tables } from '@/api/supabase';
 import { protectedProfileMfaConfigs, ProtectedProfileMfaConfig } from '@/constants/mfa';
 import { buildGoogleAuthenticatorUri, verifyGoogleAuthenticatorCode } from '@/services/googleAuthenticatorService';
 
@@ -77,6 +78,13 @@ const normalizeForMatch = (value?: string | null): string => (
     .trim()
     .toUpperCase()
 );
+
+const shouldHideTechnicien = (technicien: Technicien): boolean => {
+  const fullName = `${technicien.prenom || ''} ${technicien.nom || ''}`.trim();
+  const normalizedFullName = normalizeForMatch(fullName);
+  const normalizedInitials = normalizeForMatch(getInitials(technicien));
+  return normalizedFullName === 'S' || normalizedInitials === 'S';
+};
 
 const MFA_SETUP_VIEWED_KEY_PREFIX = '@it-inventory/mfa-setup-viewed/';
 
@@ -131,6 +139,7 @@ export const AuthScreen: React.FC = () => {
   const { techniciens, isLoading, error } = useAppSelector(state => state.auth);
   const siteActif = useAppSelector(state => state.site.siteActif);
   const visibleTechniciens = useMemo(() => {
+    const techniciensWithoutExcluded = techniciens.filter((technicien) => !shouldHideTechnicien(technicien));
     const normalizedSiteName = normalizeForMatch(siteActif?.nom);
     const isStockOrTcsSite =
       normalizedSiteName.includes('STOCK 5') ||
@@ -138,17 +147,17 @@ export const AuthScreen: React.FC = () => {
       normalizedSiteName.includes('TCS');
 
     if (isStockOrTcsSite) {
-      return techniciens.filter((technicien) => {
+      return techniciensWithoutExcluded.filter((technicien) => {
         const initials = normalizeForMatch(getInitials(technicien));
         return initials !== 'BI' && initials !== 'EB';
       });
     }
 
     if (!normalizedSiteName.includes('EPINAL')) {
-      return techniciens;
+      return techniciensWithoutExcluded;
     }
 
-    return techniciens.filter((technicien) => {
+    return techniciensWithoutExcluded.filter((technicien) => {
       const initials = normalizeForMatch(getInitials(technicien));
       return initials === 'BI' || initials === 'EB';
     });
@@ -169,6 +178,7 @@ export const AuthScreen: React.FC = () => {
   const [mfaSubmitting, setMfaSubmitting] = useState(false);
   const [showMfaSetupKey, setShowMfaSetupKey] = useState<'hidden' | 'collapsed' | 'revealed'>('collapsed');
   const [mfaSecretCopied, setMfaSecretCopied] = useState(false);
+  const [deletingTechnicienId, setDeletingTechnicienId] = useState<string | number | null>(null);
 
   // Input focus states
   const [prenomFocused, setPrenomFocused] = useState(false);
@@ -197,15 +207,19 @@ export const AuthScreen: React.FC = () => {
     [newPrenom, newNom, prenomError, nomError],
   );
 
-  useEffect(() => {
+  const refreshTechniciens = useCallback(async () => {
     // If parentSiteId is set, load technicians from the parent site (shared across all sub-sites)
     const effectiveSiteId = parentSiteId || siteId;
     if (effectiveSiteId) {
-      dispatch(loadTechniciensBySite(effectiveSiteId));
-    } else {
-      dispatch(loadTechniciens());
+      await dispatch(loadTechniciensBySite(effectiveSiteId));
+      return;
     }
-  }, [dispatch, siteId, parentSiteId]);
+    await dispatch(loadTechniciens());
+  }, [dispatch, parentSiteId, siteId]);
+
+  useEffect(() => {
+    void refreshTechniciens();
+  }, [refreshTechniciens]);
 
   const currentMfaConfig = useMemo(
     () => (pendingTechnicien ? findProtectedProfileMfa(pendingTechnicien) : undefined),
@@ -481,6 +495,76 @@ export const AuthScreen: React.FC = () => {
     }
   }, [isFormValid, newNom, newPrenom, newMatricule, newRole, siteActif]);
 
+  const handleDeleteTechnicien = useCallback(
+    (technicien: Technicien) => {
+      if (deletingTechnicienId !== null) {
+        return;
+      }
+
+      const initials = getInitials(technicien);
+      Alert.alert(
+        'Supprimer ce technicien ?',
+        `${initials} sera retiré de la liste de connexion. Cette action est irreversible.`,
+        [
+          {
+            text: 'Annuler',
+            style: 'cancel',
+          },
+          {
+            text: 'Supprimer',
+            style: 'destructive',
+            onPress: () => {
+              void (async () => {
+                try {
+                  setDeletingTechnicienId(technicien.id);
+                  const supabase = getSupabaseClient();
+                  const syntheticTechnicianId = `X${Date.now().toString().slice(-6)}${String(technicien.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 4)}`;
+
+                  // Clear dependent rows first to avoid foreign key issues.
+                  const { error: errMouv } = await supabase
+                    .from(tables.mouvements)
+                    .delete()
+                    .eq('userId', technicien.id);
+                  if (errMouv) throw new Error(errMouv.message);
+
+                  const { error: errJournal } = await supabase
+                    .from(tables.journalModifications)
+                    .delete()
+                    .eq('userId', technicien.id);
+                  if (errJournal) throw new Error(errJournal.message);
+
+                  const { error: errLoginHistory } = await supabase
+                    .from(tables.loginHistory)
+                    .delete()
+                    .eq('userId', technicien.id);
+                  if (errLoginHistory) throw new Error(errLoginHistory.message);
+
+                  const { error: errTech } = await supabase
+                    .from(tables.techniciens)
+                    .update({
+                      name: 'SUPPRIMÉ',
+                      technicianId: syntheticTechnicianId,
+                    })
+                    .eq('id', technicien.id);
+                  if (errTech) throw new Error(errTech.message);
+
+                  await refreshTechniciens();
+                  Vibration.vibrate(12);
+                  Alert.alert('Supprimé', `${initials} a été retiré.`);
+                } catch (error) {
+                  Alert.alert('Erreur', `Échec de la suppression : ${(error as Error).message}`);
+                } finally {
+                  setDeletingTechnicienId(null);
+                }
+              })();
+            },
+          },
+        ],
+      );
+    },
+    [deletingTechnicienId, refreshTechniciens],
+  );
+
   const closeModal = useCallback(() => {
     setIsModalVisible(false);
     setNewPrenom('');
@@ -503,6 +587,9 @@ export const AuthScreen: React.FC = () => {
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => handleSelectTechnicien(item)}
+            onLongPress={() => handleDeleteTechnicien(item)}
+            delayLongPress={500}
+            disabled={deletingTechnicienId !== null}
             style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle, shadowColor: isDark ? '#000' : '#64748B' }]}
           >
             <LinearGradient
@@ -544,13 +631,17 @@ export const AuthScreen: React.FC = () => {
             </View>
 
             <View style={styles.profileChevron}>
-              <Icon name="chevron-right" size={22} color={colors.primaryLight} />
+              {deletingTechnicienId === item.id ? (
+                <ActivityIndicator size="small" color={colors.primaryLight} />
+              ) : (
+                <Icon name="chevron-right" size={22} color={colors.primaryLight} />
+              )}
             </View>
           </TouchableOpacity>
         </Animated.View>
       );
     },
-    [colors, handleSelectTechnicien, isDark],
+    [colors, deletingTechnicienId, handleDeleteTechnicien, handleSelectTechnicien, isDark],
   );
 
   const renderEmpty = useCallback(
