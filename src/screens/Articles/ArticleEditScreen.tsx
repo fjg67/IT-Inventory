@@ -124,8 +124,6 @@ export const ArticleEditScreen: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [refStatus, setRefStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
-  const [showHeroBanner, setShowHeroBanner] = useState(true);
-
   // Modals
   const [showScanRefModal, setShowScanRefModal] = useState(false);
 
@@ -679,15 +677,6 @@ export const ArticleEditScreen: React.FC = () => {
     }
   };
 
-  const handleFormScroll = useCallback((event: any) => {
-    const y = event?.nativeEvent?.contentOffset?.y ?? 0;
-    if (y > 16 && showHeroBanner) {
-      setShowHeroBanner(false);
-    } else if (y <= 16 && !showHeroBanner) {
-      setShowHeroBanner(true);
-    }
-  }, [showHeroBanner]);
-
   // ===== Loading =====
   if (isLoading) {
     return (
@@ -704,8 +693,7 @@ export const ArticleEditScreen: React.FC = () => {
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* ===== IMMERSIVE HEADER ===== */}
-      {showHeroBanner ? (
-        <Animated.View entering={FadeInDown.duration(220)} exiting={FadeOutUp.duration(180)}>
+      <Animated.View entering={FadeInDown.duration(220)}>
           <LinearGradient
             colors={
               isPCEditMode
@@ -832,7 +820,6 @@ export const ArticleEditScreen: React.FC = () => {
             )}
           </LinearGradient>
         </Animated.View>
-      ) : null}
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -842,7 +829,6 @@ export const ArticleEditScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.scrollContent, isTablet && contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : undefined]}
           keyboardShouldPersistTaps="handled"
-          onScroll={handleFormScroll}
           scrollEventThrottle={16}
         >
           {/* ===== SECTION: INFORMATIONS PRINCIPALES ===== */}

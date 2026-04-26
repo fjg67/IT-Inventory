@@ -68,7 +68,7 @@ const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion }) => 
           Mise à jour requise
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Une nouvelle version de l'application est disponible. Veuillez mettre à jour pour continuer à utiliser IT-Inventory.
+          Une nouvelle version de l'application est disponible sur Google Play. Installez la mise à jour pour continuer à utiliser IT-Inventory.
         </Text>
 
         <View style={[styles.versionBox, { backgroundColor: isDark ? 'rgba(239,68,68,0.1)' : '#FEF2F2', borderColor: isDark ? 'rgba(239,68,68,0.2)' : '#FECACA' }]}>
@@ -83,6 +83,11 @@ const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion }) => 
             </View>
           )}
         </View>
+
+        <View style={[styles.infoBox, { backgroundColor: isDark ? 'rgba(0,122,57,0.14)' : 'rgba(0,122,57,0.08)', borderColor: isDark ? 'rgba(16,185,129,0.22)' : 'rgba(0,122,57,0.14)' }]}>
+          <Icon name="information-outline" size={16} color="#007A39" />
+          <Text style={[styles.infoText, { color: colors.textSecondary }]}>Après la mise à jour depuis Google Play, l'accès à l'application sera de nouveau autorisé automatiquement.</Text>
+        </View>
       </Animated.View>
 
       <Animated.View entering={FadeInUp.delay(800).duration(500)} style={styles.buttonSection}>
@@ -94,7 +99,7 @@ const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion }) => 
             style={styles.updateBtnGradient}
           >
             <Icon name="google-play" size={22} color="#FFF" />
-            <Text style={styles.updateBtnText}>Mettre à jour</Text>
+            <Text style={styles.updateBtnText}>Mettre à jour sur Google Play</Text>
           </LinearGradient>
         </TouchableOpacity>
       </Animated.View>
@@ -163,6 +168,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
     gap: 8,
+  },
+  infoBox: {
+    width: '100%',
+    marginTop: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '500',
   },
   versionRow: {
     flexDirection: 'row',
