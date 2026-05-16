@@ -70,8 +70,8 @@ const getInventoryStatus = (description?: string) => {
   const normalized = (description ?? '').toLowerCase();
   if (normalized.includes('disponible')) return 'Disponible';
   if (normalized.includes('usinage') || normalized.includes('en train d\'usiner')) return 'En usinage';
-  if (normalized.includes('reusin') || normalized.includes('recondition')) return 'A reusiner';
-  if (normalized.includes('a chaud') || normalized.includes('à chaud')) return 'A chaud';
+  if (normalized.includes('reusin') || normalized.includes('recondition')) return 'À reusiner';
+  if (normalized.includes('a chaud') || normalized.includes('à chaud')) return 'À chaud';
   return null;
 };
 
@@ -173,8 +173,8 @@ export const ArticleDetailScreen: React.FC = () => {
   }, [gradient, isPCArticle, isTabletArticle]);
   const isPCAvailable = isPCArticle && inventoryStatus === 'Disponible';
   const isPCProcessing = isPCArticle && inventoryStatus === 'En usinage';
-  const isPCReconditioning = isPCArticle && inventoryStatus === 'A reusiner';
-  const isPCHot = isPCArticle && inventoryStatus === 'A chaud';
+  const isPCReconditioning = isPCArticle && inventoryStatus === 'À reusiner';
+  const isPCHot = isPCArticle && inventoryStatus === 'À chaud';
   const pcStatusMeta = useMemo(() => {
     if (isPCAvailable) {
       return {
@@ -198,7 +198,7 @@ export const ArticleDetailScreen: React.FC = () => {
 
     if (isPCReconditioning) {
       return {
-        label: 'A reusiner',
+        label: 'À reusiner',
         icon: 'wrench-outline',
         gradient: ['#F59E0B', '#D97706'] as [string, string],
         tone: '#D97706',
@@ -207,7 +207,7 @@ export const ArticleDetailScreen: React.FC = () => {
     }
 
     return {
-      label: 'A chaud',
+      label: 'À chaud',
       icon: 'flash-outline',
       gradient: ['#10B981', '#059669'] as [string, string],
       tone: '#059669',
@@ -706,9 +706,9 @@ export const ArticleDetailScreen: React.FC = () => {
             {inventoryStatus ? (
               <View style={[styles.infoRow, isTabletArticle && styles.infoRowTablet, { borderBottomColor: colors.borderSubtle }]}>
                 <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Statut</Text>
-                <View style={[styles.infoTagBadge, { backgroundColor: inventoryStatus === 'A chaud' ? colors.successBg : inventoryStatus === 'Disponible' ? '#DBEAFE' : inventoryStatus === 'En usinage' ? '#FFF7ED' : colors.warningBg }]}>
-                  <Icon name={inventoryStatus === 'A chaud' ? 'flash-outline' : inventoryStatus === 'Disponible' ? 'check-circle-outline' : inventoryStatus === 'En usinage' ? 'cog-play-outline' : 'wrench-outline'} size={13} color={inventoryStatus === 'A chaud' ? colors.success : inventoryStatus === 'Disponible' ? '#2563EB' : inventoryStatus === 'En usinage' ? '#EA580C' : colors.warning} />
-                  <Text style={[styles.infoTagText, { color: inventoryStatus === 'A chaud' ? colors.success : inventoryStatus === 'Disponible' ? '#2563EB' : inventoryStatus === 'En usinage' ? '#EA580C' : colors.warning }]}>{inventoryStatus}</Text>
+                <View style={[styles.infoTagBadge, { backgroundColor: inventoryStatus === 'À chaud' ? colors.successBg : inventoryStatus === 'Disponible' ? '#DBEAFE' : inventoryStatus === 'En usinage' ? '#FFF7ED' : colors.warningBg }]}>
+                  <Icon name={inventoryStatus === 'À chaud' ? 'flash-outline' : inventoryStatus === 'Disponible' ? 'check-circle-outline' : inventoryStatus === 'En usinage' ? 'cog-play-outline' : 'wrench-outline'} size={13} color={inventoryStatus === 'À chaud' ? colors.success : inventoryStatus === 'Disponible' ? '#2563EB' : inventoryStatus === 'En usinage' ? '#EA580C' : colors.warning} />
+                  <Text style={[styles.infoTagText, { color: inventoryStatus === 'À chaud' ? colors.success : inventoryStatus === 'Disponible' ? '#2563EB' : inventoryStatus === 'En usinage' ? '#EA580C' : colors.warning }]}>{inventoryStatus}</Text>
                 </View>
               </View>
             ) : null}

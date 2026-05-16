@@ -460,6 +460,8 @@ interface PremiumArticleHeaderProps {
   title?: string;
   mode?: 'articles' | 'pc';
   statsMode?: 'full' | 'totalOnly';
+  quickStatText?: string;
+  pcTrendDelta?: number;
   totalArticles: number;
   stockOK: number;
   alertes: number;
@@ -496,6 +498,8 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
   title = 'Articles',
   mode = 'articles',
   statsMode = 'full',
+  quickStatText,
+  pcTrendDelta = 0,
   totalArticles,
   stockOK,
   alertes,
@@ -604,6 +608,38 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
 
         <View style={styles.spacer} />
       </View>
+
+      {quickStatText ? (
+        <View style={styles.quickInsightRow}>
+          <View style={[styles.quickStatChip, { backgroundColor: isDark ? 'rgba(0,122,57,0.18)' : 'rgba(0,122,57,0.10)' }]}>
+            <Icon name="clock-time-four-outline" size={13} color="#007A39" />
+            <Text style={[styles.quickStatChipText, { color: '#007A39' }]} numberOfLines={1}>{quickStatText}</Text>
+          </View>
+
+          {isPCMode ? (
+            <View style={[
+              styles.quickTrendChip,
+              {
+                backgroundColor: isDark
+                  ? (pcTrendDelta >= 0 ? 'rgba(16,185,129,0.18)' : 'rgba(239,68,68,0.18)')
+                  : (pcTrendDelta >= 0 ? '#ECFDF5' : '#FEF2F2'),
+              },
+            ]}>
+              <Icon
+                name={pcTrendDelta >= 0 ? 'trending-up' : 'trending-down'}
+                size={13}
+                color={pcTrendDelta >= 0 ? '#059669' : '#DC2626'}
+              />
+              <Text style={[
+                styles.quickTrendChipText,
+                { color: pcTrendDelta >= 0 ? '#047857' : '#B91C1C' },
+              ]}>
+                {pcTrendDelta >= 0 ? '+' : ''}{pcTrendDelta} vs sem.
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
 
       {showPCModelsSection && (
         <View style={styles.focusedModelsWrap}>
@@ -715,7 +751,7 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
           <>
             <MiniStatCard
               value={pcHot}
-              label="A chaud"
+              label="À chaud"
               configKey="stockOK"
               iconOverride="flash-outline"
               pcGridMode={isPCMode}
@@ -851,7 +887,10 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
 const styles = StyleSheet.create({
   headerCard: {
     marginTop: premiumSpacing.lg,
-    borderRadius: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     borderWidth: 1,
     padding: 18,
     paddingLeft: 22,
@@ -869,7 +908,10 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
   },
   headerCardTabletMode: {
-    borderRadius: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     paddingTop: 20,
     paddingBottom: 18,
     shadowOpacity: 0.11,
@@ -964,6 +1006,42 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '900',
     letterSpacing: -0.5,
+  },
+  quickStatChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: 6,
+    marginBottom: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  quickInsightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 8,
+    flexWrap: 'wrap',
+  },
+  quickTrendChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  quickTrendChipText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.1,
+  },
+  quickStatChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.1,
   },
   focusedModelsWrap: {
     marginBottom: 8,

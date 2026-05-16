@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -94,6 +94,14 @@ const GlassStatCard: React.FC<GlassStatCardProps> = ({
   const effectiveSparklineColor = sparklineColor || (iconGradient[0] as string);
   const accentColor = iconGradient[0] as string;
 
+  const yesterdayPct = useMemo(() => {
+    if (!sparklineData || sparklineData.length < 2) return null;
+    const last = sparklineData[sparklineData.length - 1];
+    const prev = sparklineData[sparklineData.length - 2];
+    if (prev === 0) return null;
+    return Math.round(((last - prev) / prev) * 100);
+  }, [sparklineData]);
+
   return (
     <Animated.View
       entering={FadeIn.delay(enteringDelay).duration(220)}
@@ -125,6 +133,17 @@ const GlassStatCard: React.FC<GlassStatCardProps> = ({
             end={{ x: 0, y: 1 }}
             style={styles.accentBar}
           />
+
+          {/* Corner accent top-right */}
+          <LinearGradient
+            colors={[`${accentColor}38`, `${accentColor}00`]}
+            start={{ x: 1, y: 0 }}
+            end={{ x: 0.1, y: 0.9 }}
+            style={styles.cornerAccent}
+          />
+
+          {/* Subtle noise overlay */}
+          <View style={[styles.noiseOverlay, { backgroundColor: isDark ? '#FFFFFF' : '#000000' }]} />
 
           {/* Top row: icon pill + trend */}
           <View style={styles.topRow}>
@@ -171,6 +190,13 @@ const GlassStatCard: React.FC<GlassStatCardProps> = ({
           <Text style={[styles.label, { color: colors.textSecondary }]} numberOfLines={1}>
             {label}
           </Text>
+
+          {/* % variation vs yesterday */}
+          {yesterdayPct !== null && (
+            <Text style={[styles.yesterdayPct, { color: yesterdayPct >= 0 ? '#10B981' : '#EF4444' }]}>
+              {yesterdayPct >= 0 ? '▲' : '▼'} {Math.abs(yesterdayPct)}% vs hier
+            </Text>
+          )}
 
           {/* Sparkline */}
           {sparklineData && sparklineData.length >= 2 && (
@@ -282,6 +308,29 @@ const styles = StyleSheet.create({
   },
   sparklineContainer: {
     marginTop: premiumSpacing.sm,
+  },
+  cornerAccent: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 80,
+    height: 80,
+    borderTopRightRadius: 20,
+  },
+  noiseOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.04,
+    borderRadius: 20,
+  },
+  yesterdayPct: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 5,
+    letterSpacing: -0.1,
   },
 });
 

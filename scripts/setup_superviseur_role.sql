@@ -19,4 +19,18 @@ UPDATE "User"
 SET role = 'TECHNICIAN'::"Role"
 WHERE name ILIKE '%Olivier%KLOTZ%';
 
+-- Ajouter l'utilisateur Remi (superviseur, acronyme RT, sans matricule)
+-- Mot de passe par defaut : !*A1Z2E3R4T5!
+INSERT INTO "User" ("id", "name", "technicianId", "role", "password", "createdAt", "updatedAt")
+VALUES (
+  gen_random_uuid()::text,
+  'Remi',
+  'RT',
+  'superviseur'::"Role",
+  '$2a$10$ODjNsrk2HzN6wDUygCMYBe0lHJ.SIMqkb7QA/KwrbfbJeKKH8d5Fa',
+  now(),
+  now()
+)
+ON CONFLICT ("technicianId") DO NOTHING;
+
 SELECT id, name, role FROM "User" ORDER BY name;

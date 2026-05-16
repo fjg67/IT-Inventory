@@ -68,8 +68,27 @@ const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion }) => 
           Mise à jour requise
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Une nouvelle version de l'application est disponible sur Google Play. Installez la mise à jour pour continuer à utiliser IT-Inventory.
+          Une nouvelle version de l'application est disponible sur Google Play. Installez la mise à jour pour continuer à utiliser IT-Inventory et accéder à l'application.
         </Text>
+
+        <View style={[styles.releasesBox, { backgroundColor: isDark ? 'rgba(15,23,42,0.56)' : '#FFFFFF', borderColor: isDark ? 'rgba(148,163,184,0.22)' : '#E2E8F0' }]}>
+          <View style={styles.releasesHeader}>
+            <Icon name="sparkles" size={16} color="#007A39" />
+            <Text style={[styles.releasesTitle, { color: colors.textPrimary }]}>Nouveautés de cette version</Text>
+          </View>
+          <View style={styles.releaseItem}>
+            <Icon name="check-circle-outline" size={14} color="#007A39" />
+            <Text style={[styles.releaseText, { color: colors.textSecondary }]}>Design PC amélioré avec tri, filtres et cartes plus lisibles.</Text>
+          </View>
+          <View style={styles.releaseItem}>
+            <Icon name="check-circle-outline" size={14} color="#007A39" />
+            <Text style={[styles.releaseText, { color: colors.textSecondary }]}>Messages et écrans de mise à jour plus clairs pour les utilisateurs.</Text>
+          </View>
+          <View style={styles.releaseItem}>
+            <Icon name="check-circle-outline" size={14} color="#007A39" />
+            <Text style={[styles.releaseText, { color: colors.textSecondary }]}>Corrections visuelles et cohérence globale de l’application.</Text>
+          </View>
+        </View>
 
         <View style={[styles.versionBox, { backgroundColor: isDark ? 'rgba(239,68,68,0.1)' : '#FEF2F2', borderColor: isDark ? 'rgba(239,68,68,0.2)' : '#FECACA' }]}>
           <View style={styles.versionRow}>
@@ -161,6 +180,36 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 8,
     marginBottom: 20,
+  },
+  releasesBox: {
+    width: '100%',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 14,
+    gap: 10,
+  },
+  releasesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  releasesTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: -0.1,
+  },
+  releaseItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  releaseText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   versionBox: {
     width: '100%',

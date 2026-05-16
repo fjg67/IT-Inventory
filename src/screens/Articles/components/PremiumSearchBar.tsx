@@ -204,8 +204,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 52,
     gap: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 12,
+    elevation: 3,
   },
   searchIconWrap: {},
   searchIconCircle: {
@@ -220,6 +221,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     padding: 0,
+    letterSpacing: 0.2,
   },
   clearButton: {
     width: 30,

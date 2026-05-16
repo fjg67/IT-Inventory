@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useMemo, useState, useEffect } from 'react';
+﻿import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -97,6 +97,7 @@ const getPcStatus = (description?: string) => {
 
 interface PremiumArticleCardProps {
   article: Article;
+  pcDensity?: 'comfort' | 'compact';
   onPress: (articleId: number) => void;
   onEdit?: () => void;
   onDecommission?: (articleId: number) => void;
@@ -111,6 +112,7 @@ interface PremiumArticleCardProps {
  */
 const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
   article,
+  pcDensity = 'comfort',
   onPress,
   onDecommission,
   onMarkSent,
@@ -124,6 +126,8 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
   const pressScale = useSharedValue(1);
   const pressLift = useSharedValue(0);
   const accentPulse = useSharedValue(1);
+  const compactActionPulse = useSharedValue(0);
+  const statusFlash = useSharedValue(0);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const handlePressIn = useCallback(() => {
@@ -161,6 +165,25 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
     opacity: accentPulse.value,
   }));
 
+  const compactActionPulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + compactActionPulse.value * 0.045 }],
+  }));
+
+  const statusFlashStyle = useAnimatedStyle(() => ({
+    opacity: statusFlash.value,
+  }));
+
+  const triggerCompactActionPulse = useCallback(() => {
+    const shouldPulse = pcDensity === 'compact';
+    if (!shouldPulse) return;
+
+    compactActionPulse.value = 0;
+    compactActionPulse.value = withSequence(
+      withTiming(1, { duration: 110 }),
+      withTiming(0, { duration: 180 }),
+    );
+  }, [compactActionPulse, pcDensity]);
+
   const handlePress = useCallback(() => {
     Vibration.vibrate(10);
     onPress(article.id);
@@ -178,33 +201,37 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
     e.stopPropagation();
     if (onMarkSent) {
       Vibration.vibrate([10, 40, 10]);
+      triggerCompactActionPulse();
       onMarkSent(article.id);
     }
-  }, [onMarkSent, article.id]);
+  }, [onMarkSent, article.id, triggerCompactActionPulse]);
 
   const handleMarkAvailable = useCallback((e: any) => {
     e.stopPropagation();
     if (onMarkAvailable) {
       Vibration.vibrate(12);
+      triggerCompactActionPulse();
       onMarkAvailable(article.id);
     }
-  }, [onMarkAvailable, article.id]);
+  }, [onMarkAvailable, article.id, triggerCompactActionPulse]);
 
   const handleMarkHot = useCallback((e: any) => {
     e.stopPropagation();
     if (onMarkHot) {
       Vibration.vibrate(12);
+      triggerCompactActionPulse();
       onMarkHot(article.id);
     }
-  }, [onMarkHot, article.id]);
+  }, [onMarkHot, article.id, triggerCompactActionPulse]);
 
   const handleDelete = useCallback((e: any) => {
     e.stopPropagation();
     if (onDelete) {
       Vibration.vibrate([10, 60, 10]);
+      triggerCompactActionPulse();
       onDelete(article.id);
     }
-  }, [onDelete, article.id]);
+  }, [onDelete, article.id, triggerCompactActionPulse]);
 
   // Stock config
   const stockConfig = useMemo(() => {
@@ -271,7 +298,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
     if (!article.dateModification) return '';
 
     const date = new Date(article.dateModification);
-    return `A chaud depuis le ${date.toLocaleDateString('fr-FR', {
+    return `À chaud depuis le ${date.toLocaleDateString('fr-FR', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -337,6 +364,8 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
     return values.some((v) => v === 'pc' || v.includes('portable agence') || v.includes('portable siège') || v.includes('pc portable'));
   }, [article.typeArticle, article.sousType, article.famille]);
 
+  const isCompactPCCard = isPCItem && pcDensity === 'compact';
+
   const displayDescription = useMemo(() => {
     if (!article.description) return null;
     const normalized = article.description.toLowerCase().trim();
@@ -346,6 +375,63 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
   }, [article.description, isPCItem, isTabletItem]);
 
   const pcStatus = useMemo(() => getPcStatus(article.description), [article.description]);
+  const previousPcStatusRef = useRef<string | null>(pcStatus);
+  const pcStatusTheme = useMemo(() => {
+    if (pcStatus === 'A chaud') {
+      return {
+        icon: 'flash-outline',
+        color: '#059669',
+        bg: isDark ? 'rgba(16,185,129,0.18)' : '#D1FAE5',
+      };
+    }
+    if (pcStatus === 'En usinage') {
+      return {
+        icon: 'cog-play-outline',
+        color: '#EA580C',
+        bg: isDark ? 'rgba(249,115,22,0.2)' : '#FFEDD5',
+      };
+    }
+    if (pcStatus === 'Disponible') {
+      return {
+        icon: 'check-circle-outline',
+        color: '#2563EB',
+        bg: isDark ? 'rgba(37,99,235,0.18)' : '#DBEAFE',
+      };
+    }
+    if (pcStatus === 'Envoyé') {
+      return {
+        icon: 'send-outline',
+        color: '#BE123C',
+        bg: isDark ? 'rgba(225,29,72,0.2)' : '#FFE4E6',
+      };
+    }
+    return {
+      icon: 'wrench-outline',
+      color: '#D97706',
+      bg: isDark ? 'rgba(245,158,11,0.18)' : '#FEF3C7',
+    };
+  }, [isDark, pcStatus]);
+  const statusFlashColor = useMemo(() => {
+    if (pcStatus === 'A chaud') return isDark ? 'rgba(16,185,129,0.28)' : 'rgba(16,185,129,0.18)';
+    if (pcStatus === 'En usinage') return isDark ? 'rgba(249,115,22,0.28)' : 'rgba(249,115,22,0.18)';
+    if (pcStatus === 'Disponible') return isDark ? 'rgba(37,99,235,0.28)' : 'rgba(37,99,235,0.16)';
+    if (pcStatus === 'Envoyé') return isDark ? 'rgba(225,29,72,0.28)' : 'rgba(225,29,72,0.16)';
+    return isDark ? 'rgba(245,158,11,0.24)' : 'rgba(245,158,11,0.14)';
+  }, [isDark, pcStatus]);
+
+  useEffect(() => {
+    if (!isPCItem) return;
+
+    if (previousPcStatusRef.current && previousPcStatusRef.current !== pcStatus) {
+      statusFlash.value = 0;
+      statusFlash.value = withSequence(
+        withTiming(1, { duration: 170 }),
+        withTiming(0, { duration: 380 }),
+      );
+    }
+
+    previousPcStatusRef.current = pcStatus;
+  }, [isPCItem, pcStatus, statusFlash]);
   const pcAllocationLabel = useMemo(() => {
     if (!isPCItem) return null;
 
@@ -377,6 +463,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
       <View
         style={[
           styles.card,
+          isCompactPCCard && styles.cardCompact,
           {
             backgroundColor: colors.surface,
             borderColor: isDark ? colors.borderSubtle : colors.borderMedium,
@@ -396,6 +483,12 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
         </Animated.View>
 
         <Animated.View pointerEvents="none" style={[styles.liftGlow, { borderColor: stockConfig.color }, liftGlowStyle]} />
+        {isPCItem && (
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.statusFlashOverlay, { backgroundColor: statusFlashColor }, statusFlashStyle]}
+          />
+        )}
 
         {isTabletItem && <View pointerEvents="none" style={styles.tabletCardOrb} />}
 
@@ -410,6 +503,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
             {article.photoUrl ? (
               <View style={[
                 styles.photoContainer,
+                isCompactPCCard && styles.photoContainerCompact,
                 {
                   backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC',
                   borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
@@ -420,6 +514,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                   source={{ uri: article.photoUrl }}
                   style={[
                     styles.photoThumb,
+                    isCompactPCCard && styles.photoThumbCompact,
                     tablet && { width: 54, height: 54 },
                   ]}
                   onLoad={() => setImageLoaded(true)}
@@ -442,13 +537,14 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                   end={{ x: 1, y: 1 }}
                   style={[
                     styles.iconContainer,
+                    isCompactPCCard && styles.iconContainerCompact,
                     tablet && { width: 60, height: 60 },
                   ]}
                 >
-                  <View style={[styles.iconInner, tablet && { width: 38, height: 38, borderRadius: 10 }]}>
+                  <View style={[styles.iconInner, isCompactPCCard && styles.iconInnerCompact, tablet && { width: 38, height: 38, borderRadius: 10 }]}> 
                     <Icon
                       name={isTabletItem ? 'tablet-cellphone' : isPCItem ? 'laptop' : 'package-variant'}
-                      size={tablet ? 22 : 18}
+                      size={isCompactPCCard ? 16 : tablet ? 22 : 18}
                       color="#007A39"
                     />
                   </View>
@@ -458,21 +554,31 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
           </View>
 
           {/* Content */}
-          <View style={styles.content}>
-            {/* Name */}
-            <Text
-              style={[
-                styles.name,
-                { color: colors.textPrimary },
-                tablet && { fontSize: 17 },
-              ]}
-              numberOfLines={1}
-            >
-              {article.nom}
-            </Text>
+          <View style={[styles.content, isCompactPCCard && styles.contentCompact]}>
+            {/* Name + status */}
+            <View style={styles.pcTitleRow}>
+              <Text
+                style={[
+                  styles.name,
+                  isPCItem && styles.pcName,
+                  isCompactPCCard && styles.pcNameCompact,
+                  { color: colors.textPrimary },
+                  tablet && { fontSize: isPCItem ? 18 : 17 },
+                ]}
+                numberOfLines={1}
+              >
+                {article.nom}
+              </Text>
+
+              {isPCItem && pcStatus ? (
+                <View style={[styles.pcStatusHeroBadge, isCompactPCCard && styles.pcStatusHeroBadgeCompact, { backgroundColor: pcStatusTheme.bg }]}> 
+                  <Icon name={pcStatusTheme.icon} size={11} color={pcStatusTheme.color} />
+                </View>
+              ) : null}
+            </View>
 
             {/* Description */}
-            {displayDescription ? (
+            {displayDescription && !isCompactPCCard ? (
               <Text
                 style={[
                   styles.description,
@@ -490,13 +596,14 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
               <View
                 style={[
                   styles.badge,
+                  isCompactPCCard && styles.badgeCompact,
                   {
                     backgroundColor: isDark ? 'rgba(0,122,57,0.1)' : '#E8F5E9',
                   },
                 ]}
               >
                 <Icon name="barcode" size={11} color={colors.primary} />
-                <Text style={[styles.badgeText, { color: colors.primary }]}>
+                <Text style={[styles.badgeText, isCompactPCCard && styles.badgeTextCompact, { color: colors.primary }]}> 
                   {article.reference}
                 </Text>
               </View>
@@ -505,13 +612,14 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                 <View
                   style={[
                     styles.badge,
+                    isCompactPCCard && styles.badgeCompact,
                     {
                       backgroundColor: isDark ? 'rgba(59,130,246,0.16)' : '#DBEAFE',
                     },
                   ]}
                 >
                   <Icon name="tag-outline" size={11} color="#2563EB" />
-                  <Text style={[styles.badgeText, { color: '#2563EB' }]}>Asset {article.barcode}</Text>
+                  <Text style={[styles.badgeText, isCompactPCCard && styles.badgeTextCompact, { color: '#2563EB' }]}>Asset {article.barcode}</Text>
                 </View>
               ) : null}
 
@@ -611,63 +719,56 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
               </View>
             ) : null}
 
-            {(article.modele || pcStatus || pcAllocationLabel) ? (
+            {(article.modele || pcAllocationLabel || (!isPCItem && pcStatus)) ? (
               <View style={styles.badgesRow}>
                 {pcAllocationLabel ? (
                   <View
                     style={[
                       styles.badge,
+                      isCompactPCCard && styles.badgeCompact,
                       {
                         backgroundColor: isDark ? 'rgba(15,118,110,0.16)' : '#CCFBF1',
                       },
                     ]}
                   >
                     <Icon name="office-building-outline" size={11} color="#0F766E" />
-                    <Text style={[styles.badgeText, { color: '#0F766E' }]}>{pcAllocationLabel}</Text>
+                    <Text style={[styles.badgeText, isCompactPCCard && styles.badgeTextCompact, { color: '#0F766E' }]}>{pcAllocationLabel}</Text>
                   </View>
                 ) : null}
                 {article.modele ? (
                   <View
                     style={[
                       styles.badge,
+                      isCompactPCCard && styles.badgeCompact,
                       { backgroundColor: isDark ? 'rgba(0,122,57,0.16)' : '#DCFCE7' },
                     ]}
                   >
                     <Icon name="laptop" size={11} color="#007A39" />
-                    <Text style={[styles.badgeText, { color: '#007A39' }]}>{article.modele}</Text>
+                    <Text style={[styles.badgeText, isCompactPCCard && styles.badgeTextCompact, { color: '#007A39' }]}>{article.modele}</Text>
                   </View>
                 ) : null}
-                {pcStatus ? (
+                {!isPCItem && pcStatus ? (
                   <View
                     style={[
                       styles.badge,
                       {
-                        backgroundColor:
-                          pcStatus === 'A chaud'
-                            ? (isDark ? 'rgba(16,185,129,0.16)' : '#D1FAE5')
-                            : pcStatus === 'En usinage'
-                              ? (isDark ? 'rgba(249,115,22,0.2)' : '#FFEDD5')
-                            : pcStatus === 'Disponible'
-                              ? (isDark ? 'rgba(37,99,235,0.18)' : '#DBEAFE')
-                              : pcStatus === 'Envoyé'
-                                ? (isDark ? 'rgba(225,29,72,0.2)' : '#FFE4E6')
-                              : (isDark ? 'rgba(245,158,11,0.18)' : '#FEF3C7'),
+                        backgroundColor: pcStatusTheme.bg,
                       },
                     ]}
                   >
                     <Icon
-                      name={pcStatus === 'A chaud' ? 'flash-outline' : pcStatus === 'En usinage' ? 'cog-play-outline' : pcStatus === 'Disponible' ? 'check-circle-outline' : pcStatus === 'Envoyé' ? 'send-outline' : 'wrench-outline'}
+                      name={pcStatusTheme.icon}
                       size={11}
-                      color={pcStatus === 'A chaud' ? '#059669' : pcStatus === 'En usinage' ? '#EA580C' : pcStatus === 'Disponible' ? '#2563EB' : pcStatus === 'Envoyé' ? '#BE123C' : '#D97706'}
+                      color={pcStatusTheme.color}
                     />
-                    <Text style={[styles.badgeText, { color: pcStatus === 'A chaud' ? '#059669' : pcStatus === 'En usinage' ? '#EA580C' : pcStatus === 'Disponible' ? '#2563EB' : pcStatus === 'Envoyé' ? '#BE123C' : '#D97706' }]}>{pcStatus}</Text>
+                    <Text style={[styles.badgeText, { color: pcStatusTheme.color }]}>{pcStatus}</Text>
                   </View>
                 ) : null}
               </View>
             ) : null}
 
             {/* Date */}
-            <Text style={[styles.dateText, { color: colors.textMuted }]}>
+            <Text style={[styles.dateText, isCompactPCCard && styles.dateTextCompact, { color: colors.textMuted }]}> 
               {isPCItem && pcStatus === 'A chaud'
                 ? pcHotDateLabel
                 : isPCItem && pcStatus === 'En usinage'
@@ -680,6 +781,13 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                       ? tabletDecommissionDateLabel
                   : relativeDate}
             </Text>
+
+            {isPCItem && article.emplacement && !isCompactPCCard ? (
+              <View style={styles.pcMetaRow}>
+                <Icon name="map-marker-outline" size={11} color={colors.textMuted} />
+                <Text style={[styles.pcMetaText, { color: colors.textMuted }]} numberOfLines={1}>{article.emplacement}</Text>
+              </View>
+            ) : null}
           </View>
 
         </Pressable>
@@ -714,7 +822,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
               </Text>
             </TouchableOpacity>
           ) : isPCItem ? (
-            <View style={[styles.pcActionsRail, {
+            <Animated.View style={[styles.pcActionsRail, isCompactPCCard && styles.pcActionsRailCompact, isCompactPCCard && compactActionPulseStyle, {
               backgroundColor: isDark ? 'rgba(15,23,42,0.28)' : '#F8FAFC',
               borderColor: isDark ? `${pcActionTone}40` : `${pcActionTone}26`,
               shadowColor: pcActionTone,
@@ -725,15 +833,17 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                     colors={isDark ? ['#7A1238', '#BE123C'] : ['#FFF1F2', '#FFE4E6']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={[styles.pcActionBtn, styles.pcActionBtnDanger]}
+                    style={[styles.pcActionBtn, isCompactPCCard && styles.pcActionBtnCompact, styles.pcActionBtnDanger]}
                   >
-                    <View style={[styles.pcActionIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
+                    <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
                       <Icon name="send-check-outline" size={13} color="#BE123C" />
                     </View>
-                    <View style={styles.pcActionTextWrap}>
-                      <Text numberOfLines={1} style={[styles.pcActionBtnLabel, { color: '#9F1239' }]}>Déjà envoyé</Text>
-                      <Text numberOfLines={1} style={[styles.pcActionBtnHint, { color: '#BE123C' }]}>{article.emplacement || 'EDS destination'}</Text>
-                    </View>
+                    {!isCompactPCCard ? (
+                      <View style={styles.pcActionTextWrap}>
+                        <Text numberOfLines={1} style={[styles.pcActionBtnLabel, { color: '#9F1239' }]}>Déjà envoyé</Text>
+                        <Text numberOfLines={1} style={[styles.pcActionBtnHint, { color: '#BE123C' }]}>{article.emplacement || 'EDS destination'}</Text>
+                      </View>
+                    ) : null}
                   </LinearGradient>
                 </View>
               )}
@@ -747,15 +857,17 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                     colors={isDark ? ['#7F1D1D', '#B91C1C'] : ['#FFF1F2', '#FFE4E6']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={[styles.pcActionBtn, styles.pcActionBtnDanger]}
+                    style={[styles.pcActionBtn, isCompactPCCard && styles.pcActionBtnCompact, styles.pcActionBtnDanger]}
                   >
-                    <View style={[styles.pcActionIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
+                    <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
                       <Icon name="send-outline" size={13} color="#E11D48" />
                     </View>
-                    <View style={styles.pcActionTextWrap}>
-                      <Text numberOfLines={1} style={[styles.pcActionBtnLabel, { color: '#9F1239' }]}>Envoyé</Text>
-                      <Text numberOfLines={1} style={[styles.pcActionBtnHint, { color: '#BE123C' }]}>Sortie</Text>
-                    </View>
+                    {!isCompactPCCard ? (
+                      <View style={styles.pcActionTextWrap}>
+                        <Text numberOfLines={1} style={[styles.pcActionBtnLabel, { color: '#9F1239' }]}>Envoyé</Text>
+                        <Text numberOfLines={1} style={[styles.pcActionBtnHint, { color: '#BE123C' }]}>Sortie</Text>
+                      </View>
+                    ) : null}
                   </LinearGradient>
                 </Pressable>
               )}
@@ -773,15 +885,17 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                       colors={isDark ? ['#0F3A68', '#1D4ED8'] : ['#EFF6FF', '#DBEAFE']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
-                      style={[styles.pcActionBtn, styles.pcActionBtnInfo]}
+                      style={[styles.pcActionBtn, isCompactPCCard && styles.pcActionBtnCompact, styles.pcActionBtnInfo]}
                     >
-                      <View style={[styles.pcActionIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
+                      <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
                         <Icon name="check-circle-outline" size={13} color="#2563EB" />
                       </View>
-                      <View style={styles.pcActionTextWrap}>
-                        <Text numberOfLines={1} style={[styles.pcActionBtnLabel, { color: '#1D4ED8' }]}>Disponible</Text>
-                        <Text numberOfLines={1} style={[styles.pcActionBtnHint, { color: '#1E40AF' }]}>Stock</Text>
-                      </View>
+                      {!isCompactPCCard ? (
+                        <View style={styles.pcActionTextWrap}>
+                          <Text numberOfLines={1} style={[styles.pcActionBtnLabel, { color: '#1D4ED8' }]}>Disponible</Text>
+                          <Text numberOfLines={1} style={[styles.pcActionBtnHint, { color: '#1E40AF' }]}>Stock</Text>
+                        </View>
+                      ) : null}
                     </LinearGradient>
                   </Pressable>
                 </>
@@ -800,15 +914,17 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                       colors={isDark ? ['#0B5D3B', '#059669'] : ['#ECFDF5', '#D1FAE5']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
-                      style={[styles.pcActionBtn, styles.pcActionBtnSuccess]}
+                      style={[styles.pcActionBtn, isCompactPCCard && styles.pcActionBtnCompact, styles.pcActionBtnSuccess]}
                     >
-                      <View style={[styles.pcActionIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
+                      <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
                         <Icon name="flash-outline" size={13} color="#059669" />
                       </View>
-                      <View style={styles.pcActionTextWrap}>
-                        <Text numberOfLines={1} style={[styles.pcActionBtnLabel, { color: '#047857' }]}>A chaud</Text>
-                        <Text numberOfLines={1} style={[styles.pcActionBtnHint, { color: '#065F46' }]}>Remise</Text>
-                      </View>
+                      {!isCompactPCCard ? (
+                        <View style={styles.pcActionTextWrap}>
+                          <Text numberOfLines={1} style={[styles.pcActionBtnLabel, { color: '#047857' }]}>À chaud</Text>
+                          <Text numberOfLines={1} style={[styles.pcActionBtnHint, { color: '#065F46' }]}>Remise</Text>
+                        </View>
+                      ) : null}
                     </LinearGradient>
                   </Pressable>
                 </>
@@ -821,19 +937,21 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                     style={({ pressed }) => [styles.pcActionBtnWrap, pressed && styles.pcActionBtnWrapPressed]}
                     onPress={handleDelete}
                   >
-                    <View style={[styles.pcActionBtn, { backgroundColor: isDark ? 'rgba(127,29,29,0.22)' : '#FEF2F2', borderColor: 'rgba(239,68,68,0.18)' }]}>
-                      <View style={[styles.pcActionIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : '#FFFFFF' }]}>
+                    <View style={[styles.pcActionBtn, isCompactPCCard && styles.pcActionBtnCompact, { backgroundColor: isDark ? 'rgba(127,29,29,0.22)' : '#FEF2F2', borderColor: 'rgba(239,68,68,0.18)' }]}> 
+                      <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : '#FFFFFF' }]}> 
                         <Icon name="delete-outline" size={13} color="#EF4444" />
                       </View>
-                      <View style={styles.pcActionTextWrap}>
-                        <Text numberOfLines={1} style={[styles.pcActionBtnLabel, { color: '#DC2626' }]}>Supprimer</Text>
-                        <Text numberOfLines={1} style={[styles.pcActionBtnHint, { color: '#EF4444' }]}>Retirer</Text>
-                      </View>
+                      {!isCompactPCCard ? (
+                        <View style={styles.pcActionTextWrap}>
+                          <Text numberOfLines={1} style={[styles.pcActionBtnLabel, { color: '#DC2626' }]}>Supprimer</Text>
+                          <Text numberOfLines={1} style={[styles.pcActionBtnHint, { color: '#EF4444' }]}>Retirer</Text>
+                        </View>
+                      ) : null}
                     </View>
                   </Pressable>
                 </>
               )}
-            </View>
+            </Animated.View>
           ) : (
             // Stock indicator for non-tablets
             <>
@@ -883,15 +1001,22 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 18,
+    alignItems: 'stretch',
+    borderRadius: 20,
     borderWidth: 1,
     padding: 15,
     marginBottom: 12,
+    marginHorizontal: 2,
     overflow: 'hidden',
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 14,
+    shadowOpacity: 0.12,
+    elevation: 5,
+  },
+  cardCompact: {
+    paddingVertical: 11,
+    paddingHorizontal: 10,
+    marginBottom: 8,
   },
   cardMainPressable: {
     flex: 1,
@@ -908,6 +1033,14 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1.5,
   },
+  statusFlashOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 18,
+  },
   tabletCardOrb: {
     position: 'absolute',
     width: 108,
@@ -922,30 +1055,40 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: 4.5,
-    borderTopLeftRadius: 18,
-    borderBottomLeftRadius: 18,
+    width: 5,
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
   },
   imageSection: {
-    marginRight: 12,
-    marginLeft: 5,
+    marginRight: 14,
+    marginLeft: 6,
+  },
+  photoContainerCompact: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+  },
+  photoThumbCompact: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
   },
   photoContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 14,
-    borderWidth: 1,
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    borderWidth: 1.2,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   shimmerOverlay: {
-    borderRadius: 14,
+    borderRadius: 16,
   },
   photoThumb: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
   },
   iconShadow: {
     shadowOffset: { width: 0, height: 3 },
@@ -954,11 +1097,16 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 14,
+    width: 54,
+    height: 54,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconContainerCompact: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
   },
   iconInner: {
     width: 32,
@@ -968,45 +1116,120 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconInnerCompact: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+  },
   content: {
     flex: 1,
-    marginRight: 10,
+    marginRight: 8,
     justifyContent: 'center',
+    gap: 4,
+    minWidth: 0,
+  },
+  contentCompact: {
+    gap: 3,
+    marginRight: 8,
+  },
+  pcTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 4,
   },
   name: {
     fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-    marginBottom: 1,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    marginBottom: 2,
+    lineHeight: 20,
+  },
+  pcName: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  pcNameCompact: {
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  pcStatusHeroBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pcStatusHeroBadgeCompact: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    justifyContent: 'center',
+  },
+  pcStatusHeroBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
   description: {
-    fontSize: 11,
-    marginBottom: 6,
-    lineHeight: 16,
+    fontSize: 12,
+    marginBottom: 4,
+    lineHeight: 17,
+    fontWeight: '500',
   },
   badgesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 5,
-    marginTop: 4,
+    gap: 6,
+    marginTop: 2,
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 10,
+    gap: 5,
+  },
+  badgeCompact: {
+    paddingHorizontal: 7,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 9,
     gap: 4,
   },
   badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  badgeTextCompact: {
     fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.1,
   },
   dateText: {
-    fontSize: 11,
-    marginTop: 6,
-    letterSpacing: 0.2,
+    fontSize: 10,
+    marginTop: 3,
+    letterSpacing: 0.3,
+    fontWeight: '500',
+  },
+  dateTextCompact: {
+    fontSize: 9.5,
+    marginTop: 1,
+  },
+  pcMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  pcMetaText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
   stockColumn: {
     alignItems: 'center',
@@ -1036,34 +1259,43 @@ const styles = StyleSheet.create({
   stockPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 11,
-    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 12,
+    gap: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   stockIconWrap: {
-    width: 20,
-    height: 20,
-    borderRadius: 7,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    width: 22,
+    height: 22,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.94)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   pcActionsRail: {
-    width: 126,
-    borderRadius: 17,
-    paddingVertical: 7,
-    paddingHorizontal: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.14)',
+    width: 132,
+    borderRadius: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderWidth: 1.2,
+    borderColor: 'rgba(148,163,184,0.2)',
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+  pcActionsRailCompact: {
+    width: 58,
+    paddingHorizontal: 6,
   },
   pcActionBtnWrap: {
-    borderRadius: 12,
+    borderRadius: 13,
     overflow: 'hidden',
   },
   pcActionBtnWrapPressed: {
@@ -1071,13 +1303,19 @@ const styles = StyleSheet.create({
     opacity: 0.96,
   },
   pcActionBtn: {
-    minHeight: 44,
-    borderRadius: 12,
-    paddingHorizontal: 7,
+    minHeight: 48,
+    borderRadius: 13,
+    paddingHorizontal: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
     borderWidth: 1,
+  },
+  pcActionBtnCompact: {
+    minHeight: 38,
+    paddingHorizontal: 0,
+    justifyContent: 'center',
+    gap: 0,
   },
   pcActionBtnDanger: {
     borderColor: 'rgba(244,63,94,0.16)',
@@ -1089,44 +1327,50 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(5,150,105,0.18)',
   },
   pcActionIconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  pcActionIconWrapCompact: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    alignSelf: 'center',
   },
   pcActionTextWrap: {
     flex: 1,
     minWidth: 0,
   },
   pcActionBtnLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.1,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.15,
   },
   pcActionBtnHint: {
-    fontSize: 8,
-    fontWeight: '700',
+    fontSize: 9,
+    fontWeight: '800',
     textTransform: 'uppercase',
-    opacity: 0.9,
-    marginTop: 0,
-    letterSpacing: 0.6,
+    opacity: 0.95,
+    marginTop: 1,
+    letterSpacing: 0.7,
   },
   pcActionDivider: {
-    height: 1,
-    marginVertical: 6,
+    height: 1.2,
+    marginVertical: 7,
   },
   stockValue: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
   stockUnit: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
   stockChevronWrap: {
     width: 22,

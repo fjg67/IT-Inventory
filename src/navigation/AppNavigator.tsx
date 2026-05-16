@@ -22,7 +22,6 @@ import { pushNotificationsService } from '@/services/pushNotificationsService';
 import { pcAvailabilityAlertService } from '@/services/pcAvailabilityAlertService';
 
 import { FullScreenLoading, NoConnectionScreen } from '@/components';
-import { useAutoLogout } from '@/hooks/useAutoLogout';
 import {
   AuthScreen,
   BranchSelectionScreen,
@@ -155,6 +154,10 @@ const MainNavigator: React.FC = () => {
       tabBar={(props) => <PremiumTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        sceneStyle: {
+          paddingBottom: 92,
+          backgroundColor: '#0A0F0D',
+        },
       }}
     >
       <MainTab.Screen
@@ -375,8 +378,6 @@ export const AppNavigator: React.FC = () => {
 
   console.log(`[AppNavigator] Render: isInitializing=${isInitializing}, authLoading=${authLoading}`);
 
-  const { resetInactivityTimer } = useAutoLogout();
-
   const { colors: themeColors, isDark } = useTheme();
 
   const navigationTheme = {
@@ -416,13 +417,7 @@ export const AppNavigator: React.FC = () => {
   }
 
   return (
-    <View
-      style={{flex: 1}}
-      onStartShouldSetResponderCapture={() => {
-        resetInactivityTimer();
-        return false;
-      }}
-    >
+    <View style={{flex: 1}}>
     <NavigationContainer theme={navigationTheme}>
       <RootStack.Navigator
         screenOptions={{ headerShown: false }}

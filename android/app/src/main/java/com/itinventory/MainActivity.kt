@@ -17,11 +17,6 @@ class MainActivity : ReactActivity() {
     hideSystemNavigationBar()
   }
 
-  override fun onWindowFocusChanged(hasFocus: Boolean) {
-    super.onWindowFocusChanged(hasFocus)
-    if (hasFocus) hideSystemNavigationBar()
-  }
-
   private fun hideSystemNavigationBar() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       WindowInsetsControllerCompat(window, window.decorView).apply {

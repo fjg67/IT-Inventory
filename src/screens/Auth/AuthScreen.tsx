@@ -159,7 +159,7 @@ export const AuthScreen: React.FC = () => {
 
     return techniciensWithoutExcluded.filter((technicien) => {
       const initials = normalizeForMatch(getInitials(technicien));
-      return initials === 'BI' || initials === 'EB';
+      return initials === 'BI' || initials === 'EB' || technicien.role === 'superviseur';
     });
   }, [siteActif?.nom, techniciens]);
 

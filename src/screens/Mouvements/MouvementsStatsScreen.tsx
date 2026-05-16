@@ -19,6 +19,7 @@ import Animated, {
   SlideInLeft,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
@@ -219,6 +220,29 @@ const getPodiumStyle = (index: number) => {
     badgeText: '#007A39',
     icon: 'account-star-outline',
   };
+};
+
+interface AnimatedTrendBarProps {
+  targetHeight: number;
+  delay: number;
+  color: string;
+}
+
+const AnimatedTrendBar: React.FC<AnimatedTrendBarProps> = ({ targetHeight, delay, color }) => {
+  const animatedHeight = useSharedValue(0);
+
+  useEffect(() => {
+    animatedHeight.value = withDelay(
+      delay,
+      withTiming(targetHeight, { duration: 480, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [animatedHeight, delay, targetHeight]);
+
+  const animatedBarStyle = useAnimatedStyle(() => ({
+    height: animatedHeight.value,
+  }));
+
+  return <Animated.View style={[styles.sparkBar, { backgroundColor: color }, animatedBarStyle]} />;
 };
 
 export const MouvementsStatsScreen: React.FC = () => {
@@ -644,18 +668,15 @@ export const MouvementsStatsScreen: React.FC = () => {
                 {trendData.map((value, idx) => {
                   const barHeight = Math.max(6, Math.round((value / trendMax) * 44));
                   const isPeak = value === trendMax && trendMax > 0;
+                  const barColor = isPeak
+                    ? trendMeta.barMain
+                    : (isDark ? trendMeta.barSoft.replace('0.34', '0.55') : trendMeta.barSoft);
                   return (
                     <View key={`trend-${idx}`} style={styles.sparkCol}>
-                      <View
-                        style={[
-                          styles.sparkBar,
-                          {
-                            height: barHeight,
-                            backgroundColor: isPeak
-                              ? trendMeta.barMain
-                              : (isDark ? trendMeta.barSoft.replace('0.34', '0.55') : trendMeta.barSoft),
-                          },
-                        ]}
+                      <AnimatedTrendBar
+                        targetHeight={barHeight}
+                        delay={idx * 55}
+                        color={barColor}
                       />
                     </View>
                   );

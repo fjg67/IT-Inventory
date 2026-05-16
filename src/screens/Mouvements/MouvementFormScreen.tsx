@@ -43,6 +43,7 @@ import {
   useCodeScanner,
   useCameraPermission,
 } from 'react-native-vision-camera';
+import ConfettiCannon from 'react-native-confetti-cannon';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { clearScannedArticle } from '@/store/slices/scanSlice';
@@ -55,7 +56,7 @@ import debounce from 'lodash/debounce';
 import { useResponsive } from '@/utils/responsive';
 import { useTheme } from '@/theme';
 
-const { height: SCREEN_H } = Dimensions.get('window');
+const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 const SCAN_FRAME = 240;
 
 // Types supportés par la caméra
@@ -178,12 +179,15 @@ export const MouvementFormScreen: React.FC = () => {
   // ===== UI state =====
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [confettiKey, setConfettiKey] = useState(0);
   const [suggestions, setSuggestions] = useState<Article[]>([]);
   const [searching, setSearching] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // ===== Animation State =====
   const buttonScale = useSharedValue(1);
+  const previewCurrentProgress = useSharedValue(0);
+  const previewNextProgress = useSharedValue(0);
 
   useEffect(() => {
     if (showSuccess) {
@@ -200,6 +204,14 @@ export const MouvementFormScreen: React.FC = () => {
       transform: [{ scale: buttonScale.value }],
     };
   });
+
+  const previewCurrentBarStyle = useAnimatedStyle(() => ({
+    width: `${Math.max(0, Math.min(1, previewCurrentProgress.value)) * 100}%` as any,
+  }));
+
+  const previewNextBarStyle = useAnimatedStyle(() => ({
+    width: `${Math.max(0, Math.min(1, previewNextProgress.value)) * 100}%` as any,
+  }));
 
 
 
@@ -226,8 +238,30 @@ export const MouvementFormScreen: React.FC = () => {
     }
   }, [article, type, quantite, stockActuel]);
 
+  const previewMaxStock = useMemo(() => {
+    const target = Math.max(0, nouveauStock ?? 0);
+    return Math.max(1, stockActuel, target, article?.stockMini ?? 0);
+  }, [article?.stockMini, nouveauStock, stockActuel]);
+
+  useEffect(() => {
+    if (!article || nouveauStock === null) {
+      previewCurrentProgress.value = withTiming(0, { duration: 180 });
+      previewNextProgress.value = withTiming(0, { duration: 180 });
+      return;
+    }
+
+    previewCurrentProgress.value = withTiming(stockActuel / previewMaxStock, {
+      duration: 420,
+    });
+    previewNextProgress.value = withTiming(Math.max(0, nouveauStock) / previewMaxStock, {
+      duration: 620,
+    });
+  }, [article, nouveauStock, previewCurrentProgress, previewMaxStock, previewNextProgress, stockActuel]);
+
   const isFormValid = useMemo(() => {
-    if (!article || quantite <= 0) return false;
+    if (!article) return false;
+    if ((type === 'entree' || type === 'sortie') && quantite <= 0) return false;
+    if (type === 'ajustement' && quantite < 0) return false;
     if (type === 'sortie' && quantite > stockActuel) return false;
     return true;
   }, [article, type, quantite, stockActuel]);
@@ -415,7 +449,8 @@ export const MouvementFormScreen: React.FC = () => {
     }
   };
   const handleDecrement = () => {
-    if (quantite > 1) {
+    const min = type === 'ajustement' ? 0 : 1;
+    if (quantite > min) {
       setQuantite(q => q - 1);
       Vibration.vibrate(8);
     }
@@ -426,7 +461,8 @@ export const MouvementFormScreen: React.FC = () => {
       if (type === 'sortie' && num > stockActuel) {
         setQuantite(stockActuel > 0 ? stockActuel : 1);
       } else {
-        setQuantite(Math.max(1, num));
+        const min = type === 'ajustement' ? 0 : 1;
+        setQuantite(Math.max(min, num));
       }
     }
     if (text === '') setQuantite(0);
@@ -463,6 +499,7 @@ export const MouvementFormScreen: React.FC = () => {
 
       setIsSubmitting(false);
       setShowSuccess(true);
+      setConfettiKey((prev) => prev + 1);
       Vibration.vibrate([0, 30, 60, 30]);
 
       setTimeout(() => {
@@ -840,11 +877,11 @@ export const MouvementFormScreen: React.FC = () => {
               <TouchableOpacity
                 style={styles.qtyBtn}
                 onPress={handleDecrement}
-                disabled={quantite <= 1}
+                disabled={quantite <= (type === 'ajustement' ? 0 : 1)}
                 activeOpacity={0.7}
               >
                 <LinearGradient
-                  colors={quantite <= 1 ? ['#E5E7EB', '#D1D5DB'] : ['#EF4444', '#DC2626']}
+                  colors={quantite <= (type === 'ajustement' ? 0 : 1) ? ['#E5E7EB', '#D1D5DB'] : ['#EF4444', '#DC2626']}
                   style={styles.qtyBtnGrad}
                 >
                   <Icon name="minus" size={20} color="#FFF" />
@@ -853,7 +890,7 @@ export const MouvementFormScreen: React.FC = () => {
 
               <TextInput
                 style={[styles.qtyInput, { color: colors.textPrimary }]}
-                value={quantite > 0 ? quantite.toString() : ''}
+                value={quantite.toString()}
                 onChangeText={handleQtyTextChange}
                 keyboardType="numeric"
                 maxLength={5}
@@ -906,6 +943,17 @@ export const MouvementFormScreen: React.FC = () => {
                 <View style={styles.previewCol}>
                   <Text style={[styles.previewNumber, { color: typeColor }]}>{nouveauStock}</Text>
                   <Text style={[styles.previewCaption, { color: colors.textMuted }]}>Nouveau stock</Text>
+                </View>
+              </View>
+
+              <View style={styles.previewProgressWrap}>
+                <View style={[styles.previewProgressTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0' }]}> 
+                  <Animated.View style={[styles.previewProgressCurrent, { backgroundColor: isDark ? 'rgba(148,163,184,0.55)' : 'rgba(100,116,139,0.45)' }, previewCurrentBarStyle]} />
+                  <Animated.View style={[styles.previewProgressNext, { backgroundColor: typeColor }, previewNextBarStyle]} />
+                </View>
+                <View style={styles.previewProgressLegendRow}>
+                  <Text style={[styles.previewProgressLegendText, { color: colors.textMuted }]}>Actuel</Text>
+                  <Text style={[styles.previewProgressLegendText, { color: typeColor }]}>Cible</Text>
                 </View>
               </View>
 
@@ -1008,6 +1056,18 @@ export const MouvementFormScreen: React.FC = () => {
       </KeyboardAvoidingView>
 
       {/* ===== CAMERA SCAN MODAL ===== */}
+      {showSuccess && (
+        <ConfettiCannon
+          key={`confetti-${confettiKey}`}
+          count={36}
+          origin={{ x: SCREEN_W / 2, y: 0 }}
+          fadeOut
+          autoStart
+          explosionSpeed={220}
+          fallSpeed={260}
+        />
+      )}
+
       <Modal
         visible={showCamera}
         animationType="slide"
@@ -1632,6 +1692,39 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  previewProgressWrap: {
+    marginTop: 10,
+  },
+  previewProgressTrack: {
+    position: 'relative',
+    borderRadius: 999,
+    height: 10,
+    overflow: 'hidden',
+  },
+  previewProgressCurrent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 999,
+  },
+  previewProgressNext: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 999,
+    opacity: 0.92,
+  },
+  previewProgressLegendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  previewProgressLegendText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   warningBanner: {
     flexDirection: 'row',

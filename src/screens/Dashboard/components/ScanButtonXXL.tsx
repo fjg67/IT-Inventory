@@ -63,6 +63,40 @@ const ScanButtonXXL: React.FC<ScanButtonXXLProps> = ({ onPress }) => {
     transform: [{ scale: interpolate(glowAnim.value, [0, 1], [1, 1.12]) }],
   }));
 
+  // Concentric pulse rings
+  const ringAnim = useSharedValue(0);
+  useEffect(() => {
+    ringAnim.value = withRepeat(
+      withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) }),
+      -1,
+      false,
+    );
+  }, [ringAnim]);
+
+  const ringStyle1 = useAnimatedStyle(() => {
+    const progress = ringAnim.value;
+    return {
+      opacity: interpolate(progress, [0, 1], [0.5, 0]),
+      transform: [{ scale: interpolate(progress, [0, 1], [1, 1.4]) }],
+    };
+  });
+
+  const ringStyle2 = useAnimatedStyle(() => {
+    const progress = (ringAnim.value + 0.33) % 1;
+    return {
+      opacity: interpolate(progress, [0, 1], [0.5, 0]),
+      transform: [{ scale: interpolate(progress, [0, 1], [1, 1.4]) }],
+    };
+  });
+
+  const ringStyle3 = useAnimatedStyle(() => {
+    const progress = (ringAnim.value + 0.66) % 1;
+    return {
+      opacity: interpolate(progress, [0, 1], [0.5, 0]),
+      transform: [{ scale: interpolate(progress, [0, 1], [1, 1.4]) }],
+    };
+  });
+
   // Press animation
   const pressScale = useSharedValue(1);
   const handlePressIn = useCallback(() => {
@@ -89,6 +123,10 @@ const ScanButtonXXL: React.FC<ScanButtonXXLProps> = ({ onPress }) => {
         onPressOut={handlePressOut}
       >
         <View style={styles.outerWrap}>
+          <Animated.View pointerEvents="none" style={[styles.pulseRing, ringStyle1]} />
+          <Animated.View pointerEvents="none" style={[styles.pulseRing, ringStyle2]} />
+          <Animated.View pointerEvents="none" style={[styles.pulseRing, ringStyle3]} />
+
           {/* Animated glow behind card */}
           <Animated.View style={[styles.outerGlow, glowStyle]} />
 
@@ -139,7 +177,7 @@ const ScanButtonXXL: React.FC<ScanButtonXXLProps> = ({ onPress }) => {
 
             {/* Right arrow */}
             <View style={styles.arrowCircle}>
-              <Icon name="chevron-right" size={20} color="#007A39" />
+              <Icon name="barcode-scan" size={18} color="#FFFFFF" />
             </View>
           </LinearGradient>
         </View>
@@ -152,6 +190,16 @@ const styles = StyleSheet.create({
   outerWrap: {
     marginBottom: premiumSpacing.lg,
     position: 'relative',
+  },
+  pulseRing: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    bottom: -2,
+    left: 2,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: 'rgba(0,122,57,0.42)',
   },
   outerGlow: {
     position: 'absolute',
@@ -201,9 +249,9 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: '#004521',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.24)',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -266,7 +314,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 13,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: '#004521',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',

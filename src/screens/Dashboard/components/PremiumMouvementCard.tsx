@@ -7,7 +7,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   premiumSpacing,
   premiumAnimation,
@@ -137,49 +136,28 @@ const PremiumMouvementCard: React.FC<PremiumMouvementCardProps> = ({
             style={styles.accentBar}
           />
 
-          {/* Icon in white frosted circle over gradient */}
-          <View style={[styles.iconOuter, { shadowColor: accentColor }]}>
-            <LinearGradient
-              colors={typeConfig.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.iconGradientBg, tablet && { width: 48, height: 48, borderRadius: 16 }]}
-            >
-              <View style={styles.iconInnerCircle}>
-                <Icon name={typeConfig.icon} size={tablet ? 20 : 18} color={accentColor} />
-              </View>
-            </LinearGradient>
-          </View>
-
           {/* Content */}
           <View style={styles.content}>
+            {/* Top row: article name bold + relative date */}
             <View style={styles.topRow}>
               <Text style={[styles.articleName, { color: colors.textPrimary }, tablet && { fontSize: 16 }]} numberOfLines={1}>
                 {mouvement.articleNom ?? 'Article'}
               </Text>
-              {/* Quantity badge with gradient bg */}
-              <LinearGradient
-                colors={typeConfig.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.qtyBadge}
-              >
-                <Text style={[styles.quantity, tablet && { fontSize: 13 }]}>
-                  {typeConfig.sign}{Math.abs(mouvement.quantite)}
-                </Text>
-              </LinearGradient>
+              <Text style={[styles.dateText, { color: colors.textMuted }, tablet && { fontSize: 12 }]}>
+                {relativeTime}
+              </Text>
             </View>
 
+            {/* Bottom row: type badge + big quantity */}
             <View style={styles.bottomRow}>
               <View style={[styles.typeBadge, { backgroundColor: isDark ? `${accentColor}15` : `${accentColor}0A` }]}>
                 <View style={[styles.typeDot, { backgroundColor: accentColor }]} />
-                <Text style={[styles.typeBadgeText, { color: accentColor }, tablet && { fontSize: 12 }]}>
-                  {typeConfig.label}
+                <Text style={[styles.typeBadgeText, { color: accentColor }, tablet && { fontSize: 12 }]} numberOfLines={1}>
+                  {typeConfig.label}{mouvement.technicienNom ? ` · ${mouvement.technicienNom.split(' ').map(w => w[0]).join('.').toUpperCase()}.` : ''}
                 </Text>
               </View>
-              <Text style={[styles.info, { color: colors.textMuted }, tablet && { fontSize: 12 }]}>
-                {relativeTime}
-                {mouvement.technicienNom ? ` · ${mouvement.technicienNom.split(' ').map(w => w[0]).join('.').toUpperCase()}.` : ''}
+              <Text style={[styles.bigQuantity, { color: accentColor }, tablet && { fontSize: 32 }]}>
+                {typeConfig.sign}{Math.abs(mouvement.quantite)}
               </Text>
             </View>
           </View>
@@ -201,40 +179,18 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.07,
     shadowRadius: 10,
-    elevation: 3,
+    elevation: 4,
   },
   accentBar: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: 4.5,
+    width: 5,
     borderTopLeftRadius: 20,
     borderBottomLeftRadius: 20,
-  },
-  iconOuter: {
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-    marginRight: 12,
-  },
-  iconGradientBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconInnerCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   content: {
     flex: 1,
@@ -243,7 +199,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 7,
+    marginBottom: 8,
   },
   articleName: {
     fontSize: 14,
@@ -252,21 +208,15 @@ const styles = StyleSheet.create({
     marginRight: 10,
     letterSpacing: -0.2,
   },
-  qtyBadge: {
-    paddingHorizontal: 11,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  quantity: {
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: -0.2,
-    color: '#FFFFFF',
+  dateText: {
+    fontSize: 11,
+    fontWeight: '500',
+    flexShrink: 0,
   },
   bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
   },
   typeBadge: {
     flexDirection: 'row',
@@ -275,21 +225,28 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 8,
     gap: 4,
+    flex: 1,
+    flexShrink: 1,
+    marginRight: 10,
   },
   typeDot: {
     width: 5,
     height: 5,
     borderRadius: 2.5,
+    flexShrink: 0,
   },
   typeBadgeText: {
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.1,
+    flexShrink: 1,
   },
-  info: {
-    fontSize: 11,
-    fontWeight: '500',
-    flex: 1,
+  bigQuantity: {
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: -1,
+    lineHeight: 30,
+    flexShrink: 0,
   },
 });
 

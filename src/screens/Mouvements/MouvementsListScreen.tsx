@@ -8,8 +8,8 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
+  SectionList,
   RefreshControl,
   StatusBar,
   Vibration,
@@ -22,8 +22,11 @@ import Animated, {
   Easing,
   FadeIn,
   FadeInUp,
+  LinearTransition,
   SlideInRight,
+  interpolate,
   useAnimatedStyle,
+  useAnimatedScrollHandler,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -43,6 +46,18 @@ import { useTheme } from '@/theme';
 import {
   premiumSpacing,
 } from '@/constants/premiumTheme';
+import { OBSIDIAN_COLORS } from '@/constants/colors';
+import { MovementCard } from '@/components/movements/MovementCard';
+import { DateSeparator } from '@/components/movements/DateSeparator';
+import { MovementsHeader } from '@/components/movements/MovementsHeader';
+import { MovementSearchBar } from '@/components/movements/MovementSearchBar';
+import { MovementStatCards } from '@/components/movements/MovementStatCards';
+import { MovementFilters } from '@/components/movements/MovementFilters';
+import { PeriodToggle } from '@/components/movements/PeriodToggle';
+import { TrendPill } from '@/components/movements/TrendPill';
+import { MovementFAB } from '@/components/movements/MovementFAB';
+import { MovementPeriod, MovementTypeKey, getMovementTypeKey } from '@/constants/movementTypes';
+import { MovementStatsChart } from '@/components/movements/MovementStatsChart';
 
 // ==================== HELPERS ====================
 const TYPE_CONFIG: Record<string, { icon: string; color: string; gradient: [string, string]; label: string; prefix: string }> = {
@@ -74,6 +89,7 @@ const groupMouvementsByDate = (mouvements: Mouvement[]): { label: string; date: 
 
 // ==================== TYPES FILTER ====================
 type QuickTypeFilter = 'all' | 'entree' | 'sortie' | 'ajustement' | 'transfert';
+type PeriodFilter = 'today' | '7d' | '30d';
 
 type CachedMouvementsState = {
   mouvements: Mouvement[];
@@ -148,7 +164,9 @@ export const MouvementsListScreen: React.FC = () => {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<QuickTypeFilter>('all');
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('7d');
   const [showSearch, setShowSearch] = useState(false);
+  const [showChart, setShowChart] = useState(false);
 
   // FAB
   const [fabOpen, setFabOpen] = useState(false);
@@ -158,6 +176,7 @@ export const MouvementsListScreen: React.FC = () => {
   const isLoadingRef = useRef(false);
   const loadSeqRef = useRef(0);
   const loaderSweep = useSharedValue(0);
+  const scrollY = useSharedValue(0);
 
   useEffect(() => {
     loaderSweep.value = withRepeat(
@@ -171,6 +190,20 @@ export const MouvementsListScreen: React.FC = () => {
     transform: [{ translateX: -240 + loaderSweep.value * 520 }],
     opacity: 0.42,
   }));
+
+  const headerParallaxStyle = useAnimatedStyle(() => {
+    const y = Math.max(0, Math.min(scrollY.value, 120));
+    return {
+      transform: [
+        { translateY: interpolate(y, [0, 120], [0, -8]) },
+        { scale: interpolate(y, [0, 120], [1, 0.96]) },
+      ],
+    };
+  });
+
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
 
   // ==================== DATA LOADING ====================
   const loadMouvements = useCallback(async (silent = false) => {
@@ -274,6 +307,18 @@ export const MouvementsListScreen: React.FC = () => {
   // ==================== FILTERING ====================
   const filteredMouvements = useMemo(() => {
     let data = mouvements;
+
+    const now = new Date();
+    let startDate = new Date(now);
+    startDate.setHours(0, 0, 0, 0);
+    if (periodFilter === '7d') {
+      startDate.setDate(startDate.getDate() - 6);
+    }
+    if (periodFilter === '30d') {
+      startDate.setDate(startDate.getDate() - 29);
+    }
+    data = data.filter((m) => new Date(m.dateMouvement).getTime() >= startDate.getTime());
+
     if (typeFilter !== 'all') {
       if (typeFilter === 'transfert') {
         data = data.filter(m => m.type === 'transfert_depart' || m.type === 'transfert_arrivee');
@@ -290,13 +335,32 @@ export const MouvementsListScreen: React.FC = () => {
         m.technicien?.nom?.toLowerCase().includes(q),
       );
     }
-    return data;
-  }, [mouvements, typeFilter, searchQuery]);
+    return [...data].sort((left, right) => new Date(right.dateMouvement).getTime() - new Date(left.dateMouvement).getTime());
+  }, [mouvements, periodFilter, typeFilter, searchQuery]);
 
   const groupedMouvements = useMemo(
     () => groupMouvementsByDate(filteredMouvements),
     [filteredMouvements],
   );
+
+  const movementSections = useMemo(
+    () => groupedMouvements.map((group) => ({
+      title: group.label.toUpperCase(),
+      isToday: group.label.toLowerCase().includes('aujourd'),
+      data: group.items,
+    })),
+    [groupedMouvements],
+  );
+
+  const displayStats = useMemo(() => computeStatsFromMouvements(filteredMouvements, filteredMouvements.length), [filteredMouvements]);
+
+  const movementTypeCounts = useMemo<Record<MovementTypeKey, number>>(() => ({
+    tous: filteredMouvements.length,
+    entree: filteredMouvements.filter((movement) => getMovementTypeKey(movement.type) === 'entree').length,
+    sortie: filteredMouvements.filter((movement) => getMovementTypeKey(movement.type) === 'sortie').length,
+    ajustement: filteredMouvements.filter((movement) => getMovementTypeKey(movement.type) === 'ajustement').length,
+    transfert: filteredMouvements.filter((movement) => getMovementTypeKey(movement.type) === 'transfert').length,
+  }), [filteredMouvements]);
 
   // ==================== STATS ====================
   const stats = useMemo(() => {
@@ -309,7 +373,67 @@ export const MouvementsListScreen: React.FC = () => {
     };
   }, [totalMouvements, realStats]);
 
-  const hasActiveFilters = typeFilter !== 'all' || searchQuery.trim().length > 0;
+  const hasActiveFilters = periodFilter !== '7d' || typeFilter !== 'all' || searchQuery.trim().length > 0;
+
+  const todayMouvementsCount = useMemo(() => {
+    const todayKey = new Date().toDateString();
+    return mouvements.filter((m) => new Date(m.dateMouvement).toDateString() === todayKey).length;
+  }, [mouvements]);
+
+  const yesterdayMouvementsCount = useMemo(() => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = yesterday.toDateString();
+    return mouvements.filter((m) => new Date(m.dateMouvement).toDateString() === yesterdayKey).length;
+  }, [mouvements]);
+
+  const todayDelta = todayMouvementsCount - yesterdayMouvementsCount;
+
+  const sevenDayChartData = useMemo(() => {
+    const labels = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+    const now = new Date();
+    const days: Array<{ key: string; label: string; entrees: number; sorties: number; isToday: boolean }> = [];
+
+    for (let i = 6; i >= 0; i -= 1) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const dayStart = d.getTime();
+      const dayEnd = dayStart + 86400000;
+      const dayMovements = mouvements.filter((m) => {
+        const ts = new Date(m.dateMouvement).getTime();
+        return ts >= dayStart && ts < dayEnd;
+      });
+
+      days.push({
+        key: d.toDateString(),
+        label: labels[d.getDay()],
+        entrees: dayMovements.filter((m) => getMovementTypeKey(m.type) === 'entree').length,
+        sorties: dayMovements.filter((m) => getMovementTypeKey(m.type) === 'sortie').length,
+        isToday: d.toDateString() === now.toDateString(),
+      });
+    }
+
+    return days;
+  }, [mouvements]);
+
+  const activeFilterTags = useMemo(() => {
+    const tags: string[] = [];
+    if (periodFilter === 'today') tags.push('Aujourd\'hui');
+    if (periodFilter === '30d') tags.push('30 jours');
+    if (typeFilter !== 'all') {
+      const labels: Record<QuickTypeFilter, string> = {
+        all: 'Tous',
+        entree: 'Entrées',
+        sortie: 'Sorties',
+        ajustement: 'Ajustements',
+        transfert: 'Transferts',
+      };
+      tags.push(labels[typeFilter]);
+    }
+    if (searchQuery.trim()) tags.push(`Recherche: ${searchQuery.trim()}`);
+    return tags;
+  }, [periodFilter, typeFilter, searchQuery]);
 
   // ==================== NAVIGATION ====================
   const handleNewMouvement = useCallback(() => {
@@ -324,13 +448,220 @@ export const MouvementsListScreen: React.FC = () => {
     navigation.navigate('ScanMouvement');
   }, [navigation]);
 
+  const movementPeriodValue: MovementPeriod = periodFilter === 'today'
+    ? 'today'
+    : periodFilter === '30d'
+      ? '30days'
+      : '7days';
+
+  const movementTypeValue: MovementTypeKey = typeFilter === 'all' ? 'tous' : typeFilter;
+
+  const openMovementStats = useCallback(() => {
+    Vibration.vibrate(10);
+    navigation.navigate('MouvementsStats');
+  }, [navigation]);
+
+  const toggleChart = useCallback(() => {
+    Vibration.vibrate(8);
+    setShowChart((prev) => !prev);
+  }, []);
+
+  return (
+    <View style={[styles.container, { backgroundColor: OBSIDIAN_COLORS.bg_primary }]}>
+      <StatusBar barStyle="light-content" backgroundColor={OBSIDIAN_COLORS.bg_primary} />
+
+      <SectionList
+        sections={movementSections}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={({ item, index }) => (
+          <MovementCard
+            item={item}
+            index={index}
+            onPress={(movement) => {
+              Vibration.vibrate(10);
+              setSelectedMouvement(movement);
+            }}
+          />
+        )}
+        renderSectionHeader={({ section }) => <DateSeparator title={section.title} isToday={section.isToday} />}
+        ListHeaderComponent={
+          <View style={{ gap: 14, paddingTop: premiumSpacing.xl + 18, paddingBottom: 10 }}>
+            <MovementsHeader
+              totalLabel={`${stats.total} mouvement${stats.total !== 1 ? 's' : ''} enregistrés`}
+              todayCount={todayMouvementsCount}
+              onOpenStats={toggleChart}
+              onToggleSearch={() => {
+                Vibration.vibrate(10);
+                setShowSearch((prev) => !prev);
+              }}
+              searchActive={showSearch}
+            />
+
+            {showChart ? (
+              <MovementStatsChart
+                data={sevenDayChartData}
+                onClose={() => setShowChart(false)}
+                onOpenStats={openMovementStats}
+              />
+            ) : null}
+
+            <MovementSearchBar
+              visible={showSearch}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onCancel={() => {
+                setSearchQuery('');
+                setShowSearch(false);
+              }}
+              resultsCount={displayStats.total}
+            />
+
+            <View style={{ gap: 10 }}>
+              <MovementStatCards
+                counts={movementTypeCounts}
+                onTypePress={(type) => {
+                  setTypeFilter(type === 'tous' ? 'all' : type);
+                }}
+              />
+
+              <PeriodToggle
+                value={movementPeriodValue}
+                onChange={(value) => {
+                  setPeriodFilter(value === 'today' ? 'today' : value === '30days' ? '30d' : '7d');
+                }}
+              />
+
+              <TrendPill value={todayDelta} />
+            </View>
+
+            <MovementFilters
+              counts={movementTypeCounts}
+              activeType={movementTypeValue}
+              onTypeChange={(type) => {
+                setTypeFilter(type === 'tous' ? 'all' : type);
+              }}
+            />
+          </View>
+        }
+        ListFooterComponent={<View style={{ height: 120 }} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+        stickySectionHeadersEnabled={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+      />
+
+      {!isSuperviseur && (
+        <MovementFAB
+          open={fabOpen}
+          onToggle={() => {
+            Vibration.vibrate(15);
+            setFabOpen((prev) => !prev);
+          }}
+          onScan={() => {
+            Vibration.vibrate(10);
+            setFabOpen(false);
+            handleScan();
+          }}
+          onEntry={() => {
+            Vibration.vibrate(10);
+            setFabOpen(false);
+            navigation.navigate('MouvementForm', { type: 'entree' });
+          }}
+          onExit={() => {
+            Vibration.vibrate(10);
+            setFabOpen(false);
+            navigation.navigate('MouvementForm', { type: 'sortie' });
+          }}
+          onAdjust={() => {
+            Vibration.vibrate(10);
+            setFabOpen(false);
+            navigation.navigate('MouvementForm', { type: 'ajustement' });
+          }}
+          onTransfer={() => {
+            Vibration.vibrate(10);
+            setFabOpen(false);
+            navigation.navigate('TransfertForm');
+          }}
+        />
+      )}
+
+      <Modal
+        visible={selectedMouvement !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedMouvement(null)}
+      >
+        <TouchableWithoutFeedback onPress={() => setSelectedMouvement(null)}>
+          <View style={[styles.detailOverlay, { backgroundColor: colors.modalOverlay }]}>
+            <TouchableWithoutFeedback>
+              <View style={[styles.detailSheet, { backgroundColor: OBSIDIAN_COLORS.bg_card, borderColor: OBSIDIAN_COLORS.border_subtle }]}>
+                <View style={[styles.detailHandle, { backgroundColor: colors.borderMedium }]} />
+                {selectedMouvement ? (() => {
+                  const movement = selectedMouvement;
+                  const cfg = getTypeConfig(movement.type);
+                  const qtyDisplay = `${cfg.prefix}${Math.abs(movement.quantite)}`;
+                  return (
+                    <>
+                      <LinearGradient colors={cfg.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.detailHero}>
+                        <Text style={styles.detailHeroType}>{cfg.label}</Text>
+                        <Text style={styles.detailHeroQty}>{qtyDisplay} unités</Text>
+                        <Text style={styles.detailHeroArticleName} numberOfLines={1}>{movement.article?.nom || 'Article inconnu'}</Text>
+                        <View style={styles.detailHeroRefBadge}>
+                          <Text style={styles.detailHeroRefText}>{movement.article?.reference || '—'}</Text>
+                        </View>
+                      </LinearGradient>
+
+                      <View style={[styles.detailInfoCard, { backgroundColor: OBSIDIAN_COLORS.bg_card_elevated, borderColor: OBSIDIAN_COLORS.border_subtle }]}>
+                        <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Technicien</Text>
+                        <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]}>
+                          {movement.technicien ? toAbbreviation(`${movement.technicien.prenom || ''} ${movement.technicien.nom || ''}`, 3, 'N/A') : 'N/A'}
+                        </Text>
+                        <Text style={[styles.detailInfoLabel, { color: colors.textMuted, marginTop: 8 }]}>Date</Text>
+                        <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]}>{formatDateTimeParis(movement.dateMouvement)}</Text>
+                        {(movement.type === 'transfert_depart' || movement.type === 'transfert_arrivee') && (
+                          <>
+                            <Text style={[styles.detailInfoLabel, { color: colors.textMuted, marginTop: 8 }]}>Transfert</Text>
+                            <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={2}>
+                              {movement.site?.nom ?? '?'} → {movement.transfertVersSite?.nom ?? '?'}
+                            </Text>
+                          </>
+                        )}
+                      </View>
+
+                      <TouchableOpacity
+                        style={[styles.detailCloseBtn, { borderColor: colors.borderSubtle }]}
+                        onPress={() => setSelectedMouvement(null)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.detailCloseBtnText, { color: colors.textSecondary }]}>Fermer</Text>
+                      </TouchableOpacity>
+                    </>
+                  );
+                })() : null}
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    </View>
+  );
+
   // ==================== RENDER ====================
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
-      <ScrollView
+      <Animated.ScrollView
         showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={[
           styles.scrollContent,
           undefined,
@@ -345,7 +676,7 @@ export const MouvementsListScreen: React.FC = () => {
         }
       >
         {/* ===== HEADER ===== */}
-        <View style={styles.headerWrap}>
+        <Animated.View style={[styles.headerWrap, headerParallaxStyle]}>
           <View style={[styles.header, { backgroundColor: colors.surface, borderColor: isDark ? colors.borderSubtle : colors.borderMedium }]}>
             {/* Accent bar */}
             <LinearGradient
@@ -373,6 +704,9 @@ export const MouvementsListScreen: React.FC = () => {
                   <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Mouvements</Text>
                   <Text style={[styles.headerSummary, { color: colors.textMuted }]}>
                     {stats.total} mouvement{stats.total !== 1 ? 's' : ''} enregistré{stats.total !== 1 ? 's' : ''}
+                  </Text>
+                  <Text style={[styles.headerQuickStat, { color: colors.primary }]}> 
+                    {todayMouvementsCount} mouvement{todayMouvementsCount !== 1 ? 's' : ''} aujourd'hui
                   </Text>
                 </View>
               </View>
@@ -418,8 +752,45 @@ export const MouvementsListScreen: React.FC = () => {
                 </View>
               ))}
             </View>
+
+            <View style={styles.periodSegmentWrap}>
+              {([
+                { key: 'today' as PeriodFilter, label: 'Aujourd\'hui' },
+                { key: '7d' as PeriodFilter, label: '7 jours' },
+                { key: '30d' as PeriodFilter, label: '30 jours' },
+              ]).map((period) => {
+                const active = periodFilter === period.key;
+                return (
+                  <TouchableOpacity
+                    key={period.key}
+                    style={[
+                      styles.periodSegmentBtn,
+                      { backgroundColor: active ? '#007A39' : (isDark ? 'rgba(148,163,184,0.14)' : '#EEF2F7') },
+                    ]}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      Vibration.vibrate(8);
+                      setPeriodFilter(period.key);
+                    }}
+                  >
+                    <Text style={[styles.periodSegmentBtnText, { color: active ? '#FFFFFF' : colors.textSecondary }]}>{period.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={[styles.deltaChip, { backgroundColor: isDark ? 'rgba(16,185,129,0.14)' : '#ECFDF5' }]}>
+              <Icon
+                name={todayDelta >= 0 ? 'trending-up' : 'trending-down'}
+                size={14}
+                color={todayDelta >= 0 ? '#10B981' : '#EF4444'}
+              />
+              <Text style={[styles.deltaChipText, { color: todayDelta >= 0 ? '#047857' : '#B91C1C' }]}>
+                {todayDelta >= 0 ? '+' : ''}{todayDelta} vs hier
+              </Text>
+            </View>
           </View>
-        </View>
+        </Animated.View>
 
         {/* ===== SEARCH BAR (collapsible) ===== */}
         {showSearch && (
@@ -457,6 +828,7 @@ export const MouvementsListScreen: React.FC = () => {
                 style={[styles.resetBtn, { backgroundColor: isDark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.06)' }]}
                 onPress={() => {
                   Vibration.vibrate(10);
+                  setPeriodFilter('7d');
                   setTypeFilter('all');
                   setSearchQuery('');
                 }}
@@ -525,6 +897,16 @@ export const MouvementsListScreen: React.FC = () => {
               );
             })}
           </View>
+
+          {activeFilterTags.length > 0 && (
+            <View style={styles.activeFiltersRow}>
+              {activeFilterTags.map((tag) => (
+                <View key={tag} style={[styles.activeFilterTag, { backgroundColor: isDark ? 'rgba(0,122,57,0.14)' : 'rgba(0,122,57,0.08)' }]}>
+                  <Text style={[styles.activeFilterTagText, { color: colors.primary }]} numberOfLines={1}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* ===== CONTENT ===== */}
@@ -542,7 +924,7 @@ export const MouvementsListScreen: React.FC = () => {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.loaderHeroTitle, { color: colors.textPrimary }]}>Chargement des mouvements</Text>
-                  <Text style={[styles.loaderHeroSubtitle, { color: colors.textMuted }]}>Mise a jour des donnees en cours...</Text>
+                  <Text style={[styles.loaderHeroSubtitle, { color: colors.textMuted }]}>Mise à jour des données en cours...</Text>
                 </View>
               </View>
               <View style={[styles.loaderProgressTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#D7E3DA' }]}>
@@ -611,6 +993,7 @@ export const MouvementsListScreen: React.FC = () => {
                 onPress={() => {
                   Vibration.vibrate(10);
                   if (hasActiveFilters) {
+                    setPeriodFilter('7d');
                     setTypeFilter('all');
                     setSearchQuery('');
                   } else {
@@ -635,8 +1018,9 @@ export const MouvementsListScreen: React.FC = () => {
         ) : (
           /* Timeline list */
           <View style={styles.timelineContainer}>
+            <View pointerEvents="none" style={[styles.timelineRail, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#E2E8F0' }]} />
             {groupedMouvements.map((group) => (
-              <View key={group.date.toISOString()}>
+              <Animated.View key={group.date.toISOString()} layout={LinearTransition.springify().damping(17)}>
                 {/* Date header */}
                 <View
                   style={styles.dateHeaderRow}
@@ -647,11 +1031,13 @@ export const MouvementsListScreen: React.FC = () => {
                 </View>
 
                 {/* Mouvements */}
-                {group.items.map((mouvement) => {
+                {group.items.map((mouvement, index) => {
                   const cfg = getTypeConfig(mouvement.type);
                   return (
-                    <View
+                    <Animated.View
                       key={mouvement.id}
+                      layout={LinearTransition.springify().damping(16)}
+                      entering={FadeInUp.delay(index * 35).duration(220)}
                     >
                       <Pressable
                         style={({ pressed }) => ([
@@ -699,7 +1085,7 @@ export const MouvementsListScreen: React.FC = () => {
                         <View style={styles.mouvContent}>
                           <View style={styles.mouvRow1}>
                             <View style={styles.mouvArticle}>
-                              <Text style={[styles.mouvArticleName, { color: colors.textPrimary }]} numberOfLines={1}>
+                              <Text style={[styles.mouvArticleName, { color: colors.textPrimary }]} numberOfLines={2}>
                                 {mouvement.article?.nom || 'Article inconnu'}
                               </Text>
                               <View style={[styles.mouvRefBadge, {
@@ -712,11 +1098,17 @@ export const MouvementsListScreen: React.FC = () => {
                                 </Text>
                               </View>
                             </View>
-                            <View style={[styles.mouvQtyBadge, { backgroundColor: isDark ? `${cfg.color}24` : `${cfg.color}14` }]}>
+                            <LinearGradient
+                              colors={isDark ? [`${cfg.color}40`, `${cfg.color}20`] : [`${cfg.color}22`, `${cfg.color}12`]}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={[styles.mouvQtyBadge, { borderColor: isDark ? `${cfg.color}66` : `${cfg.color}44` }]}
+                            >
+                              <Text style={[styles.mouvQtyLabel, { color: cfg.color }]}>QTE</Text>
                               <Text style={[styles.mouvQty, { color: cfg.color }]}>
                                 {cfg.prefix}{Math.abs(mouvement.quantite)}
                               </Text>
-                            </View>
+                            </LinearGradient>
                           </View>
 
                           <View style={styles.mouvBottom}>
@@ -755,17 +1147,17 @@ export const MouvementsListScreen: React.FC = () => {
                           <Icon name="chevron-right" size={16} color={colors.borderMedium} />
                         </View>
                       </Pressable>
-                    </View>
+                    </Animated.View>
                   );
                 })}
-              </View>
+              </Animated.View>
             ))}
           </View>
         )}
 
         {/* Bottom spacer for FAB */}
         <View style={{ height: 100 }} />
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* ===== FAB (masqué pour superviseurs) ===== */}
       {!isSuperviseur && <>
@@ -844,8 +1236,13 @@ export const MouvementsListScreen: React.FC = () => {
                 <View style={[styles.detailHandle, { backgroundColor: colors.borderMedium }]} />
 
                 {selectedMouvement && (() => {
-                  const cfg = getTypeConfig(selectedMouvement.type);
-                  const qtyDisplay = `${cfg.prefix}${Math.abs(selectedMouvement.quantite)}`;
+                  const mouvement = selectedMouvement!;
+                  const cfg = getTypeConfig(mouvement.type);
+                  const qtyDisplay = `${cfg.prefix}${Math.abs(mouvement.quantite)}`;
+                  const technicien = mouvement.technicien;
+                  const technicienLabel = technicien
+                    ? toAbbreviation(`${technicien?.prenom || ''} ${technicien?.nom || ''}`, 3, 'N/A')
+                    : 'N/A';
                   return (
                     <>
                       {/* ===== HERO HEADER with gradient ===== */}
@@ -876,12 +1273,12 @@ export const MouvementsListScreen: React.FC = () => {
                         <View style={styles.detailHeroArticle}>
                           <Icon name="package-variant-closed" size={14} color="rgba(255,255,255,0.7)" />
                           <Text style={styles.detailHeroArticleName} numberOfLines={1}>
-                            {selectedMouvement.article?.nom || 'Article inconnu'}
+                            {mouvement.article?.nom || 'Article inconnu'}
                           </Text>
                         </View>
                         <View style={styles.detailHeroRefBadge}>
                           <Text style={styles.detailHeroRefText}>
-                            {selectedMouvement.article?.reference || '—'}
+                            {mouvement.article?.reference || '—'}
                           </Text>
                         </View>
                       </LinearGradient>
@@ -889,14 +1286,14 @@ export const MouvementsListScreen: React.FC = () => {
                       {/* ===== STOCK EVOLUTION CARD ===== */}
                       <View style={[styles.detailStockCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)', borderColor: colors.borderSubtle }]}>
                         <View style={styles.detailStockCol}>
-                          <Text style={[styles.detailStockNum, { color: colors.textMuted }]}>{selectedMouvement.stockAvant}</Text>
+                          <Text style={[styles.detailStockNum, { color: colors.textMuted }]}>{mouvement.stockAvant}</Text>
                           <Text style={[styles.detailStockCaption, { color: colors.textMuted }]}>Avant</Text>
                         </View>
                         <View style={[styles.detailStockArrow, { backgroundColor: cfg.color + '18' }]}>
                           <Icon name="arrow-right" size={18} color={cfg.color} />
                         </View>
                         <View style={styles.detailStockCol}>
-                          <Text style={[styles.detailStockNum, { color: cfg.color }]}>{selectedMouvement.stockApres}</Text>
+                          <Text style={[styles.detailStockNum, { color: cfg.color }]}>{mouvement.stockApres}</Text>
                           <Text style={[styles.detailStockCaption, { color: colors.textMuted }]}>Après</Text>
                         </View>
                         <View style={[styles.detailStockDelta, { backgroundColor: cfg.color + '14' }]}>
@@ -912,9 +1309,7 @@ export const MouvementsListScreen: React.FC = () => {
                           </View>
                           <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Technicien</Text>
                           <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={1}>
-                            {selectedMouvement.technicien
-                              ? toAbbreviation(`${selectedMouvement.technicien.prenom || ''} ${selectedMouvement.technicien.nom || ''}`, 3, 'N/A')
-                              : 'N/A'}
+                            {technicienLabel}
                           </Text>
                         </View>
 
@@ -926,11 +1321,11 @@ export const MouvementsListScreen: React.FC = () => {
                           </View>
                           <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Date</Text>
                           <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]}>
-                            {formatDateTimeParis(selectedMouvement.dateMouvement)}
+                            {formatDateTimeParis(mouvement.dateMouvement)}
                           </Text>
                         </View>
 
-                        {(selectedMouvement.type === 'transfert_depart' || selectedMouvement.type === 'transfert_arrivee') && (
+                        {(mouvement.type === 'transfert_depart' || mouvement.type === 'transfert_arrivee') && (
                           <>
                             <View style={[styles.detailInfoSep, { backgroundColor: colors.borderSubtle }]} />
                             <View style={styles.detailInfoRow}>
@@ -939,13 +1334,13 @@ export const MouvementsListScreen: React.FC = () => {
                               </View>
                               <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Transfert</Text>
                               <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={2}>
-                                {selectedMouvement.site?.nom ?? '?'} → {selectedMouvement.transfertVersSite?.nom ?? '?'}
+                                {mouvement.site?.nom ?? '?'} → {mouvement.transfertVersSite?.nom ?? '?'}
                               </Text>
                             </View>
                           </>
                         )}
 
-                        {selectedMouvement.commentaire ? (
+                        {mouvement.commentaire ? (
                           <>
                             <View style={[styles.detailInfoSep, { backgroundColor: colors.borderSubtle }]} />
                             <View style={styles.detailInfoRow}>
@@ -954,7 +1349,7 @@ export const MouvementsListScreen: React.FC = () => {
                               </View>
                               <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Note</Text>
                               <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={3}>
-                                {selectedMouvement.commentaire}
+                                {mouvement.commentaire}
                               </Text>
                             </View>
                           </>
@@ -996,7 +1391,10 @@ const styles = StyleSheet.create({
     paddingTop: premiumSpacing.xl + 24,
   },
   header: {
-    borderRadius: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     borderWidth: 1,
     padding: premiumSpacing.lg,
     paddingLeft: premiumSpacing.lg + 6,
@@ -1054,6 +1452,11 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginTop: 2,
   },
+  headerQuickStat: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4,
+  },
   headerBtn: {
     width: 38,
     height: 38,
@@ -1069,6 +1472,37 @@ const styles = StyleSheet.create({
   miniStatsRow: {
     flexDirection: 'row',
     gap: 8,
+  },
+  periodSegmentWrap: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  periodSegmentBtn: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  periodSegmentBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  deltaChip: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  deltaChipText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   miniStatCard: {
     flex: 1,
@@ -1163,6 +1597,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  activeFiltersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  activeFilterTag: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    maxWidth: '100%',
+  },
+  activeFilterTagText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   filterChip: {
     flexDirection: 'row',
@@ -1373,6 +1824,14 @@ const styles = StyleSheet.create({
   timelineContainer: {
     paddingHorizontal: 0,
     paddingTop: 4,
+    position: 'relative',
+  },
+  timelineRail: {
+    position: 'absolute',
+    left: 22,
+    top: 18,
+    bottom: 0,
+    width: 1,
   },
   dateHeaderRow: {
     flexDirection: 'row',
@@ -1402,11 +1861,11 @@ const styles = StyleSheet.create({
   // ===== MOVEMENT CARD =====
   mouvCard: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 10,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    padding: 14,
+    padding: 15,
     paddingLeft: 18,
     overflow: 'hidden',
     shadowOffset: { width: 0, height: 2 },
@@ -1437,15 +1896,15 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   mouvIconPill: {
-    width: 38,
-    height: 38,
+    width: 42,
+    height: 42,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   mouvIconInner: {
-    width: 24,
-    height: 24,
+    width: 26,
+    height: 26,
     borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
@@ -1463,11 +1922,14 @@ const styles = StyleSheet.create({
   mouvArticle: {
     flex: 1,
     marginRight: 8,
+    minWidth: 0,
   },
   mouvArticleName: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    lineHeight: 22,
+    flexShrink: 1,
   },
   mouvRef: {
     fontSize: 11,
@@ -1486,15 +1948,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   mouvQtyBadge: {
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginTop: 1,
+    paddingVertical: 6,
+    minWidth: 64,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -1,
+  },
+  mouvQtyLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    opacity: 0.9,
   },
   mouvQty: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: -0.3,
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: -1.2,
+    lineHeight: 28,
   },
   mouvBottom: {
     gap: 7,
