@@ -92,6 +92,7 @@ export const SettingsScreen: React.FC = () => {
   const [siteModalVisible, setSiteModalVisible] = useState(false);
   const [complianceModalVisible, setComplianceModalVisible] = useState(false);
   const [changelogVisible, setChangelogVisible] = useState(false);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   const showToast = useCallback((message: string) => {
     toastShow(message, 'success');
@@ -151,21 +152,13 @@ export const SettingsScreen: React.FC = () => {
   }, [refreshBiometricState, refreshPushState, refreshRecount]);
 
   const handleLogout = useCallback(() => {
-    Alert.alert(
-      'Se deconnecter',
-      'Voulez-vous vraiment vous deconnecter de IT-Inventory ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Se deconnecter',
-          style: 'destructive',
-          onPress: () => {
-            dispatch(setRedirectToTechnicianChoiceAfterLogout(true));
-            dispatch(logoutTechnicien());
-          },
-        },
-      ],
-    );
+    setLogoutModalVisible(true);
+  }, [dispatch]);
+
+  const confirmLogout = useCallback(() => {
+    setLogoutModalVisible(false);
+    dispatch(setRedirectToTechnicianChoiceAfterLogout(true));
+    dispatch(logoutTechnicien());
   }, [dispatch]);
 
   const handleSiteMenu = useCallback(() => {
@@ -588,6 +581,54 @@ export const SettingsScreen: React.FC = () => {
       </ScrollView>
 
       <Modal
+        visible={logoutModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLogoutModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setLogoutModalVisible(false)}>
+          <View style={styles.modalBackdrop}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <Animated.View entering={FadeInDown.duration(200)} style={styles.logoutModalCard}>
+                <View style={styles.logoutIconWrap}>
+                  <Icon name="logout" size={24} color={SETTINGS_COLORS.danger} />
+                </View>
+
+                <Text style={styles.logoutModalTitle}>Se deconnecter</Text>
+                <Text style={styles.logoutModalText}>
+                  Voulez-vous vraiment vous deconnecter de IT-Inventory ?
+                </Text>
+
+                <View style={styles.logoutModalTips}>
+                  <Icon name="information-outline" size={14} color={SETTINGS_COLORS.text_muted} />
+                  <Text style={styles.logoutModalTipsText}>
+                    Pensez a synchroniser vos donnees avant de quitter.
+                  </Text>
+                </View>
+
+                <View style={styles.logoutButtons}>
+                  <Pressable
+                    style={styles.logoutCancelBtn}
+                    onPress={() => setLogoutModalVisible(false)}
+                  >
+                    <Text style={styles.logoutCancelText}>Annuler</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.logoutConfirmBtn}
+                    onPress={confirmLogout}
+                  >
+                    <Icon name="logout" size={14} color="#FFFFFF" />
+                    <Text style={styles.logoutConfirmText}>Se deconnecter</Text>
+                  </Pressable>
+                </View>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      <Modal
         visible={biometricModalVisible}
         transparent
         animationType="fade"
@@ -821,6 +862,97 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
+  },
+  logoutModalCard: {
+    width: '100%',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.28)',
+    backgroundColor: SETTINGS_COLORS.bg_card,
+    padding: 18,
+    shadowColor: '#000000',
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  logoutIconWrap: {
+    alignSelf: 'center',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: SETTINGS_COLORS.danger_subtle,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.35)',
+    marginBottom: 10,
+  },
+  logoutModalTitle: {
+    color: SETTINGS_COLORS.text_primary,
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  logoutModalText: {
+    color: SETTINGS_COLORS.text_secondary,
+    textAlign: 'center',
+    fontSize: 14,
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  logoutModalTips: {
+    marginTop: 12,
+    minHeight: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: SETTINGS_COLORS.border_subtle,
+    backgroundColor: SETTINGS_COLORS.bg_card_elevated,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+  },
+  logoutModalTipsText: {
+    flex: 1,
+    color: SETTINGS_COLORS.text_muted,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  logoutButtons: {
+    marginTop: 14,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  logoutCancelBtn: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: SETTINGS_COLORS.border_subtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: SETTINGS_COLORS.bg_card_elevated,
+  },
+  logoutCancelText: {
+    color: SETTINGS_COLORS.text_secondary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  logoutConfirmBtn: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    backgroundColor: SETTINGS_COLORS.danger,
+  },
+  logoutConfirmText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
   },
   sheetBackdrop: {
     flex: 1,

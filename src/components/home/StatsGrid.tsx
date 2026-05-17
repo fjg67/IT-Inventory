@@ -50,23 +50,37 @@ const StatsGridComponent: React.FC<StatsGridProps> = ({
     [articlesAlerte],
   );
 
-  const mouvementsSpark = useMemo(
-    () => (mouvementsParJour.length >= 2 ? mouvementsParJour : [0, 0, 0, 0, 0, 0, 0]),
+  const fullDailyCounts = useMemo(
+    () => Array.from({ length: 7 }, (_, index) => mouvementsParJour[index] ?? 0),
     [mouvementsParJour],
   );
 
-  const dayLabels = useMemo(() => {
+  const weekTimeline = useMemo(() => {
     const now = new Date();
     return Array.from({ length: 7 }, (_, index) => {
       const d = new Date(now);
       d.setDate(now.getDate() - (6 - index));
-      return SHORT_DAY_LABELS[d.getDay()];
+      return {
+        label: SHORT_DAY_LABELS[d.getDay()],
+        count: fullDailyCounts[index] ?? 0,
+        isToday: d.toDateString() === now.toDateString(),
+      };
     });
-  }, []);
+  }, [fullDailyCounts]);
+
+  const mouvementsSpark = useMemo(
+    () => weekTimeline.map((item) => item.count),
+    [weekTimeline],
+  );
+
+  const dayLabels = useMemo(
+    () => weekTimeline.map((item) => item.label),
+    [weekTimeline],
+  );
 
   const mouvementTrend = useMemo(() => {
-    const today = mouvementsSpark[mouvementsSpark.length - 1] ?? 0;
-    const yesterday = mouvementsSpark[mouvementsSpark.length - 2] ?? 0;
+    const today = fullDailyCounts[fullDailyCounts.length - 1] ?? 0;
+    const yesterday = fullDailyCounts[fullDailyCounts.length - 2] ?? 0;
 
     if (yesterday === 0) {
       if (today === 0) {
@@ -93,7 +107,7 @@ const StatsGridComponent: React.FC<StatsGridProps> = ({
       bg: isUp ? OBSIDIAN_COLORS.green_subtle : OBSIDIAN_COLORS.danger_subtle,
       color: isUp ? OBSIDIAN_COLORS.green_light : OBSIDIAN_COLORS.danger,
     };
-  }, [mouvementsSpark]);
+  }, [fullDailyCounts]);
 
   return (
     <View style={styles.container}>
@@ -153,7 +167,7 @@ const StatsGridComponent: React.FC<StatsGridProps> = ({
               key={`${day}-${index}`}
               style={[
                 styles.dayLabel,
-                index === dayLabels.length - 1 && styles.dayLabelActive,
+                weekTimeline[index]?.isToday && styles.dayLabelActive,
               ]}
             >
               {day}

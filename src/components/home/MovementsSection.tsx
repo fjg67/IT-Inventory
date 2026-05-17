@@ -37,41 +37,64 @@ const formatTime = (dateIso: string): string => {
   });
 };
 
+type MovementListItem =
+  | { kind: 'day'; id: string; dateIso: string }
+  | { kind: 'movement'; id: string; movement: MovementItem };
+
+const getDayKey = (dateIso: string): string => {
+  const date = new Date(dateIso);
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+};
+
 const MovementsSectionComponent: React.FC<MovementsSectionProps> = ({
   movements,
   onSeeAll,
 }) => {
-  const dayPill = useMemo(() => {
-    if (movements.length === 0) {
-      return null;
+  const listItems = useMemo<MovementListItem[]>(() => {
+    const items: MovementListItem[] = [];
+    let previousDayKey = '';
+
+    for (const movement of movements) {
+      const dayKey = getDayKey(movement.createdAt);
+      if (dayKey !== previousDayKey) {
+        items.push({ kind: 'day', id: `day-${dayKey}`, dateIso: movement.createdAt });
+        previousDayKey = dayKey;
+      }
+
+      items.push({ kind: 'movement', id: `movement-${movement.id}`, movement });
     }
 
-    return formatDayPill(movements[0].createdAt);
+    return items;
   }, [movements]);
 
-  const renderItem = ({ item, index }: ListRenderItemInfo<MovementItem>) => (
-    <MovementCard
-      index={index}
-      articleNom={item.articleNom}
-      type={item.type}
-      stockSite={item.siteNom}
-      delta={item.type === 'sortie' ? -Math.abs(item.quantite) : Math.abs(item.quantite)}
-      dateText={formatTime(item.createdAt)}
-    />
-  );
+  const renderItem = ({ item, index }: ListRenderItemInfo<MovementListItem>) => {
+    if (item.kind === 'day') {
+      return (
+        <View style={styles.dayPillWrap}>
+          <Text style={styles.dayPill}>{formatDayPill(item.dateIso)}</Text>
+        </View>
+      );
+    }
+
+    const movement = item.movement;
+    return (
+      <MovementCard
+        index={index}
+        articleNom={movement.articleNom}
+        type={movement.type}
+        stockSite={movement.siteNom}
+        delta={movement.type === 'sortie' ? -Math.abs(movement.quantite) : Math.abs(movement.quantite)}
+        dateText={formatTime(movement.createdAt)}
+      />
+    );
+  };
 
   return (
     <View style={styles.container}>
       <SectionHeader title="DERNIERS MOUVEMENTS" actionLabel="Voir tout" onActionPress={onSeeAll} />
 
-      {dayPill ? (
-        <View style={styles.dayPillWrap}>
-          <Text style={styles.dayPill}>{dayPill}</Text>
-        </View>
-      ) : null}
-
       <FlatList
-        data={movements}
+        data={listItems}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         scrollEnabled={false}

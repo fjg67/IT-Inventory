@@ -7,6 +7,8 @@ export interface PCStateMeta {
   key: PCStateKey;
   label: string;
   icon: string;
+  color: string;
+  subtle: string;
   bg: string;
   border: string;
   text: string;
@@ -16,41 +18,51 @@ export const PC_STATE_COLORS: Record<PCStateKey, PCStateMeta> = {
   a_chaud: {
     key: 'a_chaud',
     label: 'À chaud',
-    icon: 'flash',
+    icon: 'flash-outline',
+    color: OBSIDIAN_COLORS.green_light,
+    subtle: 'rgba(34, 197, 94, 0.10)',
     bg: 'rgba(34, 197, 94, 0.12)',
-    border: 'rgba(34, 197, 94, 0.4)',
+    border: 'rgba(34, 197, 94, 0.25)',
     text: OBSIDIAN_COLORS.green_light,
   },
   a_reusiner: {
     key: 'a_reusiner',
     label: 'À reusiner',
-    icon: 'toolbox-outline',
+    icon: 'wrench-outline',
+    color: OBSIDIAN_COLORS.warning,
+    subtle: 'rgba(245, 158, 11, 0.10)',
     bg: 'rgba(245, 158, 11, 0.12)',
-    border: 'rgba(245, 158, 11, 0.4)',
+    border: 'rgba(245, 158, 11, 0.25)',
     text: OBSIDIAN_COLORS.warning,
   },
   en_usinage: {
     key: 'en_usinage',
     label: 'En usinage',
     icon: 'cog-outline',
+    color: OBSIDIAN_COLORS.warning,
+    subtle: 'rgba(245, 158, 11, 0.10)',
     bg: 'rgba(245, 158, 11, 0.15)',
-    border: 'rgba(245, 158, 11, 0.5)',
+    border: 'rgba(245, 158, 11, 0.25)',
     text: OBSIDIAN_COLORS.warning,
   },
   disponible: {
     key: 'disponible',
     label: 'Disponible',
     icon: 'check-circle-outline',
+    color: OBSIDIAN_COLORS.info,
+    subtle: 'rgba(59, 130, 246, 0.10)',
     bg: 'rgba(59, 130, 246, 0.12)',
-    border: 'rgba(59, 130, 246, 0.4)',
+    border: 'rgba(59, 130, 246, 0.25)',
     text: OBSIDIAN_COLORS.info,
   },
   envoye: {
     key: 'envoye',
     label: 'Envoyé',
     icon: 'send-outline',
+    color: OBSIDIAN_COLORS.purple,
+    subtle: 'rgba(139, 92, 246, 0.10)',
     bg: 'rgba(139, 92, 246, 0.12)',
-    border: 'rgba(139, 92, 246, 0.4)',
+    border: 'rgba(139, 92, 246, 0.25)',
     text: OBSIDIAN_COLORS.purple,
   },
 };

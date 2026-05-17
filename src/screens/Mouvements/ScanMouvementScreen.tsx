@@ -7,7 +7,6 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TouchableOpacity,
   StatusBar,
@@ -21,14 +20,11 @@ import {
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withRepeat,
   withTiming,
-  withSequence,
   Easing,
   FadeIn,
   FadeInUp,
   FadeInDown,
-  ZoomIn,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -50,6 +46,8 @@ import { articleRepository } from '@/database';
 import { formatTimeParis } from '@/utils/dateUtils';
 import { Article } from '@/types';
 import { useResponsive } from '@/utils/responsive';
+import { useScanAnimations } from '@/hooks/useScanAnimations';
+import { ScanCheckCircle, ScanErrorState, ScanFrame, ScanResultCard, ScanSuccessBadge } from '@/components/scan';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const FRAME_SIZE = 260;
@@ -180,6 +178,7 @@ export const ScanMouvementScreen: React.FC = () => {
   const cameraReadyRef = useRef(false);
   const lastScannedRef = useRef<{ value: string; at: number } | null>(null);
   const isProcessingRef = useRef(false);
+  const { checkStyle, ringStyle, frameCornersStyle, scanLineStyle, flashStyle } = useScanAnimations(scanStatus);
 
   // Charger l'historique des scans depuis AsyncStorage au montage
   useEffect(() => {
@@ -235,37 +234,8 @@ export const ScanMouvementScreen: React.FC = () => {
     initCamera();
   }, [hasPermission, device, requestPermission, startScanning]);
 
-  // Scan line animation
-  const scanLineY = useSharedValue(0);
-  const pulseScale = useSharedValue(1);
   const actionTransitionOpacity = useSharedValue(0);
   const actionTransitionScale = useSharedValue(0.92);
-
-  useEffect(() => {
-    // Scan line loops
-    scanLineY.value = withRepeat(
-      withTiming(FRAME_SIZE - 10, { duration: 2200, easing: Easing.linear }),
-      -1,
-      false,
-    );
-    // Pulse corners
-    pulseScale.value = withRepeat(
-      withSequence(
-        withTiming(1.03, { duration: 1200 }),
-        withTiming(1, { duration: 1200 }),
-      ),
-      -1,
-      true,
-    );
-  }, [scanLineY, pulseScale]);
-
-  const scanLineStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: scanLineY.value }],
-  }));
-
-  const frameAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseScale.value }],
-  }));
 
   const actionTransitionStyle = useAnimatedStyle(() => ({
     opacity: actionTransitionOpacity.value,
@@ -402,7 +372,7 @@ export const ScanMouvementScreen: React.FC = () => {
     Vibration.vibrate(10);
     navigation.navigate('Mouvements', {
       screen: 'MouvementForm',
-      params: { articleId: article.id, type },
+      params: { articleId: article.id, type, source: 'Scan' },
     });
   };
 
@@ -445,8 +415,6 @@ export const ScanMouvementScreen: React.FC = () => {
     }
   }, [lastBarcode, searchArticle, handleReset]);
 
-  const isLowStock = article && (article.quantiteActuelle ?? 0) < article.stockMini;
-
   const getPCStatus = useCallback((description?: string) => {
     const normalized = (description ?? '').toLowerCase();
     if (normalized.includes('disponible')) return 'Disponible';
@@ -471,6 +439,79 @@ export const ScanMouvementScreen: React.FC = () => {
   }, [article]);
 
   const scannedPCStatus = useMemo(() => getPCStatus(article?.description), [article?.description, getPCStatus]);
+
+  const quickActionItems = useMemo(() => {
+    if (!article) return [];
+
+    if (isScannedPC) {
+      const items = [] as Array<{
+        key: string;
+        tone: 'disponible' | 'chaud' | 'reusiner' | 'sortie' | 'details';
+        label: string;
+        onPress: () => void;
+        disabled?: boolean;
+      }>;
+
+      if (!isSuperviseur) {
+        items.push(
+          {
+            key: 'disponible',
+            tone: 'disponible',
+            label: 'Disponible',
+            onPress: () => handleSetPCStatus('Disponible', { openDetailsAfter: true }),
+            disabled: isStatusUpdating || scannedPCStatus === 'Disponible',
+          },
+          {
+            key: 'chaud',
+            tone: 'chaud',
+            label: 'A chaud',
+            onPress: () => handleSetPCStatus('À chaud', { openDetailsAfter: true }),
+            disabled: isStatusUpdating || scannedPCStatus === 'À chaud',
+          },
+          {
+            key: 'reusiner',
+            tone: 'reusiner',
+            label: 'A reusiner',
+            onPress: () => handleSetPCStatus('À reusiner', { openDetailsAfter: true }),
+            disabled: isStatusUpdating || scannedPCStatus === 'À reusiner',
+          },
+          {
+            key: 'sortie',
+            tone: 'sortie',
+            label: 'Sortie',
+            onPress: () => handleMouvement('sortie'),
+          },
+        );
+      } else {
+        items.push({
+          key: 'details',
+          tone: 'details',
+          label: 'Details',
+          onPress: handleViewDetails,
+        });
+      }
+
+      return items;
+    }
+
+    const items = [] as Array<{
+      key: string;
+      tone: 'entree' | 'sortie' | 'ajustement' | 'details';
+      label: string;
+      onPress: () => void;
+    }>;
+
+    if (!isSuperviseur) {
+      items.push(
+        { key: 'entree', tone: 'entree', label: 'Entree', onPress: () => handleMouvement('entree') },
+        { key: 'sortie', tone: 'sortie', label: 'Sortie', onPress: () => handleMouvement('sortie') },
+        { key: 'ajustement', tone: 'ajustement', label: 'Ajustement', onPress: () => handleMouvement('ajustement') },
+      );
+    }
+
+    items.push({ key: 'details', tone: 'details', label: 'Details', onPress: handleViewDetails });
+    return items;
+  }, [article, handleMouvement, handleSetPCStatus, handleViewDetails, isScannedPC, isStatusUpdating, isSuperviseur, scannedPCStatus]);
 
   const handleSetPCStatus = useCallback(async (
     nextStatus: 'À chaud' | 'À reusiner' | 'Disponible',
@@ -532,11 +573,6 @@ export const ScanMouvementScreen: React.FC = () => {
     }
   }, [actionTransitionOpacity, actionTransitionScale, article, navigateToPCDetails]);
 
-  // Corner color
-  const cornerColor =
-    scanStatus === 'success' ? '#10B981' :
-    scanStatus === 'error' ? '#EF4444' : '#60A5FA';
-
   // ==================== RENDER ====================
   return (
     <View style={styles.container}>
@@ -594,69 +630,55 @@ export const ScanMouvementScreen: React.FC = () => {
 
       {/* ===== SCAN FRAME ===== */}
       <View style={[styles.frameWrapper, isTablet && { alignSelf: 'center' }]}>
-        <Animated.View style={[styles.frameOuter, frameAnimStyle]}>
-          {/* 4 corners */}
-          <View style={[styles.corner, styles.cTL, { borderColor: cornerColor }]} />
-          <View style={[styles.corner, styles.cTR, { borderColor: cornerColor }]} />
-          <View style={[styles.corner, styles.cBL, { borderColor: cornerColor }]} />
-          <View style={[styles.corner, styles.cBR, { borderColor: cornerColor }]} />
-
-          {/* Scan line */}
-          {scanStatus !== 'success' && scanStatus !== 'error' && (
-            <Animated.View style={[styles.scanLine, scanLineStyle]}>
-              <LinearGradient
-                colors={['transparent', '#3B82F6', 'transparent']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.scanLineGrad}
-              />
-            </Animated.View>
-          )}
-
-          {/* Center icon */}
-          {scanStatus === 'success' && (
-            <Animated.View entering={ZoomIn.duration(300)} style={styles.centerIcon}>
-              <Icon name="check-circle" size={64} color="#10B981" />
-            </Animated.View>
-          )}
-          {scanStatus === 'error' && (
-            <Animated.View entering={ZoomIn.duration(300)} style={styles.centerIcon}>
-              <Icon name="close-circle" size={64} color="#EF4444" />
-            </Animated.View>
-          )}
-        </Animated.View>
+        <Animated.View pointerEvents="none" style={[styles.frameFlash, flashStyle]} />
+        <ScanFrame
+          size={FRAME_SIZE}
+          state={scanStatus}
+          frameStyle={frameCornersStyle}
+          scanLineStyle={scanLineStyle}
+        />
+        {(scanStatus === 'success' || scanStatus === 'error') && (
+          <View style={styles.centerIcon}>
+            <ScanCheckCircle
+              variant={scanStatus === 'error' ? 'error' : 'success'}
+              checkStyle={checkStyle}
+              ringStyle={ringStyle}
+            />
+          </View>
+        )}
       </View>
 
       {/* ===== INSTRUCTION / STATUS ===== */}
       <View style={styles.statusArea}>
         {scanStatus === 'idle' && !isScanning && (
-          <Animated.View entering={FadeIn.duration(300)} style={styles.statusRow}>
-            <Icon name="barcode-scan" size={18} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.statusText}>Positionnez le code-barres dans le cadre</Text>
+          <Animated.View entering={FadeIn.duration(300)} style={styles.statusPanel}>
+            <Text style={styles.statusTitle}>Alignez le code-barres</Text>
+            <Text style={styles.statusSubtitle}>Le Zebra TC22 ou la camera detecte automatiquement l&apos;article dans le cadre.</Text>
           </Animated.View>
         )}
         {(scanStatus === 'idle' && isScanning) && (
-          <Animated.View entering={FadeIn.duration(300)} style={styles.statusRow}>
-            <Icon name="loading" size={18} color="#60A5FA" />
-            <Text style={[styles.statusText, { color: '#60A5FA' }]}>Lecture en cours...</Text>
+          <Animated.View entering={FadeIn.duration(300)} style={styles.statusPanel}>
+            <ScanSuccessBadge text="Lecture en cours" />
+            <Text style={styles.statusSubtitle}>Analyse locale du code-barres avant verification de la fiche article.</Text>
           </Animated.View>
         )}
         {scanStatus === 'scanning' && (
-          <Animated.View entering={FadeIn.duration(200)} style={styles.statusRow}>
-            <Icon name="loading" size={18} color="#60A5FA" />
-            <Text style={[styles.statusText, { color: '#60A5FA' }]}>Recherche de l'article...</Text>
+          <Animated.View entering={FadeIn.duration(200)} style={styles.statusPanel}>
+            <ScanSuccessBadge text="Verification de l'article" />
+            <Text style={styles.statusSubtitle}>Connexion a la base et chargement des actions rapides disponibles.</Text>
           </Animated.View>
         )}
         {scanStatus === 'success' && article && (
-          <Animated.View entering={FadeIn.duration(200)} style={styles.statusRow}>
-            <Icon name="check-circle" size={18} color="#10B981" />
-            <Text style={[styles.statusText, { color: '#10B981' }]}>Article trouvé !</Text>
+          <Animated.View entering={FadeIn.duration(200)} style={styles.statusPanel}>
+            <ScanSuccessBadge text="Article trouve" />
+            <Text style={styles.statusTitle}>{article.nom}</Text>
+            <Text style={styles.statusSubtitle}>Glissez la carte vers le bas pour la fermer ou choisissez une action immediate.</Text>
           </Animated.View>
         )}
         {scanStatus === 'error' && (
-          <Animated.View entering={FadeIn.duration(200)} style={styles.statusRow}>
-            <Icon name="alert-circle" size={18} color="#EF4444" />
-            <Text style={[styles.statusText, { color: '#EF4444' }]}>{errorMsg}</Text>
+          <Animated.View entering={FadeIn.duration(200)} style={styles.statusPanel}>
+            <ScanSuccessBadge text="Scan non reconnu" variant="error" />
+            <Text style={styles.statusSubtitle}>{errorMsg}</Text>
           </Animated.View>
         )}
       </View>
@@ -677,7 +699,7 @@ export const ScanMouvementScreen: React.FC = () => {
             }}
             style={styles.scanBtn}
           >
-            <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.scanBtnGrad}>
+            <LinearGradient colors={['#1B8A3E', '#22C55E']} style={styles.scanBtnGrad}>
               <Icon name="camera" size={24} color="#FFF" />
               <Text style={styles.scanBtnText}>Autoriser la caméra</Text>
             </LinearGradient>
@@ -687,359 +709,25 @@ export const ScanMouvementScreen: React.FC = () => {
 
       {/* ===== ARTICLE RESULT CARD - PREMIUM ===== */}
       {article && scanStatus === 'success' && (
-        <Animated.View entering={FadeInUp.delay(100).duration(500)} style={styles.resultArea}>
-          <View style={styles.resultAura} />
-          {/* Carte principale */}
-          <LinearGradient
-            colors={['rgba(15,23,42,0.94)', 'rgba(17,24,39,0.92)', 'rgba(15,23,42,0.96)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.resultCard}
-          >
-            {/* Left accent bar */}
-            <LinearGradient
-              colors={['#3B82F6', '#007A39']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.resultAccentBar}
-            />
-
-            <View style={styles.resultTopBadgeRow}>
-              <View style={styles.resultFoundPill}>
-                <Icon name="check-decagram" size={13} color="#22D3EE" />
-                <Text style={styles.resultFoundPillText}>Article detecte</Text>
-              </View>
-              <View style={styles.resultSitePill}>
-                <Icon name="map-marker-outline" size={12} color="rgba(255,255,255,0.74)" />
-                <Text style={styles.resultSitePillText}>{siteActif?.nom ?? 'Site inconnu'}</Text>
-              </View>
-            </View>
-
-            {/* Header avec photo ou icône */}
-            <View style={styles.resultCardTop}>
-              {article.photoUrl ? (
-                <Animated.View entering={ZoomIn.delay(200).duration(400)} style={styles.resultPhotoWrapper}>
-                  <Image source={{ uri: article.photoUrl }} style={styles.resultPhoto} />
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.3)']}
-                    style={styles.resultPhotoOverlay}
-                  />
-                </Animated.View>
-              ) : (
-                <Animated.View entering={ZoomIn.delay(200).duration(400)} style={styles.resultIconCircle}>
-                  <LinearGradient
-                    colors={['#3B82F6', '#007A39']}
-                    style={styles.resultIconGrad}
-                  >
-                    <View style={styles.resultIconInner}>
-                      <Icon name="package-variant-closed" size={22} color="#3B82F6" />
-                    </View>
-                  </LinearGradient>
-                </Animated.View>
-              )}
-
-              <View style={styles.resultInfo}>
-                <View style={styles.resultRefRow}>
-                  <View style={styles.resultRefBadge}>
-                    <Icon name="barcode" size={12} color="#60A5FA" />
-                    <Text style={styles.resultRefText}>{article.reference}</Text>
-                  </View>
-                  <TouchableOpacity style={styles.resultClose} onPress={handleReset}>
-                    <Icon name="close" size={14} color="rgba(255,255,255,0.4)" />
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.resultName} numberOfLines={2}>{article.nom}</Text>
-
-                {/* Infos compactes : marque / catégorie */}
-                <View style={styles.resultMeta}>
-                  {article.marque ? (
-                    <View style={styles.resultMetaChip}>
-                      <Icon name="tag-outline" size={11} color="rgba(255,255,255,0.5)" />
-                      <Text style={styles.resultMetaText}>{article.marque}</Text>
-                    </View>
-                  ) : null}
-                  {article.categorieNom ? (
-                    <View style={styles.resultMetaChip}>
-                      <Icon name="shape-outline" size={11} color="rgba(255,255,255,0.5)" />
-                      <Text style={styles.resultMetaText}>{article.categorieNom}</Text>
-                    </View>
-                  ) : null}
-                  {article.emplacement ? (
-                    <View style={styles.resultMetaChip}>
-                      <Icon name="map-marker-outline" size={11} color="rgba(255,255,255,0.5)" />
-                      <Text style={styles.resultMetaText}>{article.emplacement}</Text>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-            </View>
-
-            {/* Séparateur */}
-            <View style={styles.resultDivider} />
-
-            {/* Stock display premium */}
-            <Animated.View entering={FadeIn.delay(300).duration(400)} style={styles.resultStockRow}>
-              <View style={styles.resultStockLeft}>
-                <Text style={styles.resultStockLabel}>Stock actuel</Text>
-                <View style={styles.resultStockValueRow}>
-                  <Text style={[
-                    styles.resultStockValue,
-                    { color: isLowStock ? '#EF4444' : '#10B981' },
-                  ]}>
-                    {article.quantiteActuelle ?? 0}
-                  </Text>
-                  <Text style={styles.resultStockUnit}>{article.unite}</Text>
-                </View>
-              </View>
-              <View style={styles.resultStockRight}>
-                <LinearGradient
-                  colors={isLowStock ? ['#EF4444', '#DC2626'] : ['#10B981', '#059669']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.resultStockIndicator}
-                >
-                  <Icon
-                    name={isLowStock ? 'trending-down' : 'trending-up'}
-                    size={14}
-                    color="#FFF"
-                  />
-                  <Text style={styles.resultStockIndicatorText}>
-                    {isLowStock ? 'Stock bas' : 'En stock'}
-                  </Text>
-                </LinearGradient>
-                {isLowStock && (
-                  <Text style={styles.resultStockMinText}>
-                    Min. {article.stockMini} {article.unite}
-                  </Text>
-                )}
-              </View>
-            </Animated.View>
-          </LinearGradient>
-
-          {/* Quick Actions - design premium */}
-          <Animated.View
-            entering={FadeInUp.delay(250).duration(400)}
-            style={styles.quickActions}
-            onLayout={(event) => {
-              quickActionsYRef.current = event.nativeEvent.layout.y;
-            }}
-          >
-            {isScannedPC ? (
-              <>
-                {!isSuperviseur && (
-                  <TouchableOpacity
-                    style={styles.qAction}
-                    activeOpacity={0.8}
-                    disabled={isStatusUpdating || scannedPCStatus === 'Disponible'}
-                    onPress={() => handleSetPCStatus('Disponible', { openDetailsAfter: true })}
-                  >
-                    <LinearGradient
-                      colors={['#3B82F6', '#2563EB']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={[styles.qActionGrad, (isStatusUpdating || scannedPCStatus === 'Disponible') && styles.qActionDisabled]}
-                    >
-                      <View style={styles.qActionIconWrap}>
-                        <View style={styles.qActionIconInner}>
-                          <Icon name="check-circle-outline" size={20} color="#3B82F6" />
-                        </View>
-                      </View>
-                      <Text style={styles.qActionLabel}>Disponible</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                )}
-
-                {!isSuperviseur && (
-                  <TouchableOpacity
-                    style={styles.qAction}
-                    activeOpacity={0.8}
-                    disabled={isStatusUpdating || scannedPCStatus === 'À chaud'}
-                    onPress={() => handleSetPCStatus('À chaud', { openDetailsAfter: true })}
-                  >
-                    <LinearGradient
-                      colors={['#10B981', '#059669']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={[styles.qActionGrad, (isStatusUpdating || scannedPCStatus === 'À chaud') && styles.qActionDisabled]}
-                    >
-                      <View style={styles.qActionIconWrap}>
-                        <View style={styles.qActionIconInner}>
-                          <Icon name="flash-outline" size={20} color="#10B981" />
-                        </View>
-                      </View>
-                      <Text style={styles.qActionLabel}>À chaud</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                )}
-
-                {!isSuperviseur && (
-                  <TouchableOpacity
-                    style={styles.qAction}
-                    activeOpacity={0.8}
-                    disabled={isStatusUpdating || scannedPCStatus === 'À reusiner'}
-                    onPress={() => handleSetPCStatus('À reusiner', { openDetailsAfter: true })}
-                  >
-                    <LinearGradient
-                      colors={['#F59E0B', '#D97706']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={[styles.qActionGrad, (isStatusUpdating || scannedPCStatus === 'À reusiner') && styles.qActionDisabled]}
-                    >
-                      <View style={styles.qActionIconWrap}>
-                        <View style={styles.qActionIconInner}>
-                          <Icon name="wrench-outline" size={20} color="#F59E0B" />
-                        </View>
-                      </View>
-                      <Text style={styles.qActionLabel}>À reusiner</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                )}
-
-                {!isSuperviseur && (
-                  <TouchableOpacity
-                    style={styles.qAction}
-                    activeOpacity={0.8}
-                    onPress={() => handleMouvement('sortie')}
-                  >
-                    <LinearGradient
-                      colors={['#EF4444', '#DC2626']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.qActionGrad}
-                    >
-                      <View style={styles.qActionIconWrap}>
-                        <View style={styles.qActionIconInner}>
-                          <Icon name="arrow-down-bold" size={20} color="#EF4444" />
-                        </View>
-                      </View>
-                      <Text style={styles.qActionLabel}>Sortie</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                )}
-              </>
-            ) : (
-              <>
-                {!isSuperviseur && (
-                  <TouchableOpacity
-                    style={styles.qAction}
-                    activeOpacity={0.8}
-                    onPress={() => handleMouvement('entree')}
-                  >
-                    <LinearGradient
-                      colors={['#10B981', '#059669']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.qActionGrad}
-                    >
-                      <View style={styles.qActionIconWrap}>
-                        <View style={styles.qActionIconInner}>
-                          <Icon name="arrow-up-bold" size={20} color="#10B981" />
-                        </View>
-                      </View>
-                      <Text style={styles.qActionLabel}>Entrée</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                )}
-
-                {!isSuperviseur && (
-                  <TouchableOpacity
-                    style={styles.qAction}
-                    activeOpacity={0.8}
-                    onPress={() => handleMouvement('sortie')}
-                  >
-                    <LinearGradient
-                      colors={['#EF4444', '#DC2626']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.qActionGrad}
-                    >
-                      <View style={styles.qActionIconWrap}>
-                        <View style={styles.qActionIconInner}>
-                          <Icon name="arrow-down-bold" size={20} color="#EF4444" />
-                        </View>
-                      </View>
-                      <Text style={styles.qActionLabel}>Sortie</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                )}
-
-                {!isSuperviseur && (
-                  <TouchableOpacity
-                    style={styles.qAction}
-                    activeOpacity={0.8}
-                    onPress={() => handleMouvement('ajustement')}
-                  >
-                    <LinearGradient
-                      colors={['#F59E0B', '#D97706']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.qActionGrad}
-                    >
-                      <View style={styles.qActionIconWrap}>
-                        <View style={styles.qActionIconInner}>
-                          <Icon name="swap-vertical" size={20} color="#F59E0B" />
-                        </View>
-                      </View>
-                      <Text style={styles.qActionLabel}>Ajustement</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                )}
-
-                <TouchableOpacity
-                  style={styles.qAction}
-                  activeOpacity={0.8}
-                  onPress={handleViewDetails}
-                >
-                  <LinearGradient
-                    colors={['#3B82F6', '#2563EB']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.qActionGrad}
-                  >
-                    <View style={styles.qActionIconWrap}>
-                      <View style={styles.qActionIconInner}>
-                        <Icon name="eye-outline" size={20} color="#3B82F6" />
-                      </View>
-                    </View>
-                    <Text style={styles.qActionLabel}>Détails</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </>
-            )}
-          </Animated.View>
-
-          {/* New scan button premium */}
-          <Animated.View entering={FadeInUp.delay(350).duration(400)}>
-            <TouchableOpacity style={styles.newScanBtn} activeOpacity={0.8} onPress={handleReset}>
-              <LinearGradient
-                colors={['#1E293B', '#334155']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.newScanBtnGrad}
-              >
-                <Icon name="barcode-scan" size={20} color="#60A5FA" />
-                <Text style={styles.newScanText}>Nouveau scan</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animated.View>
-        </Animated.View>
+        <View
+          onLayout={(event) => {
+            quickActionsYRef.current = event.nativeEvent.layout.y;
+          }}
+        >
+          <ScanResultCard
+            article={article}
+            siteName={siteActif?.nom}
+            actions={quickActionItems}
+            onClose={handleReset}
+            onNewScan={handleReset}
+          />
+        </View>
       )}
 
       {/* Error retry */}
       {scanStatus === 'error' && (
-        <Animated.View entering={FadeInUp.duration(300)} style={styles.errorActions}>
-          <TouchableOpacity style={styles.retryBtn} activeOpacity={0.7} onPress={handleRetry}>
-            <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.retryBtnGrad}>
-              <Icon name="refresh" size={20} color="#FFF" />
-              <Text style={styles.retryBtnText}>Réessayer</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.retryBtn, { marginTop: 10 }]} activeOpacity={0.7} onPress={handleReset}>
-            <View style={[styles.retryBtnGrad, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
-              <Icon name="barcode-scan" size={20} color="#FFF" />
-              <Text style={styles.retryBtnText}>Scanner à nouveau</Text>
-            </View>
-          </TouchableOpacity>
+        <Animated.View entering={FadeInUp.duration(300)}>
+          <ScanErrorState message={errorMsg} onRetry={handleRetry} onReset={handleReset} />
         </Animated.View>
       )}
 

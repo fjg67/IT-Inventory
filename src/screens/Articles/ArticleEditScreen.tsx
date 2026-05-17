@@ -46,6 +46,19 @@ import { Camera, useCameraDevices, useCodeScanner, useCameraPermission } from 'r
 import { uploadArticleImage, isRemoteUrl } from '@/services/imageUploadService';
 import { useResponsive } from '@/utils/responsive';
 import { useTheme } from '@/theme';
+import { CAC, SECTION_ACCENTS } from '@/components/create-article/createArticleColors';
+import { CreateArticleHero } from '@/components/create-article/CreateArticleHero';
+import { FormProgressBar } from '@/components/create-article/FormProgressBar';
+import { SectionHeader } from '@/components/create-article/SectionHeader';
+import { SectionCard } from '@/components/create-article/SectionCard';
+import { FormField } from '@/components/create-article/FormField';
+import { FormDropdown } from '@/components/create-article/FormDropdown';
+import { DropdownBottomSheet } from '@/components/create-article/DropdownBottomSheet';
+import { StockSiteSelector } from '@/components/create-article/StockSiteSelector';
+import { StockLevelCard } from '@/components/create-article/StockLevelCard';
+import { DescriptionTextarea } from '@/components/create-article/DescriptionTextarea';
+import { PhotoUploadZone } from '@/components/create-article/PhotoUploadZone';
+import { CreateArticleFooter } from '@/components/create-article/CreateArticleFooter';
 
 const REF_SCAN_CODE_TYPES = [
   'ean-13', 'ean-8', 'upc-a', 'upc-e', 'code-128', 'code-39', 'code-93',
@@ -677,794 +690,305 @@ export const ArticleEditScreen: React.FC = () => {
     }
   };
 
+  // ===== Progression du formulaire =====
+  const completedSections = useMemo(() => {
+    const section1 = isPCEditMode
+      ? reference.trim().length >= 3 && nom.trim().length >= 2
+      : reference.trim().length >= 7 && nom.trim().length >= 2 && !!codeFamille && !!famille;
+
+    const section2 = isPCEditMode ? true : !!(typeArticle && sousType && marque);
+    const section3 = isEditing ? true : selectedSiteIds.length > 0;
+
+    const stockActuelValue = Number(stockActuel);
+    const stockMiniValue = Number(stockMini);
+    const section4 =
+      Number.isFinite(stockActuelValue) &&
+      Number.isFinite(stockMiniValue) &&
+      stockActuelValue >= 0 &&
+      stockMiniValue >= 0;
+
+    const section5 = description.trim().length > 0;
+    const section6 = !!photoUri;
+
+    return [section1, section2, section3, section4, section5, section6].filter(Boolean).length;
+  }, [
+    isPCEditMode,
+    isEditing,
+    reference,
+    nom,
+    codeFamille,
+    famille,
+    typeArticle,
+    sousType,
+    marque,
+    selectedSiteIds,
+    stockActuel,
+    stockMini,
+    description,
+    photoUri,
+  ]);
+
+  // ===== DropdownItem helpers =====
+  const codeFamilleItems = useMemo(() => CODE_FAMILLE_OPTIONS.map(c => ({
+    value: c, label: `Famille ${c}`, badge: c,
+  })), [CODE_FAMILLE_OPTIONS]);
+
+  const familleItems = useMemo(() => FAMILLE_OPTIONS.map(f => ({
+    value: f.value, label: f.label, icon: f.icon, color: f.color,
+  })), [FAMILLE_OPTIONS]);
+
+  const typeItems = useMemo(() => TYPE_OPTIONS.map(t => ({
+    value: t.value, label: t.label, icon: t.icon, color: t.color,
+  })), [TYPE_OPTIONS]);
+
+  const sousTypeItems = useMemo(() => SOUS_TYPE_OPTIONS.map(t => ({
+    value: t.value, label: t.label, icon: t.icon, color: t.color,
+  })), []);
+
+  const marqueItems = useMemo(() => sortedMarqueOptions.map(m => ({
+    value: m.value, label: m.label, icon: m.icon, color: m.color,
+  })), [sortedMarqueOptions]);
+
+  const emplacementItems = useMemo(() => filteredEmplacements.map(e => ({
+    value: e.value, label: e.label, icon: e.icon, color: e.color,
+  })), [filteredEmplacements]);
+
   // ===== Loading =====
   if (isLoading) {
     return (
-      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ marginTop: 12, color: colors.textSecondary, fontSize: 14 }}>Chargement...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#22C55E" />
+        <Text style={styles.loadingText}>Chargement...</Text>
       </View>
     );
   }
 
-  // ==================== RENDER ====================
+// ==================== RENDER (OBSIDIAN GRID) ====================
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0A0F0D" />
 
-      {/* ===== IMMERSIVE HEADER ===== */}
-      <Animated.View entering={FadeInDown.duration(220)}>
-          <LinearGradient
-            colors={
-              isPCEditMode
-                ? ['#0B2F22', '#005C2B', '#007A39']
-                : isEditing
-                  ? ['#0C2A1F', '#006034', '#008E4A']
-                  : ['#163D2F', '#1B6C4B', '#2D966B']
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0.95 }}
-            style={styles.header}
-          >
-            {/* Geometric decorations */}
-            <View style={styles.headerDeco1} />
-            <View style={styles.headerDeco2} />
-            <LinearGradient
-              colors={['rgba(255,255,255,0.20)', 'rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.headerLightSweep}
-            />
-            <LinearGradient
-              colors={['rgba(2,26,18,0)', 'rgba(2,26,18,0.24)']}
-              start={{ x: 0.2, y: 0.1 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.headerDepthSweep}
-            />
-            <View style={styles.headerDiagonalGlow} />
-            <View style={styles.headerVignette} />
-            <View style={styles.headerBottomSheen} />
-            {!isPCEditMode ? (
-              <>
-                <View style={styles.headerConsumablesBackdrop} pointerEvents="none">
-                  {HEADER_CONSUMABLE_ICONS.map((item, index) => (
-                    <View
-                      key={`${item.icon}-${index}`}
-                      style={[
-                        styles.headerConsumableGhost,
-                        {
-                          top: item.top,
-                          left: item.left,
-                          right: item.right,
-                          opacity: item.opacity,
-                          transform: [{ rotate: item.rotate }],
-                        },
-                      ]}
-                    >
-                      <Icon name={item.icon} size={item.size} color="rgba(255,255,255,0.96)" />
-                    </View>
-                  ))}
-                </View>
-                <View style={styles.headerConsumableCenterCalm} />
-                <View style={styles.headerConsumableGlow} />
-                <View style={styles.headerConsumableTag}>
-                  <Icon name="package-variant-closed" size={11} color="#FDE68A" />
-                  <Text style={styles.headerConsumableTagText}>Collection consommables</Text>
-                </View>
-              </>
-            ) : null}
+      {/* HERO HEADER */}
+      <CreateArticleHero
+        isEditing={isEditing}
+        isPCEditMode={isPCEditMode}
+        onBack={() => { Vibration.vibrate(10); navigation.goBack(); }}
+      />
 
-            <View style={styles.headerRow}>
-              <TouchableOpacity
-                style={styles.backBtn}
-                onPress={() => { Vibration.vibrate(10); navigation.goBack(); }}
-              >
-                <Icon name="arrow-left" size={20} color="#FFF" />
-              </TouchableOpacity>
-
-              <View style={styles.headerCenter}>
-                <LinearGradient
-                  colors={['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.04)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.headerTextCard}
-                >
-                  <View style={styles.headerBadge}>
-                    <View style={styles.headerBadgeDot} />
-                    <Text style={styles.headerBadgeText}>
-                      {isPCEditMode ? 'PC ÉDITION' : isEditing ? 'ÉDITION' : 'CRÉATION'}
-                    </Text>
-                  </View>
-                  <Text style={styles.headerTitle}>
-                    {isPCEditMode ? 'Modifier le poste' : isEditing ? 'Modifier l\'article' : 'Nouvel Article'}
-                  </Text>
-                  <Text style={styles.headerSubtitle}>
-                    {isPCEditMode ? 'Fiche parc PC' : isEditing ? 'Mise à jour des informations' : 'Ajouter au stock IT'}
-                  </Text>
-                  {isArticleCreateMode ? (
-                    <View style={styles.headerContextRow}>
-                      <Icon name="label-outline" size={12} color="rgba(255,255,255,0.85)" />
-                      <Text style={styles.headerContextText}>Création d'article consommable</Text>
-                    </View>
-                  ) : null}
-                </LinearGradient>
-              </View>
-
-              {!isArticleCreateMode ? (
-                <View style={styles.headerIconWrap}>
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.26)', 'rgba(255,255,255,0.08)']}
-                    style={styles.headerIconGradient}
-                  >
-                    <Icon name={isPCEditMode ? 'laptop' : 'pencil-outline'} size={24} color="#FFF" />
-                  </LinearGradient>
-                </View>
-              ) : null}
-            </View>
-
-            {isPCEditMode && (
-              <View style={styles.pcHeroPillsRow}>
-                <View style={styles.pcHeroPill}>
-                  <Icon name="barcode" size={12} color="rgba(255,255,255,0.92)" />
-                  <Text style={styles.pcHeroPillText}>{reference || 'Référence'}</Text>
-                </View>
-                <View style={styles.pcHeroPill}>
-                  <Icon name="domain" size={12} color="rgba(255,255,255,0.92)" />
-                  <Text style={styles.pcHeroPillText}>{marque || 'Marque'}</Text>
-                </View>
-                <View style={styles.pcHeroPill}>
-                  <Icon name="map-marker-outline" size={12} color="rgba(255,255,255,0.92)" />
-                  <Text style={styles.pcHeroPillText}>{siteActif?.nom || 'Site'}</Text>
-                </View>
-              </View>
-            )}
-          </LinearGradient>
-        </Animated.View>
+      {/* PROGRESS BAR */}
+      <FormProgressBar completed={completedSections} total={6} />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.scrollContent, isTablet && contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : undefined]}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          scrollEventThrottle={16}
         >
-          {/* ===== SECTION: INFORMATIONS PRINCIPALES ===== */}
-          <Animated.View entering={FadeInUp.delay(50).springify()} style={styles.sectionWrap}>
-            <View style={styles.sectionHeader}>
-              <LinearGradient colors={isPCEditMode ? ['#0EA5E9', '#0284C7'] : ['#007A39', '#007A39']} style={styles.sectionAccent} />
-              <View style={styles.sectionIconPill}>
-                <LinearGradient colors={isPCEditMode ? ['#0EA5E9', '#0284C7'] : ['#007A39', '#007A39']} style={styles.sectionIconGrad}>
-                  <View style={styles.sectionIconInner}>
-                    <Icon name={isPCEditMode ? 'laptop' : 'information-outline'} size={15} color={isPCEditMode ? '#0284C7' : '#007A39'} />
-                  </View>
-                </LinearGradient>
-              </View>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{isPCEditMode ? 'Identité du poste' : 'Informations principales'}</Text>
-            </View>
-            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-              <LinearGradient colors={isPCEditMode ? ['#0EA5E9', '#0284C7'] : ['#007A39', '#007A39']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
 
-            {/* --- REFERENCE --- */}
-            {!isPCEditMode && (
-            <View style={styles.fieldGroup}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: colors.textPrimary }]}>Référence</Text>
-                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
-              </View>
-              <View style={[
-                styles.inputBox,
-                { backgroundColor: colors.surface, borderColor: colors.borderMedium },
-                refStatus === 'available' && reference.length >= 7 && styles.inputBoxSuccess,
-              ]}>
-                <TextInput
-                  style={[styles.inputText, { color: colors.textPrimary }]}
-                  placeholder="REF-123..."
-                  placeholderTextColor={colors.textMuted}
+          {/* ======= SECTION 1 : INFORMATIONS PRINCIPALES ======= */}
+          <Animated.View entering={FadeInDown.delay(60).duration(300)} style={styles.sectionWrap}>
+            <SectionHeader accent={SECTION_ACCENTS[isPCEditMode ? 'infos' : 'infos']} title={isPCEditMode ? 'Identité du poste' : 'Informations principales'} />
+            <SectionCard>
+              {!isPCEditMode && (
+                <FormField
+                  label="Référence"
+                  required
+                  sectionBorderColor={SECTION_ACCENTS.infos.border}
+                  leftIcon="barcode"
                   value={reference}
                   onChangeText={handleReferenceChange}
+                  placeholder="REF-123..."
                   autoCapitalize="characters"
-                  keyboardType="number-pad"
                   maxLength={30}
                   editable={!isEditing}
+                  isValid={refStatus === 'available' && reference.length >= 7}
+                  onScan={!isEditing ? async () => {
+                    Vibration.vibrate(15);
+                    if (!hasPermission) {
+                      const granted = await requestPermission();
+                      if (granted) setShowScanRefModal(true);
+                      else Alert.alert('Autorisation', "Autorisez l'accès à la caméra pour scanner.");
+                      return;
+                    }
+                    setShowScanRefModal(true);
+                  } : undefined}
                 />
-                <View style={styles.inputActions}>
-                  {!isEditing && (
-                    <TouchableOpacity
-                      style={styles.inlineBtn}
-                      onPress={async () => {
-                        Vibration.vibrate(15);
-                        if (!hasPermission) {
-                          const granted = await requestPermission();
-                          if (granted) setShowScanRefModal(true);
-                          else Alert.alert('Autorisation', 'Autorisez l\'accès à la caméra pour scanner le code-barres.');
-                          return;
-                        }
-                        setShowScanRefModal(true);
-                      }}
-                    >
-                      <View style={[styles.inlineBtnCircle, { backgroundColor: colors.primaryGlow }]}>
-                        <Icon name="barcode-scan" size={18} color={colors.primary} />
-                      </View>
-                    </TouchableOpacity>
-                  )}
-                  {refStatus === 'checking' && (
-                    <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 6 }} />
-                  )}
-                  {refStatus === 'available' && reference.length >= 7 && (
-                    <Animated.View entering={ZoomIn.duration(200)}>
-                      <Icon name="check-circle" size={20} color={colors.success} style={{ marginLeft: 6 }} />
-                    </Animated.View>
-                  )}
-                </View>
-              </View>
-              {refStatus === 'available' && reference.length >= 7 && (
-                <Animated.View entering={FadeIn.duration(200)} style={styles.validationMsg}>
-                  <Icon name="check" size={13} color={colors.success} />
-                  <Text style={[styles.validationText, { color: colors.success }]}>Référence valide</Text>
-                </Animated.View>
               )}
-            </View>
-            )}
 
-            {/* --- NOM --- */}
-            <View style={styles.fieldGroup}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: colors.textPrimary }]}>{isPCEditMode ? 'Hostname' : 'Nom'}</Text>
-                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
-              </View>
-              <View style={[
-                styles.inputBox,
-                { backgroundColor: colors.surface, borderColor: colors.borderMedium },
-              ]}>
-                <TextInput
-                  style={[styles.inputText, { color: colors.textPrimary }]}
-                  placeholder={isPCEditMode ? 'Hostname du poste (ex: KSAOP...)' : 'Désignation de l\'article'}
-                  placeholderTextColor={colors.textMuted}
-                  value={nom}
-                  onChangeText={setNom}
-                  maxLength={100}
-                  blurOnSubmit={false}
+              <FormField
+                label={isPCEditMode ? 'Hostname' : 'Nom'}
+                required
+                sectionBorderColor={SECTION_ACCENTS.infos.border}
+                leftIcon="pencil-outline"
+                value={nom}
+                onChangeText={setNom}
+                placeholder={isPCEditMode ? 'Hostname du poste...' : "Désignation de l'article"}
+                maxLength={100}
+                isValid={nom.trim().length >= 2}
+              />
+
+              {!isPCEditMode && (
+                <FormDropdown
+                  label="Code Famille"
+                  required
+                  value={codeFamille}
+                  placeholder="Aucun code famille"
+                  leftIcon="tag-outline"
+                  sectionBorderColor={SECTION_ACCENTS.infos.border}
+                  onPress={() => { Vibration.vibrate(10); setShowFamilleModal(true); }}
                 />
-              </View>
-            </View>
+              )}
 
-            {/* Code Famille */}
-            {!isPCEditMode && (
-            <View style={[styles.fieldGroup, { marginTop: 16 }]}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: colors.textPrimary }]}>Code Famille</Text>
-                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.pickerBtn, { backgroundColor: colors.surface, borderColor: colors.borderMedium }]}
-                activeOpacity={0.7}
-                onPress={() => { Vibration.vibrate(10); setShowFamilleModal(true); }}
-              >
-                <Icon name="tag-outline" size={20} color={codeFamille ? colors.primary : colors.textMuted} />
-                <Text style={[styles.pickerText, { color: colors.textMuted }, codeFamille && { color: colors.textPrimary, fontWeight: '600' }]}>
-                  {codeFamille ? `Famille ${codeFamille}` : 'Aucun code famille'}
-                </Text>
-                <Icon name="chevron-down" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            )}
-
-            {/* Famille */}
-            {!isPCEditMode && (
-            <View style={[styles.fieldGroup, { marginTop: 16 }]}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: colors.textPrimary }]}>Famille</Text>
-                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.pickerBtn, { backgroundColor: colors.surface, borderColor: colors.borderMedium }]}
-                activeOpacity={0.7}
-                onPress={() => { Vibration.vibrate(10); setShowFamilleTypeModal(true); }}
-              >
-                {famille ? (
-                  <View style={{
-                    width: 28, height: 28, borderRadius: 8,
-                    backgroundColor: FAMILLE_OPTIONS.find(f => f.value === famille)?.bgColor || '#F3F4F6',
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Icon
-                      name={FAMILLE_OPTIONS.find(f => f.value === famille)?.icon || 'help-circle-outline'}
-                      size={16}
-                      color={FAMILLE_OPTIONS.find(f => f.value === famille)?.color || '#9CA3AF'}
-                    />
-                  </View>
-                ) : (
-                  <Icon name="shape-outline" size={20} color={colors.textMuted} />
-                )}
-                <Text style={[styles.pickerText, { color: colors.textMuted }, famille && { color: colors.textPrimary, fontWeight: '600' }]}>
-                  {famille || 'Sélectionner une famille'}
-                </Text>
-                <Icon name="chevron-down" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            )}
-            </View>
+              {!isPCEditMode && (
+                <FormDropdown
+                  label="Famille"
+                  required
+                  value={famille}
+                  placeholder="Sélectionner une famille"
+                  leftIcon="shape-outline"
+                  sectionBorderColor={SECTION_ACCENTS.infos.border}
+                  onPress={() => { Vibration.vibrate(10); setShowFamilleTypeModal(true); }}
+                />
+              )}
+            </SectionCard>
           </Animated.View>
 
-          {/* ===== SECTION: CLASSIFICATION ===== */}
-          <Animated.View entering={FadeInUp.delay(150).springify()} style={styles.sectionWrap}>
-            <View style={styles.sectionHeader}>
-              <LinearGradient colors={isPCEditMode ? ['#14B8A6', '#0F766E'] : ['#8B5CF6', '#7C3AED']} style={styles.sectionAccent} />
-              <View style={styles.sectionIconPill}>
-                <LinearGradient colors={isPCEditMode ? ['#14B8A6', '#0F766E'] : ['#8B5CF6', '#7C3AED']} style={styles.sectionIconGrad}>
-                  <View style={styles.sectionIconInner}>
-                    <Icon name={isPCEditMode ? 'monitor-dashboard' : 'shape-outline'} size={15} color={isPCEditMode ? '#0F766E' : '#8B5CF6'} />
-                  </View>
-                </LinearGradient>
-              </View>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{isPCEditMode ? 'Affectation matérielle' : 'Classification'}</Text>
-            </View>
-            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-              <LinearGradient colors={isPCEditMode ? ['#14B8A6', '#0F766E'] : ['#8B5CF6', '#7C3AED']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
-
-            {/* Type */}
-            {!isPCEditMode && (
-            <View style={styles.fieldGroup}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: colors.textPrimary }]}>Type</Text>
-                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.pickerBtn, { backgroundColor: colors.surface, borderColor: colors.borderMedium }]}
-                activeOpacity={0.7}
-                onPress={() => { Vibration.vibrate(10); setShowTypeModal(true); }}
-              >
-                {typeArticle ? (
-                  <View style={{
-                    width: 28, height: 28, borderRadius: 8,
-                    backgroundColor: (TYPE_OPTIONS.find(t => t.value === typeArticle)?.color || '#9CA3AF') + '15',
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Icon
-                      name={TYPE_OPTIONS.find(t => t.value === typeArticle)?.icon || 'help-circle-outline'}
-                      size={16}
-                      color={TYPE_OPTIONS.find(t => t.value === typeArticle)?.color || '#9CA3AF'}
-                    />
-                  </View>
-                ) : (
-                  <Icon name="format-list-bulleted-type" size={20} color={colors.textMuted} />
-                )}
-                <Text style={[styles.pickerText, { color: colors.textMuted }, typeArticle && { color: colors.textPrimary, fontWeight: '600' }]}>
-                  {typeArticle || 'Sélectionner un type'}
-                </Text>
-                <Icon name="chevron-down" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            )}
-
-            {/* Sous-type */}
-            {!isPCEditMode && (
-            <View style={[styles.fieldGroup, { marginTop: 16 }]}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: colors.textPrimary }]}>Sous-type</Text>
-                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.pickerBtn, { backgroundColor: colors.surface, borderColor: colors.borderMedium }]}
-                activeOpacity={0.7}
-                onPress={() => { Vibration.vibrate(10); setShowSousTypeModal(true); }}
-              >
-                {sousType ? (
-                  <View style={{
-                    width: 28, height: 28, borderRadius: 8,
-                    backgroundColor: (SOUS_TYPE_OPTIONS.find(t => t.value === sousType)?.color || '#9CA3AF') + '15',
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Icon
-                      name={SOUS_TYPE_OPTIONS.find(t => t.value === sousType)?.icon || 'help-circle-outline'}
-                      size={16}
-                      color={SOUS_TYPE_OPTIONS.find(t => t.value === sousType)?.color || '#9CA3AF'}
-                    />
-                  </View>
-                ) : (
-                  <Icon name="tag-text-outline" size={20} color={colors.textMuted} />
-                )}
-                <Text style={[styles.pickerText, { color: colors.textMuted }, sousType && { color: colors.textPrimary, fontWeight: '600' }]}>
-                  {sousType || 'Sélectionner un sous-type'}
-                </Text>
-                <Icon name="chevron-down" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            )}
-
-            {/* Marque */}
-            <View style={[styles.fieldGroup, { marginTop: 16 }]}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: colors.textPrimary }]}>Marque</Text>
-                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.pickerBtn, { backgroundColor: colors.surface, borderColor: colors.borderMedium }]}
-                activeOpacity={0.7}
-                onPress={() => { Vibration.vibrate(10); setShowMarqueModal(true); }}
-              >
-                {marque ? (
-                  <View style={{
-                    width: 28, height: 28, borderRadius: 8,
-                    backgroundColor: (MARQUE_OPTIONS.find(m => m.value === marque)?.color || '#6B7280') + '18',
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Text style={{
-                      fontSize: 10, fontWeight: '800',
-                      color: MARQUE_OPTIONS.find(m => m.value === marque)?.color || '#6B7280',
-                    }}>
-                      {MARQUE_OPTIONS.find(m => m.value === marque)?.initials || '?'}
-                    </Text>
-                  </View>
-                ) : (
-                  <Icon name="domain" size={20} color={colors.textMuted} />
-                )}
-                <Text style={[styles.pickerText, { color: colors.textMuted }, marque && { color: colors.textPrimary, fontWeight: '600' }]}>
-                  {marque || 'Sélectionner une marque'}
-                </Text>
-                <Icon name="chevron-down" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Site */}
-            {!isEditing && siteActif && !(hasChildSites && !selectedSubSiteId) && (
-              <View style={[styles.fieldGroup, { marginTop: 16 }]}>
-                <View style={styles.labelRow}>
-                  <Text style={[styles.label, { color: colors.textPrimary }]}>Site</Text>
-                </View>
-                <View
-                  style={[styles.siteItem, { backgroundColor: colors.surface, borderColor: '#3B82F6' + '40' }, styles.siteItemChecked]}
-                >
-                  <View style={[styles.radioOuter, styles.radioOuterSelected]}>
-                    <Animated.View entering={ZoomIn.springify()} style={styles.radioInner} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.siteText, { color: colors.textPrimary }, styles.siteTextChecked]}>
-                      {siteActif.nom}
-                    </Text>
-                    {siteActif.adresse ? (
-                      <Text style={[styles.siteAddr, { color: colors.textMuted }]}>{siteActif.adresse}</Text>
-                    ) : null}
-                  </View>
-                  <Animated.View entering={ZoomIn.duration(200)}>
-                    <Icon name="check-circle" size={22} color="#3B82F6" />
-                  </Animated.View>
-                </View>
-              </View>
-            )}
-
-            {/* Emplacement — only for Siège Strasbourg */}
-            {siteActif?.nom === 'Siège Strasbourg' && (
-            <View style={[styles.fieldGroup, { marginTop: 16 }]}>
-              <View style={styles.labelRow}>
-                <Text style={[styles.label, { color: colors.textPrimary }]}>Emplacement</Text>
-                <Text style={[styles.required, { color: colors.danger }]}>*</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.pickerBtn, { backgroundColor: colors.surface, borderColor: colors.borderMedium }, emplacement && { borderColor: (EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.color || '#E5E7EB') + '40' }]}
-                activeOpacity={0.7}
-                onPress={() => { Vibration.vibrate(10); setShowEmplacementModal(true); }}
-              >
-                {emplacement ? (
-                  <View style={{
-                    width: 32, height: 32, borderRadius: 10,
-                    backgroundColor: (EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.color || '#007A39') + '15',
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Icon
-                      name={EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.icon || 'map-marker'}
-                      size={18}
-                      color={EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.color || '#007A39'}
-                    />
-                  </View>
-                ) : (
-                  <Icon name="map-marker-outline" size={20} color={colors.textMuted} />
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.pickerText, { color: colors.textMuted }, emplacement && { color: colors.textPrimary, fontWeight: '600' }]}>
-                    {emplacement || 'Sélectionner un emplacement'}
-                  </Text>
-                  {emplacement && (
-                    <Text style={{ fontSize: 11, color: EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.color || '#9CA3AF', marginTop: 1 }}>
-                      {EMPLACEMENT_OPTIONS.find(e => e.value === emplacement)?.zone || ''}
-                    </Text>
-                  )}
-                </View>
-                <Icon name="chevron-down" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-            )}
-            </View>
-          </Animated.View>
-
-          {/* ===== SECTION: SOUS-SITE (si "Tous" sélectionné) ===== */}
-          {hasChildSites && !selectedSubSiteId && (
-            <Animated.View entering={FadeInUp.delay(230).springify()} style={styles.sectionWrap}>
-              <View style={styles.sectionHeader}>
-                <LinearGradient colors={['#007A39', '#005C2B']} style={styles.sectionAccent} />
-                <View style={styles.sectionIconPill}>
-                  <LinearGradient colors={['#007A39', '#005C2B']} style={styles.sectionIconGrad}>
-                    <View style={styles.sectionIconInner}>
-                      <Icon name="warehouse" size={15} color="#007A39" />
-                    </View>
-                  </LinearGradient>
-                </View>
-                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Stock concerné</Text>
-              </View>
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4, paddingHorizontal: 4 }}>
-                {childSites.map(site => {
-                  const selected = String(site.id) === String(localTargetSiteId ?? siteActif?.id);
-                  return (
-                    <TouchableOpacity
-                      key={String(site.id)}
-                      onPress={() => { setLocalTargetSiteId(String(site.id)); Vibration.vibrate(10); }}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 12,
-                        paddingHorizontal: 10,
-                        borderRadius: 12,
-                        borderWidth: 1.5,
-                        borderColor: selected ? colors.primary : colors.borderSubtle,
-                        backgroundColor: selected ? colors.primaryGlow : colors.surface,
-                        alignItems: 'center',
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Icon name="warehouse" size={18} color={selected ? colors.primary : colors.textMuted} />
-                      <Text style={{ color: selected ? colors.primary : colors.textSecondary, fontWeight: selected ? '700' : '500', fontSize: 12, marginTop: 4, textAlign: 'center' }} numberOfLines={1}>
-                        {site.nom}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+          {/* ======= SECTION 2 : CLASSIFICATION ======= */}
+          {!isPCEditMode && (
+            <Animated.View entering={FadeInDown.delay(120).duration(300)} style={styles.sectionWrap}>
+              <SectionHeader accent={SECTION_ACCENTS.classif} />
+              <SectionCard>
+                <FormDropdown
+                  label="Type"
+                  required
+                  value={typeArticle}
+                  placeholder="Sélectionner un type"
+                  leftIcon="format-list-bulleted-type"
+                  sectionBorderColor={SECTION_ACCENTS.classif.border}
+                  onPress={() => { Vibration.vibrate(10); setShowTypeModal(true); }}
+                />
+                <FormDropdown
+                  label="Sous-type"
+                  required
+                  value={sousType}
+                  placeholder="Sélectionner un sous-type"
+                  leftIcon="tag-text-outline"
+                  sectionBorderColor={SECTION_ACCENTS.classif.border}
+                  onPress={() => { Vibration.vibrate(10); setShowSousTypeModal(true); }}
+                  disabled={!typeArticle}
+                  disabledHint={!typeArticle ? 'Sélectionnez d\'abord un type' : undefined}
+                />
+                <FormDropdown
+                  label="Marque"
+                  required
+                  value={marque}
+                  placeholder="Sélectionner une marque"
+                  leftIcon="star-circle-outline"
+                  sectionBorderColor={SECTION_ACCENTS.classif.border}
+                  onPress={() => { Vibration.vibrate(10); setShowMarqueModal(true); }}
+                />
+              </SectionCard>
             </Animated.View>
           )}
 
-          {/* ===== SECTION: STOCK ===== */}
-          {!isPCEditMode && (
-          <Animated.View entering={FadeInUp.delay(250).springify()} style={styles.sectionWrap}>
-            <View style={styles.sectionHeader}>
-              <LinearGradient colors={['#10B981', '#059669']} style={styles.sectionAccent} />
-              <View style={styles.sectionIconPill}>
-                <LinearGradient colors={['#10B981', '#059669']} style={styles.sectionIconGrad}>
-                  <View style={styles.sectionIconInner}>
-                    <Icon name="package-variant" size={15} color="#10B981" />
-                  </View>
-                </LinearGradient>
-              </View>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Niveaux de stock</Text>
-            </View>
-            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-              <LinearGradient colors={['#10B981', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
-            <View style={styles.stockRow}>
-              {/* Stock Actuel */}
-              <View style={[styles.stockCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-                <View style={styles.stockCardContent}>
-                  <View style={styles.stockCardIconPill}>
-                    <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.stockCardIconGrad}>
-                      <View style={styles.stockCardIconInner}>
-                        <Icon name="package-variant" size={20} color="#3B82F6" />
-                      </View>
-                    </LinearGradient>
-                  </View>
-                  <Text style={[styles.stockCardLabel, { color: colors.textSecondary }]}>Stock actuel</Text>
-                  <View style={[styles.stockCardInputBox, { borderColor: colors.borderSubtle }]}>
-                    <TextInput
-                      style={[styles.stockCardInput, { color: colors.textPrimary }]}
-                      placeholder="0"
-                      placeholderTextColor={colors.textMuted}
-                      value={stockActuel}
-                      onChangeText={setStockActuel}
-                      keyboardType="numeric"
-                      maxLength={6}
-                    />
-                  </View>
+          {/* ======= SECTION 3 : STOCK CONCERNÉ ======= */}
+          <Animated.View entering={FadeInDown.delay(180).duration(300)} style={styles.sectionWrap}>
+            <SectionHeader accent={SECTION_ACCENTS.stock_site} />
+            <SectionCard style={{ gap: 0 }}>
+              {isEditing ? (
+                <View style={styles.siteInfoRow}>
+                  <Icon name="office-building" size={16} color={SECTION_ACCENTS.stock_site.color} />
+                  <Text style={styles.siteInfoText}>{siteActif?.nom ?? 'Site actif'}</Text>
                 </View>
-              </View>
-
-              {/* Seuil d'alerte */}
-              <View style={[styles.stockCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-                <View style={styles.stockCardContent}>
-                  <View style={styles.stockCardIconPill}>
-                    <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.stockCardIconGrad}>
-                      <View style={styles.stockCardIconInner}>
-                        <Icon name="bell-alert-outline" size={20} color="#F59E0B" />
-                      </View>
-                    </LinearGradient>
-                  </View>
-                  <Text style={[styles.stockCardLabel, { color: colors.textSecondary }]}>Seuil d'alerte</Text>
-                  <View style={[styles.stockCardInputBox, { borderColor: '#FDE68A' }]}>
-                    <TextInput
-                      style={[styles.stockCardInput, { color: colors.textPrimary }]}
-                      placeholder="5"
-                      placeholderTextColor={colors.textMuted}
-                      value={stockMini}
-                      onChangeText={setStockMini}
-                      keyboardType="numeric"
-                      maxLength={6}
-                    />
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Info hint */}
-            <View style={styles.stockHint}>
-              <Icon name="information-outline" size={14} color={colors.textMuted} />
-              <Text style={[styles.stockHintText, { color: colors.textSecondary }]}>
-                Une alerte sera affichée si le stock descend sous le seuil
-              </Text>
-            </View>
-            </View>
-          </Animated.View>
-          )}
-
-          {/* ===== SECTION: INFORMATIONS COMPLÉMENTAIRES ===== */}
-          <Animated.View entering={FadeInUp.delay(350).springify()} style={styles.sectionWrap}>
-            <View style={styles.sectionHeader}>
-              <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.sectionAccent} />
-              <View style={styles.sectionIconPill}>
-                <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.sectionIconGrad}>
-                  <View style={styles.sectionIconInner}>
-                    <Icon name="text-box-outline" size={15} color="#F59E0B" />
-                  </View>
-                </LinearGradient>
-              </View>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Informations complémentaires</Text>
-            </View>
-            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-              <LinearGradient colors={['#F59E0B', '#D97706']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
-
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.label, { color: colors.textPrimary }]}>Description (optionnel)</Text>
-              <View style={[styles.textareaBox, { backgroundColor: colors.surface, borderColor: colors.borderMedium }]}>
-                <TextInput
-                  style={[styles.textarea, { color: colors.textPrimary }]}
-                  placeholder="Détails supplémentaires..."
-                  placeholderTextColor={colors.textMuted}
-                  value={description}
-                  onChangeText={setDescription}
-                  multiline
-                  maxLength={200}
+              ) : (
+                <StockSiteSelector
+                  sites={sites}
+                  selectedIds={selectedSiteIds}
+                  onToggle={(id) => {
+                    Vibration.vibrate(10);
+                    setSelectedSiteIds(prev =>
+                      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+                    );
+                  }}
                 />
-                <Text style={[styles.charCount, { color: colors.textMuted }]}>{description.length}/200</Text>
-              </View>
-            </View>
-            </View>
+              )}
+            </SectionCard>
           </Animated.View>
 
-          {/* ===== SECTION: PHOTO ===== */}
-          <Animated.View entering={FadeInUp.delay(450).springify()} style={styles.sectionWrap}>
-            <View style={styles.sectionHeader}>
-              <LinearGradient colors={['#EC4899', '#DB2777']} style={styles.sectionAccent} />
-              <View style={styles.sectionIconPill}>
-                <LinearGradient colors={['#EC4899', '#DB2777']} style={styles.sectionIconGrad}>
-                  <View style={styles.sectionIconInner}>
-                    <Icon name="camera-outline" size={15} color="#EC4899" />
-                  </View>
-                </LinearGradient>
+          {/* ======= SECTION 4 : NIVEAUX DE STOCK ======= */}
+          <Animated.View entering={FadeInDown.delay(240).duration(300)} style={styles.sectionWrap}>
+            <SectionHeader accent={SECTION_ACCENTS.stock_level} />
+            <SectionCard>
+              <View style={styles.stockLevelRow}>
+                <StockLevelCard
+                  label="STOCK ACTUEL"
+                  iconName="package-variant"
+                  iconColor={SECTION_ACCENTS.stock_level.color}
+                  iconBg={SECTION_ACCENTS.stock_level.bg}
+                  borderColor={SECTION_ACCENTS.stock_level.border}
+                  value={parseInt(stockActuel, 10) || 0}
+                  onChange={(v) => setStockActuel(String(v))}
+                  plusColor="#22C55E"
+                />
+                <StockLevelCard
+                  label="SEUIL D'ALERTE"
+                  iconName="bell-alert-outline"
+                  iconColor="#F59E0B"
+                  iconBg="rgba(245, 158, 11, 0.12)"
+                  borderColor="rgba(245, 158, 11, 0.4)"
+                  value={parseInt(stockMini, 10) || 0}
+                  onChange={(v) => setStockMini(String(v))}
+                  plusColor="#F59E0B"
+                  minusColor="#F59E0B"
+                />
               </View>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Photo</Text>
-            </View>
-            <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]}>
-              <LinearGradient colors={['#EC4899', '#DB2777']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.sectionCardStrip} />
-
-            {!photoUri ? (
-              /* Empty state */
-              <View style={styles.photoEmpty}>
-                <LinearGradient
-                  colors={['rgba(236, 72, 153, 0.08)', 'rgba(236, 72, 153, 0.02)']}
-                  style={styles.photoEmptyGradient}
-                >
-                  <View style={styles.photoEmptyIconPill}>
-                    <LinearGradient colors={['#EC4899', '#DB2777']} style={styles.photoEmptyIconGrad}>
-                      <View style={styles.photoEmptyIconInner}>
-                        <Icon name="camera-plus-outline" size={34} color="#EC4899" />
-                      </View>
-                    </LinearGradient>
-                  </View>
-                  <Text style={[styles.photoEmptyTitle, { color: colors.textPrimary }]}>Ajouter une photo</Text>
-                  <Text style={[styles.photoEmptySubtitle, { color: colors.textSecondary }]}>Prenez ou choisissez une photo de l'article</Text>
-
-                  <View style={styles.photoButtons}>
-                    <TouchableOpacity style={styles.photoBtnCamera} activeOpacity={0.7} onPress={handleTakePhoto}>
-                      <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.photoBtnGradient}>
-                        <Icon name="camera" size={20} color="#FFF" />
-                        <Text style={styles.photoBtnCameraText}>Caméra</Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={[styles.photoBtnGallery, { backgroundColor: colors.surface, borderColor: colors.borderSubtle }]} activeOpacity={0.7} onPress={handlePickGallery}>
-                      <Icon name="image-multiple-outline" size={20} color={colors.textPrimary} />
-                      <Text style={[styles.photoBtnGalleryText, { color: colors.textPrimary }]}>Galerie</Text>
-                    </TouchableOpacity>
-                  </View>
-                </LinearGradient>
+              <View style={styles.infoNote}>
+                <Icon name="information-outline" size={13} color="#3B82F6" />
+                <Text style={styles.infoNoteText}>
+                  Une alerte sera affichée si le stock descend sous le seuil
+                </Text>
               </View>
-            ) : (
-              /* Preview */
-              <Animated.View entering={ZoomIn.duration(300)}>
-                <View style={[styles.photoPreview, { backgroundColor: colors.surfaceInput, borderColor: colors.borderSubtle }]}>
-                  <Image source={{ uri: photoUri }} style={styles.photoImage} resizeMode="cover" />
-
-                  {/* Remove button */}
-                  <TouchableOpacity style={styles.photoRemoveBtn} onPress={handleRemovePhoto} activeOpacity={0.7}>
-                    <View style={[styles.photoRemoveBg, { backgroundColor: colors.surface }]}>
-                      <Icon name="close" size={16} color={colors.danger} />
-                    </View>
-                  </TouchableOpacity>
-
-                  {/* Change button */}
-                  <View style={styles.photoChangeRow}>
-                    <TouchableOpacity style={[styles.photoChangeBtn, { backgroundColor: colors.primaryGlow, borderColor: colors.borderSubtle }]} activeOpacity={0.7} onPress={handleTakePhoto}>
-                      <Icon name="camera" size={16} color={colors.primary} />
-                      <Text style={[styles.photoChangeText, { color: colors.primary }]}>Reprendre</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.photoChangeBtn, { backgroundColor: colors.primaryGlow, borderColor: colors.borderSubtle }]} activeOpacity={0.7} onPress={handlePickGallery}>
-                      <Icon name="image-multiple-outline" size={16} color={colors.primary} />
-                      <Text style={[styles.photoChangeText, { color: colors.primary }]}>Galerie</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </Animated.View>
-            )}
-            </View>
+            </SectionCard>
           </Animated.View>
 
-          {/* Spacer for button */}
-          <View style={{ height: 100 }} />
+          {/* ======= SECTION 5 : INFORMATIONS COMPLÉMENTAIRES ======= */}
+          <Animated.View entering={FadeInDown.delay(300).duration(300)} style={styles.sectionWrap}>
+            <SectionHeader accent={SECTION_ACCENTS.complement} />
+            <SectionCard>
+              <DescriptionTextarea
+                value={description}
+                onChange={setDescription}
+              />
+            </SectionCard>
+          </Animated.View>
+
+          {/* ======= SECTION 6 : PHOTO ======= */}
+          <Animated.View entering={FadeInDown.delay(360).duration(300)} style={styles.sectionWrap}>
+            <SectionHeader accent={SECTION_ACCENTS.photo} />
+            <SectionCard>
+              <PhotoUploadZone
+                photoUri={photoUri}
+                onCamera={handleTakePhoto}
+                onGallery={handlePickGallery}
+                onRemove={handleRemovePhoto}
+              />
+            </SectionCard>
+          </Animated.View>
+
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ===== STICKY SUBMIT ===== */}
-      <LinearGradient
-        colors={[isDark ? 'rgba(6,9,15,0)' : 'rgba(248,250,252,0)', isDark ? 'rgba(6,9,15,0.95)' : 'rgba(248,250,252,0.95)', colors.background]}
-        style={styles.stickyBottom}
-        pointerEvents="box-none"
-      >
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleSubmit}
-          disabled={!isFormValid || isSubmitting || showSuccess}
-          style={[styles.submitTouchable, (!isFormValid || isSubmitting) && styles.submitTouchableDisabled]}
-        >
-          <LinearGradient
-            colors={showSuccess ? ['#10B981', '#059669'] : (isFormValid ? ['#3B82F6', '#1D4ED8'] : ['#D1D5DB', '#9CA3AF'])}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.submitGradient}
-          >
-            {isSubmitting ? (
-              <>
-                <ActivityIndicator color="#FFF" size="small" />
-                <Text style={styles.submitText}>
-                  {isEditing ? 'Mise à jour en cours...' : 'Création en cours...'}
-                </Text>
-              </>
-            ) : showSuccess ? (
-              <>
-                <Animated.View entering={ZoomIn.duration(300)}>
-                  <Icon name="check-circle" size={26} color="#FFF" />
-                </Animated.View>
-                <Text style={styles.submitText}>
-                  {isEditing ? 'Article mis à jour !' : 'Article créé !'}
-                </Text>
-              </>
-            ) : (
-              <>
-                <Icon name="check-circle-outline" size={24} color="#FFF" />
-                <Text style={styles.submitText}>
-                  {isPCEditMode ? 'Mettre à jour le poste' : isEditing ? 'Mettre à jour' : 'Créer l\'article'}
-                </Text>
-              </>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-      </LinearGradient>
+      {/* FOOTER STICKY */}
+      <CreateArticleFooter
+        isValid={isFormValid}
+        isLoading={isSubmitting}
+        showSuccess={showSuccess}
+        onSubmit={handleSubmit}
+        isEditing={isEditing}
+      />
 
       {/* ===== MODAL SCAN RÉFÉRENCE (caméra) ===== */}
       <Modal
@@ -1485,7 +1009,6 @@ export const ArticleEditScreen: React.FC = () => {
             />
           )}
           <View style={styles.scanModalOverlay} pointerEvents="box-none">
-            {/* Header */}
             <View style={styles.scanModalHeader}>
               <TouchableOpacity
                 style={styles.scanModalCloseBtn}
@@ -1496,8 +1019,6 @@ export const ArticleEditScreen: React.FC = () => {
               <Text style={styles.scanModalTitle}>Scanner le code-barres</Text>
               <View style={{ width: 44 }} />
             </View>
-
-            {/* Cadre de scan central */}
             <View style={styles.scanFrameCenter}>
               <View style={styles.scanFrame}>
                 <View style={[styles.scanCorner, styles.scanCTL]} />
@@ -1506,8 +1027,6 @@ export const ArticleEditScreen: React.FC = () => {
                 <View style={[styles.scanCorner, styles.scanCBR]} />
               </View>
             </View>
-
-            {/* Hint en bas */}
             <View style={styles.scanModalBottom}>
               <Text style={styles.scanModalHint}>Visez le code-barres pour remplir la référence</Text>
               {!hasPermission && (
@@ -1526,1631 +1045,140 @@ export const ArticleEditScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {/* ===== CODE FAMILLE MODAL ===== */}
-      <Modal visible={showFamilleModal} transparent animationType="slide" onRequestClose={() => setShowFamilleModal(false)}>
-        <TouchableWithoutFeedback onPress={() => setShowFamilleModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalSheet}>
-                <View style={styles.modalHandle} />
-                <Text style={styles.modalTitle}>Code Famille</Text>
+      {/* ===== DROPDOWNS BOTTOM SHEETS ===== */}
+      <DropdownBottomSheet
+        visible={showFamilleModal}
+        title="Code Famille"
+        items={codeFamilleItems}
+        selectedValue={codeFamille}
+        onSelect={(item) => { setCodeFamille(item.value || null); Vibration.vibrate(10); }}
+        onClose={() => setShowFamilleModal(false)}
+        nullable
+        nullLabel="Aucun code famille"
+      />
 
-                <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
-                  {/* None option */}
-                  <TouchableOpacity
-                    style={[styles.modalItem, codeFamille === null && styles.modalItemActive]}
-                    onPress={() => { setCodeFamille(null); setShowFamilleModal(false); Vibration.vibrate(10); }}
-                  >
-                    <Icon
-                      name={codeFamille === null ? 'radiobox-marked' : 'radiobox-blank'}
-                      size={22}
-                      color={codeFamille === null ? '#2563EB' : '#D1D5DB'}
-                    />
-                    <Text style={[styles.modalItemText, codeFamille === null && styles.modalItemTextActive]}>
-                      Aucun code famille
-                    </Text>
-                  </TouchableOpacity>
+      <DropdownBottomSheet
+        visible={showFamilleTypeModal}
+        title="Famille"
+        items={familleItems}
+        selectedValue={famille}
+        onSelect={(item) => { setFamille(item.value || null); Vibration.vibrate(10); }}
+        onClose={() => setShowFamilleTypeModal(false)}
+        nullable
+        nullLabel="Aucune famille"
+      />
 
-                  {CODE_FAMILLE_OPTIONS.map(code => {
-                    const selected = codeFamille === code;
-                    return (
-                      <TouchableOpacity
-                        key={code}
-                        style={[styles.modalItem, selected && styles.modalItemActive]}
-                        onPress={() => { setCodeFamille(code); setShowFamilleModal(false); Vibration.vibrate(10); }}
-                      >
-                        <View style={{
-                          width: 36, height: 36, borderRadius: 10,
-                          backgroundColor: selected ? 'rgba(37,99,235,0.1)' : '#F3F4F6',
-                          alignItems: 'center', justifyContent: 'center', marginRight: 12,
-                        }}>
-                          <Text style={{
-                            fontSize: 15, fontWeight: '700',
-                            color: selected ? '#2563EB' : '#6B7280',
-                          }}>{code}</Text>
-                        </View>
-                        <Text style={[styles.modalItemText, selected && styles.modalItemTextActive]}>
-                          Famille {code}
-                        </Text>
-                        {selected && (
-                          <Icon name="check-circle" size={22} color="#2563EB" style={{ marginLeft: 'auto' }} />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
+      <DropdownBottomSheet
+        visible={showTypeModal}
+        title="Type"
+        items={typeItems}
+        selectedValue={typeArticle}
+        onSelect={(item) => {
+          setTypeArticle(item.value || null);
+          setSousType(null);
+          Vibration.vibrate(10);
+        }}
+        onClose={() => setShowTypeModal(false)}
+        accentColor="#8B5CF6"
+        nullable
+        nullLabel="Aucun type"
+      />
 
-                  <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 12, marginHorizontal: 4 }} />
-                  <TouchableOpacity
-                    style={styles.addOptionRow}
-                    onPress={() => { Vibration.vibrate(10); setAddCodeFamilleInput(''); setShowAddCodeFamilleModal(true); }}
-                  >
-                    <View style={styles.addOptionIconWrap}>
-                      <Icon name="plus" size={24} color="#2563EB" />
-                    </View>
-                    <Text style={styles.addOptionText}>Ajouter un code famille</Text>
-                  </TouchableOpacity>
-                </ScrollView>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+      <DropdownBottomSheet
+        visible={showSousTypeModal}
+        title="Sous-type"
+        items={sousTypeItems}
+        selectedValue={sousType}
+        onSelect={(item) => { setSousType(item.value || null); Vibration.vibrate(10); }}
+        onClose={() => setShowSousTypeModal(false)}
+        accentColor="#8B5CF6"
+        nullable
+        nullLabel="Aucun sous-type"
+      />
 
-      {/* ===== FAMILLE MODAL ===== */}
-      <Modal visible={showFamilleTypeModal} transparent animationType="slide" onRequestClose={() => setShowFamilleTypeModal(false)}>
-        <TouchableWithoutFeedback onPress={() => setShowFamilleTypeModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={[styles.modalSheet, { maxHeight: '75%' }]}>
-                <View style={styles.modalHandle} />
-                <Text style={styles.modalTitle}>Famille de l'article</Text>
-                <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 20, marginHorizontal: 20, textAlign: 'center' }}>
-                  Sélectionnez le type de famille pour cet article
-                </Text>
+      <DropdownBottomSheet
+        visible={showMarqueModal}
+        title="Marque"
+        items={marqueItems}
+        selectedValue={marque}
+        onSelect={(item) => { setMarque(item.value || null); Vibration.vibrate(10); }}
+        onClose={() => setShowMarqueModal(false)}
+        accentColor="#8B5CF6"
+        nullable
+        nullLabel="Aucune marque"
+      />
 
-                <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
-                  {/* Option aucune */}
-                  <TouchableOpacity
-                    style={[styles.modalItem, famille === null && styles.modalItemActive]}
-                    onPress={() => { setFamille(null); setShowFamilleTypeModal(false); Vibration.vibrate(10); }}
-                  >
-                    <View style={{
-                      width: 44, height: 44, borderRadius: 12,
-                      backgroundColor: '#F3F4F6',
-                      alignItems: 'center', justifyContent: 'center', marginRight: 14,
-                    }}>
-                      <Icon name="close" size={20} color="#9CA3AF" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.modalItemText, famille === null && styles.modalItemTextActive]}>
-                        Aucune famille
-                      </Text>
-                      <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
-                        Article non classé
-                      </Text>
-                    </View>
-                    {famille === null && (
-                      <Icon name="check-circle" size={22} color="#2563EB" />
-                    )}
-                  </TouchableOpacity>
+      <DropdownBottomSheet
+        visible={showEmplacementModal}
+        title="Emplacement"
+        items={emplacementItems}
+        selectedValue={emplacement}
+        onSelect={(item) => { setEmplacement(item.value || null); Vibration.vibrate(10); }}
+        onClose={() => setShowEmplacementModal(false)}
+        nullable
+        nullLabel="Aucun emplacement"
+      />
 
-                  {/* Séparateur */}
-                  <View style={{ height: 1, backgroundColor: '#F3F4F6', marginVertical: 8, marginHorizontal: 4 }} />
-
-                  {/* Options famille */}
-                  {FAMILLE_OPTIONS.map((fam, index) => {
-                    const selected = famille === fam.value;
-                    return (
-                      <Animated.View key={fam.value} entering={FadeInUp.delay(index * 50).duration(300)}>
-                        <TouchableOpacity
-                          style={[
-                            {
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              paddingVertical: 14,
-                              paddingHorizontal: 16,
-                              marginHorizontal: 4,
-                              marginVertical: 3,
-                              borderRadius: 14,
-                              backgroundColor: selected ? fam.bgColor : 'transparent',
-                              borderWidth: selected ? 1.5 : 0,
-                              borderColor: selected ? fam.color + '40' : 'transparent',
-                            },
-                          ]}
-                          activeOpacity={0.7}
-                          onPress={() => {
-                            if (fam.value === 'Kit') {
-                              setShowFamilleTypeModal(false);
-                              Vibration.vibrate(10);
-                              navigation.navigate('Kit');
-                              return;
-                            }
-                            setFamille(fam.value); setShowFamilleTypeModal(false); Vibration.vibrate(10);
-                          }}
-                        >
-                          {/* Icône avec fond coloré */}
-                          <View style={{
-                            width: 48, height: 48, borderRadius: 14,
-                            backgroundColor: selected ? fam.color + '20' : fam.bgColor,
-                            alignItems: 'center', justifyContent: 'center', marginRight: 14,
-                            shadowColor: selected ? fam.color : 'transparent',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: selected ? 0.3 : 0,
-                            shadowRadius: 8,
-                            elevation: selected ? 4 : 0,
-                          }}>
-                            <Icon name={fam.icon} size={24} color={fam.color} />
-                          </View>
-
-                          {/* Texte */}
-                          <View style={{ flex: 1 }}>
-                            <Text style={{
-                              fontSize: 16, fontWeight: selected ? '700' : '500',
-                              color: selected ? fam.color : '#1F2937',
-                            }}>
-                              {fam.emoji}  {fam.label}
-                            </Text>
-                          </View>
-
-                          {/* Check */}
-                          {selected && (
-                            <View style={{
-                              width: 28, height: 28, borderRadius: 14,
-                              backgroundColor: fam.color,
-                              alignItems: 'center', justifyContent: 'center',
-                            }}>
-                              <Icon name="check" size={16} color="#FFF" />
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                      </Animated.View>
-                    );
-                  })}
-
-                  <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 12, marginHorizontal: 4 }} />
-                  <TouchableOpacity
-                    style={styles.addOptionRow}
-                    onPress={() => { Vibration.vibrate(10); setAddFamilleInput(''); setShowAddFamilleModal(true); }}
-                  >
-                    <View style={styles.addOptionIconWrap}>
-                      <Icon name="plus" size={24} color="#8B5CF6" />
-                    </View>
-                    <Text style={styles.addOptionText}>Ajouter une famille</Text>
-                  </TouchableOpacity>
-                </ScrollView>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* ===== TYPE MODAL ===== */}
-      <Modal visible={showTypeModal} transparent animationType="slide" onRequestClose={() => setShowTypeModal(false)}>
-        <TouchableWithoutFeedback onPress={() => setShowTypeModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={[styles.modalSheet, { maxHeight: '80%' }]}>
-                <View style={styles.modalHandle} />
-                <Text style={styles.modalTitle}>Type d'article</Text>
-
-                {/* Barre de recherche */}
-                <View style={styles.modalSearch}>
-                  <Icon name="magnify" size={18} color="#9CA3AF" />
-                  <TextInput
-                    style={styles.modalSearchInput}
-                    placeholder="Rechercher un type..."
-                    placeholderTextColor="#9CA3AF"
-                    value={typeSearch}
-                    onChangeText={setTypeSearch}
-                  />
-                  {typeSearch.length > 0 && (
-                    <TouchableOpacity onPress={() => setTypeSearch('')}>
-                      <Icon name="close-circle" size={18} color="#9CA3AF" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
-                  {/* Aucun */}
-                  <TouchableOpacity
-                    style={[styles.modalItem, typeArticle === null && styles.modalItemActive]}
-                    onPress={() => { setTypeArticle(null); setShowTypeModal(false); setTypeSearch(''); Vibration.vibrate(10); }}
-                  >
-                    <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                      <Icon name="close" size={18} color="#9CA3AF" />
-                    </View>
-                    <Text style={[styles.modalItemText, typeArticle === null && styles.modalItemTextActive]}>Aucun type</Text>
-                    {typeArticle === null && <Icon name="check-circle" size={20} color="#2563EB" style={{ marginLeft: 'auto' }} />}
-                  </TouchableOpacity>
-
-                  <View style={{ height: 1, backgroundColor: '#F3F4F6', marginVertical: 6 }} />
-
-                  {filteredTypes.map((t, index) => {
-                    const selected = typeArticle === t.value;
-                    return (
-                      <TouchableOpacity
-                        key={t.value}
-                        style={{
-                          flexDirection: 'row', alignItems: 'center',
-                          paddingVertical: 12, paddingHorizontal: 14,
-                          marginVertical: 2, marginHorizontal: 2,
-                          borderRadius: 12,
-                          backgroundColor: selected ? t.color + '12' : 'transparent',
-                          borderWidth: selected ? 1.5 : 0,
-                          borderColor: selected ? t.color + '35' : 'transparent',
-                        }}
-                        activeOpacity={0.7}
-                        onPress={() => { setTypeArticle(t.value); setShowTypeModal(false); setTypeSearch(''); Vibration.vibrate(10); }}
-                      >
-                        <View style={{
-                          width: 40, height: 40, borderRadius: 10,
-                          backgroundColor: selected ? t.color + '20' : t.color + '10',
-                          alignItems: 'center', justifyContent: 'center', marginRight: 12,
-                          shadowColor: selected ? t.color : 'transparent',
-                          shadowOffset: { width: 0, height: 3 },
-                          shadowOpacity: selected ? 0.25 : 0,
-                          shadowRadius: 6, elevation: selected ? 3 : 0,
-                        }}>
-                          <Icon name={t.icon} size={20} color={t.color} />
-                        </View>
-                        <Text style={{
-                          flex: 1, fontSize: 15,
-                          fontWeight: selected ? '700' : '500',
-                          color: selected ? t.color : '#1F2937',
-                        }}>{t.label}</Text>
-                        {selected && (
-                          <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.color, alignItems: 'center', justifyContent: 'center' }}>
-                            <Icon name="check" size={14} color="#FFF" />
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-
-                  {filteredTypes.length === 0 && typeSearch && (
-                    <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-                      <Icon name="magnify-close" size={40} color="#D1D5DB" />
-                      <Text style={{ fontSize: 15, color: '#9CA3AF', marginTop: 8 }}>Aucun résultat</Text>
-                    </View>
-                  )}
-
-                  <View style={{ height: 1, backgroundColor: '#E5E7EB', marginVertical: 12, marginHorizontal: 4 }} />
-                  <TouchableOpacity
-                    style={styles.addOptionRow}
-                    onPress={() => { Vibration.vibrate(10); setAddTypeInput(''); setShowAddTypeModal(true); }}
-                  >
-                    <View style={[styles.addOptionIconWrap, { backgroundColor: 'rgba(0,122,57,0.1)' }]}>
-                      <Icon name="plus" size={24} color="#007A39" />
-                    </View>
-                    <Text style={styles.addOptionText}>Ajouter un type</Text>
-                  </TouchableOpacity>
-                </ScrollView>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* ===== MODAL AJOUTER CODE FAMILLE ===== */}
-      <Modal visible={showAddCodeFamilleModal} transparent animationType="fade">
-        <TouchableWithoutFeedback onPress={() => setShowAddCodeFamilleModal(false)}>
-          <View style={styles.addOptionModalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.addOptionModalBox}>
-                <Text style={styles.addOptionModalTitle}>Nouveau code famille</Text>
-                <TextInput
-                  style={styles.addOptionInput}
-                  placeholder="Ex: 18"
-                  placeholderTextColor="#9CA3AF"
-                  value={addCodeFamilleInput}
-                  onChangeText={setAddCodeFamilleInput}
-                  autoCapitalize="characters"
-                  maxLength={10}
-                />
-                <View style={styles.addOptionModalActions}>
-                  <TouchableOpacity style={styles.addOptionBtnCancel} onPress={() => setShowAddCodeFamilleModal(false)}>
-                    <Text style={styles.addOptionBtnCancelText}>Annuler</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.addOptionBtnSubmit, (!addCodeFamilleInput.trim() || addingRefOption) && { opacity: 0.6 }]}
-                    disabled={!addCodeFamilleInput.trim() || addingRefOption}
-                    onPress={async () => {
-                      const code = addCodeFamilleInput.trim();
-                      if (!code) return;
-                      setAddingRefOption(true);
-                      try {
-                        await refOptionsRepository.createCodeFamille(code);
-                        await loadRefOptions();
-                        setCodeFamille(code);
-                        setShowAddCodeFamilleModal(false);
-                        setAddCodeFamilleInput('');
-                        Vibration.vibrate(10);
-                        Alert.alert('Ajouté', `Code famille "${code}" enregistré.`);
-                      } catch (e) {
-                        Alert.alert('Erreur', (e as Error).message);
-                      } finally {
-                        setAddingRefOption(false);
-                      }
-                    }}
-                  >
-                    {addingRefOption ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.addOptionBtnSubmitText}>Valider</Text>}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* ===== MODAL AJOUTER FAMILLE ===== */}
-      <Modal visible={showAddFamilleModal} transparent animationType="fade">
-        <TouchableWithoutFeedback onPress={() => setShowAddFamilleModal(false)}>
-          <View style={styles.addOptionModalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.addOptionModalBox}>
-                <Text style={styles.addOptionModalTitle}>Nouvelle famille</Text>
-                <TextInput
-                  style={styles.addOptionInput}
-                  placeholder="Ex: Moniteur"
-                  placeholderTextColor="#9CA3AF"
-                  value={addFamilleInput}
-                  onChangeText={setAddFamilleInput}
-                  maxLength={50}
-                />
-                <View style={styles.addOptionModalActions}>
-                  <TouchableOpacity style={styles.addOptionBtnCancel} onPress={() => setShowAddFamilleModal(false)}>
-                    <Text style={styles.addOptionBtnCancelText}>Annuler</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.addOptionBtnSubmit, (!addFamilleInput.trim() || addingRefOption) && { opacity: 0.6 }]}
-                    disabled={!addFamilleInput.trim() || addingRefOption}
-                    onPress={async () => {
-                      const value = addFamilleInput.trim();
-                      if (!value) return;
-                      setAddingRefOption(true);
-                      try {
-                        await refOptionsRepository.createFamille(value);
-                        await loadRefOptions();
-                        setFamille(value);
-                        setShowAddFamilleModal(false);
-                        setAddFamilleInput('');
-                        Vibration.vibrate(10);
-                        Alert.alert('Ajouté', `Famille "${value}" enregistrée.`);
-                      } catch (e) {
-                        Alert.alert('Erreur', (e as Error).message);
-                      } finally {
-                        setAddingRefOption(false);
-                      }
-                    }}
-                  >
-                    {addingRefOption ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.addOptionBtnSubmitText}>Valider</Text>}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* ===== MODAL AJOUTER TYPE ===== */}
-      <Modal visible={showAddTypeModal} transparent animationType="fade">
-        <TouchableWithoutFeedback onPress={() => setShowAddTypeModal(false)}>
-          <View style={styles.addOptionModalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.addOptionModalBox}>
-                <Text style={styles.addOptionModalTitle}>Nouveau type d'article</Text>
-                <TextInput
-                  style={styles.addOptionInput}
-                  placeholder="Ex: Écran"
-                  placeholderTextColor="#9CA3AF"
-                  value={addTypeInput}
-                  onChangeText={setAddTypeInput}
-                  maxLength={50}
-                />
-                <View style={styles.addOptionModalActions}>
-                  <TouchableOpacity style={styles.addOptionBtnCancel} onPress={() => setShowAddTypeModal(false)}>
-                    <Text style={styles.addOptionBtnCancelText}>Annuler</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.addOptionBtnSubmit, (!addTypeInput.trim() || addingRefOption) && { opacity: 0.6 }]}
-                    disabled={!addTypeInput.trim() || addingRefOption}
-                    onPress={async () => {
-                      const value = addTypeInput.trim();
-                      if (!value) return;
-                      setAddingRefOption(true);
-                      try {
-                        await refOptionsRepository.createTypeArticle(value);
-                        await loadRefOptions();
-                        setTypeArticle(value);
-                        setShowAddTypeModal(false);
-                        setAddTypeInput('');
-                        Vibration.vibrate(10);
-                        Alert.alert('Ajouté', `Type "${value}" enregistré.`);
-                      } catch (e) {
-                        Alert.alert('Erreur', (e as Error).message);
-                      } finally {
-                        setAddingRefOption(false);
-                      }
-                    }}
-                  >
-                    {addingRefOption ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.addOptionBtnSubmitText}>Valider</Text>}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* ===== SOUS-TYPE MODAL ===== */}
-      <Modal visible={showSousTypeModal} transparent animationType="slide" onRequestClose={() => setShowSousTypeModal(false)}>
-        <TouchableWithoutFeedback onPress={() => setShowSousTypeModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={[styles.modalSheet, { maxHeight: '80%' }]}>
-                <View style={styles.modalHandle} />
-                <Text style={styles.modalTitle}>Sous-type</Text>
-
-                {/* Barre de recherche */}
-                <View style={styles.modalSearch}>
-                  <Icon name="magnify" size={18} color="#9CA3AF" />
-                  <TextInput
-                    style={styles.modalSearchInput}
-                    placeholder="Rechercher un sous-type..."
-                    placeholderTextColor="#9CA3AF"
-                    value={sousTypeSearch}
-                    onChangeText={setSousTypeSearch}
-                  />
-                  {sousTypeSearch.length > 0 && (
-                    <TouchableOpacity onPress={() => setSousTypeSearch('')}>
-                      <Icon name="close-circle" size={18} color="#9CA3AF" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
-                  {/* Aucun */}
-                  <TouchableOpacity
-                    style={[styles.modalItem, sousType === null && styles.modalItemActive]}
-                    onPress={() => { setSousType(null); setShowSousTypeModal(false); setSousTypeSearch(''); Vibration.vibrate(10); }}
-                  >
-                    <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                      <Icon name="close" size={18} color="#9CA3AF" />
-                    </View>
-                    <Text style={[styles.modalItemText, sousType === null && styles.modalItemTextActive]}>Aucun sous-type</Text>
-                    {sousType === null && <Icon name="check-circle" size={20} color="#2563EB" style={{ marginLeft: 'auto' }} />}
-                  </TouchableOpacity>
-
-                  <View style={{ height: 1, backgroundColor: '#F3F4F6', marginVertical: 6 }} />
-
-                  {filteredSousTypes.map((st) => {
-                    const selected = sousType === st.value;
-                    return (
-                      <TouchableOpacity
-                        key={st.value}
-                        style={{
-                          flexDirection: 'row', alignItems: 'center',
-                          paddingVertical: 12, paddingHorizontal: 14,
-                          marginVertical: 2, marginHorizontal: 2,
-                          borderRadius: 12,
-                          backgroundColor: selected ? st.color + '12' : 'transparent',
-                          borderWidth: selected ? 1.5 : 0,
-                          borderColor: selected ? st.color + '35' : 'transparent',
-                        }}
-                        activeOpacity={0.7}
-                        onPress={() => { setSousType(st.value); setShowSousTypeModal(false); setSousTypeSearch(''); Vibration.vibrate(10); }}
-                      >
-                        <View style={{
-                          width: 40, height: 40, borderRadius: 10,
-                          backgroundColor: selected ? st.color + '20' : st.color + '10',
-                          alignItems: 'center', justifyContent: 'center', marginRight: 12,
-                          shadowColor: selected ? st.color : 'transparent',
-                          shadowOffset: { width: 0, height: 3 },
-                          shadowOpacity: selected ? 0.25 : 0,
-                          shadowRadius: 6, elevation: selected ? 3 : 0,
-                        }}>
-                          <Icon name={st.icon} size={20} color={st.color} />
-                        </View>
-                        <Text style={{
-                          flex: 1, fontSize: 15,
-                          fontWeight: selected ? '700' : '500',
-                          color: selected ? st.color : '#1F2937',
-                        }}>{st.label}</Text>
-                        {selected && (
-                          <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: st.color, alignItems: 'center', justifyContent: 'center' }}>
-                            <Icon name="check" size={14} color="#FFF" />
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-
-                  {filteredSousTypes.length === 0 && (
-                    <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-                      <Icon name="magnify-close" size={40} color="#D1D5DB" />
-                      <Text style={{ fontSize: 15, color: '#9CA3AF', marginTop: 8 }}>Aucun résultat</Text>
-                    </View>
-                  )}
-                </ScrollView>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* ===== MARQUE MODAL ===== */}
-      <Modal visible={showMarqueModal} transparent animationType="slide" onRequestClose={() => setShowMarqueModal(false)}>
-        <TouchableWithoutFeedback onPress={() => setShowMarqueModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={[styles.modalSheet, { maxHeight: '75%' }]}>
-                <View style={styles.modalHandle} />
-                <Text style={styles.modalTitle}>Marque</Text>
-                <Text style={{ fontSize: 14, color: '#6B7280', marginBottom: 16, marginHorizontal: 20, textAlign: 'center' }}>
-                  Sélectionnez la marque du produit
-                </Text>
-
-                <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
-                  {/* Aucune */}
-                  <TouchableOpacity
-                    style={[styles.modalItem, marque === null && styles.modalItemActive]}
-                    onPress={() => { setMarque(null); setShowMarqueModal(false); Vibration.vibrate(10); }}
-                  >
-                    <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
-                      <Icon name="close" size={20} color="#9CA3AF" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.modalItemText, marque === null && styles.modalItemTextActive]}>Aucune marque</Text>
-                      <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 1 }}>Marque non spécifiée</Text>
-                    </View>
-                    {marque === null && <Icon name="check-circle" size={22} color="#2563EB" />}
-                  </TouchableOpacity>
-
-                  <View style={{ height: 1, backgroundColor: '#F3F4F6', marginVertical: 8, marginHorizontal: 4 }} />
-
-                  {sortedMarqueOptions.map((m, index) => {
-                    const selected = marque === m.value;
-                    return (
-                      <Animated.View key={m.value} entering={FadeInUp.delay(index * 40).duration(300)}>
-                        <TouchableOpacity
-                          style={{
-                            flexDirection: 'row', alignItems: 'center',
-                            paddingVertical: 12, paddingHorizontal: 14,
-                            marginVertical: 3, marginHorizontal: 2,
-                            borderRadius: 14,
-                            backgroundColor: selected ? m.color + '10' : 'transparent',
-                            borderWidth: selected ? 1.5 : 0,
-                            borderColor: selected ? m.color + '30' : 'transparent',
-                          }}
-                          activeOpacity={0.7}
-                          onPress={() => { setMarque(m.value); setShowMarqueModal(false); Vibration.vibrate(10); }}
-                        >
-                          {/* Logo simulé */}
-                          <View style={{
-                            width: 48, height: 48, borderRadius: 14,
-                            backgroundColor: selected ? m.color + '18' : m.color + '0C',
-                            alignItems: 'center', justifyContent: 'center', marginRight: 14,
-                            borderWidth: 1.5,
-                            borderColor: selected ? m.color + '40' : m.color + '15',
-                            shadowColor: selected ? m.color : 'transparent',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: selected ? 0.3 : 0,
-                            shadowRadius: 8, elevation: selected ? 4 : 0,
-                          }}>
-                            <Text style={{
-                              fontSize: 14, fontWeight: '900', letterSpacing: -0.5,
-                              color: m.color,
-                            }}>{m.initials}</Text>
-                          </View>
-
-                          {/* Infos */}
-                          <View style={{ flex: 1 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                              <Icon name={m.icon} size={14} color={selected ? m.color : '#9CA3AF'} style={{ marginRight: 6 }} />
-                              <Text style={{
-                                fontSize: 16, fontWeight: selected ? '700' : '500',
-                                color: selected ? m.color : '#1F2937',
-                              }}>{m.label}</Text>
-                            </View>
-                          </View>
-
-                          {/* Check */}
-                          {selected && (
-                            <View style={{
-                              width: 28, height: 28, borderRadius: 14,
-                              backgroundColor: m.color,
-                              alignItems: 'center', justifyContent: 'center',
-                            }}>
-                              <Icon name="check" size={16} color="#FFF" />
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                      </Animated.View>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* ===== EMPLACEMENT MODAL ===== */}
-      <Modal visible={showEmplacementModal} transparent animationType="slide" onRequestClose={() => setShowEmplacementModal(false)}>
-        <TouchableWithoutFeedback onPress={() => setShowEmplacementModal(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={[styles.modalSheet, { maxHeight: '85%' }]}>
-                <View style={styles.modalHandle} />
-                <View style={{ alignItems: 'center', marginBottom: 4 }}>
-                  <View style={{
-                    width: 52, height: 52, borderRadius: 16,
-                    backgroundColor: '#007A3915',
-                    alignItems: 'center', justifyContent: 'center', marginBottom: 10,
-                  }}>
-                    <Icon name="map-marker-radius" size={28} color="#007A39" />
-                  </View>
-                  <Text style={[styles.modalTitle, { textAlign: 'center', marginBottom: 4 }]}>Emplacement de stockage</Text>
-                  <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 14, textAlign: 'center', paddingHorizontal: 20 }}>
-                    Où sera rangé cet article ?
-                  </Text>
-                </View>
-
-                {/* Barre de recherche */}
-                <View style={styles.modalSearch}>
-                  <Icon name="magnify" size={18} color="#9CA3AF" />
-                  <TextInput
-                    style={styles.modalSearchInput}
-                    placeholder="Rechercher un emplacement..."
-                    placeholderTextColor="#9CA3AF"
-                    value={emplacementSearch}
-                    onChangeText={setEmplacementSearch}
-                  />
-                  {emplacementSearch.length > 0 && (
-                    <TouchableOpacity onPress={() => setEmplacementSearch('')}>
-                      <Icon name="close-circle" size={18} color="#9CA3AF" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
-                  {/* Aucun */}
-                  <TouchableOpacity
-                    style={[styles.modalItem, emplacement === null && styles.modalItemActive]}
-                    onPress={() => { setEmplacement(null); setShowEmplacementModal(false); setEmplacementSearch(''); Vibration.vibrate(10); }}
-                  >
-                    <View style={{ width: 44, height: 44, borderRadius: 13, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
-                      <Icon name="map-marker-off" size={22} color="#9CA3AF" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.modalItemText, emplacement === null && styles.modalItemTextActive]}>Aucun emplacement</Text>
-                      <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>Non attribué</Text>
-                    </View>
-                    {emplacement === null && <Icon name="check-circle" size={22} color="#2563EB" />}
-                  </TouchableOpacity>
-
-                  <View style={{ height: 1, backgroundColor: '#F3F4F6', marginVertical: 8, marginHorizontal: 4 }} />
-
-                  {/* Titre 5ème étage */}
-                  {filteredEmplacements.some(e => e.etage === '5') && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, paddingVertical: 8, gap: 8 }}>
-                      <View style={{ width: 24, height: 24, borderRadius: 7, backgroundColor: '#3B82F615', alignItems: 'center', justifyContent: 'center' }}>
-                        <Icon name="layers" size={14} color="#3B82F6" />
-                      </View>
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#3B82F6', letterSpacing: 0.5, textTransform: 'uppercase' }}>5ème étage</Text>
-                      <View style={{ flex: 1, height: 1, backgroundColor: '#3B82F615', marginLeft: 4 }} />
-                    </View>
-                  )}
-
-                  {/* Items 5ème étage */}
-                  {filteredEmplacements.filter(e => e.etage === '5').map((emp, index) => {
-                    const selected = emplacement === emp.value;
-                    return (
-                      <Animated.View key={emp.value} entering={FadeInUp.delay(index * 40).duration(300)}>
-                        <TouchableOpacity
-                          style={{
-                            flexDirection: 'row', alignItems: 'center',
-                            paddingVertical: 11, paddingHorizontal: 12,
-                            marginVertical: 2, marginHorizontal: 2,
-                            borderRadius: 14,
-                            backgroundColor: selected ? emp.color + '12' : 'transparent',
-                            borderWidth: selected ? 1.5 : 0,
-                            borderColor: selected ? emp.color + '35' : 'transparent',
-                          }}
-                          activeOpacity={0.7}
-                          onPress={() => { setEmplacement(emp.value); setShowEmplacementModal(false); setEmplacementSearch(''); Vibration.vibrate(10); }}
-                        >
-                          {/* Icône avec fond */}
-                          <View style={{
-                            width: 48, height: 48, borderRadius: 14,
-                            backgroundColor: selected ? emp.color + '20' : emp.bgColor,
-                            alignItems: 'center', justifyContent: 'center', marginRight: 12,
-                            shadowColor: selected ? emp.color : 'transparent',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: selected ? 0.3 : 0,
-                            shadowRadius: 8, elevation: selected ? 4 : 0,
-                          }}>
-                            <Text style={{ fontSize: 22 }}>{emp.emoji}</Text>
-                          </View>
-
-                          {/* Infos */}
-                          <View style={{ flex: 1 }}>
-                            <Text style={{
-                              fontSize: 15, fontWeight: selected ? '700' : '600',
-                              color: selected ? emp.color : '#1F2937',
-                            }}>{emp.label}</Text>
-                            <Text style={{
-                              fontSize: 12, marginTop: 2,
-                              color: selected ? emp.color + 'AA' : '#9CA3AF',
-                            }}>{emp.zone}</Text>
-                          </View>
-
-                          {/* Badge étage */}
-                          <View style={{
-                            paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-                            backgroundColor: selected ? emp.color + '15' : '#F3F4F6',
-                            marginRight: 8,
-                          }}>
-                            <Text style={{ fontSize: 10, fontWeight: '700', color: selected ? emp.color : '#6B7280' }}>
-                              É{emp.etage}
-                            </Text>
-                          </View>
-
-                          {/* Check */}
-                          {selected && (
-                            <View style={{
-                              width: 26, height: 26, borderRadius: 13,
-                              backgroundColor: emp.color,
-                              alignItems: 'center', justifyContent: 'center',
-                            }}>
-                              <Icon name="check" size={15} color="#FFF" />
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                      </Animated.View>
-                    );
-                  })}
-
-                  {/* Titre 8ème étage */}
-                  {filteredEmplacements.some(e => e.etage === '8') && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, paddingVertical: 8, gap: 8, marginTop: 6 }}>
-                      <View style={{ width: 24, height: 24, borderRadius: 7, backgroundColor: '#F59E0B15', alignItems: 'center', justifyContent: 'center' }}>
-                        <Icon name="layers" size={14} color="#F59E0B" />
-                      </View>
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#F59E0B', letterSpacing: 0.5, textTransform: 'uppercase' }}>8ème étage</Text>
-                      <View style={{ flex: 1, height: 1, backgroundColor: '#F59E0B15', marginLeft: 4 }} />
-                    </View>
-                  )}
-
-                  {/* Items 8ème étage */}
-                  {filteredEmplacements.filter(e => e.etage === '8').map((emp, index) => {
-                    const selected = emplacement === emp.value;
-                    return (
-                      <Animated.View key={emp.value} entering={FadeInUp.delay((index + 7) * 40).duration(300)}>
-                        <TouchableOpacity
-                          style={{
-                            flexDirection: 'row', alignItems: 'center',
-                            paddingVertical: 11, paddingHorizontal: 12,
-                            marginVertical: 2, marginHorizontal: 2,
-                            borderRadius: 14,
-                            backgroundColor: selected ? emp.color + '12' : 'transparent',
-                            borderWidth: selected ? 1.5 : 0,
-                            borderColor: selected ? emp.color + '35' : 'transparent',
-                          }}
-                          activeOpacity={0.7}
-                          onPress={() => { setEmplacement(emp.value); setShowEmplacementModal(false); setEmplacementSearch(''); Vibration.vibrate(10); }}
-                        >
-                          {/* Icône avec fond */}
-                          <View style={{
-                            width: 48, height: 48, borderRadius: 14,
-                            backgroundColor: selected ? emp.color + '20' : emp.bgColor,
-                            alignItems: 'center', justifyContent: 'center', marginRight: 12,
-                            shadowColor: selected ? emp.color : 'transparent',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: selected ? 0.3 : 0,
-                            shadowRadius: 8, elevation: selected ? 4 : 0,
-                          }}>
-                            <Text style={{ fontSize: 22 }}>{emp.emoji}</Text>
-                          </View>
-
-                          {/* Infos */}
-                          <View style={{ flex: 1 }}>
-                            <Text style={{
-                              fontSize: 15, fontWeight: selected ? '700' : '600',
-                              color: selected ? emp.color : '#1F2937',
-                            }}>{emp.label}</Text>
-                            <Text style={{
-                              fontSize: 12, marginTop: 2,
-                              color: selected ? emp.color + 'AA' : '#9CA3AF',
-                            }}>{emp.zone}</Text>
-                          </View>
-
-                          {/* Badge étage */}
-                          <View style={{
-                            paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
-                            backgroundColor: selected ? emp.color + '15' : '#F3F4F6',
-                            marginRight: 8,
-                          }}>
-                            <Text style={{ fontSize: 10, fontWeight: '700', color: selected ? emp.color : '#6B7280' }}>
-                              É{emp.etage}
-                            </Text>
-                          </View>
-
-                          {/* Check */}
-                          {selected && (
-                            <View style={{
-                              width: 26, height: 26, borderRadius: 13,
-                              backgroundColor: emp.color,
-                              alignItems: 'center', justifyContent: 'center',
-                            }}>
-                              <Icon name="check" size={15} color="#FFF" />
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                      </Animated.View>
-                    );
-                  })}
-
-                  {filteredEmplacements.length === 0 && (
-                    <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-                      <Icon name="map-marker-question" size={40} color="#D1D5DB" />
-                      <Text style={{ fontSize: 15, color: '#9CA3AF', marginTop: 8 }}>Aucun emplacement trouvé</Text>
-                    </View>
-                  )}
-                </ScrollView>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* ===== SUCCESS OVERLAY ===== */}
-      <Modal visible={showSuccess} transparent animationType="fade">
-        <View style={styles.successOverlay}>
-          <Animated.View entering={ZoomIn.springify().damping(12)} style={styles.successContent}>
-            {/* Cercle animé avec pulse */}
-            <Animated.View entering={ZoomIn.delay(100).springify().damping(8)} style={styles.successCircleOuter}>
-              <View style={styles.successCircle}>
-                <LinearGradient colors={['#10B981', '#059669']} style={styles.successCircleGrad}>
-                  <Animated.View entering={ZoomIn.delay(300).duration(400)}>
-                    <Icon name="check-bold" size={52} color="#FFF" />
-                  </Animated.View>
-                </LinearGradient>
-              </View>
-            </Animated.View>
-
-            <Animated.Text entering={FadeInUp.delay(400).duration(400)} style={styles.successTitle}>
-              {isEditing ? 'Mis à jour !' : 'Article créé !'}
-            </Animated.Text>
-
-            <Animated.View entering={FadeInUp.delay(550).duration(350)} style={styles.successInfoRow}>
-              <Icon name="tag-outline" size={16} color="#64748B" />
-              <Text style={styles.successRef}>{reference}</Text>
-            </Animated.View>
-
-            <Animated.Text entering={FadeInUp.delay(650).duration(350)} style={styles.successName}>
-              {nom}
-            </Animated.Text>
-
-            {isEditing && (
-              <Animated.View entering={FadeInUp.delay(800).duration(350)} style={styles.successStockBadge}>
-                <Icon name="package-variant" size={16} color="#2563EB" />
-                <Text style={styles.successStockText}>
-                  Stock : {stockActuel} · Seuil : {stockMini}
-                </Text>
-              </Animated.View>
-            )}
-
-            <Animated.Text entering={FadeIn.delay(900).duration(400)} style={styles.successSubtext}>
-              {isEditing ? 'Redirection vers l\'article...' : 'Retour à la liste...'}
-            </Animated.Text>
-          </Animated.View>
-        </View>
-      </Modal>
     </View>
   );
 };
 
-// ==================== STYLES ====================
+// ==================== STYLES (OBSIDIAN GRID) ====================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#0A0F0D',
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#0A0F0D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#6B7280',
+    fontSize: 14,
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 20,
-    paddingTop: 20,
+    paddingBottom: 120,
+    paddingTop: 16,
+    gap: 24,
   },
-
-  // ===== PREMIUM HEADER =====
-  header: {
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 44) + 12 : 54,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-    overflow: 'hidden',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerDeco1: {
-    position: 'absolute',
-    top: -86,
-    right: -56,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  headerDeco2: {
-    position: 'absolute',
-    bottom: -88,
-    left: -84,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-  },
-  headerLightSweep: {
-    position: 'absolute',
-    top: -26,
-    left: -40,
-    width: 300,
-    height: 170,
-    borderRadius: 48,
-    transform: [{ rotate: '-10deg' }],
-  },
-  headerDepthSweep: {
-    position: 'absolute',
-    right: -20,
-    bottom: -10,
-    width: 250,
-    height: 170,
-    borderTopLeftRadius: 110,
-  },
-  headerDeco3: {
-    position: 'absolute',
-    top: 30,
-    left: '34%' as any,
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-  },
-  headerDeco4: {
-    position: 'absolute',
-    top: 14,
-    right: 74,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  headerDeco5: {
-    position: 'absolute',
-    bottom: 24,
-    right: 42,
-    width: 10,
-    height: 10,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-  },
-  headerDeco6: {
-    position: 'absolute',
-    top: 66,
-    left: 28,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.24)',
-  },
-  headerDiagonalGlow: {
-    position: 'absolute',
-    top: -34,
-    right: -88,
-    width: 280,
-    height: 176,
-    borderRadius: 48,
-    transform: [{ rotate: '-15deg' }],
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  headerVignette: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.04)',
-  },
-  headerBottomSheen: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.30)',
-  },
-  headerConsumablesBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  headerConsumableGhost: {
-    position: 'absolute',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerConsumableCenterCalm: {
-    position: 'absolute',
-    left: '14%' as any,
-    right: '14%' as any,
-    top: 54,
-    height: 130,
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(5,24,17,0.34)',
-  },
-  headerConsumableGlow: {
-    position: 'absolute',
-    right: -64,
-    top: -26,
-    width: 262,
-    height: 148,
-    borderRadius: 44,
-    backgroundColor: 'rgba(245,158,11,0.09)',
-    transform: [{ rotate: '-8deg' }],
-  },
-  headerConsumableTag: {
-    position: 'absolute',
-    right: 16,
-    top: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 11,
-    paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(253,230,138,0.34)',
-    backgroundColor: 'rgba(120,53,15,0.30)',
-  },
-  headerConsumableTagText: {
-    color: '#FDE68A',
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.15,
-  },
-  backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.36)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#003D2C',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  headerCenter: {
-    flex: 1,
-    marginLeft: 14,
-    marginRight: 10,
-  },
-  headerTextCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-  },
-  headerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginBottom: 8,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
-  },
-  headerBadgeDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#86EFAC',
-  },
-  headerBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: 'rgba(255,255,255,0.96)',
-    letterSpacing: 1,
-  },
-  headerTitle: {
-    fontSize: 23,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: -0.45,
-    textShadowColor: 'rgba(0,0,0,0.24)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 5,
-  },
-  headerSubtitle: {
-    fontSize: 13.5,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.88)',
-    marginTop: 5,
-    letterSpacing: 0.15,
-  },
-  headerContextRow: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-    backgroundColor: 'rgba(255,255,255,0.10)',
-  },
-  headerContextText: {
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: 10.5,
-    fontWeight: '600',
-    letterSpacing: 0.15,
-  },
-  headerIconWrap: {
-    marginLeft: 8,
-  },
-  headerIconGradient: {
-    width: 50,
-    height: 50,
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.34)',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#003D2C',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  pcHeroPillsRow: {
-    marginTop: 14,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  pcHeroPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  pcHeroPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.96)',
-    maxWidth: 150,
-  },
-
-  // ===== PREMIUM SECTIONS =====
   sectionWrap: {
-    marginBottom: 20,
+    gap: 0,
   },
-  sectionHeader: {
+  stockLevelRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 14,
-    paddingHorizontal: 4,
+    gap: 12,
   },
-  sectionAccent: {
-    width: 4,
-    height: 22,
-    borderRadius: 2,
-  },
-  sectionIconPill: {},
-  sectionIconGrad: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 2,
-  },
-  sectionIconInner: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1E293B',
-    letterSpacing: 0.3,
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    color: '#9CA3AF',
-    marginBottom: 12,
-    marginTop: -8,
-  },
-  sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    paddingLeft: 22,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.04)',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  sectionCardStrip: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4.5,
-    borderTopLeftRadius: 20,
-    borderBottomLeftRadius: 20,
-  },
-
-  // ===== PREMIUM FIELDS =====
-  fieldGroup: {
-    marginBottom: 18,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 4,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
-    letterSpacing: 0.2,
-  },
-  required: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#EF4444',
-  },
-  rowFields: {
+  infoNote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-  },
-
-  // ===== PREMIUM INPUT BOX =====
-  inputBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    height: 54,
-    paddingHorizontal: 16,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-  },
-  inputBoxSuccess: {
-    borderColor: '#10B981',
-    borderWidth: 2,
-    backgroundColor: 'rgba(16,185,129,0.02)',
-    shadowColor: '#10B981',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  inputBoxError: {
-    borderColor: '#EF4444',
-    borderWidth: 2,
-    shadowColor: '#EF4444',
-    shadowOpacity: 0.12,
-  },
-  inputText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#111827',
-    padding: 0,
-  },
-  inputActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 6,
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    borderRadius: 8,
+    padding: 10,
   },
-  inlineBtn: {
-    padding: 2,
-  },
-  inlineBtnCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-
-  // ===== VALIDATION =====
-  validationMsg: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 6,
-    paddingHorizontal: 4,
-  },
-  validationText: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-
-  // ===== PREMIUM PICKER =====
-  pickerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    height: 54,
-    paddingHorizontal: 16,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    gap: 12,
-  },
-  pickerText: {
+  infoNoteText: {
     flex: 1,
-    fontSize: 15,
-    color: '#9CA3AF',
-    fontWeight: '400',
-  },
-  pickerTextSelected: {
-    color: '#111827',
-    fontWeight: '600',
-  },
-
-  // ===== PREMIUM STOCK CARDS =====
-  stockRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  stockCard: {
-    flex: 1,
-    borderRadius: 18,
-    overflow: 'hidden',
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  stockCardContent: {
-    padding: 18,
-    alignItems: 'center',
-  },
-  stockCardIconPill: {
-    marginBottom: 10,
-  },
-  stockCardIconGrad: {
-    width: 48,
-    height: 48,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 3,
-  },
-  stockCardIconInner: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stockCardLabel: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
     color: '#6B7280',
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    lineHeight: 16,
   },
-  stockCardInputBox: {
-    width: '100%',
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,0,0,0.06)',
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  stockCardInput: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#111827',
-    textAlign: 'center',
-    padding: 0,
-  },
-  stockHint: {
+  siteInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 14,
-    paddingHorizontal: 6,
     paddingVertical: 8,
-    backgroundColor: 'rgba(59,130,246,0.04)',
-    borderRadius: 10,
   },
-  stockHintText: {
-    fontSize: 12,
-    color: '#64748B',
-    flex: 1,
-    fontWeight: '500',
-  },
-
-  // ===== PREMIUM TEXTAREA =====
-  textareaBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    padding: 16,
-    minHeight: 110,
-  },
-  textarea: {
-    fontSize: 15,
-    color: '#111827',
-    padding: 0,
-    textAlignVertical: 'top',
-    minHeight: 65,
-    fontWeight: '400',
-    lineHeight: 22,
-  },
-  charCount: {
-    fontSize: 11,
-    color: '#94A3B8',
-    textAlign: 'right',
-    marginTop: 6,
+  siteInfoText: {
+    fontSize: 14,
     fontWeight: '600',
+    color: '#F0FDF4',
   },
-
-  // ===== PREMIUM SITE SELECTOR =====
-  siteItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  siteItemChecked: {
-    borderColor: '#3B82F6',
-    backgroundColor: 'rgba(59,130,246,0.04)',
-    shadowColor: '#3B82F6',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  radioOuter: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioOuterSelected: {
-    borderColor: '#3B82F6',
-    borderWidth: 2.5,
-  },
-  radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#3B82F6',
-  },
-  siteText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  siteTextChecked: {
-    color: '#3B82F6',
-    fontWeight: '700',
-  },
-  siteAddr: {
-    fontSize: 12,
-    color: '#94A3B8',
-    marginTop: 2,
-    fontWeight: '400',
-  },
-
-  // ===== PREMIUM STICKY SUBMIT =====
-  stickyBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 30,
-  },
-  submitTouchable: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  submitTouchableDisabled: {
-    shadowOpacity: 0,
-    shadowColor: '#9CA3AF',
-    elevation: 2,
-    opacity: 0.6,
-  },
-  submitGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 60,
-    borderRadius: 18,
-    gap: 12,
-  },
-  submitText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFF',
-    letterSpacing: 0.3,
-  },
-
-  // ===== MODAL SCAN RÉFÉRENCE =====
+  // === SCAN MODAL ===
   scanModalContainer: {
     flex: 1,
     backgroundColor: '#000',
@@ -3181,7 +1209,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#FFF',
-    letterSpacing: 0.3,
   },
   scanFrameCenter: {
     flex: 1,
@@ -3197,7 +1224,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderWidth: 4,
-    borderColor: '#3B82F6',
+    borderColor: '#22C55E',
   },
   scanCTL: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 14 },
   scanCTR: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 14 },
@@ -3218,7 +1245,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingVertical: 14,
     paddingHorizontal: 24,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#22C55E',
     borderRadius: 12,
     marginTop: 16,
   },
@@ -3227,446 +1254,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFF',
   },
-
-  // ===== PREMIUM MODAL =====
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 20,
-    paddingBottom: 36,
-    maxHeight: '65%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  modalHandle: {
-    width: 44,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#CBD5E1',
-    alignSelf: 'center',
-    marginTop: 14,
-    marginBottom: 18,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 14,
-    letterSpacing: -0.3,
-  },
-  modalSearch: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    height: 46,
-    paddingHorizontal: 14,
-    gap: 10,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  modalSearchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#111827',
-    padding: 0,
-    fontWeight: '500',
-  },
-  modalList: {
-    maxHeight: 300,
-  },
-  modalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    gap: 12,
-  },
-  modalItemActive: {
-    backgroundColor: 'rgba(59,130,246,0.05)',
-    borderRadius: 12,
-    marginHorizontal: -4,
-    paddingHorizontal: 10,
-    borderBottomColor: 'transparent',
-  },
-  addOptionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 14,
-    marginVertical: 6,
-    borderRadius: 14,
-    backgroundColor: 'rgba(37,99,235,0.06)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(37,99,235,0.15)',
-    borderStyle: 'dashed',
-  },
-  addOptionIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: 'rgba(37,99,235,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  addOptionText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#2563EB',
-    letterSpacing: 0.2,
-  },
-  addOptionModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.6)',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  addOptionModalBox: {
-    backgroundColor: '#FFF',
-    borderRadius: 24,
-    padding: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  addOptionModalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 20,
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  addOptionInput: {
-    height: 52,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 14,
-    paddingHorizontal: 18,
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-    marginBottom: 24,
-    backgroundColor: '#F8FAFC',
-  },
-  addOptionModalActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  addOptionBtnCancel: {
-    flex: 1,
-    height: 50,
-    borderRadius: 14,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  addOptionBtnCancelText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-  addOptionBtnSubmit: {
-    flex: 1,
-    height: 50,
-    borderRadius: 14,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  addOptionBtnSubmitText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  modalItemText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  modalItemTextActive: {
-    color: '#2563EB',
-    fontWeight: '700',
-  },
-
-  // ===== PREMIUM PHOTO =====
-  photoEmpty: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'rgba(236,72,153,0.15)',
-    borderStyle: 'dashed',
-  },
-  photoEmptyGradient: {
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-  },
-  photoEmptyIconPill: {
-    marginBottom: 16,
-  },
-  photoEmptyIconGrad: {
-    width: 72,
-    height: 72,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 4,
-  },
-  photoEmptyIconInner: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoEmptyTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 6,
-    letterSpacing: -0.2,
-  },
-  photoEmptySubtitle: {
-    fontSize: 14,
-    color: '#64748B',
-    marginBottom: 24,
-    textAlign: 'center',
-    fontWeight: '400',
-  },
-  photoButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  photoBtnCamera: {
-    flex: 1,
-    borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  photoBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 50,
-    borderRadius: 14,
-    gap: 8,
-  },
-  photoBtnCameraText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  photoBtnGallery: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 50,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  photoBtnGalleryText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  photoPreview: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  photoImage: {
-    width: '100%',
-    height: 240,
-    borderRadius: 16,
-  },
-  photoRemoveBtn: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-  },
-  photoRemoveBg: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#FFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.15)',
-  },
-  photoChangeRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  photoChangeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 12,
-    backgroundColor: 'rgba(59,130,246,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.12)',
-  },
-  photoChangeText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#2563EB',
-  },
-
-  // ===== PREMIUM SUCCESS =====
-  successOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  successContent: {
-    alignItems: 'center',
-    paddingHorizontal: 36,
-    paddingVertical: 44,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    marginHorizontal: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.15,
-    shadowRadius: 40,
-    elevation: 24,
-    minWidth: 280,
-  },
-  successCircleOuter: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: 'rgba(16,185,129,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  successCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  successCircleGrad: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-  successTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 14,
-    letterSpacing: -0.3,
-  },
-  successInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  successRef: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#64748B',
-    letterSpacing: 0.5,
-  },
-  successName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#334155',
-    marginTop: 10,
-  },
-  successStockBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 14,
-    backgroundColor: 'rgba(37,99,235,0.08)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  successStockText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#2563EB',
-  },
-  successSubtext: {
-    fontSize: 13,
-    color: '#94A3B8',
-    marginTop: 20,
-    fontWeight: '500',
-  },
 });
-
-export default ArticleEditScreen;

@@ -22,27 +22,25 @@ import { pushNotificationsService } from '@/services/pushNotificationsService';
 import { pcAvailabilityAlertService } from '@/services/pcAvailabilityAlertService';
 
 import { FullScreenLoading, NoConnectionScreen } from '@/components';
-import {
-  AuthScreen,
-  BranchSelectionScreen,
-  ForceUpdateScreen,
-  LoginScreen,
-  SiteSelectionScreen,
-  DashboardScreen,
-  ArticlesListScreen,
-  ArticleDetailScreen,
-  ArticleEditScreen,
-  MouvementsListScreen,
-  MouvementsStatsScreen,
-  MouvementFormScreen,
-  TransfertFormScreen,
-  ScanMouvementScreen,
-  SettingsScreen,
-  TermsScreen,
-  HelpScreen,
-  OnboardingScreen,
-  KitScreen,
-} from '@/screens';
+import { AuthScreen } from '@/screens/Auth/AuthScreen';
+import { BranchSelectionScreen } from '@/screens/Auth/BranchSelectionScreen';
+import ForceUpdateScreen from '@/screens/Auth/ForceUpdateScreen';
+import { LoginScreen } from '@/screens/Auth/LoginScreen';
+import { SiteSelectionScreen } from '@/screens/Auth/SiteSelectionScreen';
+import { DashboardScreen } from '@/screens/Dashboard/DashboardScreen';
+import { ArticlesListScreen } from '@/screens/Articles/ArticlesListScreen';
+import { ArticleDetailScreen } from '@/screens/Articles/ArticleDetailScreen';
+import { ArticleEditScreen } from '@/screens/Articles/ArticleEditScreen';
+import { MouvementsListScreen } from '@/screens/Mouvements/MouvementsListScreen';
+import { MouvementsStatsScreen } from '@/screens/Mouvements/MouvementsStatsScreen';
+import { MouvementFormScreen } from '@/screens/Mouvements/MouvementFormScreen';
+import { TransfertFormScreen } from '@/screens/Mouvements/TransfertFormScreen';
+import { ScanMouvementScreen } from '@/screens/Mouvements/ScanMouvementScreen';
+import { SettingsScreen } from '@/screens/Settings/SettingsScreen';
+import { TermsScreen } from '@/screens/Settings/TermsScreen';
+import { HelpScreen } from '@/screens/Settings/HelpScreen';
+import OnboardingScreen from '@/screens/Onboarding/OnboardingScreen';
+import { KitScreen } from '@/screens/Kit/KitScreen';
 import { colors, typography } from '@/constants/theme';
 import { useTheme } from '@/theme';
 import { checkAppVersion, VersionCheckResult } from '@/services/versionService';
@@ -420,7 +418,11 @@ export const AppNavigator: React.FC = () => {
     <View style={{flex: 1}}>
     <NavigationContainer theme={navigationTheme}>
       <RootStack.Navigator
-        screenOptions={{ headerShown: false }}
+        screenOptions={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          contentStyle: { backgroundColor: '#0A0F0D' },
+        }}
         initialRouteName={isAuthenticated ? undefined : redirectToTechnicianChoiceAfterLogout ? 'SiteSelection' : onboardingSeen ? 'Login' : 'Onboarding'}
       >
         {isAuthenticated ? (

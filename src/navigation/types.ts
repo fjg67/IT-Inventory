@@ -49,7 +49,13 @@ export type ArticlesStackParamList = {
 export type MouvementsStackParamList = {
   MouvementsList: undefined;
   MouvementsStats: undefined;
-  MouvementForm: { articleId?: number; type?: 'entree' | 'sortie' | 'ajustement' } | undefined;
+  MouvementForm:
+    | {
+        articleId?: number;
+        type?: 'entree' | 'sortie' | 'ajustement';
+        source?: 'Dashboard' | 'Scan' | 'Mouvements' | 'ArticleDetail';
+      }
+    | undefined;
   ScanMouvement: undefined;
   TransfertForm: { articleId?: number } | undefined;
 };

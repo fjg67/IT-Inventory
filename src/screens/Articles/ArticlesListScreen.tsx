@@ -62,6 +62,7 @@ import FiltersPanel, { SortOption, SORT_LABELS } from './components/FiltersPanel
 import SkeletonArticleList from './components/SkeletonArticleList';
 import ArticleEmptyState from './components/ArticleEmptyState';
 import FABMultiAction from './components/FABMultiAction';
+import { ParcPCScreen } from '@/screens/ParcPCScreen';
 import {
   ArticleCard,
   ArticleFAB,
@@ -75,6 +76,7 @@ import { PCCardCompact } from './components/pc/PCCardCompact';
 import { PCSearchBar } from './components/pc/PCSearchBar';
 import { PCStateFilters } from './components/pc/PCStateFilters';
 import { PCDisplayToggle } from './components/pc/PCDisplayToggle';
+import { PCFAB } from '@/components/parcpc';
 import FilterModal, { FilterOption } from './components/FilterModal';
 import ArticlesFilterSheet, { ArticleFilterKey } from './components/ArticlesFilterSheet';
 import {
@@ -311,6 +313,12 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
   const isSent = actionType === 'sent';
   const isHot = actionType === 'hot';
   const accent = isSent ? '#E11D48' : isHot ? '#059669' : '#2563EB';
+  const accentDeep = isSent ? '#9F1239' : isHot ? '#065F46' : '#1E40AF';
+  const modalSurface = isDark ? '#0B1220' : '#FFFFFF';
+  const modalSurfaceAlt = isDark ? 'rgba(15,23,42,0.62)' : '#F8FAFC';
+  const modalBorder = isDark ? `${accent}55` : `${accent}36`;
+  const modalTextPrimary = isDark ? '#F8FAFC' : colors.textPrimary;
+  const modalTextSecondary = isDark ? 'rgba(226,232,240,0.82)' : colors.textSecondary;
   const iconName = isSent ? 'send-outline' : isHot ? 'flash-outline' : 'check-circle-outline';
   const title = isSent ? 'Envoyer ce PC ?' : isHot ? 'Remettre ce PC à chaud ?' : 'Rendre ce PC disponible ?';
   const message = isSent
@@ -328,28 +336,38 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
       style={[
         styles.pcActionModalCard,
         {
-          backgroundColor: colors.surface,
-          borderColor: isDark ? `${accent}33` : `${accent}22`,
+          backgroundColor: modalSurface,
+          borderColor: modalBorder,
         },
         scaleStyle,
       ]}
     >
+      <View style={[styles.pcActionTopAccent, { backgroundColor: accent }]} />
       <View pointerEvents="none" style={[styles.pcActionModalOrbOne, { backgroundColor: isDark ? `${accent}18` : `${accent}14` }]} />
       <View pointerEvents="none" style={[styles.pcActionModalOrbTwo, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.55)' }]} />
 
       <LinearGradient
-        colors={isSent ? ['#FFF1F2', '#FFE4E6'] : isHot ? ['#ECFDF5', '#D1FAE5'] : ['#EFF6FF', '#DBEAFE']}
+        colors={isSent ? ['#FFF1F2', '#FBCFE8'] : isHot ? ['#DCFCE7', '#BBF7D0'] : ['#DBEAFE', '#BFDBFE']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.pcActionHero}
       >
-        <View style={[styles.pcActionHeroIconWrap, { backgroundColor: '#FFFFFF' }]}>
-          <Icon name={iconName} size={24} color={accent} />
+        <View style={styles.pcActionHeroIconWrap}>
+          <LinearGradient
+            colors={[accent, accentDeep]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.pcActionHeroIconGradient}
+          >
+            <Icon name={iconName} size={23} color="#FFFFFF" />
+          </LinearGradient>
         </View>
         <View style={styles.pcActionHeroTextWrap}>
-          <Text style={[styles.pcActionEyebrow, { color: accent }]}>{isSent ? 'ACTION DE SORTIE' : 'ACTION DE STOCK'}</Text>
-          <Text style={[styles.pcActionTitle, { color: colors.textPrimary }]}>{title}</Text>
-          <Text style={[styles.pcActionMessage, { color: colors.textSecondary }]}>{message}</Text>
+          <View style={[styles.pcActionEyebrowPill, { backgroundColor: `${accent}22`, borderColor: `${accent}55` }]}>
+            <Text style={[styles.pcActionEyebrow, { color: accent }]}>{isSent ? 'ACTION DE SORTIE' : 'ACTION DE STOCK'}</Text>
+          </View>
+          <Text style={[styles.pcActionTitle, { color: modalTextPrimary }]}>{title}</Text>
+          <Text style={[styles.pcActionMessage, { color: modalTextSecondary }]}>{message}</Text>
         </View>
       </LinearGradient>
 
@@ -357,11 +375,11 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
         <View
           style={[
             styles.pcActionCommandChip,
-            { backgroundColor: isDark ? 'rgba(15,23,42,0.45)' : '#F8FAFC', borderColor: isDark ? 'rgba(148,163,184,0.24)' : '#E2E8F0' },
+            { backgroundColor: modalSurfaceAlt, borderColor: isDark ? 'rgba(148,163,184,0.24)' : '#E2E8F0' },
           ]}
         >
           <Icon name="laptop" size={13} color={colors.textMuted} />
-          <Text numberOfLines={1} style={[styles.pcActionCommandChipText, { color: colors.textPrimary }]}>{articleLabel || 'PC inconnu'}</Text>
+          <Text numberOfLines={1} style={[styles.pcActionCommandChipText, { color: modalTextPrimary }]}>{articleLabel || 'PC inconnu'}</Text>
         </View>
         <View
           style={[
@@ -379,24 +397,24 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
           style={[
             styles.pcActionInfoCard,
             {
-              backgroundColor: isDark ? 'rgba(15,23,42,0.42)' : '#F8FAFC',
+              backgroundColor: modalSurfaceAlt,
               borderColor: isDark ? 'rgba(148,163,184,0.25)' : '#E2E8F0',
             },
           ]}
         >
           <View style={styles.pcActionInfoRow}>
             <Icon name="office-building-outline" size={14} color="#0F766E" />
-            <Text style={[styles.pcActionInfoText, { color: colors.textSecondary }]}>Agence source: {sourceAgencyDisplay}</Text>
+            <Text style={[styles.pcActionInfoText, { color: modalTextSecondary }]}>Agence source: {sourceAgencyDisplay}</Text>
           </View>
           <View style={styles.pcActionInfoRow}>
             <Icon name="check-decagram-outline" size={14} color={accent} />
-            <Text style={[styles.pcActionInfoText, { color: colors.textPrimary }]}>{resultLabel}</Text>
+            <Text style={[styles.pcActionInfoText, { color: modalTextPrimary }]}>{resultLabel}</Text>
           </View>
 
           {isSent ? (
             <>
               <View style={styles.pcActionInputBlock}>
-                <Text style={[styles.pcActionInputLabel, { color: colors.textSecondary }]}>Numéro EDS agence destinataire</Text>
+                <Text style={[styles.pcActionInputLabel, { color: modalTextSecondary }]}>Numero EDS agence destinataire</Text>
                 <TextInput
                   value={destinationEds ?? ''}
                   onChangeText={(value) => {
@@ -410,8 +428,8 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
                   style={[
                     styles.pcActionInput,
                     {
-                      color: colors.textPrimary,
-                      backgroundColor: colors.surface,
+                      color: modalTextPrimary,
+                      backgroundColor: modalSurface,
                       borderColor: destinationEdsError ? '#DC2626' : colors.borderSubtle,
                     },
                   ]}
@@ -419,7 +437,7 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
               </View>
 
               <View style={styles.pcActionInputBlock}>
-                <Text style={[styles.pcActionInputLabel, { color: colors.textSecondary }]}>Personne destinataire</Text>
+                <Text style={[styles.pcActionInputLabel, { color: modalTextSecondary }]}>Personne destinataire</Text>
                 <TextInput
                   value={recipientName ?? ''}
                   onChangeText={(value) => {
@@ -433,8 +451,8 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
                   style={[
                     styles.pcActionInput,
                     {
-                      color: colors.textPrimary,
-                      backgroundColor: colors.surface,
+                      color: modalTextPrimary,
+                      backgroundColor: modalSurface,
                       borderColor: recipientNameError ? '#DC2626' : colors.borderSubtle,
                     },
                   ]}
@@ -451,7 +469,7 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
           ) : (
             <View style={[styles.pcActionHintRow, { backgroundColor: isDark ? `${accent}16` : `${accent}12`, borderColor: isDark ? `${accent}44` : `${accent}30` }]}>
               <Icon name="information-outline" size={14} color={accent} />
-              <Text style={[styles.pcActionHintText, { color: colors.textSecondary }]}>L’action mettra à jour immédiatement le statut du PC et la date de modification.</Text>
+              <Text style={[styles.pcActionHintText, { color: modalTextSecondary }]}>L'action mettra a jour immediatement le statut du PC et la date de modification.</Text>
             </View>
           )}
         </View>
@@ -465,10 +483,10 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
           style={[
             styles.pcActionBtn,
             styles.pcActionBtnGhost,
-            { borderColor: colors.borderSubtle, backgroundColor: colors.backgroundSubtle },
+            { borderColor: colors.borderSubtle, backgroundColor: modalSurfaceAlt },
           ]}
         >
-          <Text style={[styles.pcActionBtnGhostText, { color: colors.textSecondary }]}>Annuler</Text>
+          <Text style={[styles.pcActionBtnGhostText, { color: modalTextSecondary }]}>Annuler</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -2668,7 +2686,25 @@ const renderListHeader = useCallback(() => {
 
       {/* Articles List */}
       <View style={styles.listContainer}>
-      {isLoading ? (
+      {isPCTab ? (
+        <ParcPCScreen
+          articles={articles}
+          sentArticles={sentPcArticles}
+          isLoading={isLoading}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          onEndReached={handleLoadMore}
+          onArticlePress={handleArticlePress}
+          onSentArticlePress={() => handleSentArticlePress(0)}
+          onMarkSent={handleMarkPCSent}
+          onMarkHot={handleMarkPCHot}
+          onDelete={handleDeletePC}
+          onExportSentCsv={handleExportSentCsv}
+          exportingSentCsv={exportingSentCsv}
+          weeklyTrendDelta={pcWeeklyTrendDelta}
+          onScroll={handleListScroll}
+        />
+      ) : isLoading ? (
         <>
           {renderListHeader()}
           <SkeletonArticleList count={6} />
@@ -2737,7 +2773,7 @@ const renderListHeader = useCallback(() => {
       {/* FAB */}
       {showFAB && (
         isPCTab ? (
-          <FABMultiAction onScan={handleScan} onAdd={handleAdd} />
+          <PCFAB onPress={handleAdd} />
         ) : (
           <ArticleFAB onPress={handleAdd} />
         )
@@ -4064,7 +4100,7 @@ const styles = StyleSheet.create({
   },
   pcActionModalCard: {
     width: '100%',
-    maxWidth: 388,
+    maxWidth: 402,
     borderRadius: 24,
     borderWidth: 1,
     overflow: 'hidden',
@@ -4073,6 +4109,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.24,
     shadowRadius: 28,
     elevation: 24,
+  },
+  pcActionTopAccent: {
+    height: 4,
+    width: '100%',
   },
   pcActionModalOrbOne: {
     position: 'absolute',
@@ -4092,7 +4132,7 @@ const styles = StyleSheet.create({
   },
   pcActionHero: {
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingVertical: 18,
     flexDirection: 'row',
     gap: 14,
   },
@@ -4100,6 +4140,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 18,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#0F172A',
@@ -4108,24 +4149,38 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 4,
   },
+  pcActionHeroIconGradient: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   pcActionHeroTextWrap: {
     flex: 1,
+  },
+  pcActionEyebrowPill: {
+    alignSelf: 'flex-start',
+    minHeight: 20,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    marginBottom: 7,
   },
   pcActionEyebrow: {
     fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: 6,
+    letterSpacing: 0.8,
   },
   pcActionTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
     letterSpacing: -0.4,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   pcActionMessage: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13.5,
+    lineHeight: 19,
     fontWeight: '500',
   },
   pcActionCommandStrip: {
@@ -4137,8 +4192,8 @@ const styles = StyleSheet.create({
   },
   pcActionCommandChip: {
     flex: 1,
-    minHeight: 34,
-    borderRadius: 11,
+    minHeight: 38,
+    borderRadius: 12,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -4157,11 +4212,11 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
   pcActionInfoCard: {
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 10,
+    paddingTop: 13,
+    paddingBottom: 11,
     gap: 8,
   },
   pcActionInfoRow: {
@@ -4183,13 +4238,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   pcActionInput: {
-    minHeight: 44,
+    minHeight: 52,
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 12,
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   pcActionErrorRow: {
     marginTop: 2,
@@ -4227,7 +4282,7 @@ const styles = StyleSheet.create({
   },
   pcActionBtn: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: 16,
     minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
@@ -4244,8 +4299,8 @@ const styles = StyleSheet.create({
   },
   pcActionBtnPrimaryGradient: {
     width: '100%',
-    minHeight: 52,
-    borderRadius: 14,
+    minHeight: 56,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

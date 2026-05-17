@@ -108,7 +108,7 @@ export const DashboardScreen: React.FC = () => {
           articleRepository.findAll(effectiveSiteId),
           articleRepository.countLowStock(effectiveSiteId),
           mouvementRepository.countToday(effectiveSiteId),
-          mouvementRepository.findRecent(effectiveSiteId, 5),
+          mouvementRepository.findRecent(effectiveSiteId, 12),
           mouvementRepository.getCountPerDayLast7(effectiveSiteId),
         ]);
 
@@ -190,7 +190,7 @@ export const DashboardScreen: React.FC = () => {
     if (activeMode === 'entree' || activeMode === 'sortie') {
       navigation.navigate('Mouvements', {
         screen: 'MouvementForm',
-        params: { type: activeMode },
+        params: { type: activeMode, source: 'Dashboard' },
       });
       return;
     }
@@ -277,19 +277,19 @@ export const DashboardScreen: React.FC = () => {
           onEntree={() =>
             navigation.navigate('Mouvements', {
               screen: 'MouvementForm',
-              params: { type: 'entree' },
+              params: { type: 'entree', source: 'Dashboard' },
             })
           }
           onSortie={() =>
             navigation.navigate('Mouvements', {
               screen: 'MouvementForm',
-              params: { type: 'sortie' },
+              params: { type: 'sortie', source: 'Dashboard' },
             })
           }
           onAjustement={() =>
             navigation.navigate('Mouvements', {
               screen: 'MouvementForm',
-              params: { type: 'ajustement' },
+              params: { type: 'ajustement', source: 'Dashboard' },
             })
           }
           onTransfert={() => navigation.navigate('Mouvements', { screen: 'TransfertForm' })}

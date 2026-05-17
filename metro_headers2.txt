@@ -1,0 +1,17 @@
+HTTP/1.1 200 OK
+X-Content-Type-Options: nosniff
+Surrogate-Control: no-store
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+X-Metro-Files-Changed-Count: 1912
+X-Metro-Delta-ID: 4fa44b68f34e98fc
+Content-Location: http://localhost:8081/index.bundle//&platform=android&dev=true&minify=false
+Content-Type: application/javascript; charset=UTF-8
+Last-Modified: Sat, 16 May 2026 21:29:17 GMT
+Content-Length: 15700081
+Vary: Accept-Encoding
+Date: Sat, 16 May 2026 21:29:17 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+

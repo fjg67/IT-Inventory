@@ -19,6 +19,7 @@ import Animated, {
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { colors, spacing, typography, borderRadius } from '@/constants/theme';
+import { GridBackground } from '@/components/onboarding/GridBackground';
 
 interface LoadingProps {
   visible?: boolean;
@@ -256,24 +257,26 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message, m
     <View style={splashStyles.container}>
       <LinearGradient
         colors={[
-          colors.backgroundDark,
-          '#123020',
-          colors.primaryDark,
+          '#08110D',
+          '#0A1711',
+          '#0D1D16',
         ]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={splashStyles.gradient}
       >
+        <GridBackground />
+
         {/* App atmosphere layers (Scan/Mouvements style) */}
         <LinearGradient
-          colors={['rgba(16,185,129,0.14)', 'rgba(16,185,129,0.03)', 'transparent']}
+          colors={['rgba(34,197,94,0.12)', 'rgba(34,197,94,0.04)', 'transparent']}
           locations={[0, 0.45, 1]}
           start={{ x: 0.2, y: 0.1 }}
           end={{ x: 0.8, y: 0.75 }}
           style={splashStyles.atmoTop}
         />
         <LinearGradient
-          colors={['rgba(59,130,246,0.10)', 'rgba(59,130,246,0.04)', 'transparent']}
+          colors={['rgba(59,130,246,0.08)', 'rgba(59,130,246,0.03)', 'transparent']}
           locations={[0, 0.55, 1]}
           start={{ x: 0.7, y: 0.2 }}
           end={{ x: 0.1, y: 0.9 }}
@@ -299,6 +302,9 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message, m
 
         {/* Center content */}
         <View style={splashStyles.centerContent}>
+          <View style={splashStyles.heroPanel}>
+            <View style={splashStyles.heroPanelBorder} />
+
           {/* Ripple rings */}
           <View style={splashStyles.ringsContainer}>
             <Animated.View style={[splashStyles.ring, ring1Style]} />
@@ -373,6 +379,7 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({ message, m
               )}
             </View>
           </Animated.View>
+          </View>
         </View>
 
         {/* Bottom watermark */}
@@ -452,6 +459,27 @@ const splashStyles = StyleSheet.create({
   centerContent: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  heroPanel: {
+    width: '100%',
+    maxWidth: 380,
+    alignItems: 'center',
+    paddingHorizontal: 26,
+    paddingTop: 34,
+    paddingBottom: 30,
+    borderRadius: 34,
+    backgroundColor: 'rgba(17, 26, 20, 0.78)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.12)',
+    overflow: 'hidden',
+  },
+  heroPanelBorder: {
+    position: 'absolute',
+    inset: 12,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.04)',
   },
 
   // Rings
@@ -468,7 +496,7 @@ const splashStyles = StyleSheet.create({
     height: 110,
     borderRadius: 55,
     borderWidth: 1.2,
-    borderColor: 'rgba(17, 200, 118, 0.24)',
+    borderColor: 'rgba(34, 197, 94, 0.18)',
   },
 
   // Glow
@@ -477,79 +505,79 @@ const splashStyles = StyleSheet.create({
     width: 136,
     height: 136,
     borderRadius: 68,
-    backgroundColor: 'rgba(17, 200, 118, 0.16)',
+    backgroundColor: 'rgba(34, 197, 94, 0.14)',
   },
 
   // Icon
   iconWrapper: {
     marginBottom: 30,
-    shadowColor: '#007A39',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
-    elevation: 15,
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.34,
+    shadowRadius: 22,
+    elevation: 16,
   },
   rotatingHalo: {
     position: 'absolute',
-    width: 108,
-    height: 108,
-    borderRadius: 54,
+    width: 114,
+    height: 114,
+    borderRadius: 57,
     borderWidth: 1,
-    borderColor: 'rgba(17, 200, 118, 0.32)',
+    borderColor: 'rgba(34, 197, 94, 0.22)',
   },
   iconCircle: {
-    width: 86,
-    height: 86,
-    borderRadius: 28,
+    width: 96,
+    height: 96,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 1,
+    padding: 1.5,
   },
   iconInnerPlate: {
-    width: 66,
-    height: 66,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    width: 74,
+    height: 74,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
+    borderColor: 'rgba(255,255,255,0.24)',
   },
   brandLogo: {
-    width: 50,
-    height: 50,
+    width: 56,
+    height: 56,
   },
 
   // Text
   appName: {
-    fontSize: 34,
+    fontSize: 32,
     fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: -0.9,
+    letterSpacing: -1.1,
     textAlign: 'center',
     marginBottom: 4,
   },
   appTagline: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: 'rgba(148, 163, 184, 0.86)',
-    letterSpacing: 1.3,
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(148, 163, 184, 0.78)',
+    letterSpacing: 1.6,
     textAlign: 'center',
     textTransform: 'uppercase',
-    marginBottom: 14,
+    marginBottom: 16,
   },
   statusBadge: {
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(142, 240, 188, 0.32)',
-    backgroundColor: 'rgba(17, 200, 118, 0.12)',
-    marginBottom: 42,
+    borderColor: 'rgba(134, 239, 172, 0.28)',
+    backgroundColor: 'rgba(27, 138, 62, 0.18)',
+    marginBottom: 34,
   },
   statusBadgeText: {
     fontSize: 11,
@@ -562,19 +590,20 @@ const splashStyles = StyleSheet.create({
   // Loading section
   loadingSection: {
     alignItems: 'center',
-    width: 230,
+    width: '100%',
+    maxWidth: 320,
   },
 
   // Progress bar
   progressTrack: {
     width: '100%',
     height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.09)',
+    backgroundColor: 'rgba(255, 255, 255, 0.07)',
     borderRadius: 99,
     overflow: 'hidden',
-    marginBottom: 10,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(34, 197, 94, 0.08)',
   },
   progressFill: {
     height: '100%',
@@ -593,9 +622,9 @@ const splashStyles = StyleSheet.create({
   },
   progressMetaText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
     color: 'rgba(186, 203, 220, 0.65)',
-    letterSpacing: 0.5,
+    letterSpacing: 0.9,
     textTransform: 'uppercase',
   },
 
@@ -606,10 +635,11 @@ const splashStyles = StyleSheet.create({
     gap: 3,
   },
   loadingMessage: {
-    fontSize: 13,
-    color: 'rgba(186, 203, 220, 0.72)',
-    fontWeight: '600',
+    fontSize: 14,
+    color: 'rgba(226, 232, 240, 0.78)',
+    fontWeight: '700',
     letterSpacing: 0.3,
+    textAlign: 'center',
   },
   dotsRow: {
     flexDirection: 'row',
@@ -626,7 +656,7 @@ const splashStyles = StyleSheet.create({
   // Footer
   footer: {
     position: 'absolute',
-    bottom: 50,
+    bottom: 46,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,

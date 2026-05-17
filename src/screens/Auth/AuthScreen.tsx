@@ -22,8 +22,6 @@ import {
   TextInput,
   Vibration,
   ActivityIndicator,
-  Dimensions,
-  Image,
 } from 'react-native';
 import Animated, {
   FadeInUp,
@@ -45,27 +43,15 @@ import { SUPABASE_CONFIG } from '@/constants/config';
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { protectedProfileMfaConfigs, ProtectedProfileMfaConfig } from '@/constants/mfa';
 import { buildGoogleAuthenticatorUri, verifyGoogleAuthenticatorCode } from '@/services/googleAuthenticatorService';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import {
+  OnboardingFooter,
+  OnboardingLayout,
+  OnboardingLogo,
+  ONBOARDING_COLORS,
+  ProfileCard,
+} from '@/components/onboarding';
 
 // ==================== HELPERS ====================
-const AVATAR_GRADIENTS: [string, string][] = [
-  ['#3B82F6', '#2563EB'],
-  ['#8B5CF6', '#007A39'],
-  ['#EC4899', '#F472B6'],
-  ['#10B981', '#34D399'],
-  ['#F59E0B', '#FBBF24'],
-  ['#06B6D4', '#22D3EE'],
-  ['#EF4444', '#F87171'],
-  ['#14B8A6', '#2DD4BF'],
-];
-
-const getAvatarGradient = (id: string | number | undefined): [string, string] => {
-  if (id == null) return AVATAR_GRADIENTS[0];
-  const n = typeof id === 'number' ? Math.abs(id) : [...String(id)].reduce((s, c) => s + c.charCodeAt(0), 0);
-  return AVATAR_GRADIENTS[n % AVATAR_GRADIENTS.length];
-};
-
 const getInitials = (technicien: Technicien): string => {
   const fullName = `${technicien.prenom || ''} ${technicien.nom || ''}`.trim();
   return toAbbreviation(fullName, 3, '?');
@@ -107,24 +93,6 @@ const findProtectedProfileMfa = (technicien: Technicien): ProtectedProfileMfaCon
     return true;
   });
 };
-
-// ==================== BACKGROUND BLOBS ====================
-const { height: SCREEN_H } = Dimensions.get('window');
-const BLOBS = [
-  { size: 320, x: -80, y: -60, colors: ['rgba(59,130,246,0.06)', 'rgba(59,130,246,0)'] as const },
-  { size: 280, x: SCREEN_WIDTH - 100, y: SCREEN_H * 0.35, colors: ['rgba(0,122,57,0.05)', 'rgba(99,102,241,0)'] as const },
-  { size: 200, x: -50, y: SCREEN_H * 0.65, colors: ['rgba(6,182,212,0.04)', 'rgba(6,182,212,0)'] as const },
-];
-
-// Decorative dots
-const DOTS = Array.from({ length: 20 }).map((_, i) => ({
-  id: i,
-  size: 3 + Math.random() * 4,
-  x: Math.random() * SCREEN_WIDTH,
-  y: Math.random() * SCREEN_H,
-  opacity: 0.04 + Math.random() * 0.07,
-  color: ['#3B82F6', '#007A39', '#8B5CF6', '#06B6D4'][Math.floor(Math.random() * 4)],
-}));
 
 // ==================== MAIN AUTH SCREEN ====================
 export const AuthScreen: React.FC = () => {
@@ -262,6 +230,8 @@ export const AuthScreen: React.FC = () => {
 
   const completeTechnicienLogin = useCallback(
     async (technicien: Technicien) => {
+      await AsyncStorage.setItem('lastProfile', String(technicien.id));
+      await AsyncStorage.setItem('lastProfileName', getInitials(technicien));
       await dispatch(loginTechnicien({ technicienId: technicien.id, persist: rememberMe })).unwrap();
     },
     [dispatch, rememberMe],
@@ -579,69 +549,38 @@ export const AuthScreen: React.FC = () => {
   // ==================== RENDER HELPERS ====================
   const renderTechnicien = useCallback(
     ({ item, index }: { item: Technicien; index: number }) => {
-      const gradient = getAvatarGradient(item.id);
       const protectedMfa = findProtectedProfileMfa(item);
+      const initials = getInitials(item);
 
       return (
-        <Animated.View entering={FadeInUp.delay(1000 + index * 120).duration(500)}>
+        <View style={{ marginBottom: 10 }}>
           <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => handleSelectTechnicien(item)}
+            activeOpacity={0.85}
             onLongPress={() => handleDeleteTechnicien(item)}
             delayLongPress={500}
             disabled={deletingTechnicienId !== null}
-            style={[styles.profileCard, { backgroundColor: colors.surface, borderColor: colors.borderSubtle, shadowColor: isDark ? '#000' : '#64748B' }]}
           >
-            <LinearGradient
-              colors={gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.profileAvatar}
-            >
-              <Text style={styles.profileAvatarText}>
-                {getInitials(item)}
-              </Text>
-            </LinearGradient>
-
-            <View style={styles.profileInfo}>
-              <Text style={[styles.profileName, { color: colors.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">
-                {getInitials(item)}
-              </Text>
-              {protectedMfa ? (
-                <View style={styles.profileSecurityRow}>
-                  <View style={styles.profileSecurityBadge}>
-                    <Icon name="shield-key-outline" size={12} color="#FFFFFF" />
-                    <Text style={styles.profileSecurityBadgeText}>2FA Google</Text>
+            <ProfileCard
+              initials={initials}
+              role={item.role}
+              delay={450 + index * 50}
+              onPress={() => handleSelectTechnicien(item)}
+              rightNode={
+                deletingTechnicienId === item.id ? (
+                  <ActivityIndicator size="small" color={ONBOARDING_COLORS.green_light} />
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    {protectedMfa ? <Icon name="shield-key-outline" size={14} color={ONBOARDING_COLORS.warning} /> : null}
+                    <Icon name="chevron-right" size={16} color={ONBOARDING_COLORS.text_dim} />
                   </View>
-                </View>
-              ) : null}
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                <LinearGradient
-                  colors={item.role === 'superviseur' ? ['#F59E0B', '#D97706'] : ['#007A39', '#007A39']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, gap: 4 }}
-                >
-                  <Icon name={item.role === 'superviseur' ? 'eye-outline' : 'wrench-outline'} size={11} color="#FFF" />
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFF', letterSpacing: 0.2 }}>
-                    {item.role === 'superviseur' ? 'Superviseur' : 'Technicien'}
-                  </Text>
-                </LinearGradient>
-              </View>
-            </View>
-
-            <View style={styles.profileChevron}>
-              {deletingTechnicienId === item.id ? (
-                <ActivityIndicator size="small" color={colors.primaryLight} />
-              ) : (
-                <Icon name="chevron-right" size={22} color={colors.primaryLight} />
-              )}
-            </View>
+                )
+              }
+            />
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       );
     },
-    [colors, deletingTechnicienId, handleDeleteTechnicien, handleSelectTechnicien, isDark],
+    [deletingTechnicienId, handleDeleteTechnicien, handleSelectTechnicien],
   );
 
   const renderEmpty = useCallback(
@@ -684,24 +623,29 @@ export const AuthScreen: React.FC = () => {
   );
 
   const renderFooter = useCallback(
-    () =>
-      visibleTechniciens.length > 0 ? (
-        <Animated.View entering={FadeInUp.delay(1200 + visibleTechniciens.length * 120).duration(400)}>
-          <TouchableOpacity
-            style={[styles.addButton, { borderColor: isDark ? colors.primaryGlow : '#C8E6C9', backgroundColor: isDark ? colors.surfaceElevated : '#FAFBFF' }]}
-            onPress={() => {
-              Vibration.vibrate(10);
-              setIsModalVisible(true);
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.addIconCircle, { backgroundColor: isDark ? colors.primaryGlow : '#E8F5E9' }]}>
-              <Icon name="plus" size={22} color={colors.primaryDark} />
-            </View>
-            <Text style={[styles.addButtonText, { color: colors.primaryDark }]}>Ajouter un profil</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      ) : null,
+    () => (
+      <View>
+        {visibleTechniciens.length > 0 ? (
+          <Animated.View entering={FadeInUp.delay(650).duration(240)}>
+            <TouchableOpacity
+              style={[styles.addButton, { borderColor: ONBOARDING_COLORS.border_accent, backgroundColor: ONBOARDING_COLORS.bg_card_elevated }]}
+              onPress={() => {
+                Vibration.vibrate(10);
+                setIsModalVisible(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.addIconCircle, { backgroundColor: ONBOARDING_COLORS.green_subtle }]}>
+                <Icon name="plus" size={20} color={ONBOARDING_COLORS.green_light} />
+              </View>
+              <Text style={[styles.addButtonText, { color: ONBOARDING_COLORS.text_primary }]}>Ajouter un profil</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        ) : null}
+
+        <OnboardingFooter />
+      </View>
+    ),
     [visibleTechniciens.length],
   );
 
@@ -717,91 +661,28 @@ export const AuthScreen: React.FC = () => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.backgroundBase }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.backgroundBase} />
+    <OnboardingLayout step={3} totalSteps={3}>
+      <StatusBar barStyle="light-content" backgroundColor={ONBOARDING_COLORS.bg_primary} />
 
-      {/* Background decoration */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        {BLOBS.map((b, i) => (
-          <LinearGradient
-            key={i}
-            colors={b.colors as unknown as string[]}
-            style={{
-              position: 'absolute',
-              width: b.size,
-              height: b.size,
-              borderRadius: b.size / 2,
-              left: b.x,
-              top: b.y,
-            }}
-          />
-        ))}
-        {DOTS.map((d) => (
-          <View
-            key={d.id}
-            style={{
-              position: 'absolute',
-              width: d.size,
-              height: d.size,
-              borderRadius: d.size / 2,
-              left: d.x,
-              top: d.y,
-              opacity: d.opacity,
-              backgroundColor: d.color,
-            }}
-          />
-        ))}
-      </View>
+      <OnboardingLogo />
 
-      {/* Logo */}
-      <Animated.View
-        entering={FadeInDown.delay(200).duration(600)}
-        style={styles.headerSection}
-      >
-        <View style={[styles.logoBox, { shadowColor: colors.primaryDark }]}>
-          <Image
-            source={require('@/assets/images/logo.png')}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
-        </View>
-
-        <Animated.View entering={FadeInUp.delay(500).duration(500)}>
-          <Text style={[styles.appName, { color: colors.textPrimary }]}>IT-Inventory</Text>
+      {siteActif ? (
+        <Animated.View entering={FadeInDown.delay(160).duration(220)} style={styles.siteBadgeWrap}>
+          <View style={styles.siteBadgeOnboarding}>
+            <Icon name="map-marker" size={13} color={ONBOARDING_COLORS.green_light} />
+            <Text style={styles.siteBadgeOnboardingText}>{siteActif.nom}</Text>
+          </View>
         </Animated.View>
+      ) : null}
 
-        <Animated.View entering={FadeInUp.delay(650).duration(500)}>
-          <Text style={[styles.tagline, { color: colors.textMuted }]}>Gestion de stock IT</Text>
-        </Animated.View>
-
-        {siteActif && (
-          <Animated.View entering={FadeInUp.delay(720).duration(400)}>
-            <View style={[styles.siteBadge, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : '#E8F5E9', borderColor: isDark ? 'rgba(0,122,57,0.25)' : '#B2DFDB' }]}>
-              <Icon name="map-marker" size={14} color={isDark ? '#4EB35A' : '#007A39'} />
-              <Text style={[styles.siteBadgeText, { color: isDark ? '#A5B4FC' : '#007A39' }]}>{siteActif.nom}</Text>
-            </View>
-          </Animated.View>
-        )}
-
-        <Animated.View entering={ZoomIn.delay(800).duration(400)}>
-          <LinearGradient
-            colors={['transparent', isDark ? colors.primaryGlow : '#B2DFDB', 'transparent']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.separator}
-          />
-        </Animated.View>
-      </Animated.View>
-
-      {/* Instruction */}
-      <Animated.View entering={FadeIn.delay(900).duration(400)} style={styles.instructionWrap}>
-        <View style={[styles.instructionDot, { backgroundColor: isDark ? colors.primaryGlow : '#B2DFDB' }]} />
-        <Text style={[styles.instruction, { color: colors.textSecondary }]}>
+      <Animated.View entering={FadeInDown.delay(230).duration(220)} style={styles.instructionWrapOnboarding}>
+        <Text style={styles.instructionDotOnboarding}>·</Text>
+        <Text style={styles.instructionOnboarding}>
           {visibleTechniciens.length > 0
-            ? 'Sélectionnez votre profil pour continuer'
+            ? 'Selectionnez votre profil pour continuer'
             : 'Bienvenue sur IT-Inventory'}
         </Text>
-        <View style={[styles.instructionDot, { backgroundColor: isDark ? colors.primaryGlow : '#B2DFDB' }]} />
+        <Text style={styles.instructionDotOnboarding}>·</Text>
       </Animated.View>
 
       {/* Erreur */}
@@ -822,6 +703,12 @@ export const AuthScreen: React.FC = () => {
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         {...(isTablet ? { numColumns: 2, columnWrapperStyle: { gap: 16 } } : {})}
+      />
+
+      <LinearGradient
+        colors={['rgba(10,15,13,0)', ONBOARDING_COLORS.bg_primary]}
+        style={styles.listBottomFade}
+        pointerEvents="none"
       />
 
       {mfaModalVisible ? (
@@ -999,15 +886,6 @@ export const AuthScreen: React.FC = () => {
           </TouchableWithoutFeedback>
         </View>
       ) : null}
-
-      {/* Version */}
-      <View style={styles.footer}>
-        <View style={[styles.footerBadge, { backgroundColor: isDark ? colors.surfaceElevated : '#F1F5F9' }]}>
-          <Icon name="lock-outline" size={12} color={colors.textMuted} />
-          <Text style={[styles.footerText, { color: colors.textMuted }]}>Données protégées et chiffrées</Text>
-        </View>
-        <Text style={[styles.versionText, { color: isDark ? colors.textMuted : '#CBD5E1' }]}>Version 1.0.0</Text>
-      </View>
 
       {/* ===== MODAL CRÉATION ===== */}
       <Modal
@@ -1291,7 +1169,7 @@ export const AuthScreen: React.FC = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    </View>
+    </OnboardingLayout>
   );
 };
 
@@ -1299,6 +1177,51 @@ export const AuthScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  siteBadgeWrap: {
+    alignItems: 'center',
+    marginTop: 2,
+    marginBottom: 10,
+  },
+  siteBadgeOnboarding: {
+    minHeight: 32,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: ONBOARDING_COLORS.border_accent,
+    backgroundColor: ONBOARDING_COLORS.green_subtle,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  siteBadgeOnboardingText: {
+    color: ONBOARDING_COLORS.green_light,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  instructionWrapOnboarding: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  instructionDotOnboarding: {
+    color: ONBOARDING_COLORS.text_secondary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  instructionOnboarding: {
+    color: ONBOARDING_COLORS.text_muted,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  listBottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 92,
   },
 
   // Header / Logo
@@ -1403,8 +1326,8 @@ const styles = StyleSheet.create({
 
   // List
   list: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingHorizontal: 2,
+    paddingBottom: 90,
     flexGrow: 1,
   },
 
