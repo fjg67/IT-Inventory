@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import debounce from 'lodash/debounce';
 import { articleRepository } from '@/database';
 import { Article } from '@/types';
@@ -30,16 +30,23 @@ export const useArticleSearch = (siteId?: string | number | null, debounceMs: nu
     [debounceMs, siteId],
   );
 
-  const onChangeQuery = (next: string) => {
+  useEffect(() => {
+    return () => {
+      runSearch.cancel();
+    };
+  }, [runSearch]);
+
+  const onChangeQuery = useCallback((next: string) => {
     setQuery(next);
     runSearch(next);
-  };
+  }, [runSearch]);
 
-  const reset = () => {
+  const reset = useCallback(() => {
+    runSearch.cancel();
     setQuery('');
     setResults([]);
     setSearching(false);
-  };
+  }, [runSearch]);
 
   return {
     query,

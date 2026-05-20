@@ -18,13 +18,29 @@ export const SWIPE_ACTIONS = {
     bg: PARC_PC_COLORS.purple_subtle,
     icon: 'send-outline',
   },
-  hot: {
+  available: {
     label: 'Disponible',
-    sub: 'REMISE',
+    sub: 'STOCK',
     color: PARC_PC_COLORS.info,
     border: PARC_PC_COLORS.info_border,
     bg: PARC_PC_COLORS.info_subtle,
+    icon: 'check-circle-outline',
+  },
+  hot: {
+    label: 'A chaud',
+    sub: 'REMISE',
+    color: PARC_PC_COLORS.green_light,
+    border: PARC_PC_COLORS.green_border,
+    bg: PARC_PC_COLORS.green_subtle,
     icon: 'flash-outline',
+  },
+  processing: {
+    label: 'En usinage',
+    sub: 'ATELIER',
+    color: PARC_PC_COLORS.warning,
+    border: PARC_PC_COLORS.warning_border,
+    bg: PARC_PC_COLORS.warning_subtle,
+    icon: 'cog-play-outline',
   },
   delete: {
     label: 'Supprimer',

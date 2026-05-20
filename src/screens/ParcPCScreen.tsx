@@ -35,6 +35,8 @@ interface ParcPCScreenProps {
   onSentArticlePress: () => void;
   onMarkSent: (articleId: number | string) => void;
   onMarkHot: (articleId: number | string) => void;
+  onMarkAvailable: (articleId: number | string) => void;
+  onMarkProcessing: (articleId: number | string) => void;
   onDelete: (articleId: number | string) => void;
   onExportSentCsv: () => void;
   exportingSentCsv: boolean;
@@ -58,6 +60,8 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
   onSentArticlePress,
   onMarkSent,
   onMarkHot,
+  onMarkAvailable,
+  onMarkProcessing,
   onDelete,
   onExportSentCsv,
   exportingSentCsv,
@@ -143,6 +147,8 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
         onPress={isSent ? () => onSentArticlePress() : onArticlePress}
         onMarkSent={onMarkSent}
         onMarkHot={onMarkHot}
+        onMarkAvailable={onMarkAvailable}
+        onMarkProcessing={onMarkProcessing}
         onDelete={onDelete}
       />
     );

@@ -26,6 +26,34 @@ function isVersionOutdated(current: string, minimum: string): boolean {
 export interface VersionCheckResult {
   updateRequired: boolean;
   minVersion?: string;
+  updateUrl?: string;
+  releaseNotes?: string[];
+}
+
+function parseReleaseNotes(value?: string): string[] | undefined {
+  if (!value) return undefined;
+
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      const notes = parsed
+        .map((item) => String(item).trim())
+        .filter(Boolean);
+      return notes.length ? notes : undefined;
+    }
+  } catch {
+    // Value is not JSON, continue with line-based parsing.
+  }
+
+  const notes = trimmed
+    .split(/\r?\n|;/)
+    .map((line) => line.replace(/^[\-•\s]+/, '').trim())
+    .filter(Boolean);
+
+  return notes.length ? notes : undefined;
 }
 
 /**
@@ -37,18 +65,36 @@ export async function checkAppVersion(): Promise<VersionCheckResult> {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('AppConfig')
-      .select('value')
-      .eq('key', 'min_app_version')
-      .maybeSingle();
+      .select('key, value')
+      .in('key', ['min_app_version', 'update_url', 'release_notes']);
 
-    if (error || !data?.value) {
+    if (error || !data?.length) {
       // Si la table n'existe pas ou pas de config, on laisse passer
       return { updateRequired: false };
     }
 
-    const minVersion = data.value as string;
+    const configMap = data.reduce<Record<string, string>>((acc, row) => {
+      if (typeof row.key === 'string' && typeof row.value === 'string') {
+        acc[row.key] = row.value;
+      }
+      return acc;
+    }, {});
+
+    const minVersion = configMap.min_app_version;
+    if (!minVersion) {
+      return { updateRequired: false };
+    }
+
+    const updateUrl = configMap.update_url || APP_CONFIG.playStoreUrl;
+    const releaseNotes = parseReleaseNotes(configMap.release_notes);
+
     const outdated = isVersionOutdated(APP_CONFIG.version, minVersion);
-    return { updateRequired: outdated, minVersion };
+    return {
+      updateRequired: outdated,
+      minVersion,
+      updateUrl,
+      releaseNotes,
+    };
   } catch {
     // En cas d'erreur réseau, on ne bloque pas
     return { updateRequired: false };

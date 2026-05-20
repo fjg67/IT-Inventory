@@ -21,7 +21,8 @@ import { movementRealtimeNotificationService } from '@/services/movementRealtime
 import { pushNotificationsService } from '@/services/pushNotificationsService';
 import { pcAvailabilityAlertService } from '@/services/pcAvailabilityAlertService';
 
-import { FullScreenLoading, NoConnectionScreen } from '@/components';
+import { NoConnectionScreen } from '@/components';
+import SplashScreen from '@/screens/SplashScreen';
 import { AuthScreen } from '@/screens/Auth/AuthScreen';
 import { BranchSelectionScreen } from '@/screens/Auth/BranchSelectionScreen';
 import ForceUpdateScreen from '@/screens/Auth/ForceUpdateScreen';
@@ -31,6 +32,7 @@ import { DashboardScreen } from '@/screens/Dashboard/DashboardScreen';
 import { ArticlesListScreen } from '@/screens/Articles/ArticlesListScreen';
 import { ArticleDetailScreen } from '@/screens/Articles/ArticleDetailScreen';
 import { ArticleEditScreen } from '@/screens/Articles/ArticleEditScreen';
+import { AddPCScreen } from '@/screens/AddPCScreen';
 import { MouvementsListScreen } from '@/screens/Mouvements/MouvementsListScreen';
 import { MouvementsStatsScreen } from '@/screens/Mouvements/MouvementsStatsScreen';
 import { MouvementFormScreen } from '@/screens/Mouvements/MouvementFormScreen';
@@ -45,6 +47,7 @@ import { colors, typography } from '@/constants/theme';
 import { useTheme } from '@/theme';
 import { checkAppVersion, VersionCheckResult } from '@/services/versionService';
 import PremiumTabBar from '@/components/navigation/PremiumTabBar';
+import { type InitStep } from '@/hooks/useSplashSequence';
 
 import {
   RootStackParamList,
@@ -79,6 +82,7 @@ const ArticlesNavigator: React.FC = () => (
     <ArticlesStack.Screen name="ArticlesList" component={ArticlesListScreen} />
     <ArticlesStack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
     <ArticlesStack.Screen name="ArticleEdit" component={ArticleEditScreen} />
+    <ArticlesStack.Screen name="AddPC" component={AddPCScreen} />
     <ArticlesStack.Screen name="Kit" component={KitScreen} />
   </ArticlesStack.Navigator>
 );
@@ -96,6 +100,7 @@ const PCNavigator: React.FC = () => (
     />
     <ArticlesStack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
     <ArticlesStack.Screen name="ArticleEdit" component={ArticleEditScreen} />
+    <ArticlesStack.Screen name="AddPC" component={AddPCScreen} />
     <ArticlesStack.Screen name="Kit" component={KitScreen} />
   </ArticlesStack.Navigator>
 );
@@ -219,6 +224,8 @@ export const AppNavigator: React.FC = () => {
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
 
   const [isInitializing, setIsInitializing] = React.useState(true);
+  const [initStep, setInitStep] = React.useState<InitStep>('connecting');
+  const [initErrorMessage, setInitErrorMessage] = React.useState<string | null>(null);
   const [onboardingSeen, setOnboardingSeen] = React.useState(false);
   const [forceUpdate, setForceUpdate] = React.useState<VersionCheckResult | null>(null);
   const appStateRef = React.useRef<AppStateStatus>(AppState.currentState);
@@ -273,35 +280,48 @@ export const AppNavigator: React.FC = () => {
     };
   }, [dispatch]);
 
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        console.log('[AppNavigator] Loading stored data...');
-        await Promise.all([
-          dispatch(loadStoredAuth()).then(() => console.log('[AppNavigator] Auth loaded')),
-          dispatch(loadTechniciens()).then(() => console.log('[AppNavigator] Techniciens loaded')),
-          dispatch(loadSites()).then(() => console.log('[AppNavigator] Sites loaded')),
-          dispatch(loadStoredSite()).then(() => console.log('[AppNavigator] Site loaded')),
-          preferencesService.load().then(() => console.log('[AppNavigator] Preferences loaded')),
-        ]);
-        console.log('[AppNavigator] Stored data loaded');
+  const initializeApp = React.useCallback(async () => {
+    setIsInitializing(true);
+    setInitErrorMessage(null);
 
-        // Vérifier la version minimum
-        await runVersionCheck();
+    try {
+      console.log('[AppNavigator] Loading stored data...');
 
-        const onboardingDone = await AsyncStorage.getItem('@it-inventory/onboarding_seen');
-        if (onboardingDone === 'true') {
-          setOnboardingSeen(true);
-        }
-      } catch (error) {
-        console.error('Erreur initialisation:', error);
-      } finally {
-        setIsInitializing(false);
+      setInitStep('connecting');
+      await dispatch(loadStoredAuth()).unwrap();
+      console.log('[AppNavigator] Auth loaded');
+
+      setInitStep('auth_check');
+      await Promise.all([
+        dispatch(loadTechniciens()).unwrap(),
+        dispatch(loadSites()).unwrap(),
+        dispatch(loadStoredSite()).unwrap(),
+      ]);
+      console.log('[AppNavigator] Techniciens, sites and stored site loaded');
+
+      setInitStep('config_load');
+      await preferencesService.load();
+      console.log('[AppNavigator] Preferences loaded');
+
+      await runVersionCheck();
+
+      setInitStep('session_restore');
+      const onboardingDone = await AsyncStorage.getItem('@it-inventory/onboarding_seen');
+      if (onboardingDone === 'true') {
+        setOnboardingSeen(true);
       }
-    };
 
-    initializeApp().catch(console.error);
+      setInitStep('ready');
+      setIsInitializing(false);
+    } catch (error) {
+      console.error('Erreur initialisation:', error);
+      setInitErrorMessage('Impossible de se connecter');
+    }
   }, [dispatch, runVersionCheck]);
+
+  useEffect(() => {
+    initializeApp().catch(console.error);
+  }, [initializeApp]);
 
   // Re-vérifier la version quand l'app revient au premier plan
   useEffect(() => {
@@ -393,20 +413,24 @@ export const AppNavigator: React.FC = () => {
 
   if (isInitializing) {
     return (
-      <FullScreenLoading
-        messages={[
-          "Restauration de votre session...",
-          'Chargement des sites et du stock...',
-          'Sécurisation de votre espace...',
-          "Finalisation de l'environnement...",
-        ]}
+      <SplashScreen
+        step={initStep}
+        isError={Boolean(initErrorMessage)}
+        message={initErrorMessage ?? undefined}
+        onRetry={initErrorMessage ? initializeApp : undefined}
       />
     );
   }
 
   // Version trop ancienne → écran de mise à jour obligatoire
   if (forceUpdate?.updateRequired) {
-    return <ForceUpdateScreen minVersion={forceUpdate.minVersion} />;
+    return (
+      <ForceUpdateScreen
+        minVersion={forceUpdate.minVersion}
+        updateUrl={forceUpdate.updateUrl}
+        releaseNotes={forceUpdate.releaseNotes}
+      />
+    );
   }
 
   // Pas de connexion internet → écran offline

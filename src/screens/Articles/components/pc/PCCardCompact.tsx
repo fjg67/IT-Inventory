@@ -14,13 +14,16 @@ interface PCCardCompactProps {
   index: number;
   onPress: (articleId: number) => void;
   onMarkHot?: (articleId: number) => void;
+  onMarkAvailable?: (articleId: number) => void;
+  onMarkProcessing?: (articleId: number) => void;
   onMarkSent?: (articleId: number) => void;
   onDelete?: (articleId: number) => void;
 }
 
-export const PCCardCompact: React.FC<PCCardCompactProps> = ({ article, index, onPress, onMarkHot, onMarkSent, onDelete }) => {
+export const PCCardCompact: React.FC<PCCardCompactProps> = ({ article, index, onPress, onMarkHot, onMarkAvailable, onMarkProcessing, onMarkSent, onDelete }) => {
   if (!isPCArticle(article)) return null;
   const state = getPCStateFromArticle(article);
+  const actionVariant = state.key === 'a_chaud' ? 'available' : state.key === 'a_reusiner' ? 'processing' : 'hot';
   const swipe = useSwipeGesture({ maxSwipe: -240, openThreshold: -80 });
   const hostname = article.nom || article.reference;
   const allocation = article.sousType || article.typeArticle || article.famille || 'PC';
@@ -32,6 +35,9 @@ export const PCCardCompact: React.FC<PCCardCompactProps> = ({ article, index, on
         <PCSwipeActions
           height={64}
           onHot={() => onMarkHot?.(Number(article.id))}
+          onAvailable={() => onMarkAvailable?.(Number(article.id))}
+          onProcessing={() => onMarkProcessing?.(Number(article.id))}
+          actionVariant={actionVariant}
           onSent={() => onMarkSent?.(Number(article.id))}
           onDelete={() => onDelete?.(Number(article.id))}
         />

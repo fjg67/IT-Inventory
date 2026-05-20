@@ -57,15 +57,20 @@ export const TransfertScreen: React.FC = () => {
 
   const [article, setArticle] = useState<Article | null>(null);
   const [stockDepart, setStockDepart] = useState<StockSite | null>(null);
-  const [siteDepartId, setSiteDepartId] = useState<number | null>(siteActif?.id as number ?? null);
-  const [siteArriveeId, setSiteArriveeId] = useState<number | null>(null);
+  const [siteDepartId, setSiteDepartId] = useState<string | number | null>(effectiveSiteId ?? null);
+  const [siteArriveeId, setSiteArriveeId] = useState<string | number | null>(null);
+    const sameSiteId = useCallback((a: string | number | null | undefined, b: string | number | null | undefined) => {
+      if (a == null || b == null) return false;
+      return String(a) === String(b);
+    }, []);
+
   const [quantite, setQuantite] = useState(1);
   const [commentaire, setCommentaire] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const search = useArticleSearch(effectiveSiteId, 200);
+  const search = useArticleSearch(siteDepartId, 200);
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const devices = useCameraDevices();
@@ -95,16 +100,24 @@ export const TransfertScreen: React.FC = () => {
     }).catch(() => {});
   }, [initialArticleId, siteDepartId]);
 
+  useEffect(() => {
+    const currentSiteId = effectiveSiteId ?? null;
+    setSiteDepartId(currentSiteId);
+    if (sameSiteId(currentSiteId, siteArriveeId)) {
+      setSiteArriveeId(null);
+    }
+  }, [effectiveSiteId, sameSiteId, siteArriveeId]);
+
   const handleScannedBarcode = useCallback(async (barcode: string) => {
-    if (!effectiveSiteId) return;
+    if (!siteDepartId) return;
     try {
-      const result = await articleRepository.findByReferenceOrBarcode(barcode, effectiveSiteId);
+      const result = await articleRepository.findByReferenceOrBarcode(barcode, siteDepartId);
       if (result) {
         setArticle(result);
         search.reset();
         setErrors({});
       } else {
-        const broader = await articleRepository.search(effectiveSiteId, { searchQuery: barcode, stockFaible: false }, 0, 8);
+        const broader = await articleRepository.search(siteDepartId, { searchQuery: barcode, stockFaible: false }, 0, 8);
         if (broader.data.length === 1) {
           setArticle(broader.data[0]);
           search.reset();
@@ -120,7 +133,7 @@ export const TransfertScreen: React.FC = () => {
     } catch {
       setErrors({ article: 'Erreur lors de la recherche' });
     }
-  }, [effectiveSiteId, search]);
+  }, [search, siteDepartId]);
 
   useEffect(() => {
     showCameraRef.current = showCamera;
@@ -163,13 +176,13 @@ export const TransfertScreen: React.FC = () => {
     setShowCamera(true);
   };
 
-  const sitesArrivee = useMemo(() => transferSites.filter((s) => Number(s.id) !== Number(siteDepartId)), [siteDepartId, transferSites]);
+  const sitesArrivee = useMemo(() => transferSites.filter((s) => !sameSiteId(s.id, siteDepartId)), [sameSiteId, siteDepartId, transferSites]);
 
-  const getSiteName = useCallback((siteId: number | null) => {
+  const getSiteName = useCallback((siteId: string | number | null) => {
     if (!siteId) return 'Site inconnu';
-    const site = transferSites.find((s) => Number(s.id) === Number(siteId));
+    const site = transferSites.find((s) => sameSiteId(s.id, siteId));
     return site?.nom ?? 'Site inconnu';
-  }, [transferSites]);
+  }, [sameSiteId, transferSites]);
 
   const canSubmit = !!article && !!siteDepartId && !!siteArriveeId && quantite > 0 && !isSubmitting;
 
@@ -221,15 +234,21 @@ export const TransfertScreen: React.FC = () => {
       if (!initialArticleId) {
         setArticle(null);
         setStockDepart(null);
-        setSiteDepartId(siteActif?.id as number ?? null);
+        setSiteDepartId(effectiveSiteId ?? null);
         setSiteArriveeId(null);
         setQuantite(1);
         setCommentaire('');
         setErrors({});
         search.reset();
       }
-    }, [initialArticleId, search, siteActif?.id]),
+    }, [effectiveSiteId, initialArticleId, search.reset]),
   );
+
+  const currentDepartSiteName = useMemo(() => {
+    if (!siteDepartId) return siteActif?.nom ?? 'Site inconnu';
+    const site = transferSites.find((s) => sameSiteId(s.id, siteDepartId));
+    return site?.nom ?? siteActif?.nom ?? 'Site inconnu';
+  }, [sameSiteId, siteActif?.nom, siteDepartId, transferSites]);
 
   return (
     <View style={styles.container}>
@@ -296,19 +315,10 @@ export const TransfertScreen: React.FC = () => {
             <Text style={styles.sectionTitle}>Site de depart</Text>
           </View>
           <View style={styles.grid}>
-            {transferSites.map((site) => {
-              const selected = Number(site.id) === Number(siteDepartId);
-              return (
-                <TouchableOpacity
-                  key={String(site.id)}
-                  style={[styles.siteChip, selected && styles.siteChipSelected]}
-                  onPress={() => { setSiteDepartId(Number(site.id)); Vibration.vibrate(10); }}
-                >
-                  <Text style={[styles.siteChipText, selected && styles.siteChipTextSelected]} numberOfLines={1}>{site.nom}</Text>
-                  {selected ? <Icon name="check-circle" size={14} color={identity.color} /> : null}
-                </TouchableOpacity>
-              );
-            })}
+            <View style={[styles.siteChip, styles.siteChipSelected]}>
+              <Text style={[styles.siteChipText, styles.siteChipTextSelected]} numberOfLines={1}>{currentDepartSiteName}</Text>
+              <Icon name="check-circle" size={14} color={identity.color} />
+            </View>
           </View>
 
           <View style={styles.sectionTitleRow}>
@@ -316,15 +326,15 @@ export const TransfertScreen: React.FC = () => {
             <Text style={styles.sectionTitle}>Site de destination</Text>
           </View>
           <View style={styles.grid}>
-            {transferSites.map((site) => {
-              const disabled = Number(site.id) === Number(siteDepartId);
-              const selected = Number(site.id) === Number(siteArriveeId);
+            {sitesArrivee.map((site) => {
+              const disabled = sameSiteId(site.id, siteDepartId);
+              const selected = sameSiteId(site.id, siteArriveeId);
               return (
                 <TouchableOpacity
                   key={String(site.id)}
                   style={[styles.siteChip, selected && styles.siteChipSelected, disabled && styles.siteChipDisabled]}
                   disabled={disabled}
-                  onPress={() => { setSiteArriveeId(Number(site.id)); Vibration.vibrate(10); }}
+                  onPress={() => { setSiteArriveeId(site.id); Vibration.vibrate(10); }}
                 >
                   <Text style={[styles.siteChipText, selected && styles.siteChipTextSelected]} numberOfLines={1}>{site.nom}</Text>
                   {selected ? <Icon name="check-circle" size={14} color={identity.color} /> : null}

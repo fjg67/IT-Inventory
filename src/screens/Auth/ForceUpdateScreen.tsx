@@ -21,13 +21,23 @@ import { useTheme } from '@/theme';
 
 interface ForceUpdateScreenProps {
   minVersion?: string;
+  updateUrl?: string;
+  releaseNotes?: string[];
 }
 
-const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion }) => {
+const defaultReleaseNotes = [
+  'Nouvelle icone et assets Play Store mis a jour pour une identite visuelle plus claire.',
+  'Amelioration du workflow PC et de la modal d envoi avec validations et actions plus fiables.',
+  'Optimisations de performance et stabilite generale de l application.',
+];
+
+const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion, updateUrl, releaseNotes }) => {
   const { colors, isDark } = useTheme();
+  const storeUrl = updateUrl || APP_CONFIG.playStoreUrl;
+  const notes = releaseNotes?.length ? releaseNotes : defaultReleaseNotes;
 
   const handleUpdate = () => {
-    Linking.openURL(APP_CONFIG.playStoreUrl).catch(() => {});
+    Linking.openURL(storeUrl).catch(() => {});
   };
 
   return (
@@ -68,7 +78,16 @@ const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion }) => 
           Mise à jour requise
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Une nouvelle version de l'application est disponible. Mettez à jour IT-Inventory via Google Play pour profiter des améliorations et continuer à accéder à l'application.
+          Une nouvelle version de l'application est disponible. Mettez a jour depuis Google Play pour continuer a acceder a IT-Inventory et profiter des dernieres ameliorations.
+        </Text>
+
+        <TouchableOpacity activeOpacity={0.8} onPress={handleUpdate} style={styles.linkPill}>
+          <Icon name="link-variant" size={14} color="#FFFFFF" />
+          <Text style={styles.linkPillText}>Ouvrir le lien de mise à jour</Text>
+        </TouchableOpacity>
+
+        <Text numberOfLines={1} ellipsizeMode="middle" style={[styles.storeUrlText, { color: colors.textMuted }]}>
+          {storeUrl}
         </Text>
 
         <View style={[styles.releasesBox, { backgroundColor: isDark ? 'rgba(15,23,42,0.56)' : '#FFFFFF', borderColor: isDark ? 'rgba(148,163,184,0.22)' : '#E2E8F0' }]}>
@@ -76,18 +95,12 @@ const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion }) => 
             <Icon name="sparkles" size={16} color="#007A39" />
             <Text style={[styles.releasesTitle, { color: colors.textPrimary }]}>Nouveautés de cette version</Text>
           </View>
-          <View style={styles.releaseItem}>
-            <Icon name="check-circle-outline" size={14} color="#007A39" />
-            <Text style={[styles.releaseText, { color: colors.textSecondary }]}>Parc PC amélioré avec cartes plus lisibles et meilleure organisation des informations.</Text>
-          </View>
-          <View style={styles.releaseItem}>
-            <Icon name="check-circle-outline" size={14} color="#007A39" />
-            <Text style={[styles.releaseText, { color: colors.textSecondary }]}>Message de mise à jour clarifié avec redirection directe vers Google Play.</Text>
-          </View>
-          <View style={styles.releaseItem}>
-            <Icon name="check-circle-outline" size={14} color="#007A39" />
-            <Text style={[styles.releaseText, { color: colors.textSecondary }]}>Corrections de stabilité et améliorations globales de l'expérience utilisateur.</Text>
-          </View>
+          {notes.map((note) => (
+            <View key={note} style={styles.releaseItem}>
+              <Icon name="check-circle-outline" size={14} color="#007A39" />
+              <Text style={[styles.releaseText, { color: colors.textSecondary }]}>{note}</Text>
+            </View>
+          ))}
         </View>
 
         <View style={[styles.versionBox, { backgroundColor: isDark ? 'rgba(239,68,68,0.1)' : '#FEF2F2', borderColor: isDark ? 'rgba(239,68,68,0.2)' : '#FECACA' }]}>
@@ -105,7 +118,7 @@ const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion }) => 
 
         <View style={[styles.infoBox, { backgroundColor: isDark ? 'rgba(0,122,57,0.14)' : 'rgba(0,122,57,0.08)', borderColor: isDark ? 'rgba(16,185,129,0.22)' : 'rgba(0,122,57,0.14)' }]}>
           <Icon name="information-outline" size={16} color="#007A39" />
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>Après installation de la mise à jour depuis Google Play, vous pourrez accéder à nouveau à l'application automatiquement.</Text>
+          <Text style={[styles.infoText, { color: colors.textSecondary }]}>Apres installation de la mise a jour et relance de l application, l acces sera retabli automatiquement.</Text>
         </View>
       </Animated.View>
 
@@ -180,6 +193,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 8,
     marginBottom: 20,
+  },
+  linkPill: {
+    minHeight: 40,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: '#007A39',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 18,
+  },
+  linkPillText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  storeUrlText: {
+    width: '100%',
+    fontSize: 11,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 12,
   },
   releasesBox: {
     width: '100%',

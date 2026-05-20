@@ -42,6 +42,7 @@ export type ArticlesStackParamList = {
     | undefined;
   ArticleDetail: { articleId: number; sourceTab?: 'Articles' | 'PC' };
   ArticleEdit: { articleId?: number; famille?: string } | undefined;
+  AddPC: undefined;
   Kit: undefined;
 };
 

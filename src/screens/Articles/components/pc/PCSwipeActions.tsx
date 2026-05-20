@@ -6,6 +6,9 @@ import { OBSIDIAN_COLORS } from '@/constants/colors';
 interface PCSwipeActionsProps {
   height: number;
   onHot: () => void;
+  onAvailable?: () => void;
+  onProcessing?: () => void;
+  actionVariant?: 'hot' | 'available' | 'processing';
   onSent: () => void;
   onDelete: () => void;
 }
@@ -18,11 +21,42 @@ const ActionButton: React.FC<{ label: string; sublabel: string; icon: string; ba
   </Pressable>
 );
 
-export const PCSwipeActions: React.FC<PCSwipeActionsProps> = ({ height, onHot, onSent, onDelete }) => {
+export const PCSwipeActions: React.FC<PCSwipeActionsProps> = ({ height, onHot, onAvailable, onProcessing, actionVariant = 'hot', onSent, onDelete }) => {
+  const middleAction =
+    actionVariant === 'available'
+      ? {
+          label: 'Disponible',
+          sublabel: 'STOCK',
+          icon: 'check-circle-outline',
+          backgroundColor: OBSIDIAN_COLORS.info,
+          onPress: onAvailable ?? onHot,
+        }
+      : actionVariant === 'processing'
+        ? {
+            label: 'En usinage',
+            sublabel: 'ATELIER',
+            icon: 'cog-play-outline',
+            backgroundColor: OBSIDIAN_COLORS.warning,
+            onPress: onProcessing ?? onHot,
+          }
+        : {
+            label: 'À chaud',
+            sublabel: 'REMISE',
+            icon: 'flash-outline',
+            backgroundColor: OBSIDIAN_COLORS.green_primary,
+            onPress: onHot,
+          };
+
   return (
     <View style={[styles.wrap, { height }]}> 
       <ActionButton label="Envoyé" sublabel="SORTIE" icon="send" backgroundColor={OBSIDIAN_COLORS.purple} onPress={onSent} />
-      <ActionButton label="À chaud" sublabel="REMISE" icon="flash" backgroundColor={OBSIDIAN_COLORS.green_primary} onPress={onHot} />
+      <ActionButton
+        label={middleAction.label}
+        sublabel={middleAction.sublabel}
+        icon={middleAction.icon}
+        backgroundColor={middleAction.backgroundColor}
+        onPress={middleAction.onPress}
+      />
       <ActionButton label="Supprimer" sublabel="RETIRER" icon="trash-can-outline" backgroundColor={OBSIDIAN_COLORS.danger} onPress={onDelete} />
     </View>
   );

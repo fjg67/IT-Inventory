@@ -8,7 +8,7 @@ import { Article } from '@/types';
 
 const PC_STATUS_CHANNEL_ID = 'pc-status-changes-v1';
 
-export type PCNextStatus = 'À chaud' | 'À reusiner' | 'Disponible' | 'Envoyé';
+export type PCNextStatus = 'À chaud' | 'À reusiner' | 'En usinage' | 'Disponible' | 'Envoyé';
 
 export interface PCStatusNotificationPayload {
   article: Article;
@@ -23,6 +23,7 @@ export interface PCStatusNotificationPayload {
 const STATUS_EMOJI: Record<PCNextStatus, string> = {
   'À chaud': '🔥',
   'À reusiner': '🔧',
+  'En usinage': '⚙️',
   'Disponible': '✅',
   'Envoyé': '📤',
 };
@@ -30,6 +31,7 @@ const STATUS_EMOJI: Record<PCNextStatus, string> = {
 const STATUS_LABEL: Record<PCNextStatus, string> = {
   'À chaud': 'À chaud',
   'À reusiner': 'À reusiner',
+  'En usinage': 'En usinage',
   'Disponible': 'Disponible',
   'Envoyé': 'Envoyé',
 };

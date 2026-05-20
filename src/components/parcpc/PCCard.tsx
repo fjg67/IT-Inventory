@@ -18,13 +18,29 @@ interface PCCardProps {
   onPress: (articleId: number) => void;
   onMarkSent?: (articleId: number | string) => void;
   onMarkHot?: (articleId: number | string) => void;
+  onMarkAvailable?: (articleId: number | string) => void;
+  onMarkProcessing?: (articleId: number | string) => void;
   onDelete?: (articleId: number | string) => void;
 }
 
-const PCCardComponent: React.FC<PCCardProps> = ({ article, index, onPress, onMarkSent, onMarkHot, onDelete }) => {
+const PCCardComponent: React.FC<PCCardProps> = ({ article, index, onPress, onMarkSent, onMarkHot, onMarkAvailable, onMarkProcessing, onDelete }) => {
   const state = useMemo(() => getPCStateFromArticle(article), [article]);
   const swipe = useSwipeGesture({ maxSwipe: MAX_TRANSLATE, openThreshold: -BUTTON_WIDTH });
   const isSent = state.key === 'envoye' || String(article.id).startsWith('sent-');
+  const middleAction = state.key === 'a_chaud'
+    ? {
+        config: SWIPE_ACTIONS.available,
+        onPress: () => onMarkAvailable?.(article.id),
+      }
+    : state.key === 'a_reusiner'
+      ? {
+          config: SWIPE_ACTIONS.processing,
+          onPress: () => onMarkProcessing?.(article.id),
+        }
+      : {
+          config: SWIPE_ACTIONS.hot,
+          onPress: () => onMarkHot?.(article.id),
+        };
 
   const hostname = article.nom || article.reference || 'Poste sans nom';
   const asset = article.reference || article.barcode || 'Sans asset';
@@ -38,7 +54,7 @@ const PCCardComponent: React.FC<PCCardProps> = ({ article, index, onPress, onMar
         {!isSent ? (
           <Animated.View style={[styles.actions, swipe.actionsStyle]} pointerEvents="box-none">
             <PCSwipeButton {...SWIPE_ACTIONS.sent} onPress={() => onMarkSent?.(article.id)} />
-            <PCSwipeButton {...SWIPE_ACTIONS.hot} onPress={() => onMarkHot?.(article.id)} />
+            <PCSwipeButton {...middleAction.config} onPress={middleAction.onPress} />
             <PCSwipeButton {...SWIPE_ACTIONS.delete} onPress={() => onDelete?.(article.id)} />
           </Animated.View>
         ) : null}

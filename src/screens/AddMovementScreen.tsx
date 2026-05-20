@@ -61,6 +61,10 @@ export const AddMovementScreen: React.FC = () => {
   const route = useRoute<any>();
   const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
+  const scrollViewRef = useRef<ScrollView | null>(null);
+  const articleStepYRef = useRef(0);
+  const typeStepYRef = useRef(0);
+  const detailsStepYRef = useRef(0);
 
   const initialArticleId = route.params?.articleId as number | undefined;
   const initialType = route.params?.type as RouteMovementType;
@@ -81,10 +85,11 @@ export const AddMovementScreen: React.FC = () => {
   const targetSiteId = effectiveSiteId;
 
   useEffect(() => {
-    if (!flow.state.stockSite && targetSiteId != null) {
+    if (targetSiteId != null) {
       flow.updateField('stockSite', targetSiteId);
     }
-  }, [flow, targetSiteId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetSiteId]);
 
   const search = useArticleSearch(effectiveSiteId, 200);
 
@@ -167,6 +172,12 @@ export const AddMovementScreen: React.FC = () => {
     onCodeScanned,
   });
 
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    });
+  }, [flow.state.step]);
+
   const openScanner = async () => {
     if (!device) {
       Alert.alert('Camera indisponible', 'Aucune camera detectee sur cet appareil.');
@@ -192,7 +203,8 @@ export const AddMovementScreen: React.FC = () => {
         flow.selectArticle(article);
       }
     }).catch(() => {});
-  }, [flow, initialArticleId, targetSiteId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialArticleId, targetSiteId]);
 
   const handleBack = useCallback(() => {
     if (flow.state.step === 'details') {
@@ -227,7 +239,7 @@ export const AddMovementScreen: React.FC = () => {
     navigation.navigate('Mouvements');
   }, [flow, navigation, source]);
 
-  const isTypeStepValid = !!flow.state.stockSite && !!flow.state.type && flow.state.quantity >= minQty;
+  const isTypeStepValid = !!flow.state.type && flow.state.quantity >= minQty;
 
   const isFormValid = !!flow.state.article
     && !!targetSiteId
@@ -294,6 +306,7 @@ export const AddMovementScreen: React.FC = () => {
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
+          ref={scrollViewRef}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: flow.state.step === 'details' ? 124 : 24 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -305,8 +318,9 @@ export const AddMovementScreen: React.FC = () => {
             </Animated.View>
           ) : null}
 
-          {flow.state.step === 'article' ? (
-            <Animated.View entering={FadeInRight.duration(250)}>
+          <View onLayout={(event) => { articleStepYRef.current = event.nativeEvent.layout.y; }}>
+            {flow.state.step === 'article' ? (
+              <Animated.View entering={FadeInRight.duration(250)}>
               {flow.state.article ? (
                 <>
                   <SelectedArticleCard
@@ -351,11 +365,13 @@ export const AddMovementScreen: React.FC = () => {
                   />
                 </>
               )}
-            </Animated.View>
-          ) : null}
+              </Animated.View>
+            ) : null}
+          </View>
 
-          {flow.state.article && flow.state.step === 'type' ? (
-            <Animated.View entering={FadeInRight.duration(250)}>
+          <View onLayout={(event) => { typeStepYRef.current = event.nativeEvent.layout.y; }}>
+            {flow.state.article && flow.state.step === 'type' ? (
+              <Animated.View entering={FadeInRight.duration(250)}>
               <SelectedArticleCard
                 article={flow.state.article}
                 stock={stockActuel}
@@ -409,11 +425,13 @@ export const AddMovementScreen: React.FC = () => {
                 <Text style={[styles.continueText, { color: identityPack.identity.color }]}>Continuer</Text>
                 <Icon name="arrow-right" size={16} color={identityPack.identity.color} />
               </TouchableOpacity>
-            </Animated.View>
-          ) : null}
+              </Animated.View>
+            ) : null}
+          </View>
 
-          {flow.state.article && flow.state.step === 'details' ? (
-            <Animated.View entering={FadeInRight.duration(250)}>
+          <View onLayout={(event) => { detailsStepYRef.current = event.nativeEvent.layout.y; }}>
+            {flow.state.article && flow.state.step === 'details' ? (
+              <Animated.View entering={FadeInRight.duration(250)}>
               <SelectedArticleCard
                 article={flow.state.article}
                 stock={stockActuel}
@@ -437,8 +455,9 @@ export const AddMovementScreen: React.FC = () => {
                 value={flow.state.comment}
                 onChange={(next) => flow.updateField('comment', next)}
               />
-            </Animated.View>
-          ) : null}
+              </Animated.View>
+            ) : null}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 

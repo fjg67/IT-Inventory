@@ -76,6 +76,7 @@ import { PCCardCompact } from './components/pc/PCCardCompact';
 import { PCSearchBar } from './components/pc/PCSearchBar';
 import { PCStateFilters } from './components/pc/PCStateFilters';
 import { PCDisplayToggle } from './components/pc/PCDisplayToggle';
+import { SendPCModal } from '@/components/modals/SendPCModal';
 import { PCFAB } from '@/components/parcpc';
 import FilterModal, { FilterOption } from './components/FilterModal';
 import ArticlesFilterSheet, { ArticleFilterKey } from './components/ArticlesFilterSheet';
@@ -89,6 +90,7 @@ import {
 import { isPCArticle, PCStateKey } from '@/constants/pcStates';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
+import type { SendPCFormState } from '@/hooks/useSendPCForm';
 
 const PC_CATEGORY_OPTIONS = [
   {
@@ -130,8 +132,8 @@ const getInventoryStatus = (description?: string) => {
   if (normalized.includes('disponible')) return 'Disponible';
   if (normalized.includes('usinage') || normalized.includes('en train d\'usiner')) return 'En usinage';
   if (normalized.includes('reusin') || normalized.includes('recondition')) return 'A reusiner';
-  if (normalized.includes('a chaud') || normalized.includes('à chaud')) return 'A chaud';
-  return null;
+  if (normalized.includes('chaud')) return 'A chaud';
+  return 'A reusiner';
 };
 
 const getBrandFromModel = (model: string) => {
@@ -147,14 +149,6 @@ const getQuickHostnamePlaceholder = (category: (typeof PC_CATEGORY_OPTIONS)[numb
   }
 
   return 'Ex: KSAOPTRXXXX';
-};
-
-const getQuickHostnameHint = (category: (typeof PC_CATEGORY_OPTIONS)[number]['value']) => {
-  if (category === 'Portable agence') {
-    return 'Format agence conseille: KSAOP8725XXX';
-  }
-
-  return 'Format siege conseille: KSAOPTRXXXX';
 };
 
 const getTechnicienAcronym = (prenom?: string, nom?: string) => {
@@ -270,7 +264,7 @@ interface PCActionModalContentProps {
   isDark: boolean;
   scaleAnim: Animated.Shared<number>;
   isSubmitting: boolean;
-  actionType: 'sent' | 'available' | 'hot';
+  actionType: 'sent' | 'available' | 'hot' | 'processing';
   articleLabel?: string;
   sourceAgencyLabel?: string;
   sourceAgencyEds?: string;
@@ -312,23 +306,26 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
 
   const isSent = actionType === 'sent';
   const isHot = actionType === 'hot';
-  const accent = isSent ? '#E11D48' : isHot ? '#059669' : '#2563EB';
-  const accentDeep = isSent ? '#9F1239' : isHot ? '#065F46' : '#1E40AF';
+  const isProcessing = actionType === 'processing';
+  const accent = isSent ? '#E11D48' : isHot ? '#059669' : isProcessing ? '#D97706' : '#2563EB';
+  const accentDeep = isSent ? '#9F1239' : isHot ? '#065F46' : isProcessing ? '#92400E' : '#1E40AF';
   const modalSurface = isDark ? '#0B1220' : '#FFFFFF';
   const modalSurfaceAlt = isDark ? 'rgba(15,23,42,0.62)' : '#F8FAFC';
   const modalBorder = isDark ? `${accent}55` : `${accent}36`;
   const modalTextPrimary = isDark ? '#F8FAFC' : colors.textPrimary;
   const modalTextSecondary = isDark ? 'rgba(226,232,240,0.82)' : colors.textSecondary;
-  const iconName = isSent ? 'send-outline' : isHot ? 'flash-outline' : 'check-circle-outline';
-  const title = isSent ? 'Envoyer ce PC ?' : isHot ? 'Remettre ce PC à chaud ?' : 'Rendre ce PC disponible ?';
+  const iconName = isSent ? 'send-outline' : isHot ? 'flash-outline' : isProcessing ? 'cog-play-outline' : 'check-circle-outline';
+  const title = isSent ? 'Envoyer ce PC ?' : isHot ? 'Remettre ce PC à chaud ?' : isProcessing ? 'Passer ce PC en usinage ?' : 'Rendre ce PC disponible ?';
   const message = isSent
     ? 'Le poste sera retiré du parc actif et conservé dans la base de données.'
     : isHot
       ? 'Le poste sera basculé en statut À chaud et reviendra dans le parc actif.'
-      : 'Le poste sera déplacé dans la catégorie PC disponible et restera consultable.';
-  const confirmLabel = isSent ? 'Confirmer l’envoi' : isHot ? 'Mettre à chaud' : 'Marquer disponible';
-  const operationLabel = isSent ? 'Sortie agence' : isHot ? 'Retour à chaud' : 'Mise en disponibilité';
-  const resultLabel = isSent ? 'Statut final: Envoyé' : isHot ? 'Statut final: À chaud' : 'Statut final: Disponible';
+      : isProcessing
+        ? 'Le poste passera en statut En usinage pour suivi atelier.'
+        : 'Le poste sera déplacé dans la catégorie PC disponible et restera consultable.';
+  const confirmLabel = isSent ? 'Confirmer l’envoi' : isHot ? 'Mettre à chaud' : isProcessing ? 'Passer en usinage' : 'Marquer disponible';
+  const operationLabel = isSent ? 'Sortie agence' : isHot ? 'Retour à chaud' : isProcessing ? 'Mise en usinage' : 'Mise en disponibilité';
+  const resultLabel = isSent ? 'Statut final: Envoyé' : isHot ? 'Statut final: À chaud' : isProcessing ? 'Statut final: En usinage' : 'Statut final: Disponible';
   const sourceAgencyDisplay = `${sourceAgencyLabel || 'Agence inconnue'}${sourceAgencyEds ? ` (EDS ${sourceAgencyEds})` : ''}`;
 
   return (
@@ -347,7 +344,7 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
       <View pointerEvents="none" style={[styles.pcActionModalOrbTwo, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.55)' }]} />
 
       <LinearGradient
-        colors={isSent ? ['#FFF1F2', '#FBCFE8'] : isHot ? ['#DCFCE7', '#BBF7D0'] : ['#DBEAFE', '#BFDBFE']}
+        colors={isSent ? ['#FFF1F2', '#FBCFE8'] : isHot ? ['#DCFCE7', '#BBF7D0'] : isProcessing ? ['#FFF7ED', '#FED7AA'] : ['#DBEAFE', '#BFDBFE']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.pcActionHero}
@@ -769,7 +766,7 @@ export const ArticlesListScreen: React.FC = () => {
   const deletePCScaleAnim = useSharedValue(0);
   const [pcActionModal, setPCActionModal] = useState<{
     visible: boolean;
-    type: 'sent' | 'available' | 'hot';
+    type: 'sent' | 'available' | 'hot' | 'processing';
     articleId: string | number | null;
   }>({
     visible: false,
@@ -1022,6 +1019,8 @@ export const ArticlesListScreen: React.FC = () => {
   const loadStats = useCallback(async () => {
     if (!effectiveSiteId) return;
 
+    const EXCLUDED_ARTICLE_TYPES = ['PC'];
+
     const baseTypeFilter = lockPresetTypeArticle && presetTypeArticle
       ? { typeArticle: [presetTypeArticle] }
       : {};
@@ -1038,6 +1037,19 @@ export const ArticlesListScreen: React.FC = () => {
       ...baseTypeFilter,
     };
 
+    const nonPCSearchFilters = {
+      searchQuery: '',
+      categorieId: null,
+      stockFaible: false,
+      codeFamille: null,
+      famille: null,
+      typeArticle: null,
+      excludeTypeArticle: EXCLUDED_ARTICLE_TYPES,
+      sousType: null,
+      marque: null,
+      emplacement: null,
+    };
+
     try {
       const [allResult, lowStockResult, emplacements, sentCount] = await Promise.all([
         isManagedInventoryTab
@@ -1047,7 +1059,12 @@ export const ArticlesListScreen: React.FC = () => {
               0,
               1,
             )
-          : articleRepository.findAll(effectiveSiteId, 0),
+          : articleRepository.search(
+              effectiveSiteId,
+              nonPCSearchFilters,
+              0,
+              1,
+            ),
         isManagedInventoryTab
           ? articleRepository.search(
               effectiveSiteId,
@@ -1065,7 +1082,15 @@ export const ArticlesListScreen: React.FC = () => {
               0,
               1,
             )
-          : articleRepository.countLowStock(effectiveSiteId),
+          : articleRepository.search(
+              effectiveSiteId,
+              {
+                ...nonPCSearchFilters,
+                stockFaible: true,
+              },
+              0,
+              1,
+            ),
         articleRepository.getDistinctEmplacements(effectiveSiteId),
         isPCTab ? pcSentService.countBySourceSite(String(effectiveSiteId)).catch(() => 0) : Promise.resolve(0),
       ]);
@@ -1878,6 +1903,11 @@ export const ArticlesListScreen: React.FC = () => {
   }, [scaleAnim]);
 
   const handleAdd = useCallback(() => {
+    if (isPCTab) {
+      navigation.navigate('AddPC');
+      return;
+    }
+
     if (isManagedInventoryTab) {
       setQuickAddVisible(true);
       return;
@@ -2006,19 +2036,8 @@ export const ArticlesListScreen: React.FC = () => {
     showQuickFeedback,
   ]);
 
-  const openPCActionModal = useCallback((type: 'sent' | 'available' | 'hot', articleId: number | string) => {
+  const openPCActionModal = useCallback((type: 'sent' | 'available' | 'hot' | 'processing', articleId: number | string) => {
     setPCActionModal({ visible: true, type, articleId });
-    if (type === 'sent') {
-      setDestinationAgencyEds('');
-      setDestinationAgencyEdsError(null);
-      setRecipientName('');
-      setRecipientNameError(null);
-    } else {
-      setDestinationAgencyEds('');
-      setDestinationAgencyEdsError(null);
-      setRecipientName('');
-      setRecipientNameError(null);
-    }
     pcActionScaleAnim.value = withTiming(1, {
       duration: 380,
       easing: Easing.elastic(1.08),
@@ -2041,115 +2060,115 @@ export const ArticlesListScreen: React.FC = () => {
     setTimeout(() => {
       setPCActionModal((prev) => ({ ...prev, visible: false, articleId: null }));
       setIsPCActionSubmitting(false);
-      setDestinationAgencyEds('');
-      setDestinationAgencyEdsError(null);
-      setRecipientName('');
-      setRecipientNameError(null);
     }, closeDuration);
   }, [pcActionScaleAnim]);
+
+  const confirmPCSentAction = useCallback(async ({ edsNumber, recipient }: SendPCFormState) => {
+    if (!pcActionModal.articleId) return;
+
+    setIsPCActionSubmitting(true);
+    try {
+      Vibration.vibrate([0, 26, 58, 28]);
+
+      const normalizedDestinationEds = edsNumber.trim();
+      const normalizedRecipientName = recipient.trim();
+      const targetArticleSent = articles.find((a) => String(a.id) === String(pcActionModal.articleId));
+      if (targetArticleSent) {
+        const techName = currentTechnicien
+          ? `${currentTechnicien.prenom} ${currentTechnicien.nom}`.trim()
+          : 'Technicien inconnu';
+
+        await pcSentService.record({
+          articleId: String(targetArticleSent.id),
+          hostname: targetArticleSent.nom?.trim() || targetArticleSent.reference?.trim() || 'PC inconnu',
+          asset: targetArticleSent.barcode?.trim(),
+          model: targetArticleSent.modele?.trim(),
+          brand: targetArticleSent.marque?.trim(),
+          sourceSiteId: String(effectiveSiteId),
+          sourceSiteName: SENT_PC_SOURCE_AGENCY_LABEL,
+          sourceAgencyEds: siteActif?.edsNumber != null ? String(siteActif.edsNumber) : undefined,
+          destinationAgencyEds: normalizedDestinationEds,
+          recipientName: normalizedRecipientName,
+          sentByUserId: currentTechnicien?.id != null ? String(currentTechnicien.id) : undefined,
+          sentByName: techName,
+        });
+      }
+
+      await articleRepository.update(pcActionModal.articleId, {
+        description: `Statut: Envoyé | EDS destination: ${normalizedDestinationEds} | Destinataire: ${normalizedRecipientName}`,
+        famille: 'PC envoyé',
+        emplacement: `EDS ${normalizedDestinationEds}`,
+      });
+      setArticles((prev) => prev.map((article) => (
+        String(article.id) === String(pcActionModal.articleId)
+          ? {
+              ...article,
+              description: `Statut: Envoyé | EDS destination: ${normalizedDestinationEds} | Destinataire: ${normalizedRecipientName}`,
+              famille: 'PC envoyé',
+              emplacement: `EDS ${normalizedDestinationEds}`,
+              dateModification: new Date(),
+            }
+          : article
+      )));
+      if (targetArticleSent) {
+        const techName = currentTechnicien
+          ? `${currentTechnicien.prenom} ${currentTechnicien.nom}`.trim()
+          : 'Technicien inconnu';
+        const techAcronym = getTechnicienAcronym(currentTechnicien?.prenom, currentTechnicien?.nom);
+        notifyPCStatusChange({
+          article: targetArticleSent,
+          nextStatus: 'Envoyé',
+          technicienName: techName,
+          technicienAcronym: techAcronym,
+          sourceAgencyName: SENT_PC_SOURCE_AGENCY_LABEL,
+          sourceAgencyEds: siteActif?.edsNumber != null ? String(siteActif.edsNumber) : undefined,
+          destinationAgencyEds: normalizedDestinationEds,
+        });
+
+        const hostname = targetArticleSent.nom?.trim() || targetArticleSent.reference?.trim() || 'PC inconnu';
+        const sourceAgencyLabel = SENT_PC_SOURCE_AGENCY_LABEL;
+        const sourceEdsLabel = siteActif?.edsNumber ? ` (EDS ${siteActif.edsNumber})` : '';
+        showQuickFeedback(
+          'success',
+          'PC envoyé',
+          `${hostname} envoyé par ${sourceAgencyLabel}${sourceEdsLabel} vers l'agence EDS ${normalizedDestinationEds} pour ${normalizedRecipientName}.`,
+        );
+      } else {
+        showQuickFeedback(
+          'success',
+          'PC envoyé',
+          `Le PC a été marqué envoyé vers l'agence EDS ${normalizedDestinationEds} pour ${normalizedRecipientName}.`,
+        );
+      }
+      await loadSentHistory();
+      await loadStats();
+      closePCActionModal(true);
+      setIsPCActionSubmitting(false);
+    } catch (error: any) {
+      setIsPCActionSubmitting(false);
+      showQuickFeedback(
+        'error',
+        'Erreur',
+        error?.message || "Impossible d'envoyer ce PC.",
+      );
+      throw error;
+    }
+  }, [pcActionModal.articleId, articles, currentTechnicien, effectiveSiteId, siteActif, loadSentHistory, loadStats, showQuickFeedback, closePCActionModal]);
 
   const confirmPCAction = useCallback(async () => {
     if (!pcActionModal.articleId) return;
 
-    if (pcActionModal.type === 'sent') {
-      const normalizedDestinationEds = destinationAgencyEds.trim();
-      const normalizedRecipientName = recipientName.trim();
-      if (!/^\d{1,3}$/.test(normalizedDestinationEds)) {
-        setDestinationAgencyEdsError('Renseignez un numéro EDS valide (max 3 chiffres).');
-        return;
-      }
-      if (normalizedRecipientName.length < 2) {
-        setRecipientNameError('Renseignez le nom de la personne destinataire.');
-        return;
-      }
-      setDestinationAgencyEdsError(null);
-      setRecipientNameError(null);
-    }
-
-    if (pcActionModal.type === 'sent') {
-      Vibration.vibrate([0, 26, 58, 28]);
-    } else if (pcActionModal.type === 'available') {
+    if (pcActionModal.type === 'available') {
       Vibration.vibrate([0, 18, 38, 18]);
+    } else if (pcActionModal.type === 'processing') {
+      Vibration.vibrate([0, 18, 46, 20]);
     } else {
       Vibration.vibrate([0, 20, 44, 20]);
     }
 
     setIsPCActionSubmitting(true);
     try {
-      if (pcActionModal.type === 'sent') {
-        const normalizedDestinationEds = destinationAgencyEds.trim();
-        const normalizedRecipientName = recipientName.trim();
-        const targetArticleSent = articles.find((a) => String(a.id) === String(pcActionModal.articleId));
-        if (targetArticleSent) {
-          const techName = currentTechnicien
-            ? `${currentTechnicien.prenom} ${currentTechnicien.nom}`.trim()
-            : 'Technicien inconnu';
-
-          await pcSentService.record({
-            articleId: String(targetArticleSent.id),
-            hostname: targetArticleSent.nom?.trim() || targetArticleSent.reference?.trim() || 'PC inconnu',
-            asset: targetArticleSent.barcode?.trim(),
-            model: targetArticleSent.modele?.trim(),
-            brand: targetArticleSent.marque?.trim(),
-            sourceSiteId: String(effectiveSiteId),
-            sourceSiteName: SENT_PC_SOURCE_AGENCY_LABEL,
-            sourceAgencyEds: siteActif?.edsNumber != null ? String(siteActif.edsNumber) : undefined,
-            destinationAgencyEds: normalizedDestinationEds,
-            recipientName: normalizedRecipientName,
-            sentByUserId: currentTechnicien?.id != null ? String(currentTechnicien.id) : undefined,
-            sentByName: techName,
-          });
-        }
-
-        await articleRepository.update(pcActionModal.articleId, {
-          description: `Statut: Envoyé | EDS destination: ${normalizedDestinationEds} | Destinataire: ${normalizedRecipientName}`,
-          famille: 'PC envoyé',
-          emplacement: `EDS ${normalizedDestinationEds}`,
-        });
-        setArticles((prev) => prev.map((article) => (
-          String(article.id) === String(pcActionModal.articleId)
-            ? {
-                ...article,
-                description: `Statut: Envoyé | EDS destination: ${normalizedDestinationEds} | Destinataire: ${normalizedRecipientName}`,
-                famille: 'PC envoyé',
-                emplacement: `EDS ${normalizedDestinationEds}`,
-                dateModification: new Date(),
-              }
-            : article
-        )));
-        if (targetArticleSent) {
-          const techName = currentTechnicien
-            ? `${currentTechnicien.prenom} ${currentTechnicien.nom}`.trim()
-            : 'Technicien inconnu';
-          const techAcronym = getTechnicienAcronym(currentTechnicien?.prenom, currentTechnicien?.nom);
-          notifyPCStatusChange({
-            article: targetArticleSent,
-            nextStatus: 'Envoyé',
-            technicienName: techName,
-            technicienAcronym: techAcronym,
-            sourceAgencyName: SENT_PC_SOURCE_AGENCY_LABEL,
-            sourceAgencyEds: siteActif?.edsNumber != null ? String(siteActif.edsNumber) : undefined,
-            destinationAgencyEds: normalizedDestinationEds,
-          });
-
-          const hostname = targetArticleSent.nom?.trim() || targetArticleSent.reference?.trim() || 'PC inconnu';
-          const sourceAgencyLabel = SENT_PC_SOURCE_AGENCY_LABEL;
-          const sourceEdsLabel = siteActif?.edsNumber ? ` (EDS ${siteActif.edsNumber})` : '';
-          showQuickFeedback(
-            'success',
-            'PC envoyé',
-            `${hostname} envoyé par ${sourceAgencyLabel}${sourceEdsLabel} vers l'agence EDS ${normalizedDestinationEds} pour ${normalizedRecipientName}.`,
-          );
-        } else {
-          showQuickFeedback(
-            'success',
-            'PC envoyé',
-            `Le PC a été marqué envoyé vers l'agence EDS ${normalizedDestinationEds} pour ${normalizedRecipientName}.`,
-          );
-        }
-        await loadSentHistory();
-        await loadStats();
-      } else if (pcActionModal.type === 'available') {
+      if (pcActionModal.type === 'available') {
         await articleRepository.update(pcActionModal.articleId, {
           description: 'Statut: Disponible',
           famille: 'PC disponible',
@@ -2177,6 +2196,34 @@ export const ArticlesListScreen: React.FC = () => {
         }
         await loadStats();
         showQuickFeedback('success', 'PC disponible', 'Le PC a été déplacé dans la catégorie disponible.');
+      } else if (pcActionModal.type === 'processing') {
+        await articleRepository.update(pcActionModal.articleId, {
+          description: 'Statut: En usinage',
+          famille: 'PC portable',
+        });
+        setArticles((prev) => prev.map((article) => (
+          article.id === pcActionModal.articleId
+            ? {
+                ...article,
+                description: 'Statut: En usinage',
+                famille: 'PC portable',
+                dateModification: new Date(),
+              }
+            : article
+        )));
+        const targetArticleProcessing = articles.find((a) => String(a.id) === String(pcActionModal.articleId));
+        if (targetArticleProcessing) {
+          const techName = currentTechnicien
+            ? `${currentTechnicien.prenom} ${currentTechnicien.nom}`.trim()
+            : 'Technicien inconnu';
+          notifyPCStatusChange({
+            article: { ...targetArticleProcessing, description: 'Statut: En usinage', famille: 'PC portable' },
+            nextStatus: 'En usinage',
+            technicienName: techName,
+          });
+        }
+        await loadStats();
+        showQuickFeedback('success', 'PC en usinage', 'Le PC est passé en statut En usinage.');
       } else {
         await articleRepository.update(pcActionModal.articleId, {
           description: 'Statut: À chaud',
@@ -2213,15 +2260,15 @@ export const ArticlesListScreen: React.FC = () => {
         'error',
         'Erreur',
         error?.message || (
-          pcActionModal.type === 'sent'
-            ? "Impossible d'envoyer ce PC."
-            : pcActionModal.type === 'available'
-              ? 'Impossible de mettre ce PC en disponible.'
+          pcActionModal.type === 'available'
+            ? 'Impossible de mettre ce PC en disponible.'
+            : pcActionModal.type === 'processing'
+              ? 'Impossible de passer ce PC en usinage.'
               : 'Impossible de remettre ce PC à chaud.'
         ),
       );
     }
-  }, [pcActionModal, articles, currentTechnicien, destinationAgencyEds, recipientName, effectiveSiteId, siteActif, loadStats, loadSentHistory, showQuickFeedback, closePCActionModal]);
+  }, [pcActionModal, articles, currentTechnicien, loadStats, showQuickFeedback, closePCActionModal]);
 
   const handleMarkPCSent = useCallback((articleId: number | string) => {
     openPCActionModal('sent', articleId);
@@ -2233,6 +2280,10 @@ export const ArticlesListScreen: React.FC = () => {
 
   const handleMarkPCHot = useCallback((articleId: number | string) => {
     openPCActionModal('hot', articleId);
+  }, [openPCActionModal]);
+
+  const handleMarkPCProcessing = useCallback((articleId: number | string) => {
+    openPCActionModal('processing', articleId);
   }, [openPCActionModal]);
 
   const handleScan = useCallback(() => {
@@ -2345,6 +2396,8 @@ export const ArticlesListScreen: React.FC = () => {
               onPress={pcStatusFilter === 'Envoyé' ? handleSentArticlePress : handleArticlePress}
               onMarkSent={handleMarkPCSent}
               onMarkHot={handleMarkPCHot}
+              onMarkAvailable={handleMarkPCAvailable}
+              onMarkProcessing={handleMarkPCProcessing}
               onDelete={handleDeletePC}
             />
           ) : (
@@ -2354,6 +2407,8 @@ export const ArticlesListScreen: React.FC = () => {
               onPress={pcStatusFilter === 'Envoyé' ? handleSentArticlePress : handleArticlePress}
               onMarkSent={handleMarkPCSent}
               onMarkHot={handleMarkPCHot}
+              onMarkAvailable={handleMarkPCAvailable}
+              onMarkProcessing={handleMarkPCProcessing}
               onDelete={handleDeletePC}
             />
           )
@@ -2367,12 +2422,22 @@ export const ArticlesListScreen: React.FC = () => {
         )}
       </Animated.View>
     ),
-    [handleArticlePress, handleSentArticlePress, pcStatusFilter, isTabletTab, handleDecommissionTablet, isPCTab, handleMarkPCSent, handleMarkPCAvailable, handleMarkPCHot, handleDeletePC, isTablet, pcDensity, searchQuery],
+    [handleArticlePress, handleSentArticlePress, pcStatusFilter, isTabletTab, handleDecommissionTablet, isPCTab, handleMarkPCSent, handleMarkPCAvailable, handleMarkPCHot, handleMarkPCProcessing, handleDeletePC, isTablet, pcDensity, searchQuery],
+  );
+
+  const normalizedTotalArticles = useMemo(
+    () => Math.max(totalArticles, alertes),
+    [totalArticles, alertes],
+  );
+
+  const normalizedAlertes = useMemo(
+    () => Math.min(alertes, normalizedTotalArticles),
+    [alertes, normalizedTotalArticles],
   );
 
   const stockOK = useMemo(
-    () => Math.max(0, totalArticles - alertes),
-    [totalArticles, alertes],
+    () => Math.max(0, normalizedTotalArticles - normalizedAlertes),
+    [normalizedAlertes, normalizedTotalArticles],
   );
 
   const quickHeaderStat = useMemo(() => {
@@ -2390,18 +2455,20 @@ export const ArticlesListScreen: React.FC = () => {
     const last7Start = now - 7 * dayMs;
     const prev7Start = now - 14 * dayMs;
 
-    const last7 = pcSentHistory.filter((row) => {
-      const t = new Date(row.sentAt).getTime();
+    const activePCs = sortedArticles.filter((article) => isPCArticle(article) && !String(article.description ?? '').toLowerCase().includes('envoy'));
+
+    const last7 = activePCs.filter((article) => {
+      const t = new Date(article.dateCreation).getTime();
       return t >= last7Start;
     }).length;
 
-    const prev7 = pcSentHistory.filter((row) => {
-      const t = new Date(row.sentAt).getTime();
+    const prev7 = activePCs.filter((article) => {
+      const t = new Date(article.dateCreation).getTime();
       return t >= prev7Start && t < last7Start;
     }).length;
 
     return last7 - prev7;
-  }, [isPCTab, pcSentHistory]);
+  }, [isPCTab, sortedArticles]);
 
   const pcHeaderTrendLabel = useMemo(() => {
     const safeDelta = Number.isFinite(pcWeeklyTrendDelta) ? pcWeeklyTrendDelta : 0;
@@ -2447,9 +2514,9 @@ const renderListHeader = useCallback(() => {
         <>
           <Animated.View style={headerParallaxStyle}>
             <ArticlesHeader
-              totalArticles={totalArticles}
+              totalArticles={normalizedTotalArticles}
               stockOk={stockOK}
-              alertes={alertes}
+              alertes={normalizedAlertes}
               onTotalPress={resetFilters}
               onStockOKPress={() => {
                 if (filters.stockFaible) {
@@ -2522,9 +2589,9 @@ const renderListHeader = useCallback(() => {
               statsMode={'full'}
               quickStatText={quickHeaderStat}
               pcTrendDelta={pcWeeklyTrendDelta}
-              totalArticles={totalArticles}
+              totalArticles={normalizedTotalArticles}
               stockOK={stockOK}
-              alertes={alertes}
+              alertes={normalizedAlertes}
               pcHot={pcHotCount}
               pcReconditioning={pcReconditioningCount}
               pcProcessing={pcProcessingCount}
@@ -2698,6 +2765,8 @@ const renderListHeader = useCallback(() => {
           onSentArticlePress={() => handleSentArticlePress(0)}
           onMarkSent={handleMarkPCSent}
           onMarkHot={handleMarkPCHot}
+          onMarkAvailable={handleMarkPCAvailable}
+          onMarkProcessing={handleMarkPCProcessing}
           onDelete={handleDeletePC}
           onExportSentCsv={handleExportSentCsv}
           exportingSentCsv={exportingSentCsv}
@@ -3050,9 +3119,7 @@ const renderListHeader = useCallback(() => {
                       <Icon name="alert-circle" size={14} color="#DC2626" />
                       <Text style={styles.quickFieldErrorText}>{quickHostnameError}</Text>
                     </View>
-                  ) : (
-                    <Text style={[styles.quickHint, { color: colors.textMuted }]}>{isPCTab ? getQuickHostnameHint(quickPCCategory) : 'Format requis: TMAOP00...'}</Text>
-                  )}
+                  ) : null}
 
                   <Text style={[styles.quickLabel, { color: colors.textPrimary }]}>Asset</Text>
                   <View style={[
@@ -3269,8 +3336,19 @@ const renderListHeader = useCallback(() => {
         </View>
       </Modal>
 
+      {pcActionModal.visible && pcActionModal.type === 'sent' && selectedPCActionArticle ? (
+        <SendPCModal
+          visible={pcActionModal.visible}
+          pc={selectedPCActionArticle}
+          sourceAgencyLabel={SENT_PC_SOURCE_AGENCY_LABEL}
+          sourceAgencyEds={siteActif?.edsNumber != null ? String(siteActif.edsNumber) : undefined}
+          onClose={closePCActionModal}
+          onSubmit={confirmPCSentAction}
+        />
+      ) : null}
+
       <Modal
-        visible={pcActionModal.visible}
+        visible={pcActionModal.visible && pcActionModal.type !== 'sent'}
         transparent
         animationType="fade"
         onRequestClose={closePCActionModal}
@@ -3285,14 +3363,6 @@ const renderListHeader = useCallback(() => {
             articleLabel={selectedPCActionArticle?.nom || selectedPCActionArticle?.reference || undefined}
             sourceAgencyLabel={SENT_PC_SOURCE_AGENCY_LABEL}
             sourceAgencyEds={siteActif?.edsNumber != null ? String(siteActif.edsNumber) : undefined}
-            destinationEds={destinationAgencyEds}
-            destinationEdsError={destinationAgencyEdsError}
-            recipientName={recipientName}
-            recipientNameError={recipientNameError}
-            onDestinationEdsChange={setDestinationAgencyEds}
-            onClearDestinationEdsError={() => setDestinationAgencyEdsError(null)}
-            onRecipientNameChange={setRecipientName}
-            onClearRecipientNameError={() => setRecipientNameError(null)}
             onCancel={closePCActionModal}
             onConfirm={confirmPCAction}
           />
