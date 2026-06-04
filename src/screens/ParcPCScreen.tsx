@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -37,6 +37,7 @@ interface ParcPCScreenProps {
   onMarkHot: (articleId: number | string) => void;
   onMarkAvailable: (articleId: number | string) => void;
   onMarkProcessing: (articleId: number | string) => void;
+  onMarkBreakdown?: (articleId: number | string) => void;
   onDelete: (articleId: number | string) => void;
   onExportSentCsv: () => void;
   exportingSentCsv: boolean;
@@ -62,6 +63,7 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
   onMarkHot,
   onMarkAvailable,
   onMarkProcessing,
+  onMarkBreakdown,
   onDelete,
   onExportSentCsv,
   exportingSentCsv,
@@ -69,6 +71,7 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
   onScroll,
 }) => {
   const listRef = useRef<FlashList<ParcPCListItem> | null>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
   const stats = usePCStats(articles, sentArticles, weeklyTrendDelta);
   const filters = usePCFilters(stats.allPCs);
 
@@ -80,17 +83,45 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
     return [CONTROL_ITEM, ...items];
   }, [filters.filtered]);
 
-  const handleStateCardPress = (state: PCStateKey) => {
+  const modelStatsForSelection = useMemo(() => {
+    const modelCounts = new Map<string, number>();
+
+    for (const article of filters.filtered) {
+      const model = (article.modele ?? '').trim() || 'Sans modèle';
+      modelCounts.set(model, (modelCounts.get(model) ?? 0) + 1);
+    }
+
+    return [...modelCounts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr'))
+      .map(([label, count]) => ({ label, count }));
+  }, [filters.filtered]);
+
+  const handleStateCardPress = useCallback((state: PCStateKey) => {
     filters.setOnlyState(state);
-    listRef.current?.scrollToOffset({ offset: 320, animated: true });
-  };
+    const targetOffset = Math.max(0, headerHeight - 110);
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToOffset({ offset: targetOffset, animated: true });
+    });
+  }, [filters, headerHeight]);
 
   const renderHeader = () => (
-    <View style={styles.headerStack}>
+    <View
+      style={styles.headerStack}
+      onLayout={(event) => {
+        const nextHeight = Math.round(event.nativeEvent.layout.height);
+        if (nextHeight > 0 && nextHeight !== headerHeight) {
+          setHeaderHeight(nextHeight);
+        }
+      }}
+    >
       <PCHeader activeCount={stats.activeCount} trendLabel={stats.trendLabel} />
       <PCTotalCard total={stats.total} segments={stats.totalSegments.map((segment) => ({ ...segment, total: stats.total }))} />
-      <PCStateGrid items={stats.stateCards} onPressState={handleStateCardPress} />
-      <PCModelsSection items={stats.modelStats} />
+      <PCStateGrid
+        items={stats.stateCards}
+        onPressState={handleStateCardPress}
+        activeStateKey={filters.activeStates.length === 1 ? filters.activeStates[0] : null}
+      />
+      <PCModelsSection items={modelStatsForSelection} />
       <PCRepartitionSection
         total={stats.total}
         agence={stats.repartition.agence}
@@ -149,6 +180,7 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
         onMarkHot={onMarkHot}
         onMarkAvailable={onMarkAvailable}
         onMarkProcessing={onMarkProcessing}
+        onMarkBreakdown={onMarkBreakdown}
         onDelete={onDelete}
       />
     );

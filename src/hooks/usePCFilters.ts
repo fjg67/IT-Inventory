@@ -43,12 +43,13 @@ export const usePCFilters = (pcs: Article[]) => {
     return result.sort((a, b) => new Date(b.dateModification).getTime() - new Date(a.dateModification).getTime());
   }, [activeStates, pcs, query]);
 
-  const countByState = useMemo(
+  const countByState = useMemo<Record<PCStateKey, number>>(
     () => ({
       a_chaud: pcs.filter((pc) => getPCStateFromArticle(pc).key === 'a_chaud').length,
       a_reusiner: pcs.filter((pc) => getPCStateFromArticle(pc).key === 'a_reusiner').length,
       en_usinage: pcs.filter((pc) => getPCStateFromArticle(pc).key === 'en_usinage').length,
       disponible: pcs.filter((pc) => getPCStateFromArticle(pc).key === 'disponible').length,
+      en_panne: pcs.filter((pc) => getPCStateFromArticle(pc).key === 'en_panne').length,
       envoye: pcs.filter((pc) => getPCStateFromArticle(pc).key === 'envoye').length,
     }),
     [pcs],

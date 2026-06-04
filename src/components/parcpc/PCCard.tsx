@@ -1,5 +1,5 @@
 import React, { memo, useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -20,13 +20,26 @@ interface PCCardProps {
   onMarkHot?: (articleId: number | string) => void;
   onMarkAvailable?: (articleId: number | string) => void;
   onMarkProcessing?: (articleId: number | string) => void;
+  onMarkBreakdown?: (articleId: number | string) => void;
   onDelete?: (articleId: number | string) => void;
 }
 
-const PCCardComponent: React.FC<PCCardProps> = ({ article, index, onPress, onMarkSent, onMarkHot, onMarkAvailable, onMarkProcessing, onDelete }) => {
+const PCCardComponent: React.FC<PCCardProps> = ({
+  article,
+  index,
+  onPress,
+  onMarkSent,
+  onMarkHot,
+  onMarkAvailable,
+  onMarkProcessing,
+  onMarkBreakdown,
+  onDelete,
+}) => {
   const state = useMemo(() => getPCStateFromArticle(article), [article]);
   const swipe = useSwipeGesture({ maxSwipe: MAX_TRANSLATE, openThreshold: -BUTTON_WIDTH });
   const isSent = state.key === 'envoye' || String(article.id).startsWith('sent-');
+  const isBreakdown = state.key === 'en_panne';
+
   const middleAction = state.key === 'a_chaud'
     ? {
         config: SWIPE_ACTIONS.available,
@@ -64,7 +77,7 @@ const PCCardComponent: React.FC<PCCardProps> = ({ article, index, onPress, onMar
             <Pressable onPress={() => onPress(Number(article.id))} style={styles.pressable}>
               <View style={[styles.stateWash, { backgroundColor: state.subtle }]} />
               <View style={styles.iconWrap}>
-                <Icon name="laptop" size={22} color={PARC_PC_COLORS.green_light} />
+                <Icon name={isBreakdown ? 'laptop-off' : 'laptop'} size={22} color={isBreakdown ? PARC_PC_COLORS.danger : PARC_PC_COLORS.green_light} />
               </View>
 
               <View style={styles.body}>
@@ -94,6 +107,17 @@ const PCCardComponent: React.FC<PCCardProps> = ({ article, index, onPress, onMar
                   </View>
                   {model ? <Text style={styles.bottomText} numberOfLines={1}>{model}</Text> : null}
                 </View>
+
+                {!isSent && !isBreakdown && onMarkBreakdown ? (
+                  <TouchableOpacity
+                    activeOpacity={0.84}
+                    onPress={() => onMarkBreakdown(article.id)}
+                    style={styles.breakdownBtn}
+                  >
+                    <Icon name="alert-octagon-outline" size={12} color={PARC_PC_COLORS.danger} />
+                    <Text style={styles.breakdownBtnText}>Declarer panne</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
             </Pressable>
           </Animated.View>
@@ -216,6 +240,24 @@ const styles = StyleSheet.create({
     color: PARC_PC_COLORS.text_dim,
     fontSize: 11,
     fontWeight: '600',
+  },
+  breakdownBtn: {
+    marginTop: 2,
+    alignSelf: 'flex-start',
+    minHeight: 24,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: PARC_PC_COLORS.danger_border,
+    backgroundColor: PARC_PC_COLORS.danger_subtle,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  breakdownBtnText: {
+    color: PARC_PC_COLORS.danger,
+    fontSize: 11,
+    fontWeight: '700',
   },
 });
 

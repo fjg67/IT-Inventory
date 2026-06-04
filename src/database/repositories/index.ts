@@ -9,3 +9,4 @@ export { siteRepository, default as siteRepo } from './siteRepository';
 export { technicienRepository, default as technicienRepo } from './technicienRepository';
 export { categorieRepository, default as categorieRepo } from './categorieRepository';
 export { refOptionsRepository } from './refOptionsRepository';
+export { panneRepository } from './panneRepository';

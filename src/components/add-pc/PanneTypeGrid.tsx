@@ -1,0 +1,1 @@
+export { PanneTypeGrid } from '@/components/panne';

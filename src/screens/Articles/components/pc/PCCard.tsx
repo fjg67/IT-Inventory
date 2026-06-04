@@ -14,7 +14,10 @@ interface PCCardProps {
   index: number;
   onPress: (articleId: number) => void;
   onMarkHot?: (articleId: number) => void;
+  onMarkAvailable?: (articleId: number) => void;
+  onMarkProcessing?: (articleId: number) => void;
   onMarkSent?: (articleId: number) => void;
+  onMarkBreakdown?: (articleId: number) => void;
   onDelete?: (articleId: number) => void;
 }
 
@@ -32,7 +35,7 @@ const Tag: React.FC<TagProps> = ({ icon, label, backgroundColor, color = OBSIDIA
   </View>
 );
 
-export const PCCard: React.FC<PCCardProps> = ({ article, index, onPress, onMarkHot, onMarkSent, onDelete }) => {
+export const PCCard: React.FC<PCCardProps> = ({ article, index, onPress, onMarkHot, onMarkAvailable, onMarkProcessing, onMarkSent, onMarkBreakdown, onDelete }) => {
   const state = useMemo(() => getPCStateFromArticle(article), [article]);
   const swipe = useSwipeGesture({ maxSwipe: -240, openThreshold: -80 });
 
@@ -52,7 +55,10 @@ export const PCCard: React.FC<PCCardProps> = ({ article, index, onPress, onMarkH
         <PCSwipeActions
           height={116}
           onHot={() => onMarkHot?.(Number(article.id))}
+          onAvailable={() => onMarkAvailable?.(Number(article.id))}
+          onProcessing={() => onMarkProcessing?.(Number(article.id))}
           onSent={() => onMarkSent?.(Number(article.id))}
+          onBreakdown={() => onMarkBreakdown?.(Number(article.id))}
           onDelete={() => onDelete?.(Number(article.id))}
         />
 

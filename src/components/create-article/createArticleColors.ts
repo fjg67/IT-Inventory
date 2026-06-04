@@ -35,7 +35,7 @@ export const CAC = {
   border_focus:     'rgba(34, 197, 94, 0.7)',
 } as const;
 
-export type SectionKey = 'infos' | 'classif' | 'stock_site' | 'stock_level' | 'complement' | 'photo';
+export type SectionKey = 'infos' | 'classif' | 'stock_site' | 'stock_level' | 'condition' | 'complement' | 'photo';
 
 export interface SectionAccent {
   color: string;
@@ -73,6 +73,13 @@ export const SECTION_ACCENTS: Record<SectionKey, SectionAccent> = {
     border: 'rgba(34, 197, 94, 0.4)',
     icon:   'cube-outline',
     label:  'Niveaux de stock',
+  },
+  condition: {
+    color:  '#EF4444',
+    bg:     'rgba(239, 68, 68, 0.12)',
+    border: 'rgba(239, 68, 68, 0.4)',
+    icon:   'tools',
+    label:  "Etat de l'article",
   },
   complement: {
     color:  '#F59E0B',

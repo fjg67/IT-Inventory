@@ -73,6 +73,7 @@ export const tables = {
   loginHistory: 'LoginHistory',
   inventoryRecount: 'InventoryRecount',
   pcSentHistory: 'PCSentHistory',
+  pcPannes: 'PCPannes',
 } as const;
 
 // Export du client

@@ -9,13 +9,14 @@ interface PCStateCardProps {
   meta: PCStateMeta;
   count: number;
   onPress?: () => void;
+  active?: boolean;
 }
 
-export const PCStateCard: React.FC<PCStateCardProps> = ({ meta, count, onPress }) => {
+export const PCStateCard: React.FC<PCStateCardProps> = ({ meta, count, onPress, active = false }) => {
   const displayValue = useCountUp(count, { duration: 500 });
 
   return (
-    <Pressable onPress={onPress} style={[styles.card, { borderColor: meta.border, backgroundColor: meta.subtle }]}>
+    <Pressable onPress={onPress} style={[styles.card, { borderColor: meta.border, backgroundColor: meta.subtle }, active && styles.cardActive]}>
       <View style={[styles.leftAccent, { backgroundColor: meta.color }]} />
       <View style={styles.row}>
         <View style={[styles.iconWrap, { backgroundColor: meta.subtle, borderColor: meta.border }]}>
@@ -39,6 +40,9 @@ const styles = StyleSheet.create({
     padding: 16,
     overflow: 'hidden',
     backgroundColor: PARC_PC_COLORS.bg_card,
+  },
+  cardActive: {
+    borderWidth: 2,
   },
   leftAccent: {
     position: 'absolute',

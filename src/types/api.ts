@@ -77,6 +77,10 @@ export interface ArticleDTO {
   articleType: string | null;
   codeFamille: string | null;
   emplacement: string | null;
+  condition?: 'bon_etat' | 'defectueux';
+  defectiveCount?: number;
+  conditionNote?: string | null;
+  conditionUpdatedAt?: string | null;
 }
 
 export interface StockSiteDTO {

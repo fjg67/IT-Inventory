@@ -228,7 +228,13 @@ export const AppNavigator: React.FC = () => {
   const [initErrorMessage, setInitErrorMessage] = React.useState<string | null>(null);
   const [onboardingSeen, setOnboardingSeen] = React.useState(false);
   const [forceUpdate, setForceUpdate] = React.useState<VersionCheckResult | null>(null);
+  const [siteGateSeed, setSiteGateSeed] = React.useState(0);
   const appStateRef = React.useRef<AppStateStatus>(AppState.currentState);
+  const isAuthenticatedRef = React.useRef(isAuthenticated);
+
+  useEffect(() => {
+    isAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated]);
 
   const runVersionCheck = React.useCallback(async () => {
     try {
@@ -329,6 +335,9 @@ export const AppNavigator: React.FC = () => {
       const wasBackground = appStateRef.current === 'background' || appStateRef.current === 'inactive';
       if (wasBackground && nextState === 'active') {
         runVersionCheck().catch(() => {});
+        if (isAuthenticatedRef.current) {
+          setSiteGateSeed((prev) => prev + 1);
+        }
       }
       appStateRef.current = nextState;
     });
@@ -442,15 +451,23 @@ export const AppNavigator: React.FC = () => {
     <View style={{flex: 1}}>
     <NavigationContainer theme={navigationTheme}>
       <RootStack.Navigator
+        key={`root-stack-${siteGateSeed}-${isAuthenticated ? 'auth' : 'guest'}`}
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
           contentStyle: { backgroundColor: '#0A0F0D' },
         }}
-        initialRouteName={isAuthenticated ? undefined : redirectToTechnicianChoiceAfterLogout ? 'SiteSelection' : onboardingSeen ? 'Login' : 'Onboarding'}
+        initialRouteName={isAuthenticated ? 'SiteSelection' : redirectToTechnicianChoiceAfterLogout ? 'SiteSelection' : onboardingSeen ? 'Login' : 'Onboarding'}
       >
         {isAuthenticated ? (
-          <RootStack.Screen name="Main" component={MainNavigator} />
+          <>
+            <RootStack.Screen
+              name="SiteSelection"
+              component={SiteSelectionScreen}
+              initialParams={{ startupMode: true }}
+            />
+            <RootStack.Screen name="Main" component={MainNavigator} />
+          </>
         ) : onboardingSeen ? (
           // Onboarding déjà vu → connexion → branche → site → technicien
           <>

@@ -26,9 +26,9 @@ interface ForceUpdateScreenProps {
 }
 
 const defaultReleaseNotes = [
-  'Nouvelle icone et assets Play Store mis a jour pour une identite visuelle plus claire.',
-  'Amelioration du workflow PC et de la modal d envoi avec validations et actions plus fiables.',
-  'Optimisations de performance et stabilite generale de l application.',
+  'Ajout du statut En panne dans le formulaire PC avec details de panne et sauvegarde en base.',
+  'Ameliorations du flux mouvement de stock avec remise a zero automatique au retour.',
+  'Corrections de stabilite, recherche filtree et optimisation generale de l application.',
 ];
 
 const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion, updateUrl, releaseNotes }) => {
@@ -78,7 +78,7 @@ const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion, updat
           Mise à jour requise
         </Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Une nouvelle version de l'application est disponible. Mettez a jour depuis Google Play pour continuer a acceder a IT-Inventory et profiter des dernieres ameliorations.
+          Une nouvelle version de l'application est disponible. Mettez a jour depuis Google Play pour continuer a acceder a IT-Inventory, beneficier des dernieres ameliorations et garder l acces a toutes les nouvelles fonctionnalites.
         </Text>
 
         <TouchableOpacity activeOpacity={0.8} onPress={handleUpdate} style={styles.linkPill}>
@@ -118,7 +118,9 @@ const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion, updat
 
         <View style={[styles.infoBox, { backgroundColor: isDark ? 'rgba(0,122,57,0.14)' : 'rgba(0,122,57,0.08)', borderColor: isDark ? 'rgba(16,185,129,0.22)' : 'rgba(0,122,57,0.14)' }]}>
           <Icon name="information-outline" size={16} color="#007A39" />
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>Apres installation de la mise a jour et relance de l application, l acces sera retabli automatiquement.</Text>
+          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+            Apres installation de la mise a jour et relance de l application, l acces sera retabli automatiquement.
+          </Text>
         </View>
       </Animated.View>
 

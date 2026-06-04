@@ -10,18 +10,22 @@ interface ArticlesHeaderProps {
   totalArticles: number;
   stockOk: number;
   alertes: number;
+  defectueux: number;
   onTotalPress: () => void;
   onStockOKPress: () => void;
   onAlertesPress: () => void;
+  onDefectueuxPress: () => void;
 }
 
 const ArticlesHeaderComponent: React.FC<ArticlesHeaderProps> = ({
   totalArticles,
   stockOk,
   alertes,
+  defectueux,
   onTotalPress,
   onStockOKPress,
   onAlertesPress,
+  onDefectueuxPress,
 }) => {
   return (
     <Animated.View entering={FadeIn.duration(260)} style={styles.container}>
@@ -69,6 +73,15 @@ const ArticlesHeaderComponent: React.FC<ArticlesHeaderProps> = ({
           color={OBSIDIAN_COLORS.warning}
           subtle={OBSIDIAN_COLORS.warning_subtle}
           onPress={onAlertesPress}
+        />
+        <ArticleStatCard
+          icon="tools"
+          value={defectueux}
+          label="DEFECTUEUX"
+          caption="A verifier"
+          color={OBSIDIAN_COLORS.danger}
+          subtle={OBSIDIAN_COLORS.danger_subtle}
+          onPress={onDefectueuxPress}
         />
       </View>
 
@@ -134,6 +147,7 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginTop: 12,
   },

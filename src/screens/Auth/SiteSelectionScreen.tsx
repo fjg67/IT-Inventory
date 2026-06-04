@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -19,11 +20,15 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { loadChildSites, loadSites, selectSite } from '@/store/slices/siteSlice';
+import { loadChildSites, loadSiblingSites, loadSites, selectSite } from '@/store/slices/siteSlice';
 import { FullScreenLoading } from '@/components';
 import { siteRepository } from '@/database';
+import { articleRepository } from '@/database/repositories/articleRepository';
 import { Site } from '@/types';
 import { resolveSiteVisual } from '@/constants/siteConfig';
+import { OBSIDIAN_COLORS } from '@/constants/colors';
+import { StockPickerSheet } from '@/components/stock-picker';
+import { isPCArticle } from '@/constants/pcStates';
 import {
   OnboardingFooter,
   OnboardingLayout,
@@ -54,8 +59,9 @@ export const SiteSelectionScreen: React.FC = () => {
 
   const rememberMe = route.params?.rememberMe ?? true;
   const branch = route.params?.branch as string | undefined;
+  const startupMode = route.params?.startupMode === true;
 
-  const { sitesDisponibles, childSites, isLoading } = useAppSelector((state) => state.site);
+  const { sitesDisponibles, childSites, isLoading, siteActif } = useAppSelector((state) => state.site);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSiteName, setNewSiteName] = useState('');
@@ -63,10 +69,16 @@ export const SiteSelectionScreen: React.FC = () => {
   const [newEdsNumber, setNewEdsNumber] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [parentSiteId, setParentSiteId] = useState<string | number | null>(null);
+  const [startupStatsBySiteId, setStartupStatsBySiteId] = useState<Record<string, { articles: number; pcs: number }>>({});
 
   const displaySites = useMemo(
     () => (branch === 'strasbourg' ? childSites : sitesDisponibles),
     [branch, childSites, sitesDisponibles],
+  );
+
+  const startupSites = useMemo(
+    () => (childSites.length > 0 ? childSites : sitesDisponibles),
+    [childSites, sitesDisponibles],
   );
 
   useEffect(() => {
@@ -85,6 +97,56 @@ export const SiteSelectionScreen: React.FC = () => {
       }
     });
   }, [branch, dispatch]);
+
+  useEffect(() => {
+    if (!startupMode || !siteActif?.id) return;
+    dispatch(loadSiblingSites(siteActif.id));
+  }, [dispatch, siteActif?.id, startupMode]);
+
+  useEffect(() => {
+    if (!startupMode || startupSites.length === 0) return;
+
+    let cancelled = false;
+
+    const fetchSiteStats = async () => {
+      const entries = await Promise.all(
+        startupSites.map(async (site) => {
+          try {
+            let page = 0;
+            const limit = 250;
+            let hasMore = true;
+            let totalArticles = 0;
+            let pcCount = 0;
+
+            // Fetch pages to compute accurate per-site PC counts
+            while (hasMore && page < 50) {
+              const result = await articleRepository.findAll(site.id, page, limit);
+              if (page === 0) {
+                totalArticles = result.total;
+              }
+
+              pcCount += result.data.filter((article) => isPCArticle(article)).length;
+              hasMore = result.hasMore;
+              page += 1;
+            }
+
+            return [String(site.id), { articles: totalArticles, pcs: pcCount }] as const;
+          } catch {
+            return [String(site.id), { articles: 0, pcs: 0 }] as const;
+          }
+        }),
+      );
+
+      if (!cancelled) {
+        setStartupStatsBySiteId(Object.fromEntries(entries));
+      }
+    };
+
+    fetchSiteStats().catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [startupMode, startupSites]);
 
   useEffect(() => {
     if (displaySites.length === 1) {
@@ -132,17 +194,53 @@ export const SiteSelectionScreen: React.FC = () => {
       await AsyncStorage.setItem('lastSite', String(site.id));
       await AsyncStorage.setItem('lastSiteName', site.nom);
 
+      if (startupMode) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+        return;
+      }
+
       navigation.navigate('Auth', {
         rememberMe,
         siteId: site.id,
         ...(parentSiteId ? { parentSiteId } : {}),
       });
     },
-    [dispatch, navigation, parentSiteId, rememberMe],
+    [dispatch, navigation, parentSiteId, rememberMe, startupMode],
   );
 
   if (isLoading && displaySites.length === 0) {
     return <FullScreenLoading message="Chargement des sites..." />;
+  }
+
+  if (startupMode) {
+    return (
+      <SafeAreaView style={styles.startupSafeArea}>
+        <StatusBar barStyle="light-content" backgroundColor={OBSIDIAN_COLORS.bg_primary} />
+
+        <View style={styles.startupBgTop} />
+        <View style={styles.startupBgBottom} />
+
+        <View style={styles.startupContent}>
+          <StockPickerSheet
+            sites={startupSites}
+            activeSiteId={siteActif?.id}
+            activeSiteName={siteActif?.nom}
+            statsBySiteId={startupStatsBySiteId}
+            onSelectSite={(siteId) => {
+              const site = startupSites.find((item) => String(item.id) === String(siteId));
+              if (!site) return;
+              handleSelectSite(site).catch(() => {});
+            }}
+            onClose={() => {}}
+            showBackButton={false}
+            showFooterCancel={false}
+          />
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -354,6 +452,33 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800',
+  },
+  startupSafeArea: {
+    flex: 1,
+    backgroundColor: OBSIDIAN_COLORS.bg_primary,
+  },
+  startupBgTop: {
+    position: 'absolute',
+    top: -100,
+    left: -90,
+    width: 240,
+    height: 240,
+    borderRadius: 140,
+    backgroundColor: OBSIDIAN_COLORS.green_glow,
+  },
+  startupContent: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingTop: 6,
+  },
+  startupBgBottom: {
+    position: 'absolute',
+    right: -110,
+    bottom: -150,
+    width: 300,
+    height: 300,
+    borderRadius: 180,
+    backgroundColor: 'rgba(59,130,246,0.08)',
   },
 });
 

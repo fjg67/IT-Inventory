@@ -2,8 +2,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import debounce from 'lodash/debounce';
 import { articleRepository } from '@/database';
 import { Article } from '@/types';
+import { isPCArticle } from '@/constants/pcStates';
 
-export const useArticleSearch = (siteId?: string | number | null, debounceMs: number = 200) => {
+interface UseArticleSearchOptions {
+  excludePC?: boolean;
+}
+
+export const useArticleSearch = (
+  siteId?: string | number | null,
+  debounceMs: number = 200,
+  options: UseArticleSearchOptions = {},
+) => {
+  const { excludePC = false } = options;
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Article[]>([]);
   const [searching, setSearching] = useState(false);
@@ -20,14 +30,14 @@ export const useArticleSearch = (siteId?: string | number | null, debounceMs: nu
         setSearching(true);
         try {
           const response = await articleRepository.search(siteId, { searchQuery: q.trim(), stockFaible: false }, 0, 10);
-          setResults(response.data);
+          setResults(excludePC ? response.data.filter((article) => !isPCArticle(article)) : response.data);
         } catch {
           setResults([]);
         } finally {
           setSearching(false);
         }
       }, debounceMs),
-    [debounceMs, siteId],
+    [debounceMs, excludePC, siteId],
   );
 
   useEffect(() => {

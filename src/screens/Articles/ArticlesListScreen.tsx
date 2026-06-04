@@ -78,6 +78,8 @@ import { PCStateFilters } from './components/pc/PCStateFilters';
 import { PCDisplayToggle } from './components/pc/PCDisplayToggle';
 import { SendPCModal } from '@/components/modals/SendPCModal';
 import { PCFAB } from '@/components/parcpc';
+import { PanneDeclarationModal } from '@/components/panne';
+import { panneRepository } from '@/database/repositories';
 import FilterModal, { FilterOption } from './components/FilterModal';
 import ArticlesFilterSheet, { ArticleFilterKey } from './components/ArticlesFilterSheet';
 import {
@@ -696,6 +698,7 @@ export const ArticlesListScreen: React.FC = () => {
     searchQuery: '',
     categorieId: null,
     stockFaible: route.params?.filter === 'lowStock',
+    condition: null,
     codeFamille: null,
     famille: null,
     typeArticle: presetTypeValues,
@@ -713,6 +716,8 @@ export const ArticlesListScreen: React.FC = () => {
   const [pcReconditioningCount, setPCReconditioningCount] = useState(0);
   const [pcProcessingCount, setPCProcessingCount] = useState(0);
   const [pcAvailableCount, setPCAvailableCount] = useState(0);
+  const [defectiveArticlesCount, setDefectiveArticlesCount] = useState(0);
+  const [defectiveUnitsCount, setDefectiveUnitsCount] = useState(0);
   const [pcStatusFilter, setPcStatusFilter] = useState<'À chaud' | 'À reusiner' | 'En usinage' | 'Disponible' | 'Envoyé' | null>(null);
   const [pcSentHistory, setPcSentHistory] = useState<SentPCRecord[]>([]);
   const [pcSentCount, setPcSentCount] = useState(0);
@@ -783,6 +788,10 @@ export const ArticlesListScreen: React.FC = () => {
   const quickFeedbackAnim = useSharedValue(0);
   const quickFeedbackPulse = useSharedValue(0);
   const listScrollY = useSharedValue(0);
+
+  // ===== PC EN PANNE MODAL STATE =====
+  const [selectedPCId, setSelectedPCId] = useState<string | null>(null);
+  const [showPanneModal, setShowPanneModal] = useState(false);
 
   const quickModalIntroStyle = useAnimatedStyle(() => ({
     opacity: quickModalIntro.value,
@@ -1029,6 +1038,7 @@ export const ArticlesListScreen: React.FC = () => {
       searchQuery: '',
       categorieId: null,
       stockFaible: false,
+      condition: null,
       codeFamille: null,
       famille: null,
       sousType: null,
@@ -1041,6 +1051,7 @@ export const ArticlesListScreen: React.FC = () => {
       searchQuery: '',
       categorieId: null,
       stockFaible: false,
+      condition: null,
       codeFamille: null,
       famille: null,
       typeArticle: null,
@@ -1051,7 +1062,7 @@ export const ArticlesListScreen: React.FC = () => {
     };
 
     try {
-      const [allResult, lowStockResult, emplacements, sentCount] = await Promise.all([
+      const [allResult, lowStockResult, defectiveResult, emplacements, sentCount] = await Promise.all([
         isManagedInventoryTab
           ? articleRepository.search(
               effectiveSiteId,
@@ -1091,13 +1102,30 @@ export const ArticlesListScreen: React.FC = () => {
               0,
               1,
             ),
+        isManagedInventoryTab
+          ? Promise.resolve({ data: [], total: 0 })
+          : articleRepository.search(
+              effectiveSiteId,
+              {
+                ...nonPCSearchFilters,
+                condition: 'defectueux',
+              },
+              0,
+              MANAGED_INVENTORY_FETCH_LIMIT,
+            ),
         articleRepository.getDistinctEmplacements(effectiveSiteId),
         isPCTab ? pcSentService.countBySourceSite(String(effectiveSiteId)).catch(() => 0) : Promise.resolve(0),
       ]);
 
       const lowStock = typeof lowStockResult === 'number' ? lowStockResult : lowStockResult.total;
+      const defectiveArticles = typeof defectiveResult === 'number' ? 0 : defectiveResult.total;
+      const defectiveUnits = typeof defectiveResult === 'number'
+        ? 0
+        : (defectiveResult.data ?? []).reduce((sum, item) => sum + Math.max(0, item.defectiveCount ?? 0), 0);
       setTotalArticles(allResult.total);
       setAlertes(isPCTab ? 0 : lowStock);
+      setDefectiveArticlesCount(defectiveArticles);
+      setDefectiveUnitsCount(defectiveUnits);
       setSiteEmplacements(emplacements);
       setPcSentCount(sentCount);
     } catch (error) {
@@ -1209,6 +1237,7 @@ export const ArticlesListScreen: React.FC = () => {
           !isManagedInventoryTab ||
           serverFilters.searchQuery ||
           serverFilters.stockFaible ||
+          serverFilters.condition ||
           (serverFilters.codeFamille && serverFilters.codeFamille.length > 0) ||
           (serverFilters.famille && serverFilters.famille.length > 0) ||
           (serverFilters.typeArticle && serverFilters.typeArticle.length > 0) ||
@@ -1323,6 +1352,7 @@ export const ArticlesListScreen: React.FC = () => {
   const hasActiveFilters = useMemo(
     () =>
       filters.stockFaible ||
+      filters.condition != null ||
       (isTabletTab && tabletStatusFilter !== 'all') ||
       pcStatusFilter !== null ||
       searchQuery.length > 0 ||
@@ -1346,11 +1376,9 @@ export const ArticlesListScreen: React.FC = () => {
         filters.marque,
         filters.modele,
         filters.emplacement,
-      ].filter(
-        (v) => v && v.length > 0,
-      ).length;
+      ].filter((v) => Array.isArray(v) && v.length > 0).length;
 
-      return baseCount + (isTabletTab && tabletStatusFilter !== 'all' ? 1 : 0);
+      return baseCount + (filters.condition ? 1 : 0) + (isTabletTab && tabletStatusFilter !== 'all' ? 1 : 0);
     },
     [filters, lockPresetTypeArticle, isTabletTab, tabletStatusFilter],
   );
@@ -1364,6 +1392,15 @@ export const ArticlesListScreen: React.FC = () => {
         icon: 'alert-circle-outline',
         label: 'Stock faible',
         onRemove: () => setFilters((prev) => ({ ...prev, stockFaible: false })),
+      });
+    }
+
+    if (filters.condition === 'defectueux') {
+      chips.push({
+        key: 'defectueux',
+        icon: 'tools',
+        label: 'Defectueux',
+        onRemove: () => setFilters((prev) => ({ ...prev, condition: null })),
       });
     }
 
@@ -1395,7 +1432,7 @@ export const ArticlesListScreen: React.FC = () => {
     }
 
     return chips;
-  }, [filters.famille, filters.marque, filters.stockFaible, handleClearSearch, searchQuery]);
+  }, [filters.condition, filters.famille, filters.marque, filters.stockFaible, handleClearSearch, searchQuery]);
 
   const resetFilters = useCallback(() => {
     setSearchQuery('');
@@ -1405,6 +1442,7 @@ export const ArticlesListScreen: React.FC = () => {
       searchQuery: '',
       categorieId: null,
       stockFaible: false,
+      condition: null,
       codeFamille: null,
       famille: null,
       typeArticle: lockPresetTypeArticle ? presetTypeValues : null,
@@ -1766,6 +1804,45 @@ export const ArticlesListScreen: React.FC = () => {
   }), [pcAvailableCount, pcHotCount, pcProcessingCount, pcReconditioningCount, pcSentCount]);
 
   // ===== NAVIGATION =====
+  const handleMarkBreakdown = useCallback((articleId: number | string) => {
+    setSelectedPCId(String(articleId));
+    setShowPanneModal(true);
+  }, []);
+
+  const handleCreatePanne = useCallback(async (panneData: any) => {
+    if (!selectedPCId) return;
+    
+    try {
+      await panneRepository.createPanne({
+        ...panneData,
+        pc_id: selectedPCId,
+      });
+
+      // Mettre à jour le statut du PC
+      const article = articles.find(a => String(a.id) === selectedPCId);
+      if (article) {
+        await articleRepository.update(article.id, {
+          description: `Statut: en_panne | Type: ${panneData.type_panne}`,
+          famille: 'PC en panne',
+        });
+      }
+
+      setShowPanneModal(false);
+      setSelectedPCId(null);
+      
+      // Rafraîchir la liste
+      pageRef.current = 0;
+      setPage(0);
+      setHasMore(true);
+      await Promise.all([loadArticles(true, false), loadStats()]);
+      
+      showQuickFeedback('success', 'Panne déclarée', 'La panne a été enregistrée avec succès.');
+    } catch (error) {
+      console.error('Erreur création panne:', error);
+      showQuickFeedback('error', 'Erreur', 'Impossible de déclarer la panne.');
+    }
+  }, [selectedPCId, articles, loadArticles, loadStats, showQuickFeedback]);
+
   const handleArticlePress = useCallback(
     (articleId: number) => {
       navigation.navigate('ArticleDetail', {
@@ -2350,6 +2427,7 @@ export const ArticlesListScreen: React.FC = () => {
     if (
       pcStatusFilter !== null ||
       filters.stockFaible ||
+      filters.condition ||
       filters.codeFamille ||
       filters.famille ||
       (!lockPresetTypeArticle && filters.typeArticle) ||
@@ -2517,6 +2595,7 @@ const renderListHeader = useCallback(() => {
               totalArticles={normalizedTotalArticles}
               stockOk={stockOK}
               alertes={normalizedAlertes}
+              defectueux={defectiveArticlesCount}
               onTotalPress={resetFilters}
               onStockOKPress={() => {
                 if (filters.stockFaible) {
@@ -2525,6 +2604,12 @@ const renderListHeader = useCallback(() => {
               }}
               onAlertesPress={() => {
                 setFilters((prev) => ({ ...prev, stockFaible: !prev.stockFaible }));
+              }}
+              onDefectueuxPress={() => {
+                setFilters((prev) => ({
+                  ...prev,
+                  condition: prev.condition === 'defectueux' ? null : 'defectueux',
+                }));
               }}
             />
           </Animated.View>
@@ -2545,6 +2630,36 @@ const renderListHeader = useCallback(() => {
               activeChips={activeArticleChips}
               onClearAll={resetFilters}
             />
+
+            <View style={styles.quickFilterRow}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => {
+                  setFilters((prev) => ({
+                    ...prev,
+                    condition: prev.condition === 'defectueux' ? null : 'defectueux',
+                  }));
+                }}
+                style={[
+                  styles.quickFilterChip,
+                  filters.condition === 'defectueux' && styles.quickFilterChipActive,
+                ]}
+              >
+                <Icon
+                  name="tools"
+                  size={13}
+                  color={filters.condition === 'defectueux' ? '#FCA5A5' : OBSIDIAN_COLORS.text_muted}
+                />
+                <Text
+                  style={[
+                    styles.quickFilterChipText,
+                    filters.condition === 'defectueux' && styles.quickFilterChipTextActive,
+                  ]}
+                >
+                  Defectueux ({defectiveUnitsCount} unites)
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </>
       );
@@ -2711,6 +2826,8 @@ const renderListHeader = useCallback(() => {
     totalArticles,
     stockOK,
     alertes,
+    defectiveArticlesCount,
+    defectiveUnitsCount,
     pcHotCount,
     pcReconditioningCount,
     pcProcessingCount,
@@ -2721,6 +2838,7 @@ const renderListHeader = useCallback(() => {
     pcWeeklyTrendDelta,
     resetFilters,
     filters.stockFaible,
+    filters.condition,
     contentMaxWidth,
     searchQuery,
     handleSearchChange,
@@ -2767,6 +2885,7 @@ const renderListHeader = useCallback(() => {
           onMarkHot={handleMarkPCHot}
           onMarkAvailable={handleMarkPCAvailable}
           onMarkProcessing={handleMarkPCProcessing}
+          onMarkBreakdown={handleMarkBreakdown}
           onDelete={handleDeletePC}
           onExportSentCsv={handleExportSentCsv}
           exportingSentCsv={exportingSentCsv}
@@ -2781,7 +2900,7 @@ const renderListHeader = useCallback(() => {
       ) : (
         <FlashList<Article>
           data={displayedArticles}
-          extraData={`${pcDensity}|${pcStatusFilter ?? 'all'}|${filters.sousType?.join(',') ?? ''}|${filters.marque?.join(',') ?? ''}|${filters.modele?.join(',') ?? ''}|${filters.emplacement?.join(',') ?? ''}|${searchQuery}|${sortBy}`}
+          extraData={`${pcDensity}|${pcStatusFilter ?? 'all'}|${filters.condition ?? 'all'}|${filters.sousType?.join(',') ?? ''}|${filters.marque?.join(',') ?? ''}|${filters.modele?.join(',') ?? ''}|${filters.emplacement?.join(',') ?? ''}|${searchQuery}|${sortBy}`}
           keyExtractor={item => item.id.toString()}
           renderItem={renderArticle}
           numColumns={numColumns}
@@ -3407,6 +3526,17 @@ const renderListHeader = useCallback(() => {
           />
         </View>
       </Modal>
+
+      {/* Panne Declaration Modal */}
+      <PanneDeclarationModal
+        visible={showPanneModal}
+        pcId={selectedPCId}
+        onClose={() => {
+          setShowPanneModal(false);
+          setSelectedPCId(null);
+        }}
+        onSubmit={handleCreatePanne}
+      />
     </SafeAreaView>
   );
 };
@@ -3432,6 +3562,33 @@ const styles = StyleSheet.create({
   articleSearchBlock: {
     paddingHorizontal: 16,
     paddingTop: 8,
+  },
+  quickFilterRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+  },
+  quickFilterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: OBSIDIAN_COLORS.border_subtle,
+    backgroundColor: OBSIDIAN_COLORS.bg_card,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  quickFilterChipActive: {
+    borderColor: 'rgba(239,68,68,0.42)',
+    backgroundColor: 'rgba(239,68,68,0.12)',
+  },
+  quickFilterChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: OBSIDIAN_COLORS.text_muted,
+  },
+  quickFilterChipTextActive: {
+    color: '#FCA5A5',
   },
   listContentTablet: {
     paddingHorizontal: premiumSpacing.sm,

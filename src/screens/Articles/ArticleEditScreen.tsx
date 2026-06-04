@@ -40,6 +40,7 @@ import { showAlert } from '@/store/slices/uiSlice';
 import { clearScannedArticle } from '@/store/slices/scanSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { ArticleForm, Site } from '@/types';
+import { ArticleCondition } from '@/types/article.types';
 import debounce from 'lodash/debounce';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { Camera, useCameraDevices, useCodeScanner, useCameraPermission } from 'react-native-vision-camera';
@@ -59,6 +60,7 @@ import { StockLevelCard } from '@/components/create-article/StockLevelCard';
 import { DescriptionTextarea } from '@/components/create-article/DescriptionTextarea';
 import { PhotoUploadZone } from '@/components/create-article/PhotoUploadZone';
 import { CreateArticleFooter } from '@/components/create-article/CreateArticleFooter';
+import { ArticleConditionSelector } from '@/components/articles';
 
 const REF_SCAN_CODE_TYPES = [
   'ean-13', 'ean-8', 'upc-a', 'upc-e', 'code-128', 'code-39', 'code-93',
@@ -128,6 +130,9 @@ export const ArticleEditScreen: React.FC = () => {
   const [emplacement, setEmplacement] = useState<string | null>(null);
   const [stockActuel, setStockActuel] = useState('0');
   const [stockMini, setStockMini] = useState('5');
+  const [condition, setCondition] = useState<ArticleCondition>('bon_etat');
+  const [defectiveCount, setDefectiveCount] = useState(0);
+  const [conditionNote, setConditionNote] = useState('');
   const [description, setDescription] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [selectedSiteIds, setSelectedSiteIds] = useState<number[]>([]);
@@ -403,15 +408,21 @@ export const ArticleEditScreen: React.FC = () => {
       parseFloat(stockMini) >= 0 &&
       !isNaN(parseFloat(stockMini));
 
+    const currentStock = parseInt(stockActuel, 10) || 0;
+    const validDefectiveCount =
+      condition === 'bon_etat' ||
+      (defectiveCount >= 0 && defectiveCount <= Math.max(0, currentStock));
+
     if (isEditing) {
       // En mode édition, seuls référence, nom et seuil sont obligatoires
-      return baseValid;
+      return baseValid && validDefectiveCount;
     }
 
     // En mode création, tous les champs sont obligatoires
     const isSiege = siteActif?.nom === 'Siège Strasbourg';
     return (
       baseValid &&
+      validDefectiveCount &&
       codeFamille != null &&
       famille != null &&
       typeArticle != null &&
@@ -419,7 +430,7 @@ export const ArticleEditScreen: React.FC = () => {
       marque != null &&
       (!isSiege || emplacement != null)
     );
-  }, [reference, nom, stockMini, codeFamille, famille, typeArticle, sousType, marque, emplacement, isEditing, siteActif]);
+  }, [reference, nom, stockMini, stockActuel, condition, defectiveCount, codeFamille, famille, typeArticle, sousType, marque, emplacement, isEditing, siteActif]);
 
   // Réinitialiser l'emplacement si les sites changent et qu'il n'est plus compatible
   useEffect(() => {
@@ -476,6 +487,9 @@ export const ArticleEditScreen: React.FC = () => {
           setEmplacement(article.emplacement || null);
           setStockActuel((article.quantiteActuelle ?? 0).toString());
           setStockMini(article.stockMini.toString());
+          setCondition(article.condition ?? 'bon_etat');
+          setDefectiveCount(article.defectiveCount ?? 0);
+          setConditionNote(article.conditionNote ?? '');
           setDescription(article.description || '');
           setPhotoUri(article.photoUrl || null);
           setRefStatus('available');
@@ -612,6 +626,8 @@ export const ArticleEditScreen: React.FC = () => {
         }
       }
 
+      const stockValue = Math.max(0, parseInt(stockActuel, 10) || 0);
+
       const data: ArticleForm = {
         reference: reference.trim(),
         nom: nom.trim(),
@@ -625,6 +641,11 @@ export const ArticleEditScreen: React.FC = () => {
         unite: 'Pcs',
         description: description.trim() || undefined,
         photoUrl: finalPhotoUrl,
+        condition,
+        defectiveCount: condition === 'bon_etat'
+          ? 0
+          : Math.max(0, Math.min(stockValue, defectiveCount)),
+        conditionNote: condition === 'bon_etat' ? undefined : (conditionNote.trim() || undefined),
       };
 
       if (isEditing && articleId) {
@@ -660,6 +681,10 @@ export const ArticleEditScreen: React.FC = () => {
           minStock: data.stockMini,
           unit: data.unite,
           imageUrl: data.photoUrl || null,
+          condition: data.condition || 'bon_etat',
+          defectiveCount: data.condition === 'defectueux' ? (data.defectiveCount || 0) : 0,
+          conditionNote: data.condition === 'defectueux' ? (data.conditionNote || null) : null,
+          conditionUpdatedAt: new Date().toISOString(),
         }).then(({ error }) => {
           if (error) console.warn('[ArticleEdit] Sync Supabase insert échouée:', error.message);
           else console.log('[ArticleEdit] Article inséré sur Supabase');
@@ -707,10 +732,19 @@ export const ArticleEditScreen: React.FC = () => {
       stockActuelValue >= 0 &&
       stockMiniValue >= 0;
 
+    const sectionCondition =
+      condition === 'bon_etat' ||
+      (defectiveCount >= 0 && defectiveCount <= Math.max(0, stockActuelValue));
+
     const section5 = description.trim().length > 0;
     const section6 = !!photoUri;
 
-    return [section1, section2, section3, section4, section5, section6].filter(Boolean).length;
+    const sections = [section1, section2, section3, section4, section5, section6];
+    if (!isPCEditMode) {
+      sections.splice(4, 0, sectionCondition);
+    }
+
+    return sections.filter(Boolean).length;
   }, [
     isPCEditMode,
     isEditing,
@@ -724,6 +758,8 @@ export const ArticleEditScreen: React.FC = () => {
     selectedSiteIds,
     stockActuel,
     stockMini,
+    condition,
+    defectiveCount,
     description,
     photoUri,
   ]);
@@ -776,7 +812,7 @@ export const ArticleEditScreen: React.FC = () => {
       />
 
       {/* PROGRESS BAR */}
-      <FormProgressBar completed={completedSections} total={6} />
+      <FormProgressBar completed={completedSections} total={isPCEditMode ? 6 : 7} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -954,8 +990,28 @@ export const ArticleEditScreen: React.FC = () => {
             </SectionCard>
           </Animated.View>
 
-          {/* ======= SECTION 5 : INFORMATIONS COMPLÉMENTAIRES ======= */}
-          <Animated.View entering={FadeInDown.delay(300).duration(300)} style={styles.sectionWrap}>
+          {/* ======= SECTION 5 : ETAT DE L'ARTICLE ======= */}
+          {!isPCEditMode && (
+            <Animated.View entering={FadeInDown.delay(280).duration(300)} style={styles.sectionWrap}>
+              <SectionHeader accent={SECTION_ACCENTS.condition} />
+              <SectionCard>
+                <ArticleConditionSelector
+                  condition={condition}
+                  defectiveCount={defectiveCount}
+                  totalStock={Math.max(0, parseInt(stockActuel, 10) || 0)}
+                  conditionNote={conditionNote}
+                  onChange={(data) => {
+                    setCondition(data.condition);
+                    setDefectiveCount(data.defectiveCount);
+                    setConditionNote(data.conditionNote ?? '');
+                  }}
+                />
+              </SectionCard>
+            </Animated.View>
+          )}
+
+          {/* ======= SECTION 6 : INFORMATIONS COMPLÉMENTAIRES ======= */}
+          <Animated.View entering={FadeInDown.delay(320).duration(300)} style={styles.sectionWrap}>
             <SectionHeader accent={SECTION_ACCENTS.complement} />
             <SectionCard>
               <DescriptionTextarea
@@ -965,8 +1021,8 @@ export const ArticleEditScreen: React.FC = () => {
             </SectionCard>
           </Animated.View>
 
-          {/* ======= SECTION 6 : PHOTO ======= */}
-          <Animated.View entering={FadeInDown.delay(360).duration(300)} style={styles.sectionWrap}>
+          {/* ======= SECTION 7 : PHOTO ======= */}
+          <Animated.View entering={FadeInDown.delay(380).duration(300)} style={styles.sectionWrap}>
             <SectionHeader accent={SECTION_ACCENTS.photo} />
             <SectionCard>
               <PhotoUploadZone

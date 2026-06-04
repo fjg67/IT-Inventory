@@ -10,6 +10,7 @@ interface PCSwipeActionsProps {
   onProcessing?: () => void;
   actionVariant?: 'hot' | 'available' | 'processing';
   onSent: () => void;
+  onBreakdown?: () => void;
   onDelete: () => void;
 }
 
@@ -21,7 +22,7 @@ const ActionButton: React.FC<{ label: string; sublabel: string; icon: string; ba
   </Pressable>
 );
 
-export const PCSwipeActions: React.FC<PCSwipeActionsProps> = ({ height, onHot, onAvailable, onProcessing, actionVariant = 'hot', onSent, onDelete }) => {
+export const PCSwipeActions: React.FC<PCSwipeActionsProps> = ({ height, onHot, onAvailable, onProcessing, actionVariant = 'hot', onSent, onBreakdown, onDelete }) => {
   const middleAction =
     actionVariant === 'available'
       ? {
@@ -57,7 +58,11 @@ export const PCSwipeActions: React.FC<PCSwipeActionsProps> = ({ height, onHot, o
         backgroundColor={middleAction.backgroundColor}
         onPress={middleAction.onPress}
       />
-      <ActionButton label="Supprimer" sublabel="RETIRER" icon="trash-can-outline" backgroundColor={OBSIDIAN_COLORS.danger} onPress={onDelete} />
+      {onBreakdown ? (
+        <ActionButton label="En panne" sublabel="PANNE" icon="laptop-off" backgroundColor="#EF4444" onPress={onBreakdown} />
+      ) : (
+        <ActionButton label="Supprimer" sublabel="RETIRER" icon="trash-can-outline" backgroundColor={OBSIDIAN_COLORS.danger} onPress={onDelete} />
+      )}
     </View>
   );
 };

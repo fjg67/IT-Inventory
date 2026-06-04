@@ -1,0 +1,1 @@
+export { PannePrioriteSelector } from '@/components/panne';

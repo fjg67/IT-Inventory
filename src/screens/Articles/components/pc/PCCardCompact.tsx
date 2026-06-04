@@ -17,10 +17,11 @@ interface PCCardCompactProps {
   onMarkAvailable?: (articleId: number) => void;
   onMarkProcessing?: (articleId: number) => void;
   onMarkSent?: (articleId: number) => void;
+  onMarkBreakdown?: (articleId: number) => void;
   onDelete?: (articleId: number) => void;
 }
 
-export const PCCardCompact: React.FC<PCCardCompactProps> = ({ article, index, onPress, onMarkHot, onMarkAvailable, onMarkProcessing, onMarkSent, onDelete }) => {
+export const PCCardCompact: React.FC<PCCardCompactProps> = ({ article, index, onPress, onMarkHot, onMarkAvailable, onMarkProcessing, onMarkSent, onMarkBreakdown, onDelete }) => {
   if (!isPCArticle(article)) return null;
   const state = getPCStateFromArticle(article);
   const actionVariant = state.key === 'a_chaud' ? 'available' : state.key === 'a_reusiner' ? 'processing' : 'hot';
@@ -39,6 +40,7 @@ export const PCCardCompact: React.FC<PCCardCompactProps> = ({ article, index, on
           onProcessing={() => onMarkProcessing?.(Number(article.id))}
           actionVariant={actionVariant}
           onSent={() => onMarkSent?.(Number(article.id))}
+          onBreakdown={() => onMarkBreakdown?.(Number(article.id))}
           onDelete={() => onDelete?.(Number(article.id))}
         />
         <GestureDetector gesture={swipe.gesture}>

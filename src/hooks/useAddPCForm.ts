@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
+import { getSupabaseClient, tables } from '@/api/supabase';
 import { articleRepository, stockRepository } from '@/database';
+import { PannePriorite, PanneType } from '@/types/pc.types';
 
 export type PCCategory = 'portable_siege' | 'portable_agence';
-export type PCStatus = 'a_chaud' | 'a_reusiner' | 'en_usinage' | 'disponible';
+export type PCStatus = 'a_chaud' | 'a_reusiner' | 'en_usinage' | 'disponible' | 'envoye' | 'en_panne';
 
 export interface AddPCFormState {
   category: PCCategory | null;
@@ -10,6 +12,9 @@ export interface AddPCFormState {
   status: PCStatus | null;
   hostname: string;
   asset: string;
+  panne_type: PanneType | null;
+  panne_priorite: PannePriorite;
+  panne_description: string;
 }
 
 export interface AddPCSubmitContext {
@@ -57,6 +62,8 @@ export const PC_STATUS_OPTIONS: StatusOption[] = [
   { key: 'a_reusiner', label: 'À reusiner', icon: 'wrench-outline' },
   { key: 'en_usinage', label: 'En usinage', icon: 'cog-outline' },
   { key: 'disponible', label: 'Disponible', icon: 'check-circle-outline' },
+  { key: 'envoye', label: 'Envoyé', icon: 'send-outline' },
+  { key: 'en_panne', label: 'En panne', icon: 'laptop-off' },
 ];
 
 const HOSTNAME_REGEX: Record<PCCategory, RegExp> = {
@@ -69,6 +76,8 @@ const STATUS_LABELS: Record<PCStatus, string> = {
   a_reusiner: 'À reusiner',
   en_usinage: 'En usinage',
   disponible: 'Disponible',
+  envoye: 'Envoyé',
+  en_panne: 'En panne',
 };
 
 const CATEGORY_LABELS: Record<PCCategory, string> = {
@@ -95,6 +104,9 @@ export const useAddPCForm = () => {
     status: null,
     hostname: '',
     asset: '',
+    panne_type: null,
+    panne_priorite: 'moyenne',
+    panne_description: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -109,6 +121,25 @@ export const useAddPCForm = () => {
     }
 
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleStatusChange = (status: PCStatus) => {
+    setForm((prev) => {
+      if (status === 'en_panne') {
+        return {
+          ...prev,
+          status,
+        };
+      }
+
+      return {
+        ...prev,
+        status,
+        panne_type: null,
+        panne_priorite: 'moyenne',
+        panne_description: '',
+      };
+    });
   };
 
   const availableModels = useMemo(() => getModelsForCategory(form.category), [form.category]);
@@ -127,6 +158,10 @@ export const useAddPCForm = () => {
     && form.hostname.trim().length > 0
     && form.asset.trim().length > 0;
 
+  const isPanneValid =
+    form.status !== 'en_panne'
+    || (form.panne_type !== null && form.panne_description.trim().length >= 10);
+
   const validateHostnameByCategory = (value: string) => {
     if (!form.category) return { valid: true };
     const regex = HOSTNAME_REGEX[form.category];
@@ -144,12 +179,15 @@ export const useAddPCForm = () => {
       status: null,
       hostname: '',
       asset: '',
+      panne_type: null,
+      panne_priorite: 'moyenne',
+      panne_description: '',
     });
     setSubmitError(null);
   };
 
   const handleSubmit = async (context: AddPCSubmitContext): Promise<AddPCSubmitResult> => {
-    if (!isValid) {
+    if (!isValid || !isPanneValid) {
       return { success: false, error: 'Veuillez remplir tous les champs obligatoires.' };
     }
 
@@ -200,6 +238,22 @@ export const useAddPCForm = () => {
       });
 
       await stockRepository.createOrUpdate(articleId, context.effectiveSiteId, 1);
+
+      if (form.status === 'en_panne') {
+        const supabase = getSupabaseClient();
+        const { error: panneError } = await supabase.from(tables.pcPannes).insert({
+          pc_id: articleId,
+          type_panne: form.panne_type,
+          description: form.panne_description.trim(),
+          priorite: form.panne_priorite,
+          statut_reparation: 'en_attente',
+        });
+
+        if (panneError) {
+          throw new Error(panneError.message);
+        }
+      }
+
       return { success: true, articleId };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue';
@@ -213,11 +267,13 @@ export const useAddPCForm = () => {
   return {
     form,
     updateField,
+    handleStatusChange,
     reset,
     isSubmitting,
     submitError,
     availableModels,
     isValid,
+    isPanneValid,
     hostnameFormat,
     validateHostnameByCategory,
     handleSubmit,

@@ -50,4 +50,28 @@ export const SWIPE_ACTIONS = {
     bg: PARC_PC_COLORS.danger_subtle,
     icon: 'trash-can-outline',
   },
+  breakdown: {
+    label: 'En panne',
+    sub: 'PANNE',
+    color: PARC_PC_COLORS.danger,
+    border: PARC_PC_COLORS.danger_border,
+    bg: PARC_PC_COLORS.danger_subtle,
+    icon: 'alert-octagon-outline',
+  },
+  repair: {
+    label: 'Réparation',
+    sub: 'SAV',
+    color: PARC_PC_COLORS.warning,
+    border: PARC_PC_COLORS.warning_border,
+    bg: PARC_PC_COLORS.warning_subtle,
+    icon: 'tools',
+  },
+  resolve: {
+    label: 'Résoudre',
+    sub: 'RÉPARÉ',
+    color: PARC_PC_COLORS.green_light,
+    border: PARC_PC_COLORS.green_border,
+    bg: PARC_PC_COLORS.green_subtle,
+    icon: 'check-circle-outline',
+  },
 } as const;

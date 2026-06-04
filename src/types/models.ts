@@ -3,6 +3,8 @@
 // Application de Gestion de Stock pour Zebra TC22
 // ============================================
 
+import { ArticleCondition } from './article.types';
+
 // ==================== ENUMS ====================
 
 export enum SyncStatus {
@@ -83,6 +85,10 @@ export interface Article {
   dateCreation: Date;
   dateModification: Date;
   syncStatus: SyncStatus;
+  condition?: ArticleCondition;
+  defectiveCount?: number;
+  conditionNote?: string;
+  conditionUpdatedAt?: Date | string;
   // Champs calculés (via JOIN)
   quantiteActuelle?: number;
   categorieNom?: string;
@@ -179,12 +185,16 @@ export interface ArticleForm {
   stockMini: number;
   unite: string;
   photoUrl?: string;
+  condition?: ArticleCondition;
+  defectiveCount?: number;
+  conditionNote?: string;
 }
 
 export interface ArticleFilters {
   categorieId?: string | number | null;
   stockFaible: boolean;
   searchQuery: string;
+  condition?: ArticleCondition | null;
   codeFamille?: string[] | null;
   famille?: string[] | null;
   typeArticle?: string[] | null;

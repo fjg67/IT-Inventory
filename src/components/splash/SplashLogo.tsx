@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -114,14 +113,20 @@ export const SplashLogo: React.FC = () => {
       <Animated.View style={[styles.ringOuter, ring1Style]} />
       <Animated.View style={[styles.ringInner, ring2Style]} />
       <Animated.View style={[styles.logoContainer, logoStyle]}>
-        <LinearGradient
-          colors={[OBSIDIAN_COLORS.green_primary, '#0D5C26']}
-          start={{ x: 0.2, y: 0 }}
-          end={{ x: 0.8, y: 1 }}
-          style={styles.logoGradient}
-        >
-          <Text style={styles.logoText}>IT</Text>
-        </LinearGradient>
+        <View style={styles.logoCircle}>
+          <View style={styles.logoMarkWrap}>
+            <View style={styles.markBar}>
+              <View style={styles.markBarLeft} />
+            </View>
+            <View style={styles.markBar}>
+              <View style={styles.markBarLeft} />
+            </View>
+            <View style={styles.markBar}>
+              <View style={styles.markBarLeft} />
+            </View>
+          </View>
+          <View style={styles.logoDot} />
+        </View>
       </Animated.View>
     </View>
   );
@@ -161,25 +166,48 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 72,
     height: 72,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(34, 197, 94, 0.4)',
     shadowColor: OBSIDIAN_COLORS.green_light,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.45,
     shadowRadius: 20,
     elevation: 12,
-    overflow: 'hidden',
-  },
-  logoGradient: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoText: {
-    color: OBSIDIAN_COLORS.text_primary,
-    fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: 0.6,
+  logoCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#0C5A2A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.35)',
+  },
+  logoMarkWrap: {
+    width: 33,
+    gap: 3,
+  },
+  markBar: {
+    height: 8,
+    borderRadius: 2,
+    backgroundColor: '#22C55E',
+    overflow: 'hidden',
+  },
+  markBarLeft: {
+    width: 10,
+    height: '100%',
+    backgroundColor: '#0B9D47',
+  },
+  logoDot: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#A78BFA',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
 });

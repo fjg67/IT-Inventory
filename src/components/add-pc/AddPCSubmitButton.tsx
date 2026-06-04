@@ -10,6 +10,7 @@ interface AddPCSubmitButtonProps {
   isValid: boolean;
   isLoading: boolean;
   isSuccess: boolean;
+  disabledReason?: string | null;
   onCancel: () => void;
   onSubmit: () => void;
 }
@@ -20,6 +21,7 @@ const AddPCSubmitButton: React.FC<AddPCSubmitButtonProps> = ({
   isValid,
   isLoading,
   isSuccess,
+  disabledReason = null,
   onCancel,
   onSubmit,
 }) => {
@@ -83,7 +85,10 @@ const AddPCSubmitButton: React.FC<AddPCSubmitButtonProps> = ({
           ) : submitDisabled ? (
             <View style={styles.submitIdle}>
               <Icon name="laptop" size={15} color={OBSIDIAN_COLORS.text_dim} />
-              <Text style={styles.submitIdleText}>Enregistrer le PC</Text>
+              <View style={styles.submitIdleTextWrap}>
+                <Text style={styles.submitIdleText}>Enregistrer le PC</Text>
+                {disabledReason ? <Text style={styles.submitIdleReason}>{disabledReason}</Text> : null}
+              </View>
             </View>
           ) : (
             <LinearGradient
@@ -182,10 +187,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
+  submitIdleTextWrap: {
+    alignItems: 'center',
+    gap: 2,
+  },
   submitIdleText: {
     color: OBSIDIAN_COLORS.text_dim,
     fontSize: 14,
     fontWeight: '600',
+  },
+  submitIdleReason: {
+    color: '#F59E0B',
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

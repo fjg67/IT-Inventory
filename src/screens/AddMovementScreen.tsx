@@ -5,6 +5,7 @@ import {
   Linking,
   Modal,
   Platform,
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -13,16 +14,19 @@ import {
   Vibration,
   View,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Camera, useCameraDevices, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Animated, { FadeIn, FadeInDown, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInRight, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
+import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Article, MouvementStockForm } from '@/types';
 import { articleRepository, mouvementRepository } from '@/database';
 import { ERROR_MESSAGES } from '@/constants';
+import { isPCArticle } from '@/constants/pcStates';
 import { clearScannedArticle } from '@/store/slices/scanSlice';
+import { showAlert } from '@/store/slices/uiSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { useAppDispatch, useAppSelector } from '@/store';
 
@@ -65,6 +69,7 @@ export const AddMovementScreen: React.FC = () => {
   const articleStepYRef = useRef(0);
   const typeStepYRef = useRef(0);
   const detailsStepYRef = useRef(0);
+  const targetSiteIdRef = useRef<string | number | null>(null);
 
   const initialArticleId = route.params?.articleId as number | undefined;
   const initialType = route.params?.type as RouteMovementType;
@@ -77,12 +82,16 @@ export const AddMovementScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const flow = useMovementFlow(initialType ?? 'entree');
   const identityPack = useMovementColor(flow.state.type ?? 'entree');
+  const search = useArticleSearch(effectiveSiteId, 200, { excludePC: true });
+  const resetSearch = search.reset;
 
   const targetSiteId = effectiveSiteId;
+  targetSiteIdRef.current = targetSiteId;
 
   useEffect(() => {
     if (targetSiteId != null) {
@@ -91,7 +100,31 @@ export const AddMovementScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetSiteId]);
 
-  const search = useArticleSearch(effectiveSiteId, 200);
+  const resetMovementFlow = useCallback(() => {
+    setIsSubmitting(false);
+    setSubmitSuccess(false);
+    setShowCamera(false);
+    setShowCancelModal(false);
+    setErrors({});
+    resetSearch();
+    dispatch(clearScannedArticle());
+    flow.setState({
+      step: 'article',
+      article: null,
+      stockSite: targetSiteIdRef.current ?? null,
+      type: initialType ?? 'entree',
+      quantity: 1,
+      comment: '',
+    });
+  }, [dispatch, flow.setState, initialType, resetSearch]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        resetMovementFlow();
+      };
+    }, [resetMovementFlow]),
+  );
 
   const stockActuel = flow.state.article?.quantiteActuelle ?? 0;
   const stockMin = flow.state.article?.stockMini ?? 0;
@@ -122,7 +155,7 @@ export const AddMovementScreen: React.FC = () => {
     if (!effectiveSiteId) return;
     try {
       const direct = await articleRepository.findByReferenceOrBarcode(barcode, effectiveSiteId);
-      if (direct) {
+      if (direct && !isPCArticle(direct)) {
         flow.selectArticle(direct);
         setErrors({});
         search.reset();
@@ -130,12 +163,13 @@ export const AddMovementScreen: React.FC = () => {
       }
 
       const broader = await articleRepository.search(effectiveSiteId, { searchQuery: barcode, stockFaible: false }, 0, 6);
-      if (broader.data.length === 1) {
-        flow.selectArticle(broader.data[0]);
+      const nonPCResults = broader.data.filter((article) => !isPCArticle(article));
+      if (nonPCResults.length === 1) {
+        flow.selectArticle(nonPCResults[0]);
         setErrors({});
         search.reset();
-      } else if (broader.data.length > 1) {
-        search.setResults(broader.data);
+      } else if (nonPCResults.length > 1) {
+        search.setResults(nonPCResults);
         search.setQuery(barcode);
       } else {
         setErrors({ article: `Article non trouve: ${barcode}` });
@@ -262,7 +296,29 @@ export const AddMovementScreen: React.FC = () => {
         commentaire: flow.state.comment.trim() || undefined,
       };
 
+      const projectedStock = payload.type === 'ajustement'
+        ? payload.quantite
+        : payload.type === 'sortie'
+          ? stockActuel - payload.quantite
+          : stockActuel + payload.quantite;
+
+      const safeProjectedStock = Math.max(0, projectedStock);
+      const initialDefectiveCount = flow.state.article.defectiveCount ?? 0;
+      const willAdjustDefectiveCount =
+        flow.state.article.condition === 'defectueux' &&
+        initialDefectiveCount > safeProjectedStock;
+
       await mouvementRepository.create(payload, technicienId);
+
+      if (willAdjustDefectiveCount) {
+        dispatch(showAlert({
+          type: 'info',
+          title: 'Ajustement automatique',
+          message: `Le nombre de defectueux a ete ajuste a ${safeProjectedStock} suite au nouveau stock.`,
+          duration: 3200,
+        }));
+      }
+
       dispatch(clearScannedArticle());
 
       setSubmitSuccess(true);
@@ -274,10 +330,14 @@ export const AddMovementScreen: React.FC = () => {
         if (source === 'Dashboard') {
           if (parent) parent.navigate('Dashboard');
           else navigation.navigate('Dashboard');
-        } else if (source === 'Scan') {
+          return;
+        }
+        if (source === 'Scan') {
           if (parent) parent.navigate('Scan');
           else navigation.navigate('Scan');
-        } else if (parent) {
+          return;
+        }
+        if (parent) {
           parent.navigate('Mouvements', { screen: 'MouvementsList' });
         } else {
           navigation.navigate('MouvementsList');
@@ -291,6 +351,33 @@ export const AddMovementScreen: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  const confirmCancelMovement = useCallback(() => {
+    setShowCancelModal(false);
+    resetMovementFlow();
+
+    const parent = navigation.getParent();
+    if (source === 'Dashboard') {
+      if (parent) parent.navigate('Dashboard');
+      else navigation.navigate('Dashboard');
+      return;
+    }
+    if (source === 'Scan') {
+      if (parent) parent.navigate('Scan');
+      else navigation.navigate('Scan');
+      return;
+    }
+    if (parent) {
+      parent.navigate('Mouvements', { screen: 'MouvementsList' });
+    } else {
+      navigation.navigate('MouvementsList');
+    }
+  }, [navigation, resetMovementFlow, source]);
+
+  const cancelMovement = useCallback(() => {
+    setShowCancelModal(true);
+    Vibration.vibrate(10);
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -462,15 +549,95 @@ export const AddMovementScreen: React.FC = () => {
       </KeyboardAvoidingView>
 
       {flow.state.step === 'details' ? (
-        <MovementSubmitButton
-          identity={identityPack.identity}
-          disabled={!isFormValid || isSubmitting}
-          loading={isSubmitting}
-          success={submitSuccess}
-          onPress={submit}
-          bottomInset={insets.bottom}
-        />
+        <>
+          <Animated.View
+            entering={FadeInDown.duration(220)}
+            style={[styles.cancelWrap, { bottom: Math.max(84, insets.bottom + 72) }]}
+          >
+            <TouchableOpacity activeOpacity={0.92} onPress={cancelMovement} style={styles.cancelTouchable}>
+              <LinearGradient
+                colors={['rgba(127,29,29,0.96)', 'rgba(153,27,27,0.96)', 'rgba(185,28,28,0.98)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.cancelBtn}
+              >
+                <View style={styles.cancelIconWrap}>
+                  <Icon name="close-circle-outline" size={17} color="#FECACA" />
+                </View>
+                <Text style={styles.cancelText}>Annuler le mouvement</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </Animated.View>
+
+          <MovementSubmitButton
+            identity={identityPack.identity}
+            disabled={!isFormValid || isSubmitting}
+            loading={isSubmitting}
+            success={submitSuccess}
+            onPress={submit}
+            bottomInset={insets.bottom}
+          />
+        </>
       ) : null}
+
+      <Modal
+        visible={showCancelModal}
+        transparent
+        animationType="none"
+        onRequestClose={() => setShowCancelModal(false)}
+      >
+        <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(160)} style={styles.cancelModalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowCancelModal(false)} />
+
+          <Animated.View entering={ZoomIn.duration(220)} exiting={ZoomOut.duration(170)} style={styles.cancelModalCardWrap}>
+            <LinearGradient
+              colors={['rgba(6,18,13,0.98)', 'rgba(7,23,16,0.98)', 'rgba(8,30,20,0.98)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.cancelModalCard}
+            >
+              <View style={styles.cancelModalIconWrap}>
+                <Icon name="close-octagon-outline" size={24} color="#FCA5A5" />
+              </View>
+
+              <Text style={styles.cancelModalTitle}>Annuler le mouvement</Text>
+              <Text style={styles.cancelModalDesc}>
+                Voulez-vous vraiment annuler ce mouvement ? Les informations saisies seront perdues.
+              </Text>
+
+              <View style={styles.cancelModalActions}>
+                <TouchableOpacity
+                  activeOpacity={0.92}
+                  onPress={() => setShowCancelModal(false)}
+                  style={styles.cancelSecondaryWrap}
+                >
+                  <LinearGradient
+                    colors={['rgba(17,36,28,0.95)', 'rgba(12,28,21,0.95)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.cancelSecondaryBtn}
+                  >
+                    <Icon name="pencil-outline" size={15} color="#86EFAC" />
+                    <Text style={styles.cancelSecondaryText}>Continuer la saisie</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                <TouchableOpacity activeOpacity={0.92} onPress={confirmCancelMovement} style={styles.cancelPrimaryWrap}>
+                  <LinearGradient
+                    colors={['#7F1D1D', '#991B1B', '#B91C1C']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.cancelPrimaryBtn}
+                  >
+                    <Icon name="close-circle-outline" size={16} color="#FEE2E2" />
+                    <Text style={styles.cancelPrimaryText}>Oui, annuler</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+          </Animated.View>
+        </Animated.View>
+      </Modal>
 
       <Modal visible={showCamera} animationType="slide" onRequestClose={() => setShowCamera(false)}>
         <View style={styles.cameraContainer}>
@@ -563,6 +730,136 @@ const styles = StyleSheet.create({
     color: MOVEMENT_COLORS.danger,
     fontSize: 12,
     fontWeight: '600',
+  },
+  cancelWrap: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    zIndex: 12,
+  },
+  cancelTouchable: {
+    borderRadius: 14,
+    shadowColor: '#7F1D1D',
+    shadowOpacity: 0.34,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  cancelBtn: {
+    minHeight: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(252,165,165,0.28)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  cancelIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelText: {
+    color: '#FEE2E2',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  cancelModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.58)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  cancelModalCardWrap: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 22,
+    shadowColor: '#000',
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 16,
+  },
+  cancelModalCard: {
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.24)',
+    paddingHorizontal: 18,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+  cancelModalIconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(252,165,165,0.38)',
+    backgroundColor: 'rgba(127,29,29,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  cancelModalTitle: {
+    color: '#ECFDF5',
+    fontSize: 26,
+    lineHeight: 30,
+    fontWeight: '900',
+    letterSpacing: 0.2,
+  },
+  cancelModalDesc: {
+    marginTop: 10,
+    color: 'rgba(220,252,231,0.9)',
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '600',
+  },
+  cancelModalActions: {
+    marginTop: 18,
+    gap: 10,
+  },
+  cancelSecondaryWrap: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.28)',
+  },
+  cancelSecondaryBtn: {
+    minHeight: 46,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  cancelSecondaryText: {
+    color: '#86EFAC',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  cancelPrimaryWrap: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  cancelPrimaryBtn: {
+    minHeight: 46,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  cancelPrimaryText: {
+    color: '#FEE2E2',
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.2,
   },
   cameraContainer: {
     flex: 1,

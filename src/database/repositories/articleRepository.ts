@@ -44,6 +44,10 @@ interface ArticleRow {
   createdAt: string;
   updatedAt: string;
   quantite_actuelle?: number;
+  condition?: 'bon_etat' | 'defectueux' | null;
+  defectiveCount?: number | null;
+  conditionNote?: string | null;
+  conditionUpdatedAt?: string | null;
 }
 
 function mapRowToArticle(row: ArticleRow): Article {
@@ -68,6 +72,10 @@ function mapRowToArticle(row: ArticleRow): Article {
     dateModification: new Date(row.updatedAt ?? row.createdAt),
     syncStatus: SyncStatus.SYNCED,
     quantiteActuelle: row.quantite_actuelle,
+    condition: row.condition === 'defectueux' ? 'defectueux' : 'bon_etat',
+    defectiveCount: row.defectiveCount ?? 0,
+    conditionNote: row.conditionNote ?? undefined,
+    conditionUpdatedAt: row.conditionUpdatedAt ? new Date(row.conditionUpdatedAt) : undefined,
   };
 }
 
@@ -164,6 +172,7 @@ export const articleRepository = {
     if (filters.sousType && filters.sousType.length > 0) query = query.in('sousType', filters.sousType);
     if (filters.marque && filters.marque.length > 0) query = query.in('brand', filters.marque);
     if (filters.emplacement && filters.emplacement.length > 0) query = query.in('emplacement', filters.emplacement);
+    if (filters.condition) query = query.eq('condition', filters.condition);
 
     const { data: articles, error } = await query.order('name');
     if (error) throw new Error(error.message);
@@ -324,6 +333,10 @@ export const articleRepository = {
       minStock: data.stockMini ?? 0,
       unit: data.unite ?? 'unité',
       imageUrl: data.photoUrl ?? null,
+      condition: data.condition ?? 'bon_etat',
+      defectiveCount: data.condition === 'defectueux' ? Math.max(0, data.defectiveCount ?? 0) : 0,
+      conditionNote: data.condition === 'defectueux' ? data.conditionNote ?? null : null,
+      conditionUpdatedAt: new Date().toISOString(),
       isArchived: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -359,7 +372,13 @@ export const articleRepository = {
     if (error) {
       const msg = error.message.toLowerCase();
       const hasOptionalColumnIssue =
-        msg.includes('model') || msg.includes('barcode') || msg.includes('soustype');
+        msg.includes('model') ||
+        msg.includes('barcode') ||
+        msg.includes('soustype') ||
+        msg.includes('conditionnote') ||
+        msg.includes('conditionupdatedat') ||
+        msg.includes('defectivecount') ||
+        msg.includes('condition');
 
       if (hasOptionalColumnIssue) {
         ({ data: inserted, error } = await supabase
@@ -391,6 +410,16 @@ export const articleRepository = {
     if (data.stockMini !== undefined) payload.minStock = data.stockMini;
     if (data.unite !== undefined) payload.unit = data.unite;
     if (data.photoUrl !== undefined) payload.imageUrl = data.photoUrl ?? null;
+    if (data.condition !== undefined) payload.condition = data.condition;
+    if (data.defectiveCount !== undefined) payload.defectiveCount = Math.max(0, data.defectiveCount);
+    if (data.conditionNote !== undefined) payload.conditionNote = data.conditionNote ?? null;
+    if (
+      data.condition !== undefined ||
+      data.defectiveCount !== undefined ||
+      data.conditionNote !== undefined
+    ) {
+      payload.conditionUpdatedAt = new Date().toISOString();
+    }
     if (Object.keys(payload).length === 0) return;
     console.log('[articleRepository.update] id:', id, 'payload:', JSON.stringify(payload));
     let { error, data: updatedRows } = await supabase
@@ -402,13 +431,23 @@ export const articleRepository = {
     if (error) {
       const msg = error.message.toLowerCase();
       const hasOptionalColumnIssue =
-        msg.includes('model') || msg.includes('barcode') || msg.includes('soustype');
+        msg.includes('model') ||
+        msg.includes('barcode') ||
+        msg.includes('soustype') ||
+        msg.includes('conditionnote') ||
+        msg.includes('conditionupdatedat') ||
+        msg.includes('defectivecount') ||
+        msg.includes('condition');
 
       if (hasOptionalColumnIssue) {
         const fallbackPayload = { ...payload };
         delete fallbackPayload.model;
         delete fallbackPayload.barcode;
         delete fallbackPayload.sousType;
+        delete fallbackPayload.condition;
+        delete fallbackPayload.defectiveCount;
+        delete fallbackPayload.conditionNote;
+        delete fallbackPayload.conditionUpdatedAt;
 
         if (Object.keys(fallbackPayload).length > 0) {
           ({ error, data: updatedRows } = await supabase

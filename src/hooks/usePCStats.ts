@@ -39,6 +39,7 @@ export const usePCStats = (liveArticles: Article[], sentArticles: Article[], wee
       a_reusiner: 0,
       en_usinage: 0,
       disponible: 0,
+      en_panne: 0,
       envoye: sentArticles.length,
     };
 

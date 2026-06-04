@@ -25,6 +25,8 @@ const STATUS_COLORS: Record<PCStatus, { color: string; subtle: string; border: s
   a_reusiner: { color: '#F59E0B', subtle: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.30)' },
   en_usinage: { color: '#F59E0B', subtle: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.25)' },
   disponible: { color: '#3B82F6', subtle: 'rgba(59,130,246,0.10)', border: 'rgba(59,130,246,0.30)' },
+  envoye: { color: '#8B5CF6', subtle: 'rgba(139,92,246,0.10)', border: 'rgba(139,92,246,0.30)' },
+  en_panne: { color: '#EF4444', subtle: 'rgba(239,68,68,0.10)', border: 'rgba(239,68,68,0.40)' },
 };
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -39,7 +41,7 @@ const StatusChip: React.FC<StatusChipProps> = ({
 }) => {
   const selectedAnim = useSharedValue(selected ? 1 : 0);
   const pressAnim = useSharedValue(1);
-  const palette = STATUS_COLORS[value];
+  const palette = STATUS_COLORS[value] ?? STATUS_COLORS.a_reusiner;
 
   useEffect(() => {
     selectedAnim.value = withTiming(selected ? 1 : 0, { duration: 200 });

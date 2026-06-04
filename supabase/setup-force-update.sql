@@ -13,7 +13,7 @@ create table if not exists public."AppConfig" (
 -- 2) Upsert minimum required app version
 -- Any app with APP_CONFIG.version < this value will be blocked by ForceUpdateScreen.
 insert into public."AppConfig" ("key", "value")
-values ('min_app_version', '2.31')
+values ('min_app_version', '2.33')
 on conflict ("key")
 do update set
   "value" = excluded."value",
@@ -31,7 +31,7 @@ do update set
 insert into public."AppConfig" ("key", "value")
 values (
   'release_notes',
-  'Nouvelle icone et assets Play Store mis a jour pour une identite visuelle plus claire.\nAmelioration du workflow PC et de la modal d envoi avec validations et actions plus fiables.\nOptimisations de performance et stabilite generale de l application.'
+  'Nouveau selecteur de stock actif redesign avec affichage plus clair du site courant.\nAmelioration du flux au demarrage avec selection de site et parcours plus fluide.\nCorrections de stabilite et optimisations globales de performance.'
 )
 on conflict ("key")
 do update set

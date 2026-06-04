@@ -13,3 +13,4 @@ do update set
 select "key", "value", "updatedAt"
 from public."AppConfig"
 where "key" = 'min_app_version';
+ 

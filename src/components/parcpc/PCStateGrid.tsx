@@ -10,14 +10,20 @@ interface PCStateGridItem extends PCStateMeta {
 interface PCStateGridProps {
   items: PCStateGridItem[];
   onPressState?: (state: PCStateKey) => void;
+  activeStateKey?: PCStateKey | null;
 }
 
-export const PCStateGrid: React.FC<PCStateGridProps> = ({ items, onPressState }) => {
+export const PCStateGrid: React.FC<PCStateGridProps> = ({ items, onPressState, activeStateKey = null }) => {
   return (
     <View style={styles.grid}>
       {items.map((item) => (
         <View key={item.key} style={styles.cell}>
-          <PCStateCard meta={item} count={item.count} onPress={() => onPressState?.(item.key)} />
+          <PCStateCard
+            meta={item}
+            count={item.count}
+            active={activeStateKey === item.key}
+            onPress={() => onPressState?.(item.key)}
+          />
         </View>
       ))}
     </View>

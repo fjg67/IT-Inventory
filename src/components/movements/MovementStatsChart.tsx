@@ -63,8 +63,8 @@ export const MovementStatsChart: React.FC<MovementStatsChartProps> = ({ data, on
       </Svg>
 
       <View style={styles.labelsRow}>
-        {data.map((item) => (
-          <Text key={item.label} style={[styles.dayLabel, item.isToday && styles.dayLabelToday]}>{item.label}</Text>
+        {data.map((item, index) => (
+          <Text key={`${item.label}-${index}`} style={[styles.dayLabel, item.isToday && styles.dayLabelToday]}>{item.label}</Text>
         ))}
       </View>
     </Animated.View>

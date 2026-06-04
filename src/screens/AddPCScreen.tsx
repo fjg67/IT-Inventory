@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  LayoutAnimation,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -10,6 +11,7 @@ import {
   StyleSheet,
   Text,
   Vibration,
+  UIManager,
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -36,9 +38,14 @@ import {
   ModelSelector,
   PCFormSection,
   PCInputField,
+  PanneDetailsPanel,
   StatusSelector,
 } from '@/components/add-pc';
 import { useAddPCForm } from '@/hooks/useAddPCForm';
+
+if (Platform.OS === 'android') {
+  UIManager.setLayoutAnimationEnabledExperimental?.(true);
+}
 
 type AddPCNavigationProp = NativeStackNavigationProp<ArticlesStackParamList>;
 
@@ -50,6 +57,7 @@ export const AddPCScreen: React.FC = () => {
   const {
     form,
     updateField,
+    handleStatusChange,
     reset,
     isSubmitting,
     availableModels,
@@ -98,6 +106,13 @@ export const AddPCScreen: React.FC = () => {
     if (!form.asset.trim()) return "L'asset est obligatoire.";
     return null;
   }, [assetTouched, form.asset]);
+
+  const panneDisabledReason = useMemo(() => {
+    if (form.status !== 'en_panne') return null;
+    if (!form.panne_type) return 'Sélectionnez un type de panne';
+    if (form.panne_description.trim().length < 10) return 'Décrivez la panne sur au moins 10 caractères';
+    return null;
+  }, [form.panne_description, form.panne_type, form.status]);
 
   const onCodeScanned = useCallback((codes: { value?: string }[]) => {
     if (!scanTargetRef.current || codes.length === 0 || !codes[0]?.value) return;
@@ -232,9 +247,28 @@ export const AddPCScreen: React.FC = () => {
               <PCFormSection title="Statut" required>
                 <StatusSelector
                   value={form.status}
-                  onChange={(status) => updateField('status', status)}
+                  onChange={(status) => {
+                    LayoutAnimation.configureNext({
+                      duration: 280,
+                      create: { type: 'easeInEaseOut', property: 'opacity' },
+                      update: { type: 'spring', springDamping: 0.75 },
+                      delete: { type: 'easeInEaseOut', property: 'opacity' },
+                    });
+                    handleStatusChange(status);
+                  }}
                   disabled={isSubmitting}
                 />
+
+                {form.status === 'en_panne' ? (
+                  <PanneDetailsPanel
+                    panneType={form.panne_type}
+                    priorite={form.panne_priorite}
+                    description={form.panne_description}
+                    onPanneTypeChange={(type) => updateField('panne_type', type)}
+                    onPrioriteChange={(priorite) => updateField('panne_priorite', priorite)}
+                    onDescriptionChange={(description) => updateField('panne_description', description)}
+                  />
+                ) : null}
               </PCFormSection>
             </Animated.View>
 
@@ -298,6 +332,7 @@ export const AddPCScreen: React.FC = () => {
           isValid={isValid && !hostnameError && !assetError}
           isLoading={isSubmitting}
           isSuccess={submitSuccess}
+          disabledReason={panneDisabledReason}
           onCancel={handleCancel}
           onSubmit={handleSave}
         />

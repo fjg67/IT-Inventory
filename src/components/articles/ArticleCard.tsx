@@ -6,6 +6,7 @@ import { OBSIDIAN_COLORS } from '@/constants/colors';
 import { Article } from '@/types';
 import { ArticleBadge } from './ArticleBadge';
 import { ArticleTagRow } from './ArticleTagRow';
+import { ConditionBadge } from './ConditionBadge';
 
 interface ArticleCardProps {
   article: Article;
@@ -16,6 +17,12 @@ interface ArticleCardProps {
 
 const getAccentColor = (article: Article): string => {
   const quantity = article.quantiteActuelle ?? 0;
+  const isDefective = article.condition === 'defectueux';
+
+  if (isDefective) {
+    return quantity <= article.stockMini ? OBSIDIAN_COLORS.danger : OBSIDIAN_COLORS.warning;
+  }
+
   if (quantity <= 0) {
     return OBSIDIAN_COLORS.danger;
   }
@@ -101,6 +108,13 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({ article, index, quer
               marque={article.marque}
               typeArticle={article.typeArticle}
             />
+            <View style={styles.conditionWrap}>
+              <ConditionBadge
+                condition={article.condition ?? 'bon_etat'}
+                defectiveCount={article.defectiveCount ?? 0}
+                size="sm"
+              />
+            </View>
             <View style={styles.dateRow}>
               <Icon name="clock-outline" size={11} color={OBSIDIAN_COLORS.text_dim} />
               <Text style={styles.dateText}>{formatDate(article.dateModification)}</Text>
@@ -124,6 +138,8 @@ const areEqual = (prev: ArticleCardProps, next: ArticleCardProps) => {
     prev.article.stockMini === next.article.stockMini &&
     prev.article.nom === next.article.nom &&
     prev.article.reference === next.article.reference &&
+    prev.article.condition === next.article.condition &&
+    prev.article.defectiveCount === next.article.defectiveCount &&
     prev.query === next.query
   );
 };
@@ -178,6 +194,9 @@ const styles = StyleSheet.create({
     color: OBSIDIAN_COLORS.text_muted,
     fontSize: 12,
     marginTop: 2,
+  },
+  conditionWrap: {
+    marginTop: 6,
   },
   dateRow: {
     alignItems: 'center',

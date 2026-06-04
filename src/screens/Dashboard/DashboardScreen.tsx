@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   TouchableWithoutFeedback,
   Vibration,
   View,
@@ -26,10 +25,12 @@ import Animated, {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { selectIsSuperviseur } from '@/store/slices/authSlice';
-import { loadSiblingSites, loadSites, selectEffectiveSiteId, selectSite } from '@/store/slices/siteSlice';
+import { loadSiblingSites, loadSites, selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { articleRepository, mouvementRepository } from '@/database';
 import { DashboardStats, MouvementType } from '@/types';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
+import { StockPickerSheet } from '@/components/stock-picker';
+import { useActiveSite } from '@/hooks/useActiveSite';
 import {
   HeaderSection,
   MovementsSection,
@@ -41,6 +42,11 @@ import {
 interface SiteLike {
   id: number | string;
   nom: string;
+}
+
+interface SiteStats {
+  articles: number;
+  pcs: number;
 }
 
 const getMouvementType = (type: MouvementType): 'entree' | 'sortie' | 'ajustement' | 'transfert' => {
@@ -69,6 +75,7 @@ export const DashboardScreen: React.FC = () => {
   const sitesDisponibles = useAppSelector((state) => state.site.sitesDisponibles);
   const childSites = useAppSelector((state) => state.site.childSites);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
+  const { handleSelectSite: setActiveSite } = useActiveSite();
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -81,6 +88,7 @@ export const DashboardScreen: React.FC = () => {
     derniersMovements: [],
   });
   const [mouvementsParJour, setMouvementsParJour] = useState<number[]>([]);
+  const [siteStatsById, setSiteStatsById] = useState<Record<string, SiteStats>>({});
 
   const refreshSpin = useSharedValue(0);
   const siteSheetY = useSharedValue(420);
@@ -155,9 +163,13 @@ export const DashboardScreen: React.FC = () => {
 
   const openSiteModal = useCallback(() => {
     Vibration.vibrate(10);
-    setShowSiteModal(true);
-    siteSheetY.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.cubic) });
-  }, [siteSheetY]);
+    const parent = navigation.getParent();
+    if (parent) {
+      parent.navigate('SiteSelection', { startupMode: true });
+      return;
+    }
+    navigation.navigate('SiteSelection', { startupMode: true });
+  }, [navigation]);
 
   const closeSiteModal = useCallback(() => {
     siteSheetY.value = withTiming(420, { duration: 260, easing: Easing.in(Easing.cubic) }, (finished) => {
@@ -167,18 +179,20 @@ export const DashboardScreen: React.FC = () => {
     });
   }, [siteSheetY]);
 
-  const handleSelectSite = useCallback(
+  const onSelectSiteCard = useCallback(
     async (siteId: number | string) => {
       Vibration.vibrate(15);
       try {
-        await dispatch(selectSite(siteId)).unwrap();
-        closeSiteModal();
+        await setActiveSite(siteId);
+        setTimeout(() => {
+          closeSiteModal();
+        }, 400);
       } catch (error) {
         Alert.alert('Site', "Impossible de changer le site actif.");
         console.warn('[Dashboard] selectSite error:', error);
       }
     },
-    [closeSiteModal, dispatch],
+    [closeSiteModal, setActiveSite],
   );
 
   const handleScanPress = useCallback(() => {
@@ -215,10 +229,41 @@ export const DashboardScreen: React.FC = () => {
     return (childSites.length > 0 ? childSites : sitesDisponibles) as SiteLike[];
   }, [childSites, sitesDisponibles]);
 
+  useEffect(() => {
+    if (!showSiteModal || sitesList.length === 0) return;
+    let cancelled = false;
+
+    const fetchSiteStats = async () => {
+      const results = await Promise.all(
+        sitesList.map(async (site) => {
+          try {
+            const [articlesRes, pcRes] = await Promise.all([
+              articleRepository.findAll(site.id, 0, 1),
+              articleRepository.search(site.id, { searchQuery: '', stockFaible: false, typeArticle: ['PC'] }, 0, 1),
+            ]);
+
+            return [String(site.id), { articles: articlesRes.total, pcs: pcRes.total }] as const;
+          } catch {
+            return [String(site.id), { articles: 0, pcs: 0 }] as const;
+          }
+        }),
+      );
+
+      if (!cancelled) {
+        setSiteStatsById(Object.fromEntries(results));
+      }
+    };
+
+    fetchSiteStats().catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [showSiteModal, sitesList]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.backgroundGlowTop} />
-      <View style={styles.backgroundGlowBottom} />
+      <View pointerEvents="none" style={styles.backgroundGlowTop} />
+      <View pointerEvents="none" style={styles.backgroundGlowBottom} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -312,36 +357,16 @@ export const DashboardScreen: React.FC = () => {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <Animated.View style={[styles.modalSheet, siteSheetStyle]}>
-                <View style={styles.modalHandle} />
-                <Text style={styles.modalTitle}>Selectionner le stock actif</Text>
-
-                {sitesList.map((site) => {
-                  const isActive = String(siteActif?.id) === String(site.id);
-
-                  return (
-                    <TouchableOpacity
-                      key={String(site.id)}
-                      style={[styles.siteRow, isActive && styles.siteRowActive]}
-                      activeOpacity={0.8}
-                      onPress={() => handleSelectSite(site.id)}
-                    >
-                      <View style={styles.siteRowLeft}>
-                        <Icon
-                          name="warehouse"
-                          size={18}
-                          color={isActive ? OBSIDIAN_COLORS.green_light : OBSIDIAN_COLORS.text_muted}
-                        />
-                        <Text style={[styles.siteRowText, isActive && styles.siteRowTextActive]}>{site.nom}</Text>
-                      </View>
-
-                      {isActive ? (
-                        <Icon name="check-circle" size={18} color={OBSIDIAN_COLORS.green_light} />
-                      ) : (
-                        <Icon name="chevron-right" size={18} color={OBSIDIAN_COLORS.text_muted} />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+                <StockPickerSheet
+                  sites={sitesList}
+                  activeSiteId={siteActif?.id}
+                  activeSiteName={siteActif?.nom}
+                  statsBySiteId={siteStatsById}
+                  onSelectSite={onSelectSiteCard}
+                  onClose={closeSiteModal}
+                  showBackButton={false}
+                  showFooterCancel
+                />
               </Animated.View>
             </TouchableWithoutFeedback>
           </View>
@@ -416,54 +441,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: OBSIDIAN_COLORS.bg_card_elevated,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    paddingBottom: 24,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-  },
-  modalHandle: {
-    alignSelf: 'center',
-    backgroundColor: OBSIDIAN_COLORS.text_dim,
-    borderRadius: 99,
-    height: 4,
-    marginBottom: 12,
-    width: 42,
-  },
-  modalTitle: {
-    color: OBSIDIAN_COLORS.text_primary,
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  siteRow: {
-    alignItems: 'center',
-    backgroundColor: OBSIDIAN_COLORS.bg_card,
-    borderColor: OBSIDIAN_COLORS.border_subtle,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-  },
-  siteRowActive: {
-    borderColor: OBSIDIAN_COLORS.border_accent,
-  },
-  siteRowLeft: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  siteRowText: {
-    color: OBSIDIAN_COLORS.text_primary,
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  siteRowTextActive: {
-    color: OBSIDIAN_COLORS.green_light,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
   },
 });
 

@@ -40,7 +40,7 @@ import { useAppSelector, useAppDispatch } from '@/store';
 import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { notifyPCStatusChange } from '@/services/pcStatusNotificationService';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
-import { clearScannedArticle, clearLastBarcode, setBarcode, addToHistoryAndSave, loadScanHistory, persistScanHistory, ScanHistoryItem } from '@/store/slices/scanSlice';
+import { clearScannedArticle, clearLastBarcode, setBarcode, setScanning, addToHistoryAndSave, loadScanHistory, persistScanHistory, ScanHistoryItem } from '@/store/slices/scanSlice';
 import { useBarcodeScanner } from '@/modules/DataWedgeModule';
 import { articleRepository } from '@/database';
 import { formatTimeParis } from '@/utils/dateUtils';
@@ -149,7 +149,7 @@ const BARCODE_TYPES: CodeType[] = [
 export const ScanMouvementScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
-  const { startScanning } = useBarcodeScanner();
+  const { startScanning, stopScanning } = useBarcodeScanner();
   const { isTablet } = useResponsive();
 
   const { hasPermission, requestPermission } = useCameraPermission();
@@ -167,6 +167,8 @@ export const ScanMouvementScreen: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [cameraPreviewReady, setCameraPreviewReady] = useState(false);
+  const [cameraInstanceKey, setCameraInstanceKey] = useState(0);
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [pcActionTransition, setPcActionTransition] = useState<{
     icon: string;
@@ -176,6 +178,7 @@ export const ScanMouvementScreen: React.FC = () => {
   const overlayScrollRef = useRef<ScrollView | null>(null);
   const quickActionsYRef = useRef<number | null>(null);
   const cameraReadyRef = useRef(false);
+  const cameraRestartAttemptsRef = useRef(0);
   const lastScannedRef = useRef<{ value: string; at: number } | null>(null);
   const isProcessingRef = useRef(false);
   const { checkStyle, ringStyle, frameCornersStyle, scanLineStyle, flashStyle } = useScanAnimations(scanStatus);
@@ -192,13 +195,30 @@ export const ScanMouvementScreen: React.FC = () => {
       setArticle(null);
       setScanStatus('idle');
       setErrorMsg('');
+      setCameraPreviewReady(false);
+      setCameraInstanceKey(k => k + 1);
       scanConsensusRef.current = { value: '', count: 0 };
       lastScannedRef.current = null;
       isProcessingRef.current = false;
+      cameraRestartAttemptsRef.current = 0;
       // Reset l'état Redux
       dispatch(clearScannedArticle());
       dispatch(clearLastBarcode());
-    }, [dispatch])
+
+      if (hasPermission && device) {
+        setCameraReady(true);
+        cameraReadyRef.current = true;
+        dispatch(setScanning(true));
+        startScanning();
+      }
+
+      return () => {
+        cameraReadyRef.current = false;
+        setCameraPreviewReady(false);
+        dispatch(setScanning(false));
+        stopScanning();
+      };
+    }, [dispatch, hasPermission, device, startScanning, stopScanning])
   );
 
   // Persister l'historique à chaque changement
@@ -219,11 +239,13 @@ export const ScanMouvementScreen: React.FC = () => {
           const granted = await requestPermission();
           if (granted && device) {
             setCameraReady(true);
+            setCameraPreviewReady(false);
             cameraReadyRef.current = true;
             startScanning();
           }
         } else if (device) {
           setCameraReady(true);
+          setCameraPreviewReady(false);
           cameraReadyRef.current = true;
           startScanning();
         }
@@ -233,6 +255,30 @@ export const ScanMouvementScreen: React.FC = () => {
     };
     initCamera();
   }, [hasPermission, device, requestPermission, startScanning]);
+
+  const handleRestartCamera = useCallback(() => {
+    if (!hasPermission || !device) return;
+    setCameraPreviewReady(false);
+    setCameraInstanceKey(k => k + 1);
+    setCameraReady(true);
+    cameraReadyRef.current = true;
+    dispatch(setScanning(true));
+    startScanning();
+  }, [hasPermission, device, dispatch, startScanning]);
+
+  // Si la preview ne démarre pas, forcer un remount de la caméra (cas écran noir sporadique)
+  useEffect(() => {
+    if (!hasPermission || !device || !cameraReady || !!article || cameraPreviewReady) return;
+
+    const timeout = setTimeout(() => {
+      if (cameraRestartAttemptsRef.current >= 2) return;
+      cameraRestartAttemptsRef.current += 1;
+      console.warn('[Scan] Preview non initialisée, relance caméra');
+      handleRestartCamera();
+    }, 2200);
+
+    return () => clearTimeout(timeout);
+  }, [hasPermission, device, cameraReady, article, cameraPreviewReady, handleRestartCamera]);
 
   const actionTransitionOpacity = useSharedValue(0);
   const actionTransitionScale = useSharedValue(0.92);
@@ -581,6 +627,7 @@ export const ScanMouvementScreen: React.FC = () => {
       {/* ===== CAMERA LIVE (toujours en fond) ===== */}
       {hasPermission && device && cameraReady ? (
         <Camera
+          key={`scan-camera-${cameraInstanceKey}`}
           style={StyleSheet.absoluteFill}
           device={device}
           isActive={cameraReady && !article}
@@ -588,8 +635,17 @@ export const ScanMouvementScreen: React.FC = () => {
           photo={false}
           video={false}
           audio={false}
+          onInitialized={() => {
+            setCameraPreviewReady(true);
+            cameraRestartAttemptsRef.current = 0;
+          }}
           onError={(error) => {
             console.warn('[Scan] Camera error:', error);
+            setCameraPreviewReady(false);
+            if (cameraRestartAttemptsRef.current < 2) {
+              cameraRestartAttemptsRef.current += 1;
+              setCameraInstanceKey(k => k + 1);
+            }
           }}
         />
       ) : (
@@ -656,10 +712,19 @@ export const ScanMouvementScreen: React.FC = () => {
             <Text style={styles.statusSubtitle}>Le Zebra TC22 ou la camera detecte automatiquement l&apos;article dans le cadre.</Text>
           </Animated.View>
         )}
-        {(scanStatus === 'idle' && isScanning) && (
+        {(scanStatus === 'idle' && isScanning && cameraPreviewReady) && (
           <Animated.View entering={FadeIn.duration(300)} style={styles.statusPanel}>
             <ScanSuccessBadge text="Lecture en cours" />
             <Text style={styles.statusSubtitle}>Analyse locale du code-barres avant verification de la fiche article.</Text>
+          </Animated.View>
+        )}
+        {(scanStatus === 'idle' && isScanning && !cameraPreviewReady) && (
+          <Animated.View entering={FadeIn.duration(300)} style={styles.statusPanel}>
+            <Text style={styles.statusTitle}>Initialisation de la camera...</Text>
+            <Text style={styles.statusSubtitle}>Si l&apos;image reste noire, relancez la camera.</Text>
+            <TouchableOpacity style={styles.camRecoverBtn} activeOpacity={0.85} onPress={handleRestartCamera}>
+              <Text style={styles.camRecoverBtnText}>Relancer la camera</Text>
+            </TouchableOpacity>
           </Animated.View>
         )}
         {scanStatus === 'scanning' && (
@@ -692,6 +757,7 @@ export const ScanMouvementScreen: React.FC = () => {
               const granted = await requestPermission();
               if (granted && device) {
                 setCameraReady(true);
+                setCameraPreviewReady(false);
                 startScanning();
               } else {
                 Linking.openSettings();
@@ -980,6 +1046,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: 'rgba(255,255,255,0.6)',
+  },
+  statusPanel: {
+    alignItems: 'center',
+    maxWidth: 420,
+  },
+  statusTitle: {
+    marginTop: 10,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  statusSubtitle: {
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.72)',
+    textAlign: 'center',
+  },
+  camRecoverBtn: {
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(34,197,94,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.35)',
+  },
+  camRecoverBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#86EFAC',
+    letterSpacing: 0.2,
   },
 
   // ===== SCAN BUTTON =====

@@ -1,7 +1,7 @@
 import { OBSIDIAN_COLORS } from './colors';
 import { Article } from '@/types';
 
-export type PCStateKey = 'a_chaud' | 'a_reusiner' | 'en_usinage' | 'disponible' | 'envoye';
+export type PCStateKey = 'a_chaud' | 'a_reusiner' | 'en_usinage' | 'disponible' | 'envoye' | 'en_panne';
 
 export interface PCStateMeta {
   key: PCStateKey;
@@ -65,15 +65,26 @@ export const PC_STATE_COLORS: Record<PCStateKey, PCStateMeta> = {
     border: 'rgba(139, 92, 246, 0.25)',
     text: OBSIDIAN_COLORS.purple,
   },
+  en_panne: {
+    key: 'en_panne',
+    label: 'En panne',
+    icon: 'laptop-off',
+    color: '#EF4444',
+    subtle: 'rgba(239, 68, 68, 0.12)',
+    bg: 'rgba(239, 68, 68, 0.12)',
+    border: 'rgba(239, 68, 68, 0.30)',
+    text: '#EF4444',
+  },
 };
 
-export const PC_STATE_ORDER: PCStateKey[] = ['a_chaud', 'a_reusiner', 'en_usinage', 'disponible', 'envoye'];
+export const PC_STATE_ORDER: PCStateKey[] = ['a_chaud', 'a_reusiner', 'en_usinage', 'disponible', 'en_panne', 'envoye'];
 
 const normalize = (value?: string) => (value ?? '').toLowerCase().trim();
 
 export const getPCStateKeyFromLabel = (label?: string): PCStateKey | null => {
   const value = normalize(label);
   if (!value) return null;
+  if (value.includes('panne')) return 'en_panne';
   if (value.includes('envoy')) return 'envoye';
   if (value.includes('disponible')) return 'disponible';
   if (value.includes('usinage') || value.includes('en train d\'usiner')) return 'en_usinage';
@@ -117,5 +128,15 @@ export const isPCArticle = (article: Article): boolean => {
   const values = [article.typeArticle, article.sousType, article.famille]
     .filter((value): value is string => !!value)
     .map((value) => value.toLowerCase());
-  return values.some((value) => value === 'pc' || value.includes('portable agence') || value.includes('portable siège') || value.includes('portable siege') || value.includes('pc portable'));
+  return values.some((value) =>
+    value === 'pc' ||
+    value.includes('portable agence') ||
+    value.includes('portable siège') ||
+    value.includes('portable siege') ||
+    value.includes('pc portable') ||
+    value.includes('pc disponible') ||
+    value.includes('pc en panne') ||
+    value.includes('pc envoye') ||
+    value.includes('pc envoyé'),
+  );
 };

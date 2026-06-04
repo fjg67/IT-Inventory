@@ -9,7 +9,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Login: undefined;
   BranchSelection: { rememberMe?: boolean };
-  SiteSelection: { rememberMe?: boolean; branch?: string };
+  SiteSelection: { rememberMe?: boolean; branch?: string; startupMode?: boolean };
   Auth: { rememberMe?: boolean; siteId?: string | number; parentSiteId?: string | number };
   Main: NavigatorScreenParams<MainTabParamList>;
 };

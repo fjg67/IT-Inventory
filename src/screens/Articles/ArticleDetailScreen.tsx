@@ -32,7 +32,7 @@ import { useAppSelector } from '@/store';
 import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { notifyPCStatusChange } from '@/services/pcStatusNotificationService';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
-import { articleRepository, mouvementRepository, stockRepository } from '@/database';
+import { articleRepository, mouvementRepository, stockRepository, panneRepository } from '@/database';
 import { formatTimeParis, formatRelativeDateParis } from '@/utils/dateUtils';
 import {
   exportArticleDetail,
@@ -51,6 +51,9 @@ import { ExportCSVRow } from '@/components/article-detail/ExportCSVRow';
 import { QuickActionsSection } from '@/components/article-detail/QuickActionsSection';
 import { ArticleHistory } from '@/components/article-detail/ArticleHistory';
 import { useScrollHero, HERO_MAX_HEIGHT, HERO_MIN_HEIGHT } from '@/hooks/useScrollHero';
+import { ArticleConditionSelector } from '@/components/articles';
+import { useArticleCondition } from '@/hooks/useArticleCondition';
+import { PanneBanner, PanneHistoryTimeline, PanneResolutionSheet } from '@/components/panne';
 
 // ==================== HELPERS ====================
 const AVATAR_GRADIENTS = [
@@ -115,6 +118,8 @@ export const ArticleDetailScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [isUpdatingPCStatus, setIsUpdatingPCStatus] = useState(false);
+  const [pannes, setPannes] = useState<any[]>([]);
+  const [showResolutionSheet, setShowResolutionSheet] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!articleId || !effectiveSiteId) return;
@@ -139,6 +144,16 @@ export const ArticleDetailScreen: React.FC = () => {
     }, [loadData])
   );
 
+  // Load pannes for PC article
+  useEffect(() => {
+    if (article?.id) {
+      panneRepository.getPannesForPC(String(article.id)).then(setPannes).catch(err => {
+        console.warn('Erreur chargement pannes:', err);
+        setPannes([]);
+      });
+    }
+  }, [article?.id]);
+
   // Computed
   const stockActuel = article?.quantiteActuelle ?? 0;
   const isLowStock = article ? stockActuel < article.stockMini : false;
@@ -161,6 +176,28 @@ export const ArticleDetailScreen: React.FC = () => {
       value.includes('pc disponible'),
     );
   }, [article]);
+
+  // Active breakdown for PC
+  const activePanne = useMemo(() => {
+    if (article?.status !== 'en_panne') return null;
+    return pannes.find(p => !['resolu', 'irreparable'].includes(p.statut_reparation)) ?? null;
+  }, [article?.status, pannes]);
+
+  const {
+    condition,
+    defectiveCount,
+    conditionNote,
+    handleChange: handleConditionChange,
+    saveCondition,
+    isSaving: isSavingCondition,
+    isDirty: isConditionDirty,
+  } = useArticleCondition(
+    article?.id ?? null,
+    article?.condition ?? 'bon_etat',
+    article?.defectiveCount ?? 0,
+    stockActuel,
+    article?.conditionNote,
+  );
   const isTabletArticle = useMemo(() => false, []);
   const isTabletDecommissioned = useMemo(() => {
     if (!isTabletArticle) return false;
@@ -268,10 +305,52 @@ export const ArticleDetailScreen: React.FC = () => {
       setIsUpdatingPCStatus(false);
     }
   }, [article, currentTechnicien]);
+
+  const handleResolveBreakdown = useCallback(async (resolution: 'resolu' | 'irreparable', note?: string) => {
+    if (!activePanne || !article) return;
+
+    try {
+      await panneRepository.updatePanne(activePanne.id, {
+        statut_reparation: resolution,
+        note_resolution: note,
+      });
+
+      // Update article status back to available
+      const nextFamily = 'PC disponible';
+      await articleRepository.update(article.id, {
+        description: 'Statut: Disponible',
+        famille: nextFamily,
+        status: 'disponible',
+      });
+
+      // Refresh data
+      await loadData();
+      const updatedPannes = await panneRepository.getPannesForPC(String(article.id));
+      setPannes(updatedPannes);
+
+      setShowResolutionSheet(false);
+      Alert.alert('Succès', 'La panne a été résolue.');
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible de résoudre la panne.');
+      console.error('Erreur résolution panne:', error);
+    }
+  }, [activePanne, article, loadData]);
+
   const handleEdit = () => {
     Vibration.vibrate(10);
     navigation.navigate('ArticleEdit', { articleId });
   };
+
+  const handleSaveCondition = useCallback(async () => {
+    try {
+      const updated = await saveCondition();
+      if (!updated) return;
+      await loadData();
+      Alert.alert('Succes', "Etat de l'article mis a jour.");
+    } catch (error) {
+      Alert.alert('Erreur', "Impossible de sauvegarder l'etat de l'article.");
+    }
+  }, [saveCondition, loadData]);
 
   const handleDecommissionTablet = useCallback(async () => {
     if (!article || isTabletDecommissioned) return;
@@ -517,9 +596,46 @@ export const ArticleDetailScreen: React.FC = () => {
           </Animated.View>
         )}
 
+        {/* === Panne Banner (PC breakdown status) === */}
+        {isPCArticle && article?.status === 'en_panne' && activePanne && (
+          <PanneBanner
+            panne={activePanne}
+            onResolvePress={() => setShowResolutionSheet(true)}
+          />
+        )}
+
         {/* === Indicateur stock === */}
         {!isTabletArticle && !isPCArticle && (
           <StockIndicatorBar current={stockActuel} min={article.stockMini} />
+        )}
+
+        {!isPCArticle && (
+          <Animated.View entering={FadeInDown.delay(220).duration(280)} style={styles.conditionSection}>
+            <ArticleConditionSelector
+              condition={condition}
+              defectiveCount={defectiveCount}
+              totalStock={stockActuel}
+              conditionNote={conditionNote}
+              onChange={handleConditionChange}
+            />
+
+            {isConditionDirty && (
+              <TouchableOpacity
+                onPress={handleSaveCondition}
+                disabled={isSavingCondition}
+                style={[styles.saveConditionBtn, isSavingCondition && styles.saveConditionBtnDisabled]}
+              >
+                {isSavingCondition ? (
+                  <ActivityIndicator size="small" color="#F0FDF4" />
+                ) : (
+                  <>
+                    <Icon name="content-save-outline" size={16} color="#F0FDF4" />
+                    <Text style={styles.saveConditionBtnText}>Sauvegarder l'etat</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </Animated.View>
         )}
 
         {/* === Informations === */}
@@ -571,7 +687,22 @@ export const ArticleDetailScreen: React.FC = () => {
           />
         )}
 
+        {/* === Panne History Timeline === */}
+        {isPCArticle && pannes.length > 0 && (
+          <PanneHistoryTimeline pannes={pannes} />
+        )}
+
       </Animated.ScrollView>
+
+      {/* === Panne Resolution Sheet === */}
+      {showResolutionSheet && activePanne && (
+        <PanneResolutionSheet
+          visible={showResolutionSheet}
+          panne={activePanne}
+          onClose={() => setShowResolutionSheet(false)}
+          onSubmit={handleResolveBreakdown}
+        />
+      )}
     </View>
   );
 };
@@ -614,6 +745,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 48,
     gap: 20,
+  },
+  conditionSection: {
+    gap: 12,
+  },
+  saveConditionBtn: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#1B8A3E',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.35)',
+  },
+  saveConditionBtnDisabled: {
+    opacity: 0.7,
+  },
+  saveConditionBtnText: {
+    color: '#F0FDF4',
+    fontSize: 13,
+    fontWeight: '700',
   },
   // PC hero card
   pcHeroCard: {

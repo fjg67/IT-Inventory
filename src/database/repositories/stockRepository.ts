@@ -18,6 +18,49 @@ interface StockRow {
   Article?: { reference: string; name: string; minStock: number; unit: string } | null;
 }
 
+async function clampDefectiveCountToStock(articleId: string, stockQuantity: number): Promise<void> {
+  const supabase = getSupabaseClient();
+
+  try {
+    const { data: article } = await supabase
+      .from(tables.articles)
+      .select('id, condition, defectiveCount')
+      .eq('id', articleId)
+      .maybeSingle();
+
+    if (!article) return;
+
+    const defectiveCount = Math.max(0, article.defectiveCount ?? 0);
+    const safeStock = Math.max(0, stockQuantity);
+
+    if (article.condition === 'bon_etat' && defectiveCount === 0) return;
+
+    if (article.condition === 'bon_etat' && defectiveCount > 0) {
+      await supabase
+        .from(tables.articles)
+        .update({
+          defectiveCount: 0,
+          conditionNote: null,
+          conditionUpdatedAt: new Date().toISOString(),
+        })
+        .eq('id', articleId);
+      return;
+    }
+
+    if (defectiveCount > safeStock) {
+      await supabase
+        .from(tables.articles)
+        .update({
+          defectiveCount: safeStock,
+          conditionUpdatedAt: new Date().toISOString(),
+        })
+        .eq('id', articleId);
+    }
+  } catch (error) {
+    console.warn('[stockRepository] Impossible d\'ajuster defectiveCount:', error);
+  }
+}
+
 function mapRowToStockSite(row: StockRow): StockSite {
   return {
     id: row.id as any,
@@ -144,6 +187,8 @@ export const stockRepository = {
       }
       console.log('[stockRepository.createOrUpdate] Insert OK, id:', newId);
     }
+
+    await clampDefectiveCountToStock(artId, quantite);
   },
 
   async updateQuantite(articleId: string | number, siteId: string | number, quantite: number): Promise<void> {
@@ -154,6 +199,8 @@ export const stockRepository = {
       .eq('articleId', articleId)
       .eq('siteId', siteId);
     if (error) throw new Error(error.message);
+
+    await clampDefectiveCountToStock(String(articleId), quantite);
   },
 
   async initializeForArticle(articleId: string | number): Promise<void> {
