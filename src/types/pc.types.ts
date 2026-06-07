@@ -10,6 +10,21 @@ export type PanneStatutReparation = 'en_attente' | 'en_reparation' | 'resolu' | 
 
 // ==================== INTERFACES ====================
 
+export interface PC {
+  id: string;
+  hostname: string;
+  display_name?: string | null;
+  asset?: string;
+  model?: string;
+  status: PCStatus;
+  site?: string;
+  updatedAt?: string;
+}
+
+export const getPCDisplayName = (pc: PC): string => pc.display_name?.trim() || pc.hostname;
+
+export const hasPCDisplayName = (pc: PC): boolean => Boolean(pc.display_name?.trim());
+
 export interface PCPanne {
   id: string;
   pc_id: string;

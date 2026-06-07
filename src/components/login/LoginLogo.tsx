@@ -10,7 +10,6 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import LinearGradient from 'react-native-linear-gradient';
 import { LOGIN_COLORS } from './loginTheme';
 
 const LoginLogo: React.FC = () => {
@@ -52,14 +51,14 @@ const LoginLogo: React.FC = () => {
       <Animated.View style={[styles.halo, haloStyle]} />
 
       <Animated.View entering={ZoomIn.springify().damping(14).duration(600)}>
-        <LinearGradient
-          colors={['#1B8A3E', '#0D5C26']}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={styles.logoBox}
-        >
-          <Text style={styles.logoText}>IT</Text>
-        </LinearGradient>
+        <View style={styles.logoDisc}>
+          <View style={styles.iconWrap}>
+            <View style={styles.iconLine} />
+            <View style={styles.iconLine} />
+            <View style={styles.iconLine} />
+            <View style={styles.iconStem} />
+          </View>
+        </View>
       </Animated.View>
 
       <Animated.Text entering={FadeInDown.duration(500).delay(200)} style={styles.title}>
@@ -86,12 +85,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(34, 197, 94, 0.06)',
     top: 0,
   },
-  logoBox: {
-    width: 80,
-    height: 80,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: 'rgba(34, 197, 94, 0.3)',
+  logoDisc: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#14532D',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: LOGIN_COLORS.green_light,
@@ -100,11 +98,25 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 10,
   },
-  logoText: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: -1,
+  iconWrap: {
+    width: 26,
+    height: 26,
+    justifyContent: 'space-between',
+    position: 'relative',
+  },
+  iconLine: {
+    height: 5,
+    borderRadius: 2,
+    backgroundColor: '#22C55E',
+  },
+  iconStem: {
+    position: 'absolute',
+    right: -3,
+    top: 1,
+    width: 3,
+    height: 24,
+    borderRadius: 2,
+    backgroundColor: '#16A34A',
   },
   title: {
     marginTop: 16,

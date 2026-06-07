@@ -6,16 +6,7 @@ import {
   StyleSheet,
   Vibration,
   useWindowDimensions,
-} from 'react-native';import Animated, {
-  FadeIn,
-  FadeOut,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withRepeat,
-  withSequence,
-  cancelAnimation,
-} from 'react-native-reanimated';
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 import {
@@ -42,36 +33,14 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
   const { colors, isDark } = useTheme();
-  const iconScale = useSharedValue(1);
-  const glowOpacity = useSharedValue(0);
-
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
-  }));
-
-  const iconAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: iconScale.value }],
-  }));
 
   const handleFocus = useCallback(() => {
     setIsFocused(true);
-    iconScale.value = withTiming(1.15, { duration: 200 });
-    glowOpacity.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 900 }),
-        withTiming(0.35, { duration: 900 }),
-      ),
-      -1,
-      false,
-    );
-  }, [iconScale, glowOpacity]);
+  }, []);
 
   const handleBlur = useCallback(() => {
     setIsFocused(false);
-    iconScale.value = withTiming(1, { duration: 200 });
-    cancelAnimation(glowOpacity);
-    glowOpacity.value = withTiming(0, { duration: 300 });
-  }, [iconScale, glowOpacity]);
+  }, []);
 
   const handleClear = useCallback(() => {
     Vibration.vibrate(10);
@@ -89,16 +58,6 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
 
   return (
     <View style={styles.glowWrapper}>
-      {/* Animated glow ring */}
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          StyleSheet.absoluteFill,
-          styles.glowRing,
-          { borderColor: colors.primary + '55' },
-          glowStyle,
-        ]}
-      />
       <View
         style={[
           styles.container,
@@ -117,7 +76,7 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
       ]}
     >
       {/* Search icon with animated container */}
-      <Animated.View style={[styles.searchIconWrap, iconAnimStyle]}>
+      <View style={styles.searchIconWrap}>
         <View
           style={[
             styles.searchIconCircle,
@@ -136,7 +95,7 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
             color={isFocused ? colors.primary : colors.textMuted}
           />
         </View>
-      </Animated.View>
+      </View>
 
       <TextInput
         style={[
@@ -158,10 +117,6 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
       />
 
       {localValue.length > 0 && (
-        <Animated.View
-          entering={FadeIn.duration(200)}
-          exiting={FadeOut.duration(150)}
-        >
           <TouchableOpacity
             onPress={handleClear}
             style={[
@@ -180,7 +135,6 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
               color={colors.textMuted}
             />
           </TouchableOpacity>
-        </Animated.View>
       )}
       </View>
     </View>

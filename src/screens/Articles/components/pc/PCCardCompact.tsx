@@ -6,6 +6,7 @@ import { GestureDetector } from 'react-native-gesture-handler';
 import { Article } from '@/types';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
 import { formatPCDate, getPCStateFromArticle, isPCArticle } from '@/constants/pcStates';
+import { PANNE_TYPE_CONFIG, PanneType } from '@/types/pc.types';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { PCSwipeActions } from './PCSwipeActions';
 
@@ -29,6 +30,12 @@ export const PCCardCompact: React.FC<PCCardCompactProps> = ({ article, index, on
   const hostname = article.nom || article.reference;
   const allocation = article.sousType || article.typeArticle || article.famille || 'PC';
   const model = article.modele || '';
+  const parsedPanneType = article.description?.match(/type\s*:\s*(materielle|logicielle|batterie|reseau|autre)/i)?.[1]?.toLowerCase() as PanneType | undefined;
+  const panneType = article.panneType ?? parsedPanneType;
+  const panneLabel = panneType ? PANNE_TYPE_CONFIG[panneType]?.label : 'Non renseignée';
+  const metaLabel = state.key === 'en_panne' && panneLabel
+    ? `${allocation} · Nature: ${panneLabel}`
+    : `${allocation} · ${model || `Modifié le ${formatPCDate(article.dateModification)}`}`;
 
   return (
     <Animated.View entering={FadeInDown.delay(Math.min(index, 12) * 24).duration(220)} style={styles.outer}>
@@ -56,7 +63,7 @@ export const PCCardCompact: React.FC<PCCardCompactProps> = ({ article, index, on
                     <Icon name={state.icon} size={12} color={state.text} />
                   </View>
                 </View>
-                <Text style={styles.meta} numberOfLines={1}>{allocation} · {model || `Modifié le ${formatPCDate(article.dateModification)}`}</Text>
+                <Text style={styles.meta} numberOfLines={1}>{metaLabel}</Text>
               </View>
               <Icon name="chevron-right" size={16} color={OBSIDIAN_COLORS.text_muted} />
             </Pressable>

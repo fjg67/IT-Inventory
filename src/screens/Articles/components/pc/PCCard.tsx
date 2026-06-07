@@ -6,6 +6,7 @@ import { GestureDetector } from 'react-native-gesture-handler';
 import { Article } from '@/types';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
 import { formatPCDate, getPCStateFromArticle, isPCArticle } from '@/constants/pcStates';
+import { PANNE_TYPE_CONFIG, PanneType } from '@/types/pc.types';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { PCSwipeActions } from './PCSwipeActions';
 
@@ -48,6 +49,12 @@ export const PCCard: React.FC<PCCardProps> = ({ article, index, onPress, onMarkH
   const allocation = article.sousType || article.typeArticle || article.famille || 'PC';
   const identifier = article.barcode || article.reference || '';
   const lastUpdated = formatPCDate(article.dateModification);
+  const parsedPanneType = useMemo<PanneType | null>(() => {
+    const match = article.description?.match(/type\s*:\s*(materielle|logicielle|batterie|reseau|autre)/i);
+    return (match?.[1]?.toLowerCase() as PanneType) ?? null;
+  }, [article.description]);
+  const panneType = article.panneType ?? parsedPanneType;
+  const panneLabel = panneType ? PANNE_TYPE_CONFIG[panneType]?.label : 'Non renseignée';
 
   return (
     <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 40).duration(260)} style={styles.outer}>
@@ -113,6 +120,13 @@ export const PCCard: React.FC<PCCardProps> = ({ article, index, onPress, onMarkH
                   </View>
                   {brandModel ? <Text style={styles.modelText} numberOfLines={1}>{brandModel}</Text> : null}
                 </View>
+
+                {state.key === 'en_panne' ? (
+                  <View style={styles.panneRow}>
+                    <Icon name="alert-circle-outline" size={11} color="#FCA5A5" />
+                    <Text style={styles.panneText} numberOfLines={1}>Nature: {panneLabel}</Text>
+                  </View>
+                ) : null}
               </View>
             </Pressable>
           </Animated.View>
@@ -238,5 +252,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginLeft: 8,
     maxWidth: '52%',
+  },
+  panneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  panneText: {
+    color: '#FCA5A5',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

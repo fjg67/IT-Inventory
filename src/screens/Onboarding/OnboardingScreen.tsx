@@ -1,171 +1,200 @@
-// ============================================
-// ONBOARDING SCREEN - IT-Inventory Application
-// Écran principal de présentation - Design premium
-// ============================================
-
-import React, { useRef, useState } from 'react';
-import { View, StyleSheet, StatusBar, Dimensions } from 'react-native';
-import Swiper from 'react-native-swiper';
-import LinearGradient from 'react-native-linear-gradient';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  StatusBar,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import WelcomeSlide from './slides/WelcomeSlide';
-import ScanSlide from './slides/ScanSlide';
-import TraceabilitySlide from './slides/TraceabilitySlide';
-import MultiSiteSlide from './slides/MultiSiteSlide';
-import SlideIndicator from './components/SlideIndicator';
-import OnboardingButton from './components/OnboardingButton';
-import { onboardingTheme } from '@/constants/onboardingTheme';
-import { useResponsive } from '@/utils/responsive';
+import type { RootStackParamList } from '@/navigation/types';
+import { OnboardingBackground } from './components/OnboardingBackground';
+import { OnboardingDots } from './components/OnboardingDots';
+import { OnboardingFooter } from './components/OnboardingFooter';
+import { SlideMultiSite } from './slides/SlideMultiSite';
+import { SlideScan } from './slides/SlideScan';
+import { SlideTracing } from './slides/SlideTracing';
+import { SlideWelcome } from './slides/SlideWelcome';
 
-const { width: W, height: H } = Dimensions.get('window');
-const PARTICLES = Array.from({ length: 25 }, (_, i) => ({
-  id: i,
-  left: Math.random() * W,
-  top: Math.random() * H,
-  size: Math.random() * 4 + 2,
-  opacity: Math.random() * 0.08 + 0.03,
-}));
+const SLIDES = ['welcome', 'scan', 'tracing', 'multisite'] as const;
+type SlideId = typeof SLIDES[number];
 
-const OnboardingScreen = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>();
-  const swiperRef = useRef<Swiper>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const totalSlides = 4;
-  const { isTablet, contentMaxWidth } = useResponsive();
+const ONBOARDING_KEY = '@it-inventory/onboarding_seen';
 
-  const handleNext = () => {
-    if (currentIndex < totalSlides - 1) {
-      if (swiperRef.current) {
-        swiperRef.current.scrollBy(1);
+const SLIDE_ACCENTS: Record<SlideId, { color: string }> = {
+  welcome: { color: '#22C55E' },
+  scan: { color: '#22C55E' },
+  tracing: { color: '#8B5CF6' },
+  multisite: { color: '#F59E0B' },
+};
+
+const OnboardingScreen: React.FC = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const pagerRef = useRef<FlatList<SlideId>>(null);
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+
+  const isLast = activeIndex === SLIDES.length - 1;
+  const activeSlide = SLIDES[activeIndex];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkOnboarding = async () => {
+      try {
+        const done = await AsyncStorage.getItem(ONBOARDING_KEY);
+        if (!cancelled && done === 'true') {
+          navigation.replace('Login');
+          return;
+        }
+      } finally {
+        if (!cancelled) {
+          setCheckingOnboarding(false);
+        }
       }
-    } else {
-      handleStart();
-    }
-  };
+    };
 
-  const handleSkip = () => {
-    handleStart();
-  };
+    checkOnboarding().catch(() => {
+      if (!cancelled) {
+        setCheckingOnboarding(false);
+      }
+    });
 
-  const handleStart = async () => {
-    // Marquer l'onboarding comme vu
-    await AsyncStorage.setItem('@it-inventory/onboarding_seen', 'true');
-    // Aller vers la page de connexion premium
+    return () => {
+      cancelled = true;
+    };
+  }, [navigation]);
+
+  const handleFinish = useCallback(async () => {
+    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
     navigation.replace('Login');
-  };
+  }, [navigation]);
+
+  const handleSkip = useCallback(() => {
+    handleFinish().catch(() => {});
+  }, [handleFinish]);
+
+  const goNext = useCallback(() => {
+    if (isLast) {
+      handleFinish().catch(() => {});
+      return;
+    }
+
+    pagerRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
+  }, [activeIndex, handleFinish, isLast]);
+
+  const onMomentumScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const width = event.nativeEvent.layoutMeasurement.width;
+    if (!width) {
+      return;
+    }
+
+    const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+    if (nextIndex >= 0 && nextIndex < SLIDES.length) {
+      setActiveIndex(nextIndex);
+    }
+  }, []);
+
+  const renderSlide = useCallback(({ item }: { item: SlideId }) => {
+    if (item === 'welcome') {
+      return (
+        <View style={[styles.slidePage, { width }]}> 
+          <SlideWelcome isActive={activeIndex === 0} />
+        </View>
+      );
+    }
+
+    if (item === 'scan') {
+      return (
+        <View style={[styles.slidePage, { width }]}> 
+          <SlideScan isActive={activeIndex === 1} />
+        </View>
+      );
+    }
+
+    if (item === 'tracing') {
+      return (
+        <View style={[styles.slidePage, { width }]}> 
+          <SlideTracing isActive={activeIndex === 2} />
+        </View>
+      );
+    }
+
+    return (
+      <View style={[styles.slidePage, { width }]}> 
+        <SlideMultiSite isActive={activeIndex === 3} />
+      </View>
+    );
+  }, [activeIndex, width]);
+
+  const accentColor = useMemo(() => SLIDE_ACCENTS[activeSlide].color, [activeSlide]);
+
+  if (checkingOnboarding) {
+    return (
+      <View style={styles.loaderScreen}>
+        <StatusBar barStyle="light-content" backgroundColor="#0A0F0D" />
+        <ActivityIndicator size="small" color="#22C55E" />
+      </View>
+    );
+  }
 
   return (
-    <>
-      <StatusBar 
-        barStyle="light-content" 
-        backgroundColor={onboardingTheme.colors.gradient.start} 
-        translucent 
+    <View style={styles.screen}>
+      <StatusBar barStyle="light-content" backgroundColor="#0A0F0D" />
+
+      <OnboardingBackground accentColor={accentColor} />
+
+      <FlatList
+        ref={pagerRef}
+        style={styles.pager}
+        data={SLIDES}
+        keyExtractor={(item) => item}
+        renderItem={renderSlide}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        bounces={false}
+        onMomentumScrollEnd={onMomentumScrollEnd}
       />
-      
-      <LinearGradient
-        colors={['#0F172A', '#1E293B', '#334155']}
-        style={styles.container}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        {/* Particules flottantes */}
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          {PARTICLES.map((p) => (
-            <View
-              key={p.id}
-              style={[
-                styles.particle,
-                {
-                  left: p.left,
-                  top: p.top,
-                  width: p.size,
-                  height: p.size,
-                  borderRadius: p.size / 2,
-                  opacity: p.opacity,
-                },
-              ]}
-            />
-          ))}
-        </View>
 
-        <View style={[styles.contentContainer, isTablet && contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : undefined]}>
-          <Swiper
-            ref={swiperRef}
-            loop={false}
-            showsPagination={false}
-            onIndexChanged={(index) => setCurrentIndex(index)}
-            scrollEventThrottle={16}
-          >
-            <WelcomeSlide />
-            <ScanSlide />
-            <TraceabilitySlide />
-            <MultiSiteSlide />
-          </Swiper>
-        </View>
-
-        {/* Indicateurs */}
-        <View style={styles.indicatorContainer}>
-          <SlideIndicator total={totalSlides} current={currentIndex} />
-        </View>
-
-        {/* Boutons */}
-        <View style={[styles.buttonsContainer, isTablet && contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center' } : undefined]}>
-          <OnboardingButton
-            title={currentIndex === totalSlides - 1 ? 'Commencer' : 'Suivant'}
-            onPress={handleNext}
-            primary
-            style={styles.mainButton}
-          />
-          
-          {currentIndex < totalSlides - 1 ? (
-            <OnboardingButton
-              title="Passer"
-              onPress={handleSkip}
-              secondary
-            />
-          ) : (
-            <View style={styles.spacer} /> // Placeholder pour garder l'espacement
-          )}
-        </View>
-      </LinearGradient>
-    </>
+      <View style={[styles.footer, { paddingBottom: 40 + (insets.bottom || 0) }]}> 
+        <OnboardingDots total={SLIDES.length} active={activeIndex} />
+        <OnboardingFooter isLast={isLast} onNext={goNext} onSkip={handleSkip} />
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  loaderScreen: {
+    flex: 1,
+    backgroundColor: '#0A0F0D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  screen: {
+    flex: 1,
+    backgroundColor: '#0A0F0D',
+  },
+  pager: {
     flex: 1,
   },
-  particle: {
-    position: 'absolute',
-    backgroundColor: '#FFF',
-  },
-  contentContainer: {
+  slidePage: {
     flex: 1,
-    paddingBottom: 150, // Espace pour les boutons
   },
-  indicatorContainer: {
-    position: 'absolute',
-    top: 60,
-    alignSelf: 'center',
-    width: '100%',
-    alignItems: 'center',
-  },
-  buttonsContainer: {
-    position: 'absolute',
-    bottom: 40,
-    width: '100%',
-    paddingHorizontal: 24,
-    alignItems: 'center',
-  },
-  mainButton: {
-    marginBottom: 8,
-  },
-  spacer: {
-    height: 50,
+  footer: {
+    paddingHorizontal: 20,
+    gap: 16,
   },
 });
 

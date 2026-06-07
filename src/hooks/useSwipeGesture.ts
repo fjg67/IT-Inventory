@@ -33,6 +33,7 @@ export const useSwipeGesture = (options?: UseSwipeGestureOptions) => {
   const translateX = useSharedValue(0);
   const maxSwipe = options?.maxSwipe ?? -240;
   const openThreshold = options?.openThreshold ?? -80;
+  const isLeftSwipe = maxSwipe < 0;
   const closedRef = useRef(true);
   const swipeIdRef = useRef<number>(++swipeIdCounter);
 
@@ -60,11 +61,17 @@ export const useSwipeGesture = (options?: UseSwipeGestureOptions) => {
         runOnJS(closeActiveSwipeIfOther)(swipeIdRef.current);
       })
       .onUpdate((event) => {
-        const next = Math.max(maxSwipe, Math.min(0, event.translationX));
+        const next = isLeftSwipe
+          ? Math.max(maxSwipe, Math.min(0, event.translationX))
+          : Math.min(maxSwipe, Math.max(0, event.translationX));
         translateX.value = next;
       })
       .onEnd(() => {
-        if (translateX.value < openThreshold) {
+        const shouldOpen = isLeftSwipe
+          ? translateX.value < openThreshold
+          : translateX.value > openThreshold;
+
+        if (shouldOpen) {
           translateX.value = withSpring(maxSwipe, { damping: 18, stiffness: 220 });
           runOnJS(setActiveSwipe)(swipeIdRef.current, close);
           runOnJS(setClosedState)(false);
@@ -74,7 +81,7 @@ export const useSwipeGesture = (options?: UseSwipeGestureOptions) => {
           runOnJS(setClosedState)(true);
         }
       }),
-    [close, maxSwipe, openThreshold, setClosedState, translateX],
+    [close, isLeftSwipe, maxSwipe, openThreshold, setClosedState, translateX],
   );
 
   const cardStyle = useAnimatedStyle(() => ({
@@ -82,7 +89,7 @@ export const useSwipeGesture = (options?: UseSwipeGestureOptions) => {
   }));
 
   const actionsStyle = useAnimatedStyle(() => ({
-    opacity: translateX.value < -8 ? 1 : 0,
+    opacity: isLeftSwipe ? (translateX.value < -8 ? 1 : 0) : (translateX.value > 8 ? 1 : 0),
   }));
 
   const closeFromJS = useCallback(() => {

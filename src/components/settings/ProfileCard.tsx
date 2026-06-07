@@ -13,6 +13,9 @@ interface ProfileCardProps {
   roleColor: string;
   roleBg: string;
   siteName: string;
+  sessionCount: string;
+  connectionLabel: string;
+  movementCount: string;
   onMenuPress: () => void;
 }
 
@@ -24,6 +27,9 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   roleColor,
   roleBg,
   siteName,
+  sessionCount,
+  connectionLabel,
+  movementCount,
   onMenuPress,
 }) => (
   <View style={styles.card}>
@@ -61,9 +67,9 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     <View style={styles.divider} />
 
     <ProfileStatsRow
-      sessionCount="1"
-      connectionLabel="Aujourd'hui 14:32"
-      movementCount="337"
+      sessionCount={sessionCount}
+      connectionLabel={connectionLabel}
+      movementCount={movementCount}
     />
   </View>
 );

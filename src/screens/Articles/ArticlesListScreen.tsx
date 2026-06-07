@@ -93,6 +93,7 @@ import { isPCArticle, PCStateKey } from '@/constants/pcStates';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import type { SendPCFormState } from '@/hooks/useSendPCForm';
+import type { PanneType, PannePriorite } from '@/types/pc.types';
 
 const PC_CATEGORY_OPTIONS = [
   {
@@ -1259,12 +1260,29 @@ export const ArticlesListScreen: React.FC = () => {
           );
         }
 
+        let nextData = result.data;
+        if (isPCTab) {
+          const pcIds = nextData.map((article) => String(article.id));
+          const activePannesByPcId = await panneRepository.getActivePannesByPcIds(pcIds);
+
+          nextData = nextData.map((article) => {
+            const activePanne = activePannesByPcId[String(article.id)];
+            if (!activePanne) return article;
+
+            return {
+              ...article,
+              panneType: activePanne.type_panne as PanneType,
+              pannePriorite: activePanne.priorite as PannePriorite,
+            };
+          });
+        }
+
         if (resetList) {
-          setArticles(result.data);
+          setArticles(nextData);
           pageRef.current = isManagedInventoryTab ? 0 : 1;
           setPage(isManagedInventoryTab ? 0 : 1);
         } else {
-          setArticles(prev => [...prev, ...result.data]);
+          setArticles(prev => [...prev, ...nextData]);
           pageRef.current = currentPage + 1;
           setPage(currentPage + 1);
         }
@@ -1285,7 +1303,7 @@ export const ArticlesListScreen: React.FC = () => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [effectiveSiteId, isManagedInventoryTab],
+    [effectiveSiteId, isManagedInventoryTab, isPCTab],
   );
 
   // Reload when filters change
@@ -2158,6 +2176,7 @@ export const ArticlesListScreen: React.FC = () => {
         await pcSentService.record({
           articleId: String(targetArticleSent.id),
           hostname: targetArticleSent.nom?.trim() || targetArticleSent.reference?.trim() || 'PC inconnu',
+          displayName: targetArticleSent.displayName?.trim() || targetArticleSent.display_name?.trim() || undefined,
           asset: targetArticleSent.barcode?.trim(),
           model: targetArticleSent.modele?.trim(),
           brand: targetArticleSent.marque?.trim(),
@@ -2886,6 +2905,7 @@ const renderListHeader = useCallback(() => {
           onMarkAvailable={handleMarkPCAvailable}
           onMarkProcessing={handleMarkPCProcessing}
           onMarkBreakdown={handleMarkBreakdown}
+          onResolveBreakdown={handleMarkPCAvailable}
           onDelete={handleDeletePC}
           onExportSentCsv={handleExportSentCsv}
           exportingSentCsv={exportingSentCsv}

@@ -11,6 +11,9 @@ type ProfileCardProps = {
   role: string;
   delay?: number;
   onPress: () => void;
+  onLongPress?: () => void;
+  delayLongPress?: number;
+  disabled?: boolean;
   rightNode?: React.ReactNode;
 };
 
@@ -19,12 +22,18 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   role,
   delay = 0,
   onPress,
+  onLongPress,
+  delayLongPress,
+  disabled,
   rightNode,
 }) => {
   return (
     <Animated.View entering={FadeInDown.delay(delay).duration(240)}>
       <Pressable
         onPress={onPress}
+        onLongPress={onLongPress}
+        delayLongPress={delayLongPress}
+        disabled={disabled}
         android_ripple={{ color: ONBOARDING_COLORS.green_subtle }}
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       >

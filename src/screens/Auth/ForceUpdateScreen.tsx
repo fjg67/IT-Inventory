@@ -1,321 +1,252 @@
-﻿// ============================================
-// FORCE UPDATE SCREEN - IT-Inventory
-// Blocks app usage when version is outdated
-// ============================================
-
-import React from 'react';
+﻿import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
   Linking,
-  TouchableOpacity,
-  Image,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Animated, { FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { APP_CONFIG } from '@/constants';
-import { useTheme } from '@/theme';
+import {
+  AppLogoSquare,
+  ChangelogItem,
+  DownloadBadge,
+  UpdateBackground,
+  VersionCard,
+} from '@/components/force-update';
+
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.itinventory';
 
 interface ForceUpdateScreenProps {
+  currentVersion?: string;
   minVersion?: string;
+  changelog?: string[];
   updateUrl?: string;
   releaseNotes?: string[];
 }
 
-const defaultReleaseNotes = [
-  'Ajout du statut En panne dans le formulaire PC avec details de panne et sauvegarde en base.',
-  'Ameliorations du flux mouvement de stock avec remise a zero automatique au retour.',
-  'Corrections de stabilite, recherche filtree et optimisation generale de l application.',
+const DEFAULT_CHANGELOG = [
+  'Statut En panne dans le formulaire PC',
+  'Améliorations du flux mouvement de stock',
+  'Corrections de stabilité et recherche filtrée',
 ];
 
-const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({ minVersion, updateUrl, releaseNotes }) => {
-  const { colors, isDark } = useTheme();
-  const storeUrl = updateUrl || APP_CONFIG.playStoreUrl;
-  const notes = releaseNotes?.length ? releaseNotes : defaultReleaseNotes;
+const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({
+  currentVersion,
+  minVersion,
+  changelog,
+  updateUrl,
+  releaseNotes,
+}) => {
+  const storeUrl = updateUrl || APP_CONFIG.playStoreUrl || PLAY_STORE_URL;
+  const notes = changelog?.length
+    ? changelog
+    : releaseNotes?.length
+      ? releaseNotes
+      : DEFAULT_CHANGELOG;
+  const installedVersion = currentVersion || APP_CONFIG.version;
 
   const handleUpdate = () => {
-    Linking.openURL(storeUrl).catch(() => {});
+    Linking.openURL(storeUrl).catch(() => {
+      Linking.openURL('market://details?id=com.itinventory').catch(() => {});
+    });
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.backgroundBase }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.backgroundBase} />
+    <View style={styles.screen}>
+      <StatusBar barStyle="light-content" backgroundColor="#0A0F0D" />
+      <UpdateBackground />
 
-      {/* Background blobs */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <LinearGradient
-          colors={['rgba(239,68,68,0.06)', 'rgba(239,68,68,0)']}
-          style={[styles.blob, { width: 280, height: 280, top: -60, left: -80 }]}
-        />
-        <LinearGradient
-          colors={['rgba(0,122,57,0.05)', 'rgba(99,102,241,0)']}
-          style={[styles.blob, { width: 220, height: 220, bottom: 60, right: -60 }]}
-        />
-      </View>
+      <ScrollView contentContainerStyle={styles.scroll} bounces={false}>
+        <Animated.View entering={ZoomIn.delay(120).duration(320)} style={styles.logosStack}>
+          <AppLogoSquare />
+          <DownloadBadge />
+        </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.logoSection}>
-        <Image
-          source={require('@/assets/images/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </Animated.View>
-
-      <Animated.View entering={ZoomIn.delay(400).duration(400)} style={styles.iconSection}>
-        <LinearGradient
-          colors={['#EF4444', '#DC2626']}
-          style={styles.iconCircle}
-        >
-          <Icon name="cellphone-arrow-down" size={48} color="#FFF" />
-        </LinearGradient>
-      </Animated.View>
-
-      <Animated.View entering={FadeInUp.delay(600).duration(500)} style={styles.textSection}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>
-          Mise à jour requise
-        </Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Une nouvelle version de l'application est disponible. Mettez a jour depuis Google Play pour continuer a acceder a IT-Inventory, beneficier des dernieres ameliorations et garder l acces a toutes les nouvelles fonctionnalites.
-        </Text>
-
-        <TouchableOpacity activeOpacity={0.8} onPress={handleUpdate} style={styles.linkPill}>
-          <Icon name="link-variant" size={14} color="#FFFFFF" />
-          <Text style={styles.linkPillText}>Ouvrir le lien de mise à jour</Text>
-        </TouchableOpacity>
-
-        <Text numberOfLines={1} ellipsizeMode="middle" style={[styles.storeUrlText, { color: colors.textMuted }]}>
-          {storeUrl}
-        </Text>
-
-        <View style={[styles.releasesBox, { backgroundColor: isDark ? 'rgba(15,23,42,0.56)' : '#FFFFFF', borderColor: isDark ? 'rgba(148,163,184,0.22)' : '#E2E8F0' }]}>
-          <View style={styles.releasesHeader}>
-            <Icon name="sparkles" size={16} color="#007A39" />
-            <Text style={[styles.releasesTitle, { color: colors.textPrimary }]}>Nouveautés de cette version</Text>
+        <Animated.View entering={FadeInDown.delay(180).duration(260)} style={styles.badgeRow}>
+          <View style={styles.badge}>
+            <Icon name="alert-circle" size={13} color="#EF4444" />
+            <Text style={styles.badgeText}>MISE À JOUR REQUISE</Text>
           </View>
-          {notes.map((note) => (
-            <View key={note} style={styles.releaseItem}>
-              <Icon name="check-circle-outline" size={14} color="#007A39" />
-              <Text style={[styles.releaseText, { color: colors.textSecondary }]}>{note}</Text>
-            </View>
+        </Animated.View>
+
+        <Animated.Text entering={FadeInDown.delay(240).duration(260)} style={styles.title}>
+          Nouvelle version disponible
+        </Animated.Text>
+
+        <Animated.Text entering={FadeInDown.delay(300).duration(280)} style={styles.desc}>
+          Une mise à jour est nécessaire pour continuer à utiliser
+          <Text style={styles.descHighlight}> IT-Inventory</Text>
+          {' '}et accéder à toutes les nouvelles fonctionnalités.
+        </Animated.Text>
+
+        <Animated.View entering={FadeInDown.delay(360).duration(280)} style={styles.ctaWrapper}>
+          <Pressable onPress={handleUpdate} style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]}>
+            <Icon name="google-play" size={20} color="#FFFFFF" />
+            <Text style={styles.ctaText}>Ouvrir le Google Play Store</Text>
+          </Pressable>
+          <Text style={styles.storeUrl}>play.google.com/store/apps/details?id=com.itinventory</Text>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(420).duration(320)} style={styles.changelogCard}>
+          <View style={styles.changelogHeader}>
+            <Icon name="sparkles" size={16} color="#22C55E" />
+            <Text style={styles.changelogTitle}>Nouveautés de cette version</Text>
+          </View>
+
+          {notes.map((item, index) => (
+            <ChangelogItem key={`${item}-${index}`} text={item} delay={500 + index * 70} />
           ))}
-        </View>
+        </Animated.View>
 
-        <View style={[styles.versionBox, { backgroundColor: isDark ? 'rgba(239,68,68,0.1)' : '#FEF2F2', borderColor: isDark ? 'rgba(239,68,68,0.2)' : '#FECACA' }]}>
-          <View style={styles.versionRow}>
-            <Text style={[styles.versionLabel, { color: colors.textMuted }]}>Version actuelle</Text>
-            <Text style={[styles.versionValue, { color: '#EF4444' }]}>v{APP_CONFIG.version}</Text>
-          </View>
-          {minVersion && (
-            <View style={styles.versionRow}>
-              <Text style={[styles.versionLabel, { color: colors.textMuted }]}>Version minimale</Text>
-              <Text style={[styles.versionValue, { color: '#10B981' }]}>v{minVersion}</Text>
-            </View>
-          )}
-        </View>
+        <Animated.View entering={FadeInDown.delay(520).duration(300)} style={styles.versionsGrid}>
+          <VersionCard label="Version actuelle" value={installedVersion} variant="danger" />
+          <VersionCard label="Version minimale" value={minVersion || 'N/A'} variant="success" />
+        </Animated.View>
 
-        <View style={[styles.infoBox, { backgroundColor: isDark ? 'rgba(0,122,57,0.14)' : 'rgba(0,122,57,0.08)', borderColor: isDark ? 'rgba(16,185,129,0.22)' : 'rgba(0,122,57,0.14)' }]}>
-          <Icon name="information-outline" size={16} color="#007A39" />
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            Apres installation de la mise a jour et relance de l application, l acces sera retabli automatiquement.
+        <Animated.View entering={FadeIn.delay(620).duration(260)} style={styles.infoNote}>
+          <Icon name="information-outline" size={17} color="#22C55E" />
+          <Text style={styles.infoNoteText}>
+            Après installation et relance de l'application, l'accès sera rétabli automatiquement.
           </Text>
-        </View>
-      </Animated.View>
-
-      <Animated.View entering={FadeInUp.delay(800).duration(500)} style={styles.buttonSection}>
-        <TouchableOpacity activeOpacity={0.8} onPress={handleUpdate} style={styles.updateBtn}>
-          <LinearGradient
-            colors={['#007A39', '#007A39']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.updateBtnGradient}
-          >
-            <Icon name="google-play" size={22} color="#FFF" />
-            <Text style={styles.updateBtnText}>Mettre à jour sur Google Play</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </Animated.View>
-
-      <View style={styles.footer}>
-        <Icon name="shield-check-outline" size={12} color={colors.textMuted} />
-        <Text style={[styles.footerText, { color: colors.textMuted }]}>
-          IT-Inventory · Gestion de stock IT
-        </Text>
-      </View>
+        </Animated.View>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: '#0A0F0D',
+  },
+  scroll: {
+    padding: 20,
+    paddingTop: 40,
     alignItems: 'center',
-    paddingHorizontal: 32,
+    gap: 14,
+    paddingBottom: 40,
   },
-  blob: {
-    position: 'absolute',
-    borderRadius: 999,
+  logosStack: {
+    alignItems: 'flex-start',
+    marginBottom: 4,
   },
-  logoSection: {
-    marginBottom: 24,
-  },
-  logo: {
-    width: 72,
-    height: 72,
-    borderRadius: 18,
-  },
-  iconSection: {
-    marginBottom: 28,
-  },
-  iconCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 28,
+  badgeRow: {
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  textSection: {
+  badge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.28)',
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#EF4444',
+    letterSpacing: 0.8,
   },
   title: {
     fontSize: 24,
     fontWeight: '800',
+    color: '#F0FDF4',
+    textAlign: 'center',
     letterSpacing: -0.5,
-    marginBottom: 10,
-    textAlign: 'center',
   },
-  subtitle: {
-    fontSize: 14,
-    fontWeight: '500',
+  desc: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
     lineHeight: 22,
-    textAlign: 'center',
-    paddingHorizontal: 8,
-    marginBottom: 20,
+    maxWidth: 320,
   },
-  linkPill: {
-    minHeight: 40,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    backgroundColor: '#007A39',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 18,
-  },
-  linkPillText: {
-    color: '#FFFFFF',
-    fontSize: 13,
+  descHighlight: {
+    color: '#86EFAC',
     fontWeight: '700',
   },
-  storeUrlText: {
+  ctaWrapper: {
     width: '100%',
-    fontSize: 11,
-    fontWeight: '500',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  releasesBox: {
-    width: '100%',
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 14,
-    marginBottom: 14,
-    gap: 10,
-  },
-  releasesHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 2,
-  },
-  releasesTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: -0.1,
-  },
-  releaseItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  releaseText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '500',
-  },
-  versionBox: {
-    width: '100%',
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 14,
-    gap: 8,
-  },
-  infoBox: {
-    width: '100%',
-    marginTop: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
-    fontWeight: '500',
-  },
-  versionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  versionLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  versionValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  buttonSection: {
-    width: '100%',
-  },
-  updateBtn: {
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  updateBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
-  },
-  updateBtnText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 28,
-    flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  footerText: {
+  ctaButton: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 15,
+    borderRadius: 15,
+    backgroundColor: '#1B8A3E',
+    elevation: 8,
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+  },
+  ctaButtonPressed: {
+    backgroundColor: '#156B2F',
+    transform: [{ scale: 0.97 }],
+  },
+  ctaText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  storeUrl: {
     fontSize: 11,
-    fontWeight: '500',
+    color: '#374151',
+    textAlign: 'center',
+  },
+  changelogCard: {
+    width: '100%',
+    backgroundColor: '#111A14',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.1)',
+    padding: 14,
+  },
+  changelogHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginBottom: 12,
+  },
+  changelogTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F0FDF4',
+  },
+  versionsGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 10,
+  },
+  infoNote: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(34,197,94,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.12)',
+  },
+  infoNoteText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 19,
   },
 });
 

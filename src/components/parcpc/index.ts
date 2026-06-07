@@ -5,6 +5,7 @@ export * from './PCFilterChips';
 export * from './PCHeader';
 export * from './PCModelsSection';
 export * from './PCCard';
+export * from './PCRenameModal';
 export * from './PCRepartitionSection';
 export * from './PCSearchBar';
 export * from './PCStateBar';

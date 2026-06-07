@@ -31,7 +31,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { loadTechniciens, loadTechniciensBySite, loginTechnicien } from '@/store/slices/authSlice';
 import { FullScreenLoading } from '@/components';
@@ -97,6 +97,7 @@ const findProtectedProfileMfa = (technicien: Technicien): ProtectedProfileMfaCon
 // ==================== MAIN AUTH SCREEN ====================
 export const AuthScreen: React.FC = () => {
   const dispatch = useAppDispatch();
+  const navigation = useNavigation<any>();
   const route = useRoute();
   const { isTablet } = useResponsive();
   const { colors, isDark } = useTheme();
@@ -105,6 +106,7 @@ export const AuthScreen: React.FC = () => {
   const siteId = params.siteId;
   const parentSiteId = params.parentSiteId;
   const { techniciens, isLoading, error } = useAppSelector(state => state.auth);
+  const alreadyAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   const siteActif = useAppSelector(state => state.site.siteActif);
   const visibleTechniciens = useMemo(() => {
     const techniciensWithoutExcluded = techniciens.filter((technicien) => !shouldHideTechnicien(technicien));
@@ -230,15 +232,26 @@ export const AuthScreen: React.FC = () => {
 
   const completeTechnicienLogin = useCallback(
     async (technicien: Technicien) => {
+      console.log('[AuthScreen] completeTechnicienLogin start', technicien.id);
       await AsyncStorage.setItem('lastProfile', String(technicien.id));
       await AsyncStorage.setItem('lastProfileName', getInitials(technicien));
-      await dispatch(loginTechnicien({ technicienId: technicien.id, persist: rememberMe })).unwrap();
+      await dispatch(loginTechnicien({ technicien, persist: rememberMe })).unwrap();
+      console.log('[AuthScreen] loginTechnicien fulfilled', technicien.id);
+
+      console.log('[AuthScreen] reset to Main after successful login', {
+        alreadyAuthenticated,
+      });
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
     },
-    [dispatch, rememberMe],
+    [alreadyAuthenticated, dispatch, navigation, rememberMe],
   );
 
   const handleSelectTechnicien = useCallback(
     async (technicien: Technicien) => {
+      console.log('[AuthScreen] profile tapped', technicien.id);
       Vibration.vibrate(10);
 
       const protectedMfa = findProtectedProfileMfa(technicien);
@@ -267,6 +280,8 @@ export const AuthScreen: React.FC = () => {
         await completeTechnicienLogin(technicien);
       } catch (err) {
         console.error('Erreur de connexion:', err);
+        const message = err instanceof Error ? err.message : 'Connexion impossible';
+        Alert.alert('Connexion impossible', message);
       }
     },
     [completeTechnicienLogin],
@@ -554,29 +569,25 @@ export const AuthScreen: React.FC = () => {
 
       return (
         <View style={{ marginBottom: 10 }}>
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <ProfileCard
+            initials={initials}
+            role={item.role}
+            delay={450 + index * 50}
+            onPress={() => handleSelectTechnicien(item)}
             onLongPress={() => handleDeleteTechnicien(item)}
             delayLongPress={500}
             disabled={deletingTechnicienId !== null}
-          >
-            <ProfileCard
-              initials={initials}
-              role={item.role}
-              delay={450 + index * 50}
-              onPress={() => handleSelectTechnicien(item)}
-              rightNode={
-                deletingTechnicienId === item.id ? (
-                  <ActivityIndicator size="small" color={ONBOARDING_COLORS.green_light} />
-                ) : (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    {protectedMfa ? <Icon name="shield-key-outline" size={14} color={ONBOARDING_COLORS.warning} /> : null}
-                    <Icon name="chevron-right" size={16} color={ONBOARDING_COLORS.text_dim} />
-                  </View>
-                )
-              }
-            />
-          </TouchableOpacity>
+            rightNode={
+              deletingTechnicienId === item.id ? (
+                <ActivityIndicator size="small" color={ONBOARDING_COLORS.green_light} />
+              ) : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  {protectedMfa ? <Icon name="shield-key-outline" size={14} color={ONBOARDING_COLORS.warning} /> : null}
+                  <Icon name="chevron-right" size={16} color={ONBOARDING_COLORS.text_dim} />
+                </View>
+              )
+            }
+          />
         </View>
       );
     },

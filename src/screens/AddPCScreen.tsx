@@ -199,7 +199,7 @@ export const AddPCScreen: React.FC = () => {
     }, 700);
   }, [effectiveSiteId, effectiveSiteName, form.hostname, handleSubmit, navigation, reset, validateHostnameByCategory]);
 
-  const hostnamePlaceholder = form.category === 'portable_agence' ? 'Ex: KSAOP8725XXX' : 'Ex: KSAOPTRXXXX';
+  const hostnamePlaceholder = form.category === 'portable_agence' ? 'Ex: KSAOP872XXXX' : 'Ex: KSAOPSTRXXXX';
 
   return (
     <View style={styles.container}>

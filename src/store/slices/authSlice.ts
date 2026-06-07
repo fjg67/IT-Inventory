@@ -60,9 +60,16 @@ export const loadTechniciensBySite = createAsyncThunk(
 
 export const loginTechnicien = createAsyncThunk(
   'auth/loginTechnicien',
-  async (payload: { technicienId: string | number; persist?: boolean }) => {
-    const { technicienId, persist = true } = typeof payload === 'number' ? { technicienId: payload, persist: true } : payload;
-    const technicien = await technicienRepository.findById(technicienId);
+  async (payload: { technicienId?: string | number; technicien?: Technicien; persist?: boolean } | string | number) => {
+    const normalizedPayload =
+      typeof payload === 'string' || typeof payload === 'number'
+        ? { technicienId: payload, persist: true }
+        : payload;
+
+    const { technicien: providedTechnicien, technicienId, persist = true } = normalizedPayload;
+
+    const technicien = providedTechnicien ?? (technicienId != null ? await technicienRepository.findById(technicienId) : null);
+
     if (!technicien) {
       throw new Error('Technicien non trouvé');
     }

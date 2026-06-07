@@ -67,8 +67,8 @@ export const PC_STATUS_OPTIONS: StatusOption[] = [
 ];
 
 const HOSTNAME_REGEX: Record<PCCategory, RegExp> = {
-  portable_siege: /^KSAOPTR[0-9A-Z]{4}$/,
-  portable_agence: /^KSAOP8725[0-9A-Z]{3}$/,
+  portable_siege: /^KSAOP(?:STR|EPI)[0-9A-Z]{4}$/,
+  portable_agence: /^KSAOP872[0-9A-Z]{4}$/,
 };
 
 const STATUS_LABELS: Record<PCStatus, string> = {
@@ -146,9 +146,9 @@ export const useAddPCForm = () => {
 
   const hostnameFormat =
     form.category === 'portable_siege'
-      ? 'KSAOPTRXXXX'
+      ? 'KSAOPSTRXXXX ou KSAOPEPIXXXX'
       : form.category === 'portable_agence'
-        ? 'KSAOP8725XXX'
+        ? 'KSAOP872XXXX'
         : null;
 
   const isValid =
@@ -168,7 +168,7 @@ export const useAddPCForm = () => {
     const valid = regex.test(value.trim().toUpperCase());
     return {
       valid,
-      expected: form.category === 'portable_siege' ? 'KSAOPTRXXXX' : 'KSAOP8725XXX',
+      expected: form.category === 'portable_siege' ? 'KSAOPSTRXXXX ou KSAOPEPIXXXX' : 'KSAOP872XXXX',
     };
   };
 

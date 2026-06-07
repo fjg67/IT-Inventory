@@ -1,83 +1,86 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Animated, {
-  FadeIn,
-  useAnimatedStyle,
-  interpolate,
-  type SharedValue,
-} from 'react-native-reanimated';
-import { OBSIDIAN_COLORS } from '@/constants/colors';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
-const BAR_WIDTH = 200;
+const BAR_WIDTH = 220;
 
 type SplashProgressBarProps = {
   progressValue: SharedValue<number>;
+  label: string;
   isError?: boolean;
 };
 
-export const SplashProgressBar: React.FC<SplashProgressBarProps> = ({ progressValue, isError = false }) => {
+export const SplashProgressBar: React.FC<SplashProgressBarProps> = ({ progressValue, label, isError = false }) => {
   const fillStyle = useAnimatedStyle(() => ({
     width: Math.max(0, Math.min(1, progressValue.value)) * BAR_WIDTH,
   }));
 
-  const glowPointStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: Math.max(0, Math.min(1, progressValue.value)) * BAR_WIDTH - 4 }],
-    opacity: interpolate(progressValue.value, [0, 0.02, 1], [0, 1, 1]),
+  const glowStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: Math.max(0, Math.min(1, progressValue.value)) * BAR_WIDTH - 5 }],
+    opacity: progressValue.value > 0.02 ? 1 : 0,
   }));
 
   return (
-    <Animated.View entering={FadeIn.delay(800).duration(360)} style={styles.wrap}>
-      <View style={[styles.track, isError && styles.trackError]}>
-        <Animated.View style={[styles.fillWrap, fillStyle]}>
-          <LinearGradient
-            colors={isError ? ['#DC2626', '#EF4444'] : [OBSIDIAN_COLORS.green_primary, OBSIDIAN_COLORS.green_light]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={StyleSheet.absoluteFill}
-          />
-        </Animated.View>
-        <Animated.View style={[styles.glowPoint, isError && styles.glowPointError, glowPointStyle]} />
+    <Animated.View entering={FadeIn.delay(800).duration(320)} style={styles.container}>
+      <View style={[styles.rail, isError && styles.railError]}>
+        <Animated.View style={[styles.fill, isError && styles.fillError, fillStyle]} />
+        <Animated.View style={[styles.glowDot, isError && styles.glowDotError, glowStyle]} />
       </View>
+      <Text style={[styles.label, isError && styles.labelError]}>{label}</Text>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  wrap: {
-    marginTop: 20,
+  container: {
     alignItems: 'center',
+    gap: 8,
   },
-  track: {
+  rail: {
     width: BAR_WIDTH,
-    height: 4,
+    height: 3,
     borderRadius: 2,
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    overflow: 'hidden',
+    backgroundColor: 'rgba(34,197,94,0.12)',
+    overflow: 'visible',
+    position: 'relative',
   },
-  trackError: {
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+  railError: {
+    backgroundColor: 'rgba(239,68,68,0.14)',
   },
-  fillWrap: {
-    height: 4,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  glowPoint: {
+  fill: {
     position: 'absolute',
-    top: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: OBSIDIAN_COLORS.green_light,
-    shadowColor: OBSIDIAN_COLORS.green_light,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    elevation: 6,
+    top: 0,
+    left: 0,
+    bottom: 0,
+    backgroundColor: '#22C55E',
+    borderRadius: 2,
   },
-  glowPointError: {
+  fillError: {
+    backgroundColor: '#EF4444',
+  },
+  glowDot: {
+    position: 'absolute',
+    top: -3,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#22C55E',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  glowDotError: {
     backgroundColor: '#EF4444',
     shadowColor: '#EF4444',
+  },
+  label: {
+    fontSize: 11,
+    color: 'rgba(134,239,172,0.45)',
+    letterSpacing: 0.3,
+  },
+  labelError: {
+    color: 'rgba(252,165,165,0.9)',
   },
 });

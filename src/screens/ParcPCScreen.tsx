@@ -4,6 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Article } from '@/types';
 import { usePCFilters } from '@/hooks/usePCFilters';
+import { useRenamePC } from '@/hooks/useRenamePC';
 import { usePCStats } from '@/hooks/usePCStats';
 import { PCStateKey } from '@/constants/pcStates';
 import ArticleEmptyState from '@/screens/Articles/components/ArticleEmptyState';
@@ -18,6 +19,7 @@ import {
   PCStateGrid,
   PCTotalCard,
   PARC_PC_COLORS,
+  PCRenameModal,
 } from '@/components/parcpc';
 
 type ControlItem = { type: 'controls'; id: string };
@@ -38,6 +40,7 @@ interface ParcPCScreenProps {
   onMarkAvailable: (articleId: number | string) => void;
   onMarkProcessing: (articleId: number | string) => void;
   onMarkBreakdown?: (articleId: number | string) => void;
+  onResolveBreakdown?: (articleId: number | string) => void;
   onDelete: (articleId: number | string) => void;
   onExportSentCsv: () => void;
   exportingSentCsv: boolean;
@@ -64,6 +67,7 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
   onMarkAvailable,
   onMarkProcessing,
   onMarkBreakdown,
+  onResolveBreakdown,
   onDelete,
   onExportSentCsv,
   exportingSentCsv,
@@ -74,6 +78,9 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
   const [headerHeight, setHeaderHeight] = useState(0);
   const stats = usePCStats(articles, sentArticles, weeklyTrendDelta);
   const filters = usePCFilters(stats.allPCs);
+  const { pcToRename, openRenameModal, closeRenameModal, handleRenameSuccess } = useRenamePC(() => {
+    onRefresh();
+  });
 
   const listData = useMemo<ParcPCListItem[]>(() => {
     const items = filters.filtered;
@@ -170,63 +177,72 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
       );
     }
 
-    const isSent = String(item.id).startsWith('sent-');
     return (
       <PCCard
         article={item}
         index={Math.max(0, index - 1)}
-        onPress={isSent ? () => onSentArticlePress() : onArticlePress}
+        onRename={openRenameModal}
         onMarkSent={onMarkSent}
         onMarkHot={onMarkHot}
         onMarkAvailable={onMarkAvailable}
-        onMarkProcessing={onMarkProcessing}
         onMarkBreakdown={onMarkBreakdown}
+        onResolveBreakdown={onResolveBreakdown}
         onDelete={onDelete}
       />
     );
   };
 
   return (
-    isLoading ? (
-      <View style={styles.loadingWrap}>
-        {renderHeader()}
-        <View style={styles.stickyControls}>
-          <PCSearchBar value={filters.query} onChangeText={filters.setQuery} onClear={() => filters.setQuery('')} />
-          <PCFilterChips activeStates={filters.activeStates} counts={filters.countByState} onToggle={filters.toggleState} />
+    <>
+      {isLoading ? (
+        <View style={styles.loadingWrap}>
+          {renderHeader()}
+          <View style={styles.stickyControls}>
+            <PCSearchBar value={filters.query} onChangeText={filters.setQuery} onClear={() => filters.setQuery('')} />
+            <PCFilterChips activeStates={filters.activeStates} counts={filters.countByState} onToggle={filters.toggleState} />
+          </View>
+          <SkeletonArticleList count={6} />
         </View>
-        <SkeletonArticleList count={6} />
-      </View>
-    ) : (
-    <FlashList<ParcPCListItem>
-      ref={listRef}
-      data={listData}
-      keyExtractor={(item) => (isMarker(item) ? item.id : String(item.id))}
-      renderItem={renderItem}
-      estimatedItemSize={116}
-      initialNumToRender={10}
-      maxToRenderPerBatch={6}
-      windowSize={8}
-      removeClippedSubviews
-      stickyHeaderIndices={[0]}
-      ListHeaderComponent={renderHeader}
-      ListHeaderComponentStyle={styles.headerWrap}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      onEndReached={onEndReached}
-      onEndReachedThreshold={0.4}
-      onScroll={onScroll}
-      scrollEventThrottle={16}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={PARC_PC_COLORS.green_light}
-          colors={[PARC_PC_COLORS.green_light]}
+      ) : (
+        <FlashList<ParcPCListItem>
+          ref={listRef}
+          data={listData}
+          keyExtractor={(item) => (isMarker(item) ? item.id : String(item.id))}
+          renderItem={renderItem}
+          estimatedItemSize={116}
+          initialNumToRender={10}
+          maxToRenderPerBatch={6}
+          windowSize={8}
+          removeClippedSubviews
+          stickyHeaderIndices={[0]}
+          ListHeaderComponent={renderHeader}
+          ListHeaderComponentStyle={styles.headerWrap}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.4}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={PARC_PC_COLORS.green_light}
+              colors={[PARC_PC_COLORS.green_light]}
+            />
+          }
+          ListFooterComponent={<View style={styles.footer} />}
         />
-      }
-      ListFooterComponent={<View style={styles.footer} />}
-    />
-    )
+      )}
+
+      {pcToRename ? (
+        <PCRenameModal
+          pc={pcToRename}
+          onClose={closeRenameModal}
+          onSuccess={handleRenameSuccess}
+        />
+      ) : null}
+    </>
   );
 };
 

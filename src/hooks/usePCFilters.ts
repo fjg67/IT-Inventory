@@ -2,7 +2,19 @@ import { useMemo, useState } from 'react';
 import { Article } from '@/types';
 import { PCStateKey, getPCStateFromArticle } from '@/constants/pcStates';
 
-const SEARCH_FIELDS: Array<keyof Article> = ['reference', 'nom', 'description', 'barcode', 'modele', 'marque', 'famille', 'sousType', 'emplacement'];
+const SEARCH_FIELDS: Array<keyof Article> = [
+  'reference',
+  'nom',
+  'displayName',
+  'display_name',
+  'description',
+  'barcode',
+  'modele',
+  'marque',
+  'famille',
+  'sousType',
+  'emplacement',
+];
 
 export const usePCFilters = (pcs: Article[]) => {
   const [query, setQuery] = useState('');

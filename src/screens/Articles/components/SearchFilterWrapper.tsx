@@ -7,7 +7,6 @@ import {
 import { useTheme } from '@/theme';
 import { isTablet as checkIsTablet } from '../../../utils/responsive';
 import { premiumSpacing } from '../../../constants/premiumTheme';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 
 interface SearchFilterWrapperProps {
   children: React.ReactNode;
@@ -23,8 +22,7 @@ const SearchFilterWrapper: React.FC<SearchFilterWrapperProps> = ({
   const { colors, isDark } = useTheme();
 
   return (
-    <Animated.View
-      entering={FadeInDown.duration(400)}
+    <View
       style={[
         styles.container,
         {
@@ -43,7 +41,7 @@ const SearchFilterWrapper: React.FC<SearchFilterWrapperProps> = ({
       <View style={styles.innerContainer}>
         {children}
       </View>
-    </Animated.View>
+    </View>
   );
 };
 

@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Animated, { FadeIn, FadeOut, interpolate, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
 
 interface ArticleSearchBarProps {
@@ -13,17 +12,12 @@ interface ArticleSearchBarProps {
 
 const ArticleSearchBarComponent: React.FC<ArticleSearchBarProps> = ({ value, onChangeText, onClear, resultsCount }) => {
   const [focused, setFocused] = useState(false);
-  const press = useSharedValue(0);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(press.value, [0, 1], [1, 1.01]) }],
-  }));
 
   const iconColor = useMemo(() => (focused ? OBSIDIAN_COLORS.green_light : OBSIDIAN_COLORS.text_muted), [focused]);
 
   return (
     <View>
-      <Animated.View style={[styles.wrap, animatedStyle, focused && styles.wrapFocused]}>
+      <View style={[styles.wrap, focused && styles.wrapFocused]}>
         <Icon name="magnify" size={18} color={iconColor} />
 
         <TextInput
@@ -31,11 +25,9 @@ const ArticleSearchBarComponent: React.FC<ArticleSearchBarProps> = ({ value, onC
           onChangeText={onChangeText}
           onFocus={() => {
             setFocused(true);
-            press.value = withSpring(1);
           }}
           onBlur={() => {
             setFocused(false);
-            press.value = withSpring(0);
           }}
           placeholder="Rechercher par reference ou nom..."
           placeholderTextColor={OBSIDIAN_COLORS.text_dim}
@@ -45,18 +37,16 @@ const ArticleSearchBarComponent: React.FC<ArticleSearchBarProps> = ({ value, onC
         />
 
         {value.length > 0 ? (
-          <Animated.View entering={FadeIn.duration(140)} exiting={FadeOut.duration(120)}>
-            <Pressable onPress={onClear} style={styles.clearBtn}>
-              <Icon name="close" size={14} color={OBSIDIAN_COLORS.text_muted} />
-            </Pressable>
-          </Animated.View>
+          <Pressable onPress={onClear} style={styles.clearBtn}>
+            <Icon name="close" size={14} color={OBSIDIAN_COLORS.text_muted} />
+          </Pressable>
         ) : null}
-      </Animated.View>
+      </View>
 
       {value.trim() && resultsCount !== undefined ? (
-        <Animated.View entering={FadeIn.duration(180)} style={styles.resultsPill}>
+        <View style={styles.resultsPill}>
           <Text style={styles.resultsText}>{`${resultsCount} resultats pour "${value.trim()}"`}</Text>
-        </Animated.View>
+        </View>
       ) : null}
     </View>
   );

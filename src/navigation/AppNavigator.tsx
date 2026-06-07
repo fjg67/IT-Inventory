@@ -64,6 +64,13 @@ const ArticlesStack = createNativeStackNavigator<ArticlesStackParamList>();
 const MouvementsStack = createNativeStackNavigator<MouvementsStackParamList>();
 const SettingsStackNav = createNativeStackNavigator<SettingsStackParamList>();
 
+const getActiveRouteName = (state: any): string => {
+  if (!state || !state.routes || state.index == null) return 'Unknown';
+  const route = state.routes[state.index];
+  if (route?.state) return getActiveRouteName(route.state);
+  return route?.name ?? 'Unknown';
+};
+
 // Tab Bar Icon component
 const TabIcon: React.FC<{ focused: boolean; emoji: string; label: string }> = ({
   focused,
@@ -219,6 +226,7 @@ const MainNavigator: React.FC = () => {
 // App Navigator
 export const AppNavigator: React.FC = () => {
   const dispatch = useAppDispatch();
+  const navigationRef = React.useRef<any>(null);
   const { isAuthenticated, isLoading: authLoading, redirectToTechnicianChoiceAfterLogout, currentTechnicien } = useAppSelector((state) => state.auth);
   const { isConnected, isInternetReachable } = useAppSelector((state) => state.network);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
@@ -231,9 +239,39 @@ export const AppNavigator: React.FC = () => {
   const [siteGateSeed, setSiteGateSeed] = React.useState(0);
   const appStateRef = React.useRef<AppStateStatus>(AppState.currentState);
   const isAuthenticatedRef = React.useRef(isAuthenticated);
+  const prevIsAuthenticatedRef = React.useRef(isAuthenticated);
 
   useEffect(() => {
     isAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    console.log(`[AppNavigator] Auth state: isAuthenticated=${isAuthenticated}, authLoading=${authLoading}`);
+  }, [authLoading, isAuthenticated]);
+
+  useEffect(() => {
+    const wasAuthenticated = prevIsAuthenticatedRef.current;
+    prevIsAuthenticatedRef.current = isAuthenticated;
+
+    if (wasAuthenticated || !isAuthenticated) {
+      return;
+    }
+
+    // Safety net: after successful login, force root route to Main
+    // in case Auth screen reset happened before navigator tree switched.
+    setTimeout(() => {
+      const nav = navigationRef.current;
+      if (!nav?.getRootState || !nav?.resetRoot) return;
+
+      const currentRoute = getActiveRouteName(nav.getRootState());
+      if (currentRoute === 'Auth' || currentRoute === 'Login' || currentRoute === 'SiteSelection' || currentRoute === 'BranchSelection' || currentRoute === 'Onboarding') {
+        console.log('[AppNavigator] Forcing post-login route to Main from', currentRoute);
+        nav.resetRoot({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      }
+    }, 0);
   }, [isAuthenticated]);
 
   const runVersionCheck = React.useCallback(async () => {
@@ -322,6 +360,7 @@ export const AppNavigator: React.FC = () => {
     } catch (error) {
       console.error('Erreur initialisation:', error);
       setInitErrorMessage('Impossible de se connecter');
+      setIsInitializing(false);
     }
   }, [dispatch, runVersionCheck]);
 
@@ -449,7 +488,17 @@ export const AppNavigator: React.FC = () => {
 
   return (
     <View style={{flex: 1}}>
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={navigationTheme}
+      onReady={() => {
+        const rootState = navigationRef.current?.getRootState?.();
+        console.log('[NavState] ready route =', getActiveRouteName(rootState));
+      }}
+      onStateChange={(state) => {
+        console.log('[NavState] route =', getActiveRouteName(state));
+      }}
+    >
       <RootStack.Navigator
         key={`root-stack-${siteGateSeed}-${isAuthenticated ? 'auth' : 'guest'}`}
         screenOptions={{
@@ -457,7 +506,7 @@ export const AppNavigator: React.FC = () => {
           animation: 'slide_from_right',
           contentStyle: { backgroundColor: '#0A0F0D' },
         }}
-        initialRouteName={isAuthenticated ? 'SiteSelection' : redirectToTechnicianChoiceAfterLogout ? 'SiteSelection' : onboardingSeen ? 'Login' : 'Onboarding'}
+        initialRouteName={isAuthenticated ? 'Main' : redirectToTechnicianChoiceAfterLogout ? 'Auth' : onboardingSeen ? 'Login' : 'Onboarding'}
       >
         {isAuthenticated ? (
           <>
@@ -466,6 +515,7 @@ export const AppNavigator: React.FC = () => {
               component={SiteSelectionScreen}
               initialParams={{ startupMode: true }}
             />
+            <RootStack.Screen name="Auth" component={AuthScreen} />
             <RootStack.Screen name="Main" component={MainNavigator} />
           </>
         ) : onboardingSeen ? (

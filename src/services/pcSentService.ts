@@ -7,6 +7,7 @@ function generateId(): string {
 export interface SentPCPayload {
   articleId?: string;
   hostname: string;
+  displayName?: string;
   asset?: string;
   model?: string;
   brand?: string;
@@ -23,6 +24,7 @@ export interface SentPCRecord {
   id: string;
   articleId?: string;
   hostname: string;
+  displayName?: string;
   asset?: string;
   model?: string;
   brand?: string;
@@ -41,6 +43,8 @@ interface SentPCRow {
   id: string;
   articleId: string | null;
   hostname: string;
+  displayName?: string | null;
+  display_name?: string | null;
   asset: string | null;
   model: string | null;
   brand: string | null;
@@ -60,6 +64,7 @@ function mapRow(row: SentPCRow): SentPCRecord {
     id: row.id,
     articleId: row.articleId ?? undefined,
     hostname: row.hostname,
+    displayName: row.displayName ?? row.display_name ?? undefined,
     asset: row.asset ?? undefined,
     model: row.model ?? undefined,
     brand: row.brand ?? undefined,

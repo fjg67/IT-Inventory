@@ -9,7 +9,6 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import LinearGradient from 'react-native-linear-gradient';
 import { ONBOARDING_COLORS } from './tokens';
 
 type OnboardingLogoProps = {
@@ -42,14 +41,14 @@ export const OnboardingLogo: React.FC<OnboardingLogoProps> = ({
       <Animated.View style={[styles.halo, haloStyle]} pointerEvents="none" />
 
       <Animated.View entering={ZoomIn.springify().damping(14)} style={styles.logoWrap}>
-        <LinearGradient
-          colors={['#1B8A3E', '#0D5C26']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.logo}
-        >
-          <Text style={styles.logoText}>IT</Text>
-        </LinearGradient>
+        <View style={styles.logoDisc}>
+          <View style={styles.iconWrap}>
+            <View style={styles.iconLine} />
+            <View style={styles.iconLine} />
+            <View style={styles.iconLine} />
+            <View style={styles.iconStem} />
+          </View>
+        </View>
       </Animated.View>
 
       <Animated.Text entering={FadeInDown.delay(90).duration(300)} style={styles.title}>
@@ -81,12 +80,11 @@ const styles = StyleSheet.create({
   logoWrap: {
     marginBottom: 12,
   },
-  logo: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(34,197,94,0.3)',
+  logoDisc: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#14532D',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: ONBOARDING_COLORS.green_light,
@@ -95,11 +93,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     elevation: 8,
   },
-  logoText: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: 0.2,
+  iconWrap: {
+    width: 24,
+    height: 24,
+    justifyContent: 'space-between',
+    position: 'relative',
+  },
+  iconLine: {
+    height: 5,
+    borderRadius: 2,
+    backgroundColor: '#22C55E',
+  },
+  iconStem: {
+    position: 'absolute',
+    right: -3,
+    top: 1,
+    width: 3,
+    height: 22,
+    borderRadius: 2,
+    backgroundColor: '#16A34A',
   },
   title: {
     color: ONBOARDING_COLORS.text_primary,

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
@@ -70,16 +70,24 @@ export const SiteSelectionScreen: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [parentSiteId, setParentSiteId] = useState<string | number | null>(null);
   const [startupStatsBySiteId, setStartupStatsBySiteId] = useState<Record<string, { articles: number; pcs: number }>>({});
+  const [showStartupLoader, setShowStartupLoader] = useState(false);
+  const startupLoaderStartRef = useRef<number | null>(null);
 
   const displaySites = useMemo(
     () => (branch === 'strasbourg' ? childSites : sitesDisponibles),
     [branch, childSites, sitesDisponibles],
   );
 
-  const startupSites = useMemo(
-    () => (childSites.length > 0 ? childSites : sitesDisponibles),
-    [childSites, sitesDisponibles],
-  );
+  const startupSites = useMemo(() => {
+    if (!startupMode) {
+      return childSites.length > 0 ? childSites : sitesDisponibles;
+    }
+
+    // In startup mode, never fallback to parent buckets (Agences / Strasbourg General).
+    // Show concrete siblings/children when available, otherwise keep only the active site.
+    if (childSites.length > 0) return childSites;
+    return siteActif ? [siteActif] : [];
+  }, [childSites, siteActif, sitesDisponibles, startupMode]);
 
   useEffect(() => {
     dispatch(loadSites()).then((result: any) => {
@@ -100,8 +108,39 @@ export const SiteSelectionScreen: React.FC = () => {
 
   useEffect(() => {
     if (!startupMode || !siteActif?.id) return;
+
+    // Startup picker should show concrete selectable sites (siblings or children).
     dispatch(loadSiblingSites(siteActif.id));
   }, [dispatch, siteActif?.id, startupMode]);
+
+  useEffect(() => {
+    if (!startupMode) {
+      setShowStartupLoader(false);
+      startupLoaderStartRef.current = null;
+      return;
+    }
+
+    if (startupLoaderStartRef.current === null) {
+      startupLoaderStartRef.current = Date.now();
+    }
+
+    if (childSites.length === 0) {
+      setShowStartupLoader(true);
+      return;
+    }
+
+    const elapsed = Date.now() - (startupLoaderStartRef.current ?? Date.now());
+    const minVisibleMs = 420;
+    const remaining = Math.max(0, minVisibleMs - elapsed);
+
+    const timer = setTimeout(() => {
+      setShowStartupLoader(false);
+    }, remaining);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [childSites.length, startupMode]);
 
   useEffect(() => {
     if (!startupMode || startupSites.length === 0) return;
@@ -211,7 +250,7 @@ export const SiteSelectionScreen: React.FC = () => {
     [dispatch, navigation, parentSiteId, rememberMe, startupMode],
   );
 
-  if (isLoading && displaySites.length === 0) {
+  if (!startupMode && isLoading && displaySites.length === 0) {
     return <FullScreenLoading message="Chargement des sites..." />;
   }
 
@@ -224,20 +263,31 @@ export const SiteSelectionScreen: React.FC = () => {
         <View style={styles.startupBgBottom} />
 
         <View style={styles.startupContent}>
-          <StockPickerSheet
-            sites={startupSites}
-            activeSiteId={siteActif?.id}
-            activeSiteName={siteActif?.nom}
-            statsBySiteId={startupStatsBySiteId}
-            onSelectSite={(siteId) => {
-              const site = startupSites.find((item) => String(item.id) === String(siteId));
-              if (!site) return;
-              handleSelectSite(site).catch(() => {});
-            }}
-            onClose={() => {}}
-            showBackButton={false}
-            showFooterCancel={false}
-          />
+          {showStartupLoader ? (
+            <Animated.View entering={FadeInDown.duration(220)} style={styles.startupLoaderWrap}>
+              <View style={styles.startupLoaderBadge}>
+                <ActivityIndicator size="small" color={OBSIDIAN_COLORS.green_primary} />
+              </View>
+
+              <Text style={styles.startupLoaderTitle}>Chargement des sites</Text>
+              <Text style={styles.startupLoaderSubtitle}>Preparation de votre selection rapide...</Text>
+            </Animated.View>
+          ) : (
+            <StockPickerSheet
+              sites={startupSites}
+              activeSiteId={siteActif?.id}
+              activeSiteName={siteActif?.nom}
+              statsBySiteId={startupStatsBySiteId}
+              onSelectSite={(siteId) => {
+                const site = startupSites.find((item) => String(item.id) === String(siteId));
+                if (!site) return;
+                handleSelectSite(site).catch(() => {});
+              }}
+              onClose={() => {}}
+              showBackButton={false}
+              showFooterCancel={false}
+            />
+          )}
         </View>
       </SafeAreaView>
     );
@@ -479,6 +529,36 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 180,
     backgroundColor: 'rgba(59,130,246,0.08)',
+  },
+  startupLoaderWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    gap: 12,
+  },
+  startupLoaderBadge: {
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(148,163,184,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(148,163,184,0.28)',
+  },
+  startupLoaderTitle: {
+    color: '#E5E7EB',
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
+  startupLoaderSubtitle: {
+    color: 'rgba(229,231,235,0.76)',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
 

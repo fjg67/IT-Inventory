@@ -122,12 +122,25 @@ export const ArticleDetailScreen: React.FC = () => {
   const [showResolutionSheet, setShowResolutionSheet] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!articleId || !effectiveSiteId) return;
     setIsLoading(true);
+
+    if (!articleId) {
+      setArticle(null);
+      setHistorique([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const targetSiteId = effectiveSiteId ?? siteActif?.id;
+    if (!targetSiteId) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const [art, hist] = await Promise.all([
-        articleRepository.findById(articleId, effectiveSiteId),
-        mouvementRepository.findByArticle(articleId, effectiveSiteId, 10),
+        articleRepository.findById(articleId, targetSiteId),
+        mouvementRepository.findByArticle(articleId, targetSiteId, 10),
       ]);
       setArticle(art);
       setHistorique(hist);
@@ -136,7 +149,7 @@ export const ArticleDetailScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [articleId, effectiveSiteId]);
+  }, [articleId, effectiveSiteId, siteActif?.id]);
 
   useFocusEffect(
     useCallback(() => {

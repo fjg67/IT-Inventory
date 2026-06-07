@@ -4,6 +4,7 @@
 // ============================================
 
 import { ArticleCondition } from './article.types';
+import { PannePriorite, PanneType } from './pc.types';
 
 // ==================== ENUMS ====================
 
@@ -67,6 +68,8 @@ export interface Article {
   id: string | number;
   reference: string;
   nom: string;
+  displayName?: string;
+  display_name?: string;
   description?: string;
   barcode?: string;
   categorieId?: string | number;
@@ -89,6 +92,8 @@ export interface Article {
   defectiveCount?: number;
   conditionNote?: string;
   conditionUpdatedAt?: Date | string;
+  panneType?: PanneType;
+  pannePriorite?: PannePriorite;
   // Champs calculés (via JOIN)
   quantiteActuelle?: number;
   categorieNom?: string;
@@ -172,6 +177,7 @@ export interface TransfertForm {
 export interface ArticleForm {
   reference: string;
   nom: string;
+  displayName?: string | null;
   description?: string;
   barcode?: string;
   categorieId?: string | number;

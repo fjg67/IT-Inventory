@@ -8,3 +8,4 @@ export * from './encryption';
 export * from './dateUtils';
 export * from './responsive';
 export * from './abbreviation';
+export * from './pcHelpers';

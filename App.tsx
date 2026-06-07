@@ -2,7 +2,7 @@
 // APP ENTRY POINT - StockPro Application
 // ============================================
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { LogBox, StyleSheet } from 'react-native';
 import { Provider } from 'react-redux';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { store } from '@/store';
 import { AppNavigator } from '@/navigation';
 import { ThemeProvider } from '@/theme';
+import { initializeSupabaseAuth } from '@/api/supabase';
 
 // Ignorer certains warnings non critiques en développement
 if (__DEV__) {
@@ -21,6 +22,10 @@ if (__DEV__) {
 }
 
 const App: React.FC = () => {
+  useEffect(() => {
+    void initializeSupabaseAuth();
+  }, []);
+
   return (
     <ThemeProvider>
       <Provider store={store}>

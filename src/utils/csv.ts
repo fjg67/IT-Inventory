@@ -229,6 +229,7 @@ export async function exportSentPCsCSV(rows: SentPCRecord[], sourceSiteName?: st
   const headers = [
     'Date envoi',
     'Hostname',
+    'Nom affichage',
     'Asset',
     'Marque',
     'Modèle',
@@ -242,6 +243,7 @@ export async function exportSentPCsCSV(rows: SentPCRecord[], sourceSiteName?: st
   const csvRows = rows.map((row) => [
     row.sentAt,
     row.hostname,
+    row.displayName ?? '',
     row.asset ?? '',
     row.brand ?? '',
     row.model ?? '',

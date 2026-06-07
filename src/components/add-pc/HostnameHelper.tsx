@@ -16,7 +16,7 @@ const HostnameHelper: React.FC<HostnameHelperProps> = ({ category, format }) => 
     <View style={styles.box}>
       <Icon name="information-outline" size={11} color={OBSIDIAN_COLORS.text_dim} />
       <Text style={styles.text}>
-        Format {categoryLabel} conseillé: {format ?? 'KSAOPTRXXXX'}
+        Format {categoryLabel} conseillé: {format ?? 'KSAOPSTRXXXX, KSAOPEPIXXXX ou KSAOP872XXXX'}
       </Text>
     </View>
   );

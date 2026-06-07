@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Animated, { FadeInRight } from 'react-native-reanimated';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
 
 interface PCSearchBarProps {
@@ -16,7 +15,7 @@ export const PCSearchBar: React.FC<PCSearchBarProps> = ({ value, onChangeText, o
   const [focused, setFocused] = useState(false);
 
   return (
-    <Animated.View entering={FadeInRight.duration(240)} style={[styles.wrap, focused && styles.wrapFocused]}>
+    <View style={[styles.wrap, focused && styles.wrapFocused]}>
       <Icon name="magnify" size={18} color={focused ? OBSIDIAN_COLORS.green_light : OBSIDIAN_COLORS.text_muted} />
       <TextInput
         value={value}
@@ -36,9 +35,9 @@ export const PCSearchBar: React.FC<PCSearchBarProps> = ({ value, onChangeText, o
         </Pressable>
       )}
       {typeof resultsCount === 'number' && value.trim().length > 0 ? (
-        <View style={styles.badge}><Animated.Text style={styles.badgeText}>{resultsCount}</Animated.Text></View>
+        <View style={styles.badge}><Text style={styles.badgeText}>{resultsCount}</Text></View>
       ) : null}
-    </Animated.View>
+    </View>
   );
 };
 

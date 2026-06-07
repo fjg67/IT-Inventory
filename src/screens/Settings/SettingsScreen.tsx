@@ -32,6 +32,7 @@ import { BiometricAuthService } from '@/services/biometricAuthService';
 import { InventoryRecountService, type InventoryRecount } from '@/services/inventoryRecountService';
 import { pushNotificationsService } from '@/services/pushNotificationsService';
 import { getSupabaseClient, tables } from '@/api/supabase';
+import { formatRelativeDateParis, formatTimeParis } from '@/utils/dateUtils';
 import { ToastContainer, useToast } from '@/components/common';
 import { SettingsHeader } from '@/components/settings/SettingsHeader';
 import { ProfileCard } from '@/components/settings/ProfileCard';
@@ -59,6 +60,12 @@ const getRoleVisual = (role: string) => {
     return SETTINGS_COLORS.role_viewer;
   }
   return SETTINGS_COLORS.role_technicien;
+};
+
+type ProfileStatsData = {
+  sessionCount: string;
+  connectionLabel: string;
+  movementCount: string;
 };
 
 export const SettingsScreen: React.FC = () => {
@@ -93,6 +100,11 @@ export const SettingsScreen: React.FC = () => {
   const [complianceModalVisible, setComplianceModalVisible] = useState(false);
   const [changelogVisible, setChangelogVisible] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [profileStats, setProfileStats] = useState<ProfileStatsData>({
+    sessionCount: '--',
+    connectionLabel: 'Aucune',
+    movementCount: '--',
+  });
 
   const showToast = useCallback((message: string) => {
     toastShow(message, 'success');
@@ -132,6 +144,76 @@ export const SettingsScreen: React.FC = () => {
     }
   }, []);
 
+  const refreshProfileStats = useCallback(async () => {
+    if (!technicien?.id) {
+      setProfileStats({ sessionCount: '--', connectionLabel: 'Aucune', movementCount: '--' });
+      return;
+    }
+
+    try {
+      const supabase = getSupabaseClient();
+      const userId = String(technicien.id);
+      const todayStartIso = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+
+      const sessionCountQuery = supabase
+        .from(tables.loginHistory)
+        .select('id', { count: 'exact', head: true })
+        .eq('userId', userId)
+        .gte('loginAt', todayStartIso);
+
+      const lastLoginQuery = supabase
+        .from(tables.loginHistory)
+        .select('loginAt')
+        .eq('userId', userId)
+        .order('loginAt', { ascending: false })
+        .limit(1);
+
+      let movementCountQuery = supabase
+        .from(tables.mouvements)
+        .select('id', { count: 'exact', head: true })
+        .eq('userId', userId);
+
+      if (siteActif?.id) {
+        movementCountQuery = movementCountQuery.eq('fromSiteId', String(siteActif.id));
+      }
+
+      const [sessionCountRes, lastLoginRes, movementCountRes] = await Promise.all([
+        sessionCountQuery,
+        lastLoginQuery,
+        movementCountQuery,
+      ]);
+
+      let sessionCountValue = Number(sessionCountRes.count ?? 0);
+      let lastLoginAt = (lastLoginRes.data?.[0] as any)?.loginAt as string | undefined;
+
+      if (sessionCountValue === 0 && !lastLoginAt) {
+        // Ensure the current authenticated session is tracked at least once.
+        await AuthService.recordLogin({
+          userId,
+          technicianId: technicien.matricule || userId,
+          technicianName: `${technicien.prenom || ''} ${technicien.nom || ''}`.trim() || 'Technicien',
+          siteId: siteActif?.id ?? null,
+        });
+
+        sessionCountValue = 1;
+        lastLoginAt = new Date().toISOString();
+      }
+
+      const connectionLabel = lastLoginAt
+        ? `${formatRelativeDateParis(lastLoginAt)} ${formatTimeParis(lastLoginAt)}`
+        : 'Aucune';
+
+      setProfileStats({
+        sessionCount: String(sessionCountValue),
+        connectionLabel,
+        movementCount: String(movementCountRes.count ?? 0),
+      });
+    } catch (error) {
+      console.warn('[Settings] refreshProfileStats error:', error);
+      setProfileStats({ sessionCount: '--', connectionLabel: 'Indisponible', movementCount: '--' });
+    }
+  }, [siteActif?.id, technicien?.id]);
+
   useEffect(() => {
     refreshRecount().catch(console.error);
   }, [refreshRecount]);
@@ -141,15 +223,20 @@ export const SettingsScreen: React.FC = () => {
     refreshBiometricState().catch(console.error);
   }, [refreshPushState, refreshBiometricState]);
 
+  useEffect(() => {
+    refreshProfileStats().catch(console.error);
+  }, [refreshProfileStats]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([
       refreshRecount(),
       refreshPushState(),
       refreshBiometricState(),
+      refreshProfileStats(),
     ]);
     setRefreshing(false);
-  }, [refreshBiometricState, refreshPushState, refreshRecount]);
+  }, [refreshBiometricState, refreshProfileStats, refreshPushState, refreshRecount]);
 
   const handleLogout = useCallback(() => {
     setLogoutModalVisible(true);
@@ -157,7 +244,7 @@ export const SettingsScreen: React.FC = () => {
 
   const confirmLogout = useCallback(() => {
     setLogoutModalVisible(false);
-    dispatch(setRedirectToTechnicianChoiceAfterLogout(true));
+    dispatch(setRedirectToTechnicianChoiceAfterLogout(false));
     dispatch(logoutTechnicien());
   }, [dispatch]);
 
@@ -419,6 +506,9 @@ export const SettingsScreen: React.FC = () => {
             roleColor={roleVisual.color}
             roleBg={roleVisual.bg}
             siteName={siteActif?.nom ?? 'Site non selectionne'}
+            sessionCount={profileStats.sessionCount}
+            connectionLabel={profileStats.connectionLabel}
+            movementCount={profileStats.movementCount}
             onMenuPress={handleSiteMenu}
           />
         </Animated.View>

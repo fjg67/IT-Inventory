@@ -28,6 +28,8 @@ interface ArticleRow {
   id: string;
   reference: string;
   name: string;
+  displayName?: string | null;
+  display_name?: string | null;
   description: string | null;
   category: string | null;
   codeFamille: string | null;
@@ -55,6 +57,8 @@ function mapRowToArticle(row: ArticleRow): Article {
     id: row.id as any,
     reference: row.reference,
     nom: row.name,
+    displayName: row.displayName ?? row.display_name ?? undefined,
+    display_name: row.display_name ?? row.displayName ?? undefined,
     description: row.description ?? undefined,
     barcode: row.barcode ?? undefined,
     codeFamille: row.codeFamille ?? undefined,
@@ -398,6 +402,7 @@ export const articleRepository = {
     const payload: Record<string, unknown> = {};
     if (data.reference !== undefined) payload.reference = data.reference;
     if (data.nom !== undefined) payload.name = data.nom;
+    if (data.displayName !== undefined) payload.displayName = data.displayName ?? null;
     if (data.description !== undefined) payload.description = data.description ?? null;
     if (data.barcode !== undefined) payload.barcode = data.barcode ?? null;
     if (data.codeFamille !== undefined) payload.codeFamille = data.codeFamille ?? null;
@@ -429,11 +434,31 @@ export const articleRepository = {
       .select('id');
 
     if (error) {
+      const hasDisplayNameColumnIssue =
+        error.message.toLowerCase().includes('displayname') ||
+        error.message.toLowerCase().includes('display_name');
+
+      if (hasDisplayNameColumnIssue && payload.displayName !== undefined) {
+        const retryPayload = { ...payload };
+        delete retryPayload.displayName;
+        retryPayload.display_name = data.displayName ?? null;
+
+        ({ error, data: updatedRows } = await supabase
+          .from(tables.articles)
+          .update(retryPayload)
+          .eq('id', id)
+          .select('id'));
+      }
+    }
+
+    if (error) {
       const msg = error.message.toLowerCase();
       const hasOptionalColumnIssue =
         msg.includes('model') ||
         msg.includes('barcode') ||
         msg.includes('soustype') ||
+        msg.includes('displayname') ||
+        msg.includes('display_name') ||
         msg.includes('conditionnote') ||
         msg.includes('conditionupdatedat') ||
         msg.includes('defectivecount') ||
@@ -444,6 +469,8 @@ export const articleRepository = {
         delete fallbackPayload.model;
         delete fallbackPayload.barcode;
         delete fallbackPayload.sousType;
+        delete fallbackPayload.displayName;
+        delete fallbackPayload.display_name;
         delete fallbackPayload.condition;
         delete fallbackPayload.defectiveCount;
         delete fallbackPayload.conditionNote;

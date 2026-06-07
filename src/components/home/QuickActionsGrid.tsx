@@ -25,41 +25,49 @@ const QuickActionsGridComponent: React.FC<QuickActionsGridProps> = ({
 
       <View style={styles.grid}>
         {!isSuperviseur ? (
-          <QuickActionCard
-            title="Entree"
-            icon="arrow-down-circle-outline"
-            color={OBSIDIAN_COLORS.green_primary}
-            subtleColor={OBSIDIAN_COLORS.green_subtle}
-            onPress={onEntree}
-          />
+          <View style={styles.gridItem}>
+            <QuickActionCard
+              title="Entree"
+              icon="arrow-down-circle-outline"
+              color={OBSIDIAN_COLORS.green_primary}
+              subtleColor={OBSIDIAN_COLORS.green_subtle}
+              onPress={onEntree}
+            />
+          </View>
         ) : null}
 
         {!isSuperviseur ? (
-          <QuickActionCard
-            title="Sortie"
-            icon="arrow-up-circle-outline"
-            color={OBSIDIAN_COLORS.danger}
-            subtleColor={OBSIDIAN_COLORS.danger_subtle}
-            onPress={onSortie}
-          />
+          <View style={styles.gridItem}>
+            <QuickActionCard
+              title="Sortie"
+              icon="arrow-up-circle-outline"
+              color={OBSIDIAN_COLORS.danger}
+              subtleColor={OBSIDIAN_COLORS.danger_subtle}
+              onPress={onSortie}
+            />
+          </View>
         ) : null}
 
-        <QuickActionCard
-          title="Ajustement"
-          icon="tune-variant"
-          color={OBSIDIAN_COLORS.warning}
-          subtleColor={OBSIDIAN_COLORS.warning_subtle}
-          onPress={onAjustement}
-        />
+        <View style={styles.gridItem}>
+          <QuickActionCard
+            title="Ajustement"
+            icon="tune-variant"
+            color={OBSIDIAN_COLORS.warning}
+            subtleColor={OBSIDIAN_COLORS.warning_subtle}
+            onPress={onAjustement}
+          />
+        </View>
 
         {!isSuperviseur ? (
-          <QuickActionCard
-            title="Transfert"
-            icon="swap-horizontal"
-            color={OBSIDIAN_COLORS.purple}
-            subtleColor={OBSIDIAN_COLORS.purple_subtle}
-            onPress={onTransfert}
-          />
+          <View style={styles.gridItem}>
+            <QuickActionCard
+              title="Transfert"
+              icon="swap-horizontal"
+              color={OBSIDIAN_COLORS.purple}
+              subtleColor={OBSIDIAN_COLORS.purple_subtle}
+              onPress={onTransfert}
+            />
+          </View>
         ) : null}
       </View>
     </View>
@@ -73,7 +81,13 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   grid: {
-    gap: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 12,
     marginTop: 2,
+  },
+  gridItem: {
+    width: '48.5%',
   },
 });

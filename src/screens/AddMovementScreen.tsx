@@ -90,6 +90,10 @@ export const AddMovementScreen: React.FC = () => {
   const search = useArticleSearch(effectiveSiteId, 200, { excludePC: true });
   const resetSearch = search.reset;
 
+  useEffect(() => {
+    flow.updateField('type', initialType ?? 'entree');
+  }, [flow.updateField, initialType]);
+
   const targetSiteId = effectiveSiteId;
   targetSiteIdRef.current = targetSiteId;
 

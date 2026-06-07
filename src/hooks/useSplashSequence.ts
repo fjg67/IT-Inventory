@@ -14,10 +14,10 @@ export type InitStep =
   | 'ready';
 
 const STEP_PROGRESS: Record<InitStep, number> = {
-  connecting: 0.2,
-  auth_check: 0.45,
-  config_load: 0.7,
-  session_restore: 0.9,
+  connecting: 0.15,
+  auth_check: 0.42,
+  config_load: 0.68,
+  session_restore: 0.88,
   ready: 1,
 };
 
@@ -39,6 +39,7 @@ type UseSplashSequenceResult = {
   currentStep: InitStep;
   statusText: string;
   progressValue: SharedValue<number>;
+  isReady: boolean;
 };
 
 export const useSplashSequence = ({
@@ -80,5 +81,6 @@ export const useSplashSequence = ({
     currentStep,
     statusText,
     progressValue,
+    isReady: !isError && currentStep === 'ready',
   };
 };

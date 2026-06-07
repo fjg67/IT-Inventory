@@ -41,6 +41,34 @@ class PanneRepository {
     }
   }
 
+  async getActivePannesByPcIds(pcIds: string[]): Promise<Record<string, PCPanne>> {
+    if (pcIds.length === 0) return {};
+
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select('*')
+        .in('pc_id', pcIds)
+        .not('statut_reparation', 'in', '("resolu", "irreparable")')
+        .order('declared_at', { ascending: false });
+
+      if (error) throw error;
+
+      const latestByPcId: Record<string, PCPanne> = {};
+      for (const panne of data ?? []) {
+        if (!latestByPcId[panne.pc_id]) {
+          latestByPcId[panne.pc_id] = panne;
+        }
+      }
+
+      return latestByPcId;
+    } catch (error) {
+      console.error('[PanneRepository.getActivePannesByPcIds]', error);
+      return {};
+    }
+  }
+
   async createPanne(panne: Omit<PCPanne, 'id' | 'declared_at' | 'updated_at'>): Promise<PCPanne | null> {
     try {
       const supabase = getSupabaseClient();
