@@ -25,6 +25,8 @@ function isVersionOutdated(current: string, minimum: string): boolean {
 
 export interface VersionCheckResult {
   updateRequired: boolean;
+  updateAvailable?: boolean;
+  latestVersion?: string;
   minVersion?: string;
   updateUrl?: string;
   releaseNotes?: string[];
@@ -66,7 +68,7 @@ export async function checkAppVersion(): Promise<VersionCheckResult> {
     const { data, error } = await supabase
       .from('AppConfig')
       .select('key, value')
-      .in('key', ['min_app_version', 'update_url', 'release_notes']);
+      .in('key', ['min_app_version', 'latest_app_version', 'update_url', 'release_notes']);
 
     if (error || !data?.length) {
       // Si la table n'existe pas ou pas de config, on laisse passer
@@ -81,16 +83,18 @@ export async function checkAppVersion(): Promise<VersionCheckResult> {
     }, {});
 
     const minVersion = configMap.min_app_version;
-    if (!minVersion) {
-      return { updateRequired: false };
-    }
+    const latestVersion = configMap.latest_app_version;
 
     const updateUrl = configMap.update_url || APP_CONFIG.playStoreUrl;
     const releaseNotes = parseReleaseNotes(configMap.release_notes);
 
-    const outdated = isVersionOutdated(APP_CONFIG.version, minVersion);
+    const updateRequired = Boolean(minVersion) && isVersionOutdated(APP_CONFIG.version, minVersion);
+    const updateAvailable = Boolean(latestVersion) && isVersionOutdated(APP_CONFIG.version, latestVersion);
+
     return {
-      updateRequired: outdated,
+      updateRequired,
+      updateAvailable,
+      latestVersion,
       minVersion,
       updateUrl,
       releaseNotes,

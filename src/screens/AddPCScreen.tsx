@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
-  LayoutAnimation,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -10,8 +9,8 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   Vibration,
-  UIManager,
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -22,32 +21,56 @@ import {
   useCameraPermission,
   useCodeScanner,
 } from 'react-native-vision-camera';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, SharedValue, interpolateColor, useAnimatedStyle } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useAppSelector } from '@/store';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { ArticlesStackParamList } from '@/navigation/types';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
+import { PC_DEFAULT_UI } from '@/constants/pcStatusColors';
 import {
-  AddPCBadges,
+  AddPCAssetInput,
+  AddPCCategorySelector,
+  AddPCErrorModal,
+  AddPCFooter,
   AddPCHero,
-  AddPCSubmitButton,
-  CategorySelector,
-  HostnameHelper,
-  ModelSelector,
-  PCFormSection,
-  PCInputField,
-  PanneDetailsPanel,
-  StatusSelector,
+  AddPCHostnameInput,
+  AddPCModelSelector,
+  AddPCPannePanel,
+  AddPCProgressBar,
+  AddPCStatusGrid,
 } from '@/components/add-pc';
+import { useAddPCColors } from '@/hooks/useAddPCColors';
 import { useAddPCForm } from '@/hooks/useAddPCForm';
-
-if (Platform.OS === 'android') {
-  UIManager.setLayoutAnimationEnabledExperimental?.(true);
-}
+import { usePCSuccessAnimation } from '@/hooks/usePCSuccessAnimation';
+import { PCSuccessOverlay } from '@/components/add-pc/PCSuccessOverlay';
 
 type AddPCNavigationProp = NativeStackNavigationProp<ArticlesStackParamList>;
+
+interface SectionLabelProps {
+  title: string;
+  required?: boolean;
+  fromColor: string;
+  toColor: string;
+  progress: SharedValue<number>;
+}
+
+const SectionLabel: React.FC<SectionLabelProps> = ({ title, required = false, fromColor, toColor, progress }) => {
+  const barStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(progress.value, [0, 1], [fromColor, toColor]),
+  }));
+
+  return (
+    <View style={styles.sectionHeader}>
+      <Animated.View style={[styles.sectionAccent, barStyle]} />
+      <Text style={styles.sectionTitle}>
+        {title}
+        {required ? <Text style={styles.required}> *</Text> : null}
+      </Text>
+    </View>
+  );
+};
 
 export const AddPCScreen: React.FC = () => {
   const navigation = useNavigation<AddPCNavigationProp>();
@@ -62,36 +85,53 @@ export const AddPCScreen: React.FC = () => {
     isSubmitting,
     availableModels,
     isValid,
-    hostnameFormat,
+    progress,
     validateHostnameByCategory,
     handleSubmit,
   } = useAddPCForm();
 
-  const [isHostnameFocused, setHostnameFocused] = useState(false);
-  const [isAssetFocused, setAssetFocused] = useState(false);
+  const {
+    colorProgress,
+    transitionToStatus,
+    fromConfig,
+    toConfig,
+  } = useAddPCColors();
+
+  const { visible: successVisible, triggered: successTriggered, pcData: successData, show: showSuccess, hide: hideSuccess } = usePCSuccessAnimation();
+
   const [hostnameTouched, setHostnameTouched] = useState(false);
   const [assetTouched, setAssetTouched] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-
   const [scanTarget, setScanTarget] = useState<'hostname' | 'asset' | null>(null);
   const scanTargetRef = useRef<'hostname' | 'asset' | null>(null);
   const lastScannedRef = useRef<{ value: string; at: number } | null>(null);
-
-  const { hasPermission: hasCamPermission, requestPermission: requestCamPermission } = useCameraPermission();
-  const camDevices = useCameraDevices();
-  const camDevice = camDevices.find((device) => device.position === 'back') ?? camDevices[0];
+  const [errorModal, setErrorModal] = useState<{
+    visible: boolean;
+    type: 'hostname_duplicate' | 'asset_duplicate' | 'format_invalid';
+    message: string;
+  }>({
+    visible: false,
+    type: 'format_invalid',
+    message: '',
+  });
 
   useEffect(() => {
     scanTargetRef.current = scanTarget;
   }, [scanTarget]);
 
   useEffect(() => {
-    if (!form.category) return;
-    if (availableModels.length === 0) return;
+    transitionToStatus(form.status);
+  }, [form.status, transitionToStatus]);
+
+  useEffect(() => {
+    if (!form.category || availableModels.length === 0) return;
     if (!form.model || !availableModels.includes(form.model)) {
       updateField('model', availableModels[0]);
     }
   }, [availableModels, form.category, form.model, updateField]);
+
+  const statusColor = form.status ? toConfig.color : PC_DEFAULT_UI.color;
+
+  const hostnamePlaceholder = form.category === 'portable_agence' ? 'Ex: KSAOP872XXXX' : 'Ex: KSAOPSTRXXXX';
 
   const hostnameError = useMemo(() => {
     if (!hostnameTouched) return null;
@@ -107,12 +147,9 @@ export const AddPCScreen: React.FC = () => {
     return null;
   }, [assetTouched, form.asset]);
 
-  const panneDisabledReason = useMemo(() => {
-    if (form.status !== 'en_panne') return null;
-    if (!form.panne_type) return 'Sélectionnez un type de panne';
-    if (form.panne_description.trim().length < 10) return 'Décrivez la panne sur au moins 10 caractères';
-    return null;
-  }, [form.panne_description, form.panne_type, form.status]);
+  const { hasPermission: hasCamPermission, requestPermission: requestCamPermission } = useCameraPermission();
+  const camDevices = useCameraDevices();
+  const camDevice = camDevices.find((device) => device.position === 'back') ?? camDevices[0];
 
   const onCodeScanned = useCallback((codes: { value?: string }[]) => {
     if (!scanTargetRef.current || codes.length === 0 || !codes[0]?.value) return;
@@ -142,7 +179,6 @@ export const AddPCScreen: React.FC = () => {
   });
 
   const openScanner = useCallback(async (target: 'hostname' | 'asset') => {
-    Vibration.vibrate(15);
     if (!camDevice) {
       Alert.alert('Caméra indisponible', "Aucune caméra n'a été détectée.");
       return;
@@ -166,17 +202,17 @@ export const AddPCScreen: React.FC = () => {
     setScanTarget(target);
   }, [camDevice, hasCamPermission, requestCamPermission]);
 
-  const handleCancel = useCallback(() => {
-    navigation.goBack();
-  }, [navigation]);
-
   const handleSave = useCallback(async () => {
     setHostnameTouched(true);
     setAssetTouched(true);
 
     const validation = validateHostnameByCategory(form.hostname);
     if (!validation.valid) {
-      Alert.alert('Format hostname invalide', `Format attendu: ${validation.expected}`);
+      setErrorModal({
+        visible: true,
+        type: 'format_invalid',
+        message: `Le format du hostname n'est pas correct. ${validation.expected}`,
+      });
       return;
     }
 
@@ -187,34 +223,79 @@ export const AddPCScreen: React.FC = () => {
     });
 
     if (!result.success) {
-      Alert.alert('Échec de synchronisation', result.error ?? "Impossible d'ajouter le PC.");
+      // Detect error type from message
+      const errorMsg = result.error ?? "Impossible d'ajouter le PC.";
+      let errorType: 'hostname_duplicate' | 'asset_duplicate' | 'format_invalid' = 'format_invalid';
+
+      if (errorMsg.toLowerCase().includes('hostname') || errorMsg.toLowerCase().includes('existant')) {
+        errorType = 'hostname_duplicate';
+      } else if (errorMsg.toLowerCase().includes('asset')) {
+        errorType = 'asset_duplicate';
+      }
+
+      setErrorModal({
+        visible: true,
+        type: errorType,
+        message: errorMsg,
+      });
       return;
     }
 
-    setSubmitSuccess(true);
     Vibration.vibrate([0, 20, 40, 20]);
-    setTimeout(() => {
-      reset();
-      navigation.goBack();
-    }, 700);
+    showSuccess({
+      hostname: form.hostname.trim().toUpperCase(),
+      model: form.model ?? '',
+      asset: form.asset.trim().toUpperCase(),
+      category: form.category!,
+      status: form.status!,
+    });
   }, [effectiveSiteId, effectiveSiteName, form.hostname, handleSubmit, navigation, reset, validateHostnameByCategory]);
 
-  const hostnamePlaceholder = form.category === 'portable_agence' ? 'Ex: KSAOP872XXXX' : 'Ex: KSAOPSTRXXXX';
+  const handleAddAnother = useCallback(() => {
+    hideSuccess();
+    setTimeout(() => reset(), 350);
+  }, [hideSuccess, reset]);
+
+  const handleViewParc = useCallback(() => {
+    hideSuccess();
+    setTimeout(() => {
+      navigation.navigate('ArticlesList', {
+        presetTypeArticle: 'PC',
+        lockPresetTypeArticle: true,
+      });
+    }, 350);
+  }, [hideSuccess, navigation]);
+
+  const contentValid = isValid && !hostnameError && !assetError;
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={OBSIDIAN_COLORS.bg_primary} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-      >
+
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Icon name="arrow-left" size={19} color="#EAF5EF" />
+          </TouchableOpacity>
+          <Text style={styles.topTitle}>Ajout PC</Text>
+          <View style={styles.topRightDot} />
+        </View>
+
+        <AddPCProgressBar progress={progress} statusColor={statusColor} />
+
         <ScrollView
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.content}
         >
-          <AddPCHero model={form.model} onBack={handleCancel} />
-          <AddPCBadges category={form.category} />
+          <AddPCHero
+            selectedStatus={form.status}
+            selectedModel={form.model}
+            selectedCategory={form.category}
+            fromConfig={fromConfig}
+            toConfig={toConfig}
+            colorProgress={colorProgress}
+          />
 
           <View style={styles.titleWrap}>
             <Text style={styles.title}>Ajouter un PC portable</Text>
@@ -222,127 +303,125 @@ export const AddPCScreen: React.FC = () => {
           </View>
 
           <View style={styles.formWrap}>
-            <Animated.View entering={FadeInDown.delay(0).duration(280)}>
-              <PCFormSection title="Catégorie" required>
-                <CategorySelector
-                  value={form.category}
-                  onChange={(category) => updateField('category', category)}
-                  disabled={isSubmitting}
-                />
-              </PCFormSection>
+            <Animated.View entering={FadeInDown.duration(220)}>
+              <SectionLabel
+                title="Catégorie"
+                required
+                fromColor={fromConfig.color}
+                toColor={toConfig.color}
+                progress={colorProgress}
+              />
+              <AddPCCategorySelector
+                selected={form.category}
+                onSelect={(cat) => updateField('category', cat)}
+                activeColor={statusColor}
+                disabled={isSubmitting}
+              />
             </Animated.View>
 
-            <Animated.View entering={FadeInDown.delay(80).duration(280)}>
-              <PCFormSection title="Modèle" required>
-                <ModelSelector
-                  value={form.model}
-                  options={availableModels}
-                  onChange={(model) => updateField('model', model)}
-                  disabled={!form.category || isSubmitting}
+            {form.category ? (
+              <Animated.View entering={FadeInDown.duration(240)} style={styles.sectionWrap}>
+                <SectionLabel
+                  title="Modèle"
+                  required
+                  fromColor={fromConfig.color}
+                  toColor={toConfig.color}
+                  progress={colorProgress}
                 />
-              </PCFormSection>
-            </Animated.View>
-
-            <Animated.View entering={FadeInDown.delay(160).duration(280)}>
-              <PCFormSection title="Statut" required>
-                <StatusSelector
-                  value={form.status}
-                  onChange={(status) => {
-                    LayoutAnimation.configureNext({
-                      duration: 280,
-                      create: { type: 'easeInEaseOut', property: 'opacity' },
-                      update: { type: 'spring', springDamping: 0.75 },
-                      delete: { type: 'easeInEaseOut', property: 'opacity' },
-                    });
-                    handleStatusChange(status);
-                  }}
-                  disabled={isSubmitting}
+                <AddPCModelSelector
+                  selected={form.model}
+                  models={availableModels}
+                  onSelect={(model) => updateField('model', model)}
+                  activeColor={statusColor}
                 />
+              </Animated.View>
+            ) : null}
 
-                {form.status === 'en_panne' ? (
-                  <PanneDetailsPanel
-                    panneType={form.panne_type}
-                    priorite={form.panne_priorite}
-                    description={form.panne_description}
-                    onPanneTypeChange={(type) => updateField('panne_type', type)}
-                    onPrioriteChange={(priorite) => updateField('panne_priorite', priorite)}
-                    onDescriptionChange={(description) => updateField('panne_description', description)}
-                  />
-                ) : null}
-              </PCFormSection>
-            </Animated.View>
+            <View style={styles.sectionWrap}>
+              <SectionLabel
+                title="Statut"
+                required
+                fromColor={fromConfig.color}
+                toColor={toConfig.color}
+                progress={colorProgress}
+              />
+              <AddPCStatusGrid
+                selected={form.status}
+                onSelect={(status) => {
+                  Vibration.vibrate(10);
+                  handleStatusChange(status);
+                }}
+              />
+            </View>
 
-            <Animated.View entering={FadeInDown.delay(240).duration(280)}>
-              <PCFormSection title="Hostname" required>
-                <HostnameHelper category={form.category} format={hostnameFormat} />
-                <PCInputField
-                  label=""
-                  value={form.hostname}
-                  icon="laptop"
-                  error={hostnameError}
-                  isFocused={isHostnameFocused}
-                  placeholder={hostnamePlaceholder}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  editable={!isSubmitting}
-                  onFocus={() => setHostnameFocused(true)}
-                  onBlur={() => {
-                    setHostnameFocused(false);
-                    setHostnameTouched(true);
-                  }}
-                  onChangeText={(value) => updateField('hostname', value)}
-                  onScan={() => openScanner('hostname')}
-                />
-              </PCFormSection>
-            </Animated.View>
+            {form.status === 'en_panne' ? (
+              <AddPCPannePanel
+                panneType={form.panne_type}
+                priorite={form.panne_priorite}
+                description={form.panne_description}
+                onPanneTypeChange={(type) => updateField('panne_type', type)}
+                onPrioriteChange={(priorite) => updateField('panne_priorite', priorite)}
+                onDescriptionChange={(description) => updateField('panne_description', description)}
+              />
+            ) : null}
 
-            <Animated.View entering={FadeInDown.delay(320).duration(280)}>
-              <PCFormSection title="Asset" required>
-                <PCInputField
-                  label=""
-                  value={form.asset}
-                  icon="tag-outline"
-                  error={assetError}
-                  isFocused={isAssetFocused}
-                  placeholder="Ex: AO44XXXX"
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  editable={!isSubmitting}
-                  onFocus={() => setAssetFocused(true)}
-                  onBlur={() => {
-                    setAssetFocused(false);
-                    setAssetTouched(true);
-                  }}
-                  onChangeText={(value) => updateField('asset', value)}
-                  onScan={() => openScanner('asset')}
-                />
+            <View style={styles.sectionWrap}>
+              <SectionLabel
+                title="Hostname"
+                required
+                fromColor={fromConfig.color}
+                toColor={toConfig.color}
+                progress={colorProgress}
+              />
+              <AddPCHostnameInput
+                value={form.hostname}
+                onChangeText={(text) => updateField('hostname', text)}
+                onScan={() => openScanner('hostname')}
+                placeholder={hostnamePlaceholder}
+                accentColor={statusColor}
+                error={hostnameError}
+                disabled={isSubmitting}
+              />
+            </View>
 
-                <View style={styles.noteBox}>
-                  <Icon name="information-outline" size={12} color={OBSIDIAN_COLORS.text_muted} />
-                  <Text style={styles.noteText}>
-                    Le modèle et le statut seront visibles directement sur la carte PC.
-                  </Text>
-                </View>
-              </PCFormSection>
-            </Animated.View>
+            <View style={styles.sectionWrap}>
+              <SectionLabel
+                title="Asset"
+                required
+                fromColor={fromConfig.color}
+                toColor={toConfig.color}
+                progress={colorProgress}
+              />
+              <AddPCAssetInput
+                value={form.asset}
+                onChangeText={(text) => updateField('asset', text)}
+                onScan={() => openScanner('asset')}
+                accentColor={statusColor}
+                error={assetError}
+                disabled={isSubmitting}
+              />
+
+              <View style={styles.noteBox}>
+                <Icon name="information-outline" size={12} color="#8FA39C" />
+                <Text style={styles.noteText}>Le modèle et le statut seront visibles directement sur la carte PC.</Text>
+              </View>
+            </View>
           </View>
         </ScrollView>
 
-        <AddPCSubmitButton
-          isValid={isValid && !hostnameError && !assetError}
+        <AddPCFooter
+          isValid={contentValid}
           isLoading={isSubmitting}
-          isSuccess={submitSuccess}
-          disabledReason={panneDisabledReason}
-          onCancel={handleCancel}
+          statusColor={statusColor}
+          fromButtonColor={fromConfig.buttonColor}
+          toButtonColor={toConfig.buttonColor}
+          colorProgress={colorProgress}
+          onCancel={() => navigation.goBack()}
           onSubmit={handleSave}
         />
       </KeyboardAvoidingView>
 
-      <Modal
-        visible={scanTarget !== null}
-        animationType="slide"
-        onRequestClose={() => setScanTarget(null)}
-      >
+      <Modal visible={scanTarget !== null} animationType="slide" onRequestClose={() => setScanTarget(null)}>
         <View style={styles.cameraContainer}>
           {camDevice && hasCamPermission ? (
             <Camera
@@ -366,38 +445,45 @@ export const AddPCScreen: React.FC = () => {
             </View>
 
             <View style={styles.cameraFrameWrap}>
-              <View style={styles.cameraFrame}>
-                <View style={[styles.cameraCorner, styles.cornerTL]} />
-                <View style={[styles.cameraCorner, styles.cornerTR]} />
-                <View style={[styles.cameraCorner, styles.cornerBL]} />
-                <View style={[styles.cameraCorner, styles.cornerBR]} />
+              <View style={[styles.cameraFrame, { borderColor: toConfig.border }]}>
+                <View style={[styles.cameraCorner, styles.cornerTL, { borderColor: toConfig.color }]} />
+                <View style={[styles.cameraCorner, styles.cornerTR, { borderColor: toConfig.color }]} />
+                <View style={[styles.cameraCorner, styles.cornerBL, { borderColor: toConfig.color }]} />
+                <View style={[styles.cameraCorner, styles.cornerBR, { borderColor: toConfig.color }]} />
               </View>
             </View>
 
             <Text style={styles.cameraHint}>Positionnez le code-barres dans le cadre</Text>
 
-            <View style={styles.cameraFooter}>
-              <Text style={styles.cameraFooterText}>Lecture automatique</Text>
-              <View style={styles.cameraDot} />
-              <Text style={styles.cameraFooterText}>Vision Camera</Text>
-            </View>
-
             <View style={styles.cameraCloseWrap}>
-              <View style={styles.cameraCloseBackdrop}>
-                <Icon
-                  name="close"
-                  size={22}
-                  color="#FFFFFF"
-                  onPress={() => {
-                    Vibration.vibrate(10);
-                    setScanTarget(null);
-                  }}
-                />
-              </View>
+              <TouchableOpacity
+                style={styles.cameraCloseBackdrop}
+                onPress={() => {
+                  Vibration.vibrate(10);
+                  setScanTarget(null);
+                }}
+              >
+                <Icon name="close" size={22} color="#FFFFFF" />
+              </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
+      <AddPCErrorModal
+        visible={errorModal.visible}
+        type={errorModal.type}
+        message={errorModal.message}
+        onDismiss={() => setErrorModal({ ...errorModal, visible: false })}
+      />
+
+      <PCSuccessOverlay
+        visible={successVisible}
+        triggered={successTriggered}
+        pcData={successData}
+        onAddAnother={handleAddAnother}
+        onViewParc={handleViewParc}
+      />
     </View>
   );
 };
@@ -407,45 +493,94 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: OBSIDIAN_COLORS.bg_primary,
   },
+  topBar: {
+    minHeight: 62,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(148,163,184,0.24)',
+    backgroundColor: '#101915',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  topTitle: {
+    color: '#EAF5EF',
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  topRightDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(148,163,184,0.6)',
+  },
   content: {
-    paddingBottom: 140,
+    paddingBottom: 132,
   },
   titleWrap: {
     paddingHorizontal: 16,
-    gap: 6,
+    gap: 4,
   },
   title: {
-    color: OBSIDIAN_COLORS.text_primary,
+    color: '#ECF8F1',
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   subtitle: {
-    color: OBSIDIAN_COLORS.text_muted,
+    color: '#8EA09A',
     fontSize: 13,
     fontWeight: '500',
   },
   formWrap: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    gap: 6,
+    gap: 16,
+  },
+  sectionWrap: {
+    gap: 10,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionAccent: {
+    width: 3,
+    height: 16,
+    borderRadius: 2,
+  },
+  sectionTitle: {
+    color: '#DDEBE5',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  required: {
+    color: '#EF4444',
   },
   noteBox: {
-    marginTop: 12,
+    marginTop: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.06)',
-    backgroundColor: OBSIDIAN_COLORS.bg_card_elevated,
+    borderColor: 'rgba(148,163,184,0.16)',
+    backgroundColor: '#101915',
     minHeight: 40,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
   noteText: {
-    color: OBSIDIAN_COLORS.text_muted,
+    color: '#8FA39C',
     fontSize: 12,
-    fontStyle: 'italic',
     flex: 1,
   },
   cameraContainer: {
@@ -479,13 +614,11 @@ const styles = StyleSheet.create({
     height: 170,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
   },
   cameraCorner: {
     position: 'absolute',
     width: 26,
     height: 26,
-    borderColor: '#22C55E',
     borderWidth: 3,
   },
   cornerTL: {
@@ -521,23 +654,6 @@ const styles = StyleSheet.create({
     color: '#D1D5DB',
     fontSize: 13,
     fontWeight: '500',
-  },
-  cameraFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  cameraFooterText: {
-    color: '#9CA3AF',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  cameraDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#22C55E',
   },
   cameraCloseWrap: {
     alignItems: 'center',

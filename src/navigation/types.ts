@@ -38,6 +38,8 @@ export type ArticlesStackParamList = {
         filter?: 'lowStock';
         presetTypeArticle?: string;
         lockPresetTypeArticle?: boolean;
+        pcAddSuccessAt?: number;
+        pcAddHostname?: string;
       }
     | undefined;
   ArticleDetail: { articleId: number; sourceTab?: 'Articles' | 'PC' };

@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
+
 import { getSupabaseClient, tables } from '@/api/supabase';
+import { PC_MODELS } from '@/constants/pcModels';
+import { PC_STATUS_UI } from '@/constants/pcStatusColors';
 import { articleRepository, stockRepository } from '@/database';
-import { PannePriorite, PanneType } from '@/types/pc.types';
+import { PannePriorite, PanneType, PCStatus } from '@/types/pc.types';
 
 export type PCCategory = 'portable_siege' | 'portable_agence';
-export type PCStatus = 'a_chaud' | 'a_reusiner' | 'en_usinage' | 'disponible' | 'envoye' | 'en_panne';
 
 export interface AddPCFormState {
   category: PCCategory | null;
@@ -46,25 +48,22 @@ export const PC_CATEGORY_OPTIONS: CategoryOption[] = [
   {
     key: 'portable_siege',
     label: 'Portable siège',
-    icon: 'laptop',
-    models: ['DELL Latitude 5440 tactile', 'DELL Latitude 5440 non tactile'],
+    icon: 'office-building-outline',
+    models: PC_MODELS.portable_siege,
   },
   {
     key: 'portable_agence',
     label: 'Portable agence',
-    icon: 'laptop',
-    models: ['HP EliteBook', 'DELL Latitude 5550'],
+    icon: 'storefront-outline',
+    models: PC_MODELS.portable_agence,
   },
 ];
 
-export const PC_STATUS_OPTIONS: StatusOption[] = [
-  { key: 'a_chaud', label: 'À chaud', icon: 'flash-outline' },
-  { key: 'a_reusiner', label: 'À reusiner', icon: 'wrench-outline' },
-  { key: 'en_usinage', label: 'En usinage', icon: 'cog-outline' },
-  { key: 'disponible', label: 'Disponible', icon: 'check-circle-outline' },
-  { key: 'envoye', label: 'Envoyé', icon: 'send-outline' },
-  { key: 'en_panne', label: 'En panne', icon: 'laptop-off' },
-];
+export const PC_STATUS_OPTIONS: StatusOption[] = (Object.keys(PC_STATUS_UI) as PCStatus[]).map((key) => ({
+  key,
+  label: PC_STATUS_UI[key].label,
+  icon: PC_STATUS_UI[key].icon,
+}));
 
 const HOSTNAME_REGEX: Record<PCCategory, RegExp> = {
   portable_siege: /^KSAOP(?:STR|EPI)[0-9A-Z]{4}$/,
@@ -94,7 +93,18 @@ const getBrandFromModel = (model: string) => {
 
 const getModelsForCategory = (category: PCCategory | null): string[] => {
   if (!category) return [];
-  return PC_CATEGORY_OPTIONS.find((option) => option.key === category)?.models ?? [];
+  return PC_MODELS[category] ?? [];
+};
+
+const computeProgress = (form: AddPCFormState): number => {
+  let steps = 0;
+  if (form.category) steps += 1;
+  if (form.model) steps += 1;
+  if (form.status) steps += 1;
+  if (form.hostname.trim().length > 0) steps += 1;
+  if (form.asset.trim().length > 0) steps += 1;
+  if (form.status === 'en_panne' && form.panne_type && form.panne_description.trim().length >= 10) steps += 1;
+  return steps / (form.status === 'en_panne' ? 6 : 5);
 };
 
 export const useAddPCForm = () => {
@@ -111,12 +121,20 @@ export const useAddPCForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const updateField = <K extends keyof AddPCFormState>(
-    key: K,
-    value: AddPCFormState[K],
-  ) => {
+  const updateField = <K extends keyof AddPCFormState>(key: K, value: AddPCFormState[K]) => {
     if (key === 'hostname' || key === 'asset') {
       setForm((prev) => ({ ...prev, [key]: String(value).toUpperCase() }));
+      return;
+    }
+
+    if (key === 'category') {
+      const nextCategory = value as PCCategory | null;
+      const nextModels = getModelsForCategory(nextCategory);
+      setForm((prev) => ({
+        ...prev,
+        category: nextCategory,
+        model: nextModels.includes(String(prev.model ?? '')) ? prev.model : null,
+      }));
       return;
     }
 
@@ -124,22 +142,15 @@ export const useAddPCForm = () => {
   };
 
   const handleStatusChange = (status: PCStatus) => {
-    setForm((prev) => {
-      if (status === 'en_panne') {
-        return {
-          ...prev,
-          status,
-        };
-      }
-
-      return {
-        ...prev,
-        status,
+    setForm((prev) => ({
+      ...prev,
+      status,
+      ...(status !== 'en_panne' && {
         panne_type: null,
         panne_priorite: 'moyenne',
         panne_description: '',
-      };
-    });
+      }),
+    }));
   };
 
   const availableModels = useMemo(() => getModelsForCategory(form.category), [form.category]);
@@ -151,16 +162,19 @@ export const useAddPCForm = () => {
         ? 'KSAOP872XXXX'
         : null;
 
+  const isPanneValid =
+    form.status !== 'en_panne'
+    || (form.panne_type !== null && form.panne_description.trim().length >= 10);
+
   const isValid =
     form.category !== null
     && form.model !== null
     && form.status !== null
     && form.hostname.trim().length > 0
-    && form.asset.trim().length > 0;
+    && form.asset.trim().length > 0
+    && isPanneValid;
 
-  const isPanneValid =
-    form.status !== 'en_panne'
-    || (form.panne_type !== null && form.panne_description.trim().length >= 10);
+  const progress = useMemo(() => computeProgress(form), [form]);
 
   const validateHostnameByCategory = (value: string) => {
     if (!form.category) return { valid: true };
@@ -274,6 +288,7 @@ export const useAddPCForm = () => {
     availableModels,
     isValid,
     isPanneValid,
+    progress,
     hostnameFormat,
     validateHostnameByCategory,
     handleSubmit,

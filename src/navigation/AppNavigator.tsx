@@ -6,7 +6,7 @@ import React, { useEffect } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet, AppState, AppStateStatus } from 'react-native';
+import { View, Text, StyleSheet, AppState, AppStateStatus, Linking, Modal, Pressable } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 
@@ -63,6 +63,7 @@ const MainTab = createBottomTabNavigator<MainTabParamList>();
 const ArticlesStack = createNativeStackNavigator<ArticlesStackParamList>();
 const MouvementsStack = createNativeStackNavigator<MouvementsStackParamList>();
 const SettingsStackNav = createNativeStackNavigator<SettingsStackParamList>();
+const OPTIONAL_UPDATE_DISMISS_KEY = '@it-inventory/update_prompt_dismissed';
 
 const getActiveRouteName = (state: any): string => {
   if (!state || !state.routes || state.index == null) return 'Unknown';
@@ -236,6 +237,7 @@ export const AppNavigator: React.FC = () => {
   const [initErrorMessage, setInitErrorMessage] = React.useState<string | null>(null);
   const [onboardingSeen, setOnboardingSeen] = React.useState(false);
   const [forceUpdate, setForceUpdate] = React.useState<VersionCheckResult | null>(null);
+  const [optionalUpdate, setOptionalUpdate] = React.useState<VersionCheckResult | null>(null);
   const [siteGateSeed, setSiteGateSeed] = React.useState(0);
   const appStateRef = React.useRef<AppStateStatus>(AppState.currentState);
   const isAuthenticatedRef = React.useRef(isAuthenticated);
@@ -278,10 +280,34 @@ export const AppNavigator: React.FC = () => {
     try {
       const versionResult = await checkAppVersion();
       setForceUpdate(versionResult.updateRequired ? versionResult : null);
+
+      if (!versionResult.updateRequired && versionResult.updateAvailable) {
+        const dismissKey = `${OPTIONAL_UPDATE_DISMISS_KEY}:${versionResult.latestVersion || versionResult.minVersion || 'unknown'}`;
+        const dismissed = await AsyncStorage.getItem(dismissKey);
+        setOptionalUpdate(dismissed === 'true' ? null : versionResult);
+      } else {
+        setOptionalUpdate(null);
+      }
     } catch (error) {
       console.warn('[AppNavigator] checkAppVersion error:', error);
     }
   }, []);
+
+  const handleDismissOptionalUpdate = React.useCallback(async () => {
+    if (!optionalUpdate) return;
+    const dismissKey = `${OPTIONAL_UPDATE_DISMISS_KEY}:${optionalUpdate.latestVersion || optionalUpdate.minVersion || 'unknown'}`;
+    await AsyncStorage.setItem(dismissKey, 'true');
+    setOptionalUpdate(null);
+  }, [optionalUpdate]);
+
+  const handleOpenStoreForOptionalUpdate = React.useCallback(async () => {
+    const url = optionalUpdate?.updateUrl || 'https://play.google.com/store/apps/details?id=com.itinventory';
+    try {
+      await Linking.openURL(url);
+    } catch {
+      await Linking.openURL('market://details?id=com.itinventory').catch(() => {});
+    }
+  }, [optionalUpdate?.updateUrl]);
 
   // Réseau : écouter NetInfo et vérifier l'accès Supabase
   useEffect(() => {
@@ -538,6 +564,40 @@ export const AppNavigator: React.FC = () => {
         )}
       </RootStack.Navigator>
     </NavigationContainer>
+
+    <Modal transparent visible={Boolean(optionalUpdate)} animationType="fade" onRequestClose={() => { handleDismissOptionalUpdate().catch(() => {}); }}>
+      <View style={styles.updateOverlay}>
+        <View style={styles.updateCard}>
+          <Text style={styles.updateBadge}>MISE A JOUR DISPONIBLE</Text>
+          <Text style={styles.updateTitle}>Nouvelle version de l'application</Text>
+          <Text style={styles.updateMessage}>
+            Une nouvelle version est disponible sur le Play Store avec des ameliorations importantes.
+          </Text>
+
+          <Text style={styles.updateSectionTitle}>Ameliorations apportees</Text>
+          {(optionalUpdate?.releaseNotes?.length
+            ? optionalUpdate.releaseNotes
+            : [
+                'Correction de la stabilite au demarrage et ecran de connexion.',
+                'Nouveau parcours onboarding plus fluide.',
+                'Optimisations globales des performances et de la navigation.',
+              ]).slice(0, 4).map((note, index) => (
+            <Text key={`${index}-${note}`} style={styles.updateBullet}>• {note}</Text>
+          ))}
+
+          <Text style={styles.updateLink}>https://play.google.com/store/apps/details?id=com.itinventory</Text>
+
+          <View style={styles.updateActions}>
+            <Pressable style={[styles.updateButton, styles.updateLaterButton]} onPress={() => { handleDismissOptionalUpdate().catch(() => {}); }}>
+              <Text style={styles.updateLaterText}>Plus tard</Text>
+            </Pressable>
+            <Pressable style={[styles.updateButton, styles.updateNowButton]} onPress={() => { handleOpenStoreForOptionalUpdate().catch(() => {}); }}>
+              <Text style={styles.updateNowText}>Mettre a jour</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
     </View>
   );
 };
@@ -566,6 +626,79 @@ const styles = StyleSheet.create({
   tabLabelActive: {
     color: colors.primary,
     fontWeight: '600',
+  },
+  updateOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  updateCard: {
+    backgroundColor: '#0F1B14',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.2)',
+    padding: 16,
+    gap: 8,
+  },
+  updateBadge: {
+    color: '#F59E0B',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+  },
+  updateTitle: {
+    color: '#F0FDF4',
+    fontSize: 19,
+    fontWeight: '800',
+  },
+  updateMessage: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  updateSectionTitle: {
+    marginTop: 6,
+    color: '#DCFCE7',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  updateBullet: {
+    color: '#A7F3D0',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  updateLink: {
+    marginTop: 4,
+    color: '#34D399',
+    fontSize: 11,
+  },
+  updateActions: {
+    marginTop: 10,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  updateButton: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  updateLaterButton: {
+    borderWidth: 1,
+    borderColor: 'rgba(107,114,128,0.6)',
+    backgroundColor: 'rgba(17,24,39,0.5)',
+  },
+  updateNowButton: {
+    backgroundColor: '#22C55E',
+  },
+  updateLaterText: {
+    color: '#D1D5DB',
+    fontWeight: '600',
+  },
+  updateNowText: {
+    color: '#052E16',
+    fontWeight: '800',
   },
 });
 

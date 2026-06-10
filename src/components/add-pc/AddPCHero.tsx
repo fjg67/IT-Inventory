@@ -1,174 +1,146 @@
-import React, { useEffect, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import React, { useEffect } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
-  FadeIn,
+  FadeInDown,
+  interpolateColor,
+  SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
-import { OBSIDIAN_COLORS } from '@/constants/colors';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+import { PCCategory } from '@/hooks/useAddPCForm';
+import { PC_DEFAULT_UI, PCStatusUIConfig } from '@/constants/pcStatusColors';
+import { PCStatus } from '@/types/pc.types';
 
 interface AddPCHeroProps {
-  model: string | null;
-  onBack: () => void;
+  selectedStatus: PCStatus | null;
+  selectedModel: string | null;
+  selectedCategory: PCCategory | null;
+  fromConfig: PCStatusUIConfig;
+  toConfig: PCStatusUIConfig;
+  colorProgress: SharedValue<number>;
 }
 
-const AnimatedView = Animated.createAnimatedComponent(View);
-
-const AddPCHero: React.FC<AddPCHeroProps> = ({ model, onBack }) => {
-  const textOpacity = useSharedValue(1);
-  const textY = useSharedValue(0);
-  const iconOpacity = useSharedValue(1);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+const AddPCHero: React.FC<AddPCHeroProps> = ({
+  selectedStatus,
+  selectedModel,
+  selectedCategory,
+  fromConfig,
+  toConfig,
+  colorProgress,
+}) => {
+  const iconScale = useSharedValue(1);
 
   useEffect(() => {
-    textOpacity.value = withTiming(0, { duration: 150 });
-    textY.value = withTiming(-8, { duration: 150 });
-    iconOpacity.value = withTiming(0.25, { duration: 120 });
+    if (!selectedStatus) return;
+    iconScale.value = withSpring(1.16, { damping: 8, stiffness: 220 }, () => {
+      iconScale.value = withSpring(1, { damping: 14, stiffness: 170 });
+    });
+  }, [iconScale, selectedStatus]);
 
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-
-    timerRef.current = setTimeout(() => {
-      textY.value = 8;
-      textOpacity.value = withTiming(1, { duration: 200 });
-      textY.value = withSpring(0, { damping: 14, stiffness: 180 });
-      iconOpacity.value = withTiming(1, { duration: 200 });
-    }, 160);
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [model, iconOpacity, textOpacity, textY]);
-
-  const modelTextStyle = useAnimatedStyle(() => ({
-    opacity: textOpacity.value,
-    transform: [{ translateY: textY.value }],
+  const iconWrapStyle = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(colorProgress.value, [0, 1], [fromConfig.border, toConfig.border]),
+    backgroundColor: interpolateColor(colorProgress.value, [0, 1], [fromConfig.subtle, toConfig.subtle]),
+    transform: [{ scale: iconScale.value }],
   }));
 
-  const laptopIconStyle = useAnimatedStyle(() => ({
-    opacity: iconOpacity.value,
+  const haloStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(colorProgress.value, [0, 1], [fromConfig.heroGlow, toConfig.heroGlow]),
   }));
+
+  const labelStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(colorProgress.value, [0, 1], [fromConfig.color, toConfig.color]),
+  }));
+
+  const activeConfig = selectedStatus ? toConfig : PC_DEFAULT_UI;
 
   return (
-    <View style={styles.wrapper}>
-      <LinearGradient
-        colors={['rgba(27, 138, 62, 0.25)', 'rgba(27, 138, 62, 0.05)', 'transparent']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.gradient}
-      />
+    <Animated.View entering={FadeInDown.duration(250)} style={styles.heroContainer}>
+      <Animated.View pointerEvents="none" style={[styles.halo, haloStyle]} />
 
-      <View style={styles.orbOne} pointerEvents="none" />
-      <View style={styles.orbTwo} pointerEvents="none" />
+      <Animated.View style={[styles.iconWrap, iconWrapStyle]}>
+        <Icon name={activeConfig.icon} size={30} color={activeConfig.color} />
+      </Animated.View>
 
-      <Pressable style={styles.backButton} onPress={onBack}>
-        <Icon name="arrow-left" size={20} color={OBSIDIAN_COLORS.text_primary} />
-      </Pressable>
+      <Animated.Text style={[styles.heroLabel, labelStyle]}>
+        {selectedStatus ? `PARC PORTABLE · ${activeConfig.label.toUpperCase()}` : 'PARC PORTABLE'}
+      </Animated.Text>
+      <Text style={styles.heroSub}>{selectedModel ?? 'Sélectionnez un modèle'}</Text>
 
-      <View style={styles.center}>
-        <View style={styles.frame}>
-          <AnimatedView style={laptopIconStyle}>
-            <Icon name="laptop" size={48} color={OBSIDIAN_COLORS.green_light} />
-          </AnimatedView>
+      <View style={styles.pillsRow}>
+        <View style={[styles.pill, { borderColor: activeConfig.border, backgroundColor: activeConfig.subtle }]}>
+          <Icon name="shield-check-outline" size={12} color={activeConfig.color} />
+          <Text style={[styles.pillText, { color: activeConfig.color }]}>Ajout sécurisé</Text>
         </View>
 
-        <Text style={styles.eyebrow}>PARC PORTABLE</Text>
-
-        <AnimatedView entering={FadeIn.duration(180)} style={modelTextStyle}>
-          <Text style={[styles.model, !model ? styles.modelPlaceholder : null]}>
-            {model ?? 'Selectionnez un modele'}
-          </Text>
-        </AnimatedView>
+        {selectedCategory ? (
+          <View style={[styles.pill, { borderColor: activeConfig.border, backgroundColor: activeConfig.subtle }]}>
+            <Icon name="laptop" size={12} color={activeConfig.color} />
+            <Text style={[styles.pillText, { color: activeConfig.color }]}>
+              {selectedCategory === 'portable_siege' ? 'Portable siège' : 'Portable agence'}
+            </Text>
+          </View>
+        ) : null}
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    height: 180,
-    backgroundColor: OBSIDIAN_COLORS.bg_primary,
-    overflow: 'hidden',
-    justifyContent: 'center',
+  heroContainer: {
+    alignItems: 'center',
+    paddingTop: 18,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
   },
-  gradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  orbOne: {
+  halo: {
     position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    top: -30,
-    right: -30,
-    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+    top: -34,
+    width: 180,
+    height: 120,
+    borderRadius: 90,
   },
-  orbTwo: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    top: 40,
-    left: -20,
-    backgroundColor: 'rgba(34, 197, 94, 0.05)',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 20,
-    left: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: OBSIDIAN_COLORS.bg_card,
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.12)',
+  iconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 2,
+    borderWidth: 1.5,
+    marginBottom: 10,
+    zIndex: 1,
   },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingTop: 16,
-  },
-  frame: {
-    width: 140,
-    height: 90,
-    borderRadius: 16,
-    backgroundColor: OBSIDIAN_COLORS.bg_card_elevated,
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: OBSIDIAN_COLORS.green_light,
-    shadowOpacity: 0.22,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  eyebrow: {
-    color: OBSIDIAN_COLORS.text_muted,
+  heroLabel: {
     fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 2,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    marginBottom: 4,
   },
-  model: {
-    color: OBSIDIAN_COLORS.text_primary,
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: -0.2,
+  heroSub: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#F0FDF4',
+    marginBottom: 12,
     textAlign: 'center',
-    paddingHorizontal: 24,
   },
-  modelPlaceholder: {
-    color: OBSIDIAN_COLORS.text_dim,
-    fontStyle: 'italic',
-    fontSize: 16,
+  pillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  pillText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 });
 

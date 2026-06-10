@@ -657,6 +657,8 @@ export const ArticlesListScreen: React.FC = () => {
   
   const presetTypeArticle = route.params?.presetTypeArticle?.trim() || route.params?.params?.presetTypeArticle?.trim();
   const lockPresetTypeArticle = route.params?.lockPresetTypeArticle === true || route.params?.params?.lockPresetTypeArticle === true;
+  const pcAddSuccessAt = route.params?.pcAddSuccessAt ?? route.params?.params?.pcAddSuccessAt;
+  const pcAddHostname = route.params?.pcAddHostname ?? route.params?.params?.pcAddHostname;
   const presetTypeValues = presetTypeArticle ? [presetTypeArticle] : null;
   const normalizedPresetType = (presetTypeArticle ?? '').toLowerCase().trim();
   const isTabletTab = false;
@@ -1009,6 +1011,35 @@ export const ArticlesListScreen: React.FC = () => {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!pcAddSuccessAt) return;
+
+    showQuickFeedback(
+      'success',
+      'PC enregistré',
+      `${pcAddHostname ?? 'Le PC'} a été ajouté et synchronisé avec succès.`,
+    );
+
+    setPage(0);
+    setHasMore(true);
+    Promise.all([loadArticles(true, true), loadStats(), loadSentHistory()]).catch((error) => {
+      console.warn('[ArticlesListScreen] refresh after AddPC failed:', error);
+    });
+
+    navigation.setParams({
+      pcAddSuccessAt: undefined,
+      pcAddHostname: undefined,
+    });
+  }, [
+    loadArticles,
+    loadSentHistory,
+    loadStats,
+    navigation,
+    pcAddHostname,
+    pcAddSuccessAt,
+    showQuickFeedback,
+  ]);
 
   const loadSentHistory = useCallback(async () => {
     if (!effectiveSiteId || !isPCTab) {

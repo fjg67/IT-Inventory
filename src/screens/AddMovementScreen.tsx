@@ -73,6 +73,7 @@ export const AddMovementScreen: React.FC = () => {
 
   const initialArticleId = route.params?.articleId as number | undefined;
   const initialType = route.params?.type as RouteMovementType;
+  const isTypePreset = initialType !== undefined;
   const source = route.params?.source as RouteSource;
 
   const siteActif = useAppSelector((state) => state.site.siteActif);
@@ -255,27 +256,12 @@ export const AddMovementScreen: React.FC = () => {
     }
 
     const parent = navigation.getParent();
-    if (source === 'Dashboard') {
-      if (parent) parent.navigate('Dashboard');
-      else navigation.navigate('Dashboard');
-      return;
-    }
-    if (source === 'Scan') {
-      if (parent) parent.navigate('Scan');
-      else navigation.navigate('Scan');
-      return;
-    }
-
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-      return;
-    }
     if (parent) {
-      parent.navigate('Mouvements');
+      parent.navigate('Mouvements', { screen: 'MouvementsList' });
       return;
     }
-    navigation.navigate('Mouvements');
-  }, [flow, navigation, source]);
+    navigation.navigate('MouvementsList');
+  }, [flow, navigation]);
 
   const isTypeStepValid = !!flow.state.type && flow.state.quantity >= minQty;
 
@@ -331,16 +317,7 @@ export const AddMovementScreen: React.FC = () => {
       setTimeout(() => {
         setSubmitSuccess(false);
         const parent = navigation.getParent();
-        if (source === 'Dashboard') {
-          if (parent) parent.navigate('Dashboard');
-          else navigation.navigate('Dashboard');
-          return;
-        }
-        if (source === 'Scan') {
-          if (parent) parent.navigate('Scan');
-          else navigation.navigate('Scan');
-          return;
-        }
+        // After a successful validation, always return to the Mouvements tab.
         if (parent) {
           parent.navigate('Mouvements', { screen: 'MouvementsList' });
         } else {
@@ -474,14 +451,16 @@ export const AddMovementScreen: React.FC = () => {
                 }}
               />
 
-              <MovementTypeSelector
-                value={flow.state.type ?? 'entree'}
-                identity={identityPack.identity}
-                onChange={(value) => {
-                  flow.updateField('type', value);
-                  Vibration.vibrate(10);
-                }}
-              />
+              {!isTypePreset ? (
+                <MovementTypeSelector
+                  value={flow.state.type ?? 'entree'}
+                  identity={identityPack.identity}
+                  onChange={(value) => {
+                    flow.updateField('type', value);
+                    Vibration.vibrate(10);
+                  }}
+                />
+              ) : null}
 
               <View style={{ marginTop: 2 }}>
                 <QuantityStepper

@@ -30,9 +30,9 @@ interface ForceUpdateScreenProps {
 }
 
 const DEFAULT_CHANGELOG = [
-  'Statut En panne dans le formulaire PC',
-  'Améliorations du flux mouvement de stock',
-  'Corrections de stabilité et recherche filtrée',
+  'Correction du flux de selection de profil au premier clic',
+  'Onboarding redesign: 4 slides et navigation plus fluide',
+  'Ameliorations de stabilite et performance generale',
 ];
 
 const ForceUpdateScreen: React.FC<ForceUpdateScreenProps> = ({
