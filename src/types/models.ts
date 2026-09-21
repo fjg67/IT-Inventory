@@ -224,6 +224,7 @@ export interface DashboardStats {
   totalArticles: number;
   articlesAlerte: number;
   mouvementsAujourdhui: number;
+  mouvementsTrend: number[];
   derniersMovements: Mouvement[];
 }
 

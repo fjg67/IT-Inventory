@@ -32,10 +32,10 @@ export const AddPCFooter: React.FC<AddPCFooterProps> = ({
 
   const submitStyle = useAnimatedStyle(() => ({
     backgroundColor: disabled
-      ? '#2A3430'
+      ? '#F0F0F0'
       : interpolateColor(colorProgress.value, [0, 1], [fromButtonColor, toButtonColor]),
     borderColor: disabled
-      ? 'rgba(148,163,184,0.2)'
+      ? 'rgba(0,125,112,0.2)'
       : interpolateColor(colorProgress.value, [0, 1], [fromButtonColor, toButtonColor]),
   }));
 
@@ -54,7 +54,7 @@ export const AddPCFooter: React.FC<AddPCFooterProps> = ({
             </>
           ) : (
             <>
-              <Icon name="content-save-outline" size={16} color={disabled ? '#9AA8A4' : '#FFFFFF'} />
+              <Icon name="content-save-outline" size={16} color={disabled ? '#888880' : '#FFFFFF'} />
               <Text style={[styles.submitText, disabled ? styles.submitTextDisabled : null]}>Enregistrer le PC</Text>
             </>
           )}
@@ -74,9 +74,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingHorizontal: 16,
     paddingTop: 12,
-    backgroundColor: 'rgba(10,15,13,0.95)',
+    backgroundColor: 'rgba(255,255,255,0.95)',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(148,163,184,0.16)',
+    borderTopColor: 'rgba(0,125,112,0.16)',
   },
   row: {
     flexDirection: 'row',
@@ -87,13 +87,13 @@ const styles = StyleSheet.create({
     minHeight: 50,
     borderRadius: 13,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.22)',
+    borderColor: 'rgba(0,125,112,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#101915',
+    backgroundColor: '#FFFFFF',
   },
   cancelText: {
-    color: '#A9B7B2',
+    color: '#007D70',
     fontSize: 14,
     fontWeight: '700',
   },
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   submitTextDisabled: {
-    color: '#9AA8A4',
+    color: '#888880',
   },
   edgeLine: {
     marginTop: 10,

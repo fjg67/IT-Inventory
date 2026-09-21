@@ -87,8 +87,8 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
             styles.dropdown,
             {
               backgroundColor: pressed
-                ? (isDark ? 'rgba(255,255,255,0.08)' : '#F8FAFC')
-                : (isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF'),
+                ? (isDark ? 'rgba(0,125,112,0.08)' : '#F8FAFC')
+                : (isDark ? 'rgba(0,125,112,0.08)' : '#FFFFFF'),
               borderColor: colors.borderSubtle,
             },
             tablet && { height: 46, paddingHorizontal: premiumSpacing.lg },
@@ -96,7 +96,7 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
           ])}
           onPress={() => { Vibration.vibrate(10); onSortPress(); }}
         >
-          <View style={[styles.dropdownIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' }]}>
+          <View style={[styles.dropdownIconWrap, { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : '#F1F5F9' }]}>
             <Icon name="sort" size={14} color={colors.textSecondary} />
           </View>
           <Text
@@ -115,8 +115,8 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
               styles.dropdown,
               {
                 backgroundColor: pressed
-                  ? (isDark ? 'rgba(255,255,255,0.08)' : '#F8FAFC')
-                  : (isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF'),
+                  ? (isDark ? 'rgba(0,125,112,0.08)' : '#F8FAFC')
+                  : (isDark ? 'rgba(0,125,112,0.08)' : '#FFFFFF'),
                 borderColor: activeFiltersCount > 0 ? colors.primary + '50' : colors.borderSubtle,
               },
               tablet && { height: 46, paddingHorizontal: premiumSpacing.lg },
@@ -130,7 +130,7 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 {
                   backgroundColor: activeFiltersCount > 0
                     ? colors.primary + '15'
-                    : isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                    : isDark ? 'rgba(0,125,112,0.08)' : '#F1F5F9',
                 },
               ]}
             >
@@ -183,7 +183,7 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
                       borderColor: colors.warning + '50',
                     }
                   : {
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
+                      backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : '#FFFFFF',
                       borderColor: colors.borderSubtle,
                     },
               ]}
@@ -196,7 +196,7 @@ const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   {
                     backgroundColor: showStockFaible
                       ? colors.warning + '20'
-                      : isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                      : isDark ? 'rgba(0,125,112,0.08)' : '#F1F5F9',
                   },
                 ]}
               >

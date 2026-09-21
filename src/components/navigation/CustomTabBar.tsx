@@ -83,7 +83,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
             style={StyleSheet.absoluteFillObject}
             blurType="dark"
             blurAmount={10}
-            reducedTransparencyFallbackColor="rgba(17, 26, 20, 0.97)"
+            reducedTransparencyFallbackColor="rgba(255,255,255,0.97)"
           />
         ) : null}
 
@@ -92,8 +92,8 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
             styles.inner,
             {
               backgroundColor: BlurViewComponent
-                ? 'rgba(17, 26, 20, 0.95)'
-                : 'rgba(17, 26, 20, 0.97)',
+                ? 'rgba(255,255,255,0.95)'
+                : 'rgba(255,255,255,0.97)',
             },
           ]}
         >

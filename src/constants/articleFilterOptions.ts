@@ -100,13 +100,13 @@ export const MARQUE_OPTIONS = [
 ];
 
 export const EMPLACEMENT_OPTIONS = [
-  { value: 'Stock 5 - R2E3', label: 'Stock 5 - R2E3' },
-  { value: 'Stock 5 - R2E4', label: 'Stock 5 - R2E4' },
-  { value: 'Stock 5 - R4E3', label: 'Stock 5 - R4E3' },
-  { value: 'Stock 5 - R4E4', label: 'Stock 5 - R4E4' },
-  { value: 'Stock 5 - R5E2', label: 'Stock 5 - R5E2' },
-  { value: 'Stock 5 - R5E3', label: 'Stock 5 - R5E3' },
-  { value: 'Stock 5 - R5E5', label: 'Stock 5 - R5E5' },
-  { value: 'Stock 8 - Armoire', label: 'Stock 8 - Armoire' },
-  { value: 'Stock 8 - Tiroir', label: 'Stock 8 - Tiroir' },
+  { value: 'Stock 1er - R2E3', label: 'Stock 1er - R2E3' },
+  { value: 'Stock 1er - R2E4', label: 'Stock 1er - R2E4' },
+  { value: 'Stock 1er - R4E3', label: 'Stock 1er - R4E3' },
+  { value: 'Stock 1er - R4E4', label: 'Stock 1er - R4E4' },
+  { value: 'Stock 1er - R5E2', label: 'Stock 1er - R5E2' },
+  { value: 'Stock 1er - R5E3', label: 'Stock 1er - R5E3' },
+  { value: 'Stock 1er - R5E5', label: 'Stock 1er - R5E5' },
+  { value: 'Comptoir - Armoire', label: 'Comptoir - Armoire' },
+  { value: 'Comptoir - Tiroir', label: 'Comptoir - Tiroir' },
 ];

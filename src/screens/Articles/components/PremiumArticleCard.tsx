@@ -505,8 +505,8 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                 styles.photoContainer,
                 isCompactPCCard && styles.photoContainerCompact,
                 {
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC',
-                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+                  backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : '#F8FAFC',
+                  borderColor: isDark ? 'rgba(0,125,112,0.08)' : 'rgba(0,0,0,0.04)',
                 },
                 tablet && { width: 60, height: 60 },
               ]}>
@@ -524,7 +524,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                     style={[
                       StyleSheet.absoluteFill,
                       styles.shimmerOverlay,
-                      { backgroundColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)' },
+                      { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : 'rgba(0,0,0,0.05)' },
                     ]}
                   />
                 )}
@@ -807,7 +807,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                     ? (isDark ? 'rgba(16,185,129,0.12)' : '#DCFCE7')
                     : (isDark ? 'rgba(217,119,6,0.14)' : '#FEF3C7'),
                   borderColor: isTabletDecommissioned
-                    ? (isDark ? 'rgba(16,185,129,0.26)' : '#86EFAC')
+                    ? (isDark ? 'rgba(16,185,129,0.26)' : '#5A5A55')
                     : (isDark ? 'rgba(217,119,6,0.28)' : '#FCD34D'),
                 }
               ]}
@@ -835,7 +835,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                     end={{ x: 1, y: 1 }}
                     style={[styles.pcActionBtn, isCompactPCCard && styles.pcActionBtnCompact, styles.pcActionBtnDanger]}
                   >
-                    <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
+                    <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(0,125,112,0.12)' : '#FFFFFF' }]}> 
                       <Icon name="send-check-outline" size={13} color="#BE123C" />
                     </View>
                     {!isCompactPCCard ? (
@@ -849,7 +849,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
               )}
               {canMarkSent && (
                 <Pressable
-                  android_ripple={{ color: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(15,23,42,0.06)' }}
+                  android_ripple={{ color: isDark ? 'rgba(0,125,112,0.12)' : 'rgba(15,23,42,0.06)' }}
                   style={({ pressed }) => [styles.pcActionBtnWrap, pressed && styles.pcActionBtnWrapPressed]}
                   onPress={handleMarkSent}
                 >
@@ -859,7 +859,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                     end={{ x: 1, y: 1 }}
                     style={[styles.pcActionBtn, isCompactPCCard && styles.pcActionBtnCompact, styles.pcActionBtnDanger]}
                   >
-                    <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
+                    <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(0,125,112,0.12)' : '#FFFFFF' }]}> 
                       <Icon name="send-outline" size={13} color="#E11D48" />
                     </View>
                     {!isCompactPCCard ? (
@@ -874,10 +874,10 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
               {!canSetHot && !isPCSent && (
                 <>
                   {canMarkSent ? (
-                    <View style={[styles.pcActionDivider, { backgroundColor: isDark ? 'rgba(148,163,184,0.16)' : '#E2E8F0' }]} />
+                    <View style={[styles.pcActionDivider, { backgroundColor: isDark ? 'rgba(0,125,112,0.16)' : '#E2E8F0' }]} />
                   ) : null}
                   <Pressable
-                    android_ripple={{ color: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(15,23,42,0.06)' }}
+                    android_ripple={{ color: isDark ? 'rgba(0,125,112,0.12)' : 'rgba(15,23,42,0.06)' }}
                     style={({ pressed }) => [styles.pcActionBtnWrap, pressed && styles.pcActionBtnWrapPressed]}
                     onPress={handleMarkAvailable}
                   >
@@ -887,7 +887,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                       end={{ x: 1, y: 1 }}
                       style={[styles.pcActionBtn, isCompactPCCard && styles.pcActionBtnCompact, styles.pcActionBtnInfo]}
                     >
-                      <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
+                      <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(0,125,112,0.12)' : '#FFFFFF' }]}> 
                         <Icon name="check-circle-outline" size={13} color="#2563EB" />
                       </View>
                       {!isCompactPCCard ? (
@@ -903,10 +903,10 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
               {canSetHot && (
                 <>
                   {canMarkSent ? (
-                    <View style={[styles.pcActionDivider, { backgroundColor: isDark ? 'rgba(148,163,184,0.16)' : '#E2E8F0' }]} />
+                    <View style={[styles.pcActionDivider, { backgroundColor: isDark ? 'rgba(0,125,112,0.16)' : '#E2E8F0' }]} />
                   ) : null}
                   <Pressable
-                    android_ripple={{ color: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(15,23,42,0.06)' }}
+                    android_ripple={{ color: isDark ? 'rgba(0,125,112,0.12)' : 'rgba(15,23,42,0.06)' }}
                     style={({ pressed }) => [styles.pcActionBtnWrap, pressed && styles.pcActionBtnWrapPressed]}
                     onPress={handleMarkHot}
                   >
@@ -916,7 +916,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                       end={{ x: 1, y: 1 }}
                       style={[styles.pcActionBtn, isCompactPCCard && styles.pcActionBtnCompact, styles.pcActionBtnSuccess]}
                     >
-                      <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(255,255,255,0.14)' : '#FFFFFF' }]}> 
+                      <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(0,125,112,0.12)' : '#FFFFFF' }]}> 
                         <Icon name="flash-outline" size={13} color="#059669" />
                       </View>
                       {!isCompactPCCard ? (
@@ -931,14 +931,14 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
               )}
               {onDelete && !isPCSent && (
                 <>
-                  <View style={[styles.pcActionDivider, { backgroundColor: isDark ? 'rgba(148,163,184,0.16)' : '#E2E8F0' }]} />
+                  <View style={[styles.pcActionDivider, { backgroundColor: isDark ? 'rgba(0,125,112,0.16)' : '#E2E8F0' }]} />
                   <Pressable
                     android_ripple={{ color: 'rgba(239,68,68,0.12)' }}
                     style={({ pressed }) => [styles.pcActionBtnWrap, pressed && styles.pcActionBtnWrapPressed]}
                     onPress={handleDelete}
                   >
                     <View style={[styles.pcActionBtn, isCompactPCCard && styles.pcActionBtnCompact, { backgroundColor: isDark ? 'rgba(127,29,29,0.22)' : '#FEF2F2', borderColor: 'rgba(239,68,68,0.18)' }]}> 
-                      <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : '#FFFFFF' }]}> 
+                      <View style={[styles.pcActionIconWrap, isCompactPCCard && styles.pcActionIconWrapCompact, { backgroundColor: isDark ? 'rgba(0,125,112,0.12)' : '#FFFFFF' }]}> 
                         <Icon name="delete-outline" size={13} color="#EF4444" />
                       </View>
                       {!isCompactPCCard ? (
@@ -983,7 +983,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
               >
                 {article.unite}
               </Text>
-              <View style={[styles.stockChevronWrap, { backgroundColor: isDark ? 'rgba(148,163,184,0.14)' : '#EDF2F7' }]}>
+              <View style={[styles.stockChevronWrap, { backgroundColor: isDark ? 'rgba(0,125,112,0.14)' : '#EDF2F7' }]}>
                 <Icon name="chevron-right" size={14} color={colors.textMuted} />
               </View>
             </>
@@ -1283,7 +1283,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 8,
     borderWidth: 1.2,
-    borderColor: 'rgba(148,163,184,0.2)',
+    borderColor: 'rgba(0,125,112,0.2)',
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.16,

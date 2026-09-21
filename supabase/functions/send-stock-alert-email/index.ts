@@ -17,6 +17,7 @@ const RECIPIENT_EMAILS = [
   'ilias.bey-ext@ca-alsace-vosges.fr',
   'guillaume.oudinot@ca-alsace-vosges.fr',
   'thibaud.hebrard-ext@ca-alsace-vosges.fr',
+  'julien.lopez-ext@ca-alsace-vosges.fr',
 ];
 
 interface ProductAlert {

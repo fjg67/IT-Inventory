@@ -17,6 +17,7 @@ const RECIPIENT_EMAILS = [
   'ilias.bey-ext@ca-alsace-vosges.fr',
   'guillaume.oudinot@ca-alsace-vosges.fr',
   'thibaud.hebrard-ext@ca-alsace-vosges.fr',
+  'julien.lopez-ext@ca-alsace-vosges.fr',
 ];
 const MOBILE_APP_DEEP_LINK = 'itinventory://open';
 const MOBILE_APP_FALLBACK_URL = 'https://play.google.com/store/apps/details?id=com.itinventory';

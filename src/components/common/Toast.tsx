@@ -112,7 +112,7 @@ const Toast: React.FC<ToastProps> = ({
       </Pressable>
 
       {/* Progress bar at bottom */}
-      <View style={[styles.progressTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : cfg.border + '15' }]}>
+      <View style={[styles.progressTrack, { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : cfg.border + '15' }]}>
         <Animated.View style={[styles.progressBar, { backgroundColor: cfg.border }, progressStyle]} />
       </View>
     </Animated.View>

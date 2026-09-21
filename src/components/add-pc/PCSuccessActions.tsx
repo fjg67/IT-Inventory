@@ -58,7 +58,7 @@ export const PCSuccessActions: React.FC<PCSuccessActionsProps> = ({
         accessibilityRole="button"
         accessibilityLabel="Ajouter un autre PC"
       >
-        <Icon name="plus" size={16} color="#86EFAC" />
+        <Icon name="plus" size={16} color="#5A5A55" />
         <Text style={styles.btnSecondaryText}>Nouveau PC</Text>
       </TouchableOpacity>
 
@@ -90,14 +90,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 11,
     borderRadius: 12,
-    backgroundColor: '#16231A',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: 'rgba(34,197,94,0.18)',
   },
   btnSecondaryText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#86EFAC',
+    color: '#5A5A55',
   },
   btnPrimary: {
     flexDirection: 'row',

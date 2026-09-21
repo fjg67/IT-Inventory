@@ -292,8 +292,8 @@ export const SEED_DATA = {
   defaultSite: `
     INSERT OR IGNORE INTO sites (id, code, nom, adresse, actif, sync_status)
     VALUES
-      (1, 'STOCK5', 'Stock 5ième', '5ème étage', 1, 'synced'),
-      (2, 'STOCK8', 'Stock 8ième', '8ème étage', 1, 'synced'),
+      (1, 'STOCK5', 'Stock 1er', '1er étage', 1, 'synced'),
+      (2, 'STOCK8', 'Comptoir', 'Comptoir, Bâtiment siège', 1, 'synced'),
       (3, 'STOCKEPINAL', 'Stock Epinal', 'Site Epinal', 1, 'synced');
   `,
   // Catégories par défaut

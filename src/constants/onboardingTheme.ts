@@ -23,7 +23,7 @@ export const onboardingTheme = {
       muted: '#64748B',     // Gris bleu moyen
     },
     ui: {
-      card: 'rgba(255, 255, 255, 0.05)',
+      card: 'rgba(0,125,112,0.08)',
       border: 'rgba(255, 255, 255, 0.1)',
       dotActive: '#60A5FA',
       dotInactive: '#334155',

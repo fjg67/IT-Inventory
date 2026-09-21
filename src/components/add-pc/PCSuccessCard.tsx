@@ -111,19 +111,19 @@ export const PCSuccessCard: React.FC<PCSuccessCardProps> = ({
         <View
           style={[
             styles.pill,
-            { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.08)' },
+            { backgroundColor: 'rgba(0,125,112,0.08)', borderColor: 'rgba(0,125,112,0.08)' },
           ]}
         >
-          <Icon name="barcode" size={10} color="#8FA39C" />
+          <Icon name="barcode" size={10} color="#5A5A55" />
           <Text style={styles.pillText}>{asset || '—'}</Text>
         </View>
         <View
           style={[
             styles.pill,
-            { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.08)' },
+            { backgroundColor: 'rgba(0,125,112,0.08)', borderColor: 'rgba(0,125,112,0.08)' },
           ]}
         >
-          <Icon name={CATEGORY_ICON[category]} size={10} color="#8FA39C" />
+          <Icon name={CATEGORY_ICON[category]} size={10} color="#5A5A55" />
           <Text style={styles.pillText}>{CATEGORY_LABEL[category]}</Text>
         </View>
       </View>
@@ -133,7 +133,7 @@ export const PCSuccessCard: React.FC<PCSuccessCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#111A14',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(34,197,94,0.08)',
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   hostname: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#F0FDF4',
+    color: '#1A1A1A',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   model: {
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 10,
-    color: '#8FA39C',
+    color: '#5A5A55',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
 });

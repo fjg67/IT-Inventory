@@ -46,6 +46,8 @@ export const ArticleDetailHero: React.FC<ArticleDetailHeroProps> = ({
   onEdit,
   showEdit,
 }) => {
+  const [imageError, setImageError] = React.useState(false);
+
   const statusColor = isCritical ? ADC.danger : isLowStock ? ADC.warning : ADC.green_primary;
   const statusIcon = isCritical ? 'close' : isLowStock ? 'alert' : 'check';
 
@@ -54,7 +56,7 @@ export const ArticleDetailHero: React.FC<ArticleDetailHeroProps> = ({
       {/* Background */}
       <View style={StyleSheet.absoluteFill}>
         <LinearGradient
-          colors={['rgba(139,92,246,0.20)', 'rgba(27,138,62,0.10)', 'rgba(10,15,13,0)']}
+          colors={['rgba(139,92,246,0.20)', 'rgba(27,138,62,0.10)', 'rgba(255,255,255,0)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -88,8 +90,13 @@ export const ArticleDetailHero: React.FC<ArticleDetailHeroProps> = ({
       <Animated.View style={[styles.heroContent, photoOpacity]}>
         {/* Photo */}
         <Animated.View entering={ZoomIn.delay(150).duration(380).springify()} style={styles.photoWrap}>
-          {article.photoUrl ? (
-            <Image source={{ uri: article.photoUrl }} style={styles.photo} resizeMode="contain" />
+          {article.photoUrl && article.photoUrl !== 'null' && !imageError ? (
+            <Image 
+              source={{ uri: article.photoUrl }} 
+              style={styles.photo} 
+              resizeMode="contain" 
+              onError={() => setImageError(true)}
+            />
           ) : (
             <View style={styles.photoFallback}>
               <Text style={styles.initials}>{getInitials(article.nom)}</Text>

@@ -129,7 +129,7 @@ const PCCardComponent: React.FC<PCCardProps> = ({
               {
                 borderColor: state.border,
                 borderLeftColor: state.color,
-                backgroundColor: isBreakdown ? 'rgba(127, 29, 29, 0.16)' : '#111A14',
+                backgroundColor: isBreakdown ? 'rgba(127, 29, 29, 0.16)' : '#FFFFFF',
               },
               swipe.cardStyle,
             ]}
@@ -164,7 +164,7 @@ const PCCardComponent: React.FC<PCCardProps> = ({
               </View>
               {isBreakdown && panneLabel ? (
                 <View style={[styles.metaPill, styles.metaPillDanger]}>
-                  <Icon name="alert-circle-outline" size={10} color="#FCA5A5" />
+                  <Icon name="alert-circle-outline" size={10} color="#DC2626" />
                   <Text style={[styles.metaText, styles.metaTextDanger]} numberOfLines={1}>{panneLabel}</Text>
                 </View>
               ) : null}
@@ -179,7 +179,7 @@ const PCCardComponent: React.FC<PCCardProps> = ({
               <View style={styles.actionsRow}>
                 {isSiegePC ? (
                   <Pressable onPress={handleRename} style={styles.btnRename} hitSlop={8}>
-                    <Icon name="pencil-outline" size={11} color="#86EFAC" />
+                    <Icon name="pencil-outline" size={11} color="#5A5A55" />
                     <Text style={styles.btnRenameText}>Renommer</Text>
                   </Pressable>
                 ) : null}
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   hostname: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#F0FDF4',
+    color: '#1A1A1A',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     letterSpacing: 0.2,
     lineHeight: 18,
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   metaTextDanger: {
-    color: '#FCA5A5',
+    color: '#DC2626',
   },
   footer: {
     flexDirection: 'row',
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   btnRenameText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#86EFAC',
+    color: '#5A5A55',
   },
   btnPanne: {
     flexDirection: 'row',

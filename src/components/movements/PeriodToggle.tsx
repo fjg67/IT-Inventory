@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   label: {
-    color: 'rgba(240, 253, 244, 0.62)',
+    color: '#64748B',
     fontSize: 13,
     fontWeight: '600',
   },

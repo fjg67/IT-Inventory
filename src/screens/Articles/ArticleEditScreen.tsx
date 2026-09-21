@@ -1,4 +1,4 @@
-﻿// ============================================
+// ============================================
 // ARTICLE EDIT SCREEN - Premium Design
 // IT-Inventory Application - Création & Modification
 // ============================================
@@ -331,21 +331,21 @@ export const ArticleEditScreen: React.FC = () => {
   }, [sousTypeSearch]);
 
   const EMPLACEMENT_OPTIONS: { value: string; label: string; icon: string; color: string; bgColor: string; emoji: string; etage: string; zone: string }[] = [
-    { value: 'Stock 5 - R2E3', label: 'Stock 5 - R2E3', icon: 'archive-outline', color: '#3B82F6', bgColor: '#3B82F612', emoji: '📦', etage: '5', zone: 'Rangée 2, Étagère 3' },
-    { value: 'Stock 5 - R2E4', label: 'Stock 5 - R2E4', icon: 'archive-outline', color: '#2563EB', bgColor: '#2563EB12', emoji: '📦', etage: '5', zone: 'Rangée 2, Étagère 4' },
-    { value: 'Stock 5 - R4E3', label: 'Stock 5 - R4E3', icon: 'bookshelf', color: '#8B5CF6', bgColor: '#8B5CF612', emoji: '🗄️', etage: '5', zone: 'Rangée 4, Étagère 3' },
-    { value: 'Stock 5 - R4E4', label: 'Stock 5 - R4E4', icon: 'bookshelf', color: '#7C3AED', bgColor: '#7C3AED12', emoji: '🗄️', etage: '5', zone: 'Rangée 4, Étagère 4' },
-    { value: 'Stock 5 - R5E2', label: 'Stock 5 - R5E2', icon: 'package-variant', color: '#06B6D4', bgColor: '#06B6D412', emoji: '📋', etage: '5', zone: 'Rangée 5, Étagère 2' },
-    { value: 'Stock 5 - R5E3', label: 'Stock 5 - R5E3', icon: 'package-variant', color: '#0891B2', bgColor: '#0891B212', emoji: '📋', etage: '5', zone: 'Rangée 5, Étagère 3' },
-    { value: 'Stock 5 - R5E5', label: 'Stock 5 - R5E5', icon: 'package-variant-closed', color: '#0D9488', bgColor: '#0D948812', emoji: '📋', etage: '5', zone: 'Rangée 5, Étagère 5' },
-    { value: 'Stock 8 - Armoire', label: 'Stock 8 - Armoire', icon: 'wardrobe-outline', color: '#F59E0B', bgColor: '#F59E0B12', emoji: '🚪', etage: '8', zone: 'Armoire principale' },
-    { value: 'Stock 8 - Tiroir', label: 'Stock 8 - Tiroir', icon: 'drawer', color: '#EF4444', bgColor: '#EF444412', emoji: '🗃️', etage: '8', zone: 'Tiroir de rangement' },
+    { value: 'Stock 1er - R2E3', label: 'Stock 1er - R2E3', icon: 'archive-outline', color: '#3B82F6', bgColor: '#3B82F612', emoji: '📦', etage: '1', zone: 'Rangée 2, Étagère 3' },
+    { value: 'Stock 1er - R2E4', label: 'Stock 1er - R2E4', icon: 'archive-outline', color: '#2563EB', bgColor: '#2563EB12', emoji: '📦', etage: '1', zone: 'Rangée 2, Étagère 4' },
+    { value: 'Stock 1er - R4E3', label: 'Stock 1er - R4E3', icon: 'bookshelf', color: '#8B5CF6', bgColor: '#8B5CF612', emoji: '🗄️', etage: '1', zone: 'Rangée 4, Étagère 3' },
+    { value: 'Stock 1er - R4E4', label: 'Stock 1er - R4E4', icon: 'bookshelf', color: '#7C3AED', bgColor: '#7C3AED12', emoji: '🗄️', etage: '1', zone: 'Rangée 4, Étagère 4' },
+    { value: 'Stock 1er - R5E2', label: 'Stock 1er - R5E2', icon: 'package-variant', color: '#06B6D4', bgColor: '#06B6D412', emoji: '📋', etage: '1', zone: 'Rangée 5, Étagère 2' },
+    { value: 'Stock 1er - R5E3', label: 'Stock 1er - R5E3', icon: 'package-variant', color: '#0891B2', bgColor: '#0891B212', emoji: '📋', etage: '1', zone: 'Rangée 5, Étagère 3' },
+    { value: 'Stock 1er - R5E5', label: 'Stock 1er - R5E5', icon: 'package-variant-closed', color: '#0D9488', bgColor: '#0D948812', emoji: '📋', etage: '1', zone: 'Rangée 5, Étagère 5' },
+    { value: 'Comptoir - Armoire', label: 'Comptoir - Armoire', icon: 'wardrobe-outline', color: '#F59E0B', bgColor: '#F59E0B12', emoji: '🚪', etage: 'RDC', zone: 'Armoire principale' },
+    { value: 'Comptoir - Tiroir', label: 'Comptoir - Tiroir', icon: 'drawer', color: '#EF4444', bgColor: '#EF444412', emoji: '🗃️', etage: 'RDC', zone: 'Tiroir de rangement' },
   ];
 
   // Mapping nom de site → préfixe d'emplacement
   const SITE_TO_EMPLACEMENT_PREFIX: Record<string, string> = {
-    'Stock 5ième': 'Stock 5',
-    'Stock 8ième': 'Stock 8',
+    'Stock 1er': 'Stock 1er',
+    'Comptoir': 'Comptoir',
     'Stock Epinal': 'Stock Epinal',
   };
 
@@ -802,7 +802,7 @@ export const ArticleEditScreen: React.FC = () => {
 // ==================== RENDER (OBSIDIAN GRID) ====================
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A0F0D" />
+      <StatusBar barStyle="light-content" backgroundColor="#F5F5F0" />
 
       {/* HERO HEADER */}
       <CreateArticleHero
@@ -1183,11 +1183,11 @@ export const ArticleEditScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0F0D',
+    backgroundColor: '#F5F5F0',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0A0F0D',
+    backgroundColor: '#F5F5F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1232,7 +1232,7 @@ const styles = StyleSheet.create({
   siteInfoText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#F0FDF4',
+    color: '#1A1A1A',
   },
   // === SCAN MODAL ===
   scanModalContainer: {

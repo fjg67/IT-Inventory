@@ -16,7 +16,7 @@ export const OnboardingBackground: React.FC<OnboardingBackgroundProps> = ({ acce
 const styles = StyleSheet.create({
   grid: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#0A0F0D',
+    backgroundColor: '#F5F5F0',
     borderColor: 'rgba(34,197,94,0.06)',
     borderWidth: 1,
     opacity: 0.55,

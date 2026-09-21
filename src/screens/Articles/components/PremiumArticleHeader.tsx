@@ -90,7 +90,7 @@ const StockProgressBar: React.FC<StockProgressBarProps> = ({ stockOK, total, ale
           {pct}%
         </Text>
       </View>
-      <View style={[pbStyles.track, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' }]}>
+      <View style={[pbStyles.track, { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : '#F1F5F9' }]}>
         <Animated.View style={[pbStyles.barOK, okStyle]} />
         <Animated.View style={[pbStyles.barAlert, alertStyle]} />
       </View>

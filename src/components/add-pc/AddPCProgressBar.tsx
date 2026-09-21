@@ -29,7 +29,7 @@ export const AddPCProgressBar: React.FC<AddPCProgressBarProps> = ({ progress, st
 const styles = StyleSheet.create({
   rail: {
     height: 4,
-    backgroundColor: 'rgba(148,163,184,0.16)',
+    backgroundColor: 'rgba(0,125,112,0.16)',
   },
   fill: {
     height: '100%',

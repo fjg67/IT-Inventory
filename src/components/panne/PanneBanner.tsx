@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   priorityBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(0,125,112,0.12)',
     borderRadius: 6,
   },
   priorityBadgeText: {

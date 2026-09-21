@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(0,125,112,0.08)',
     marginVertical: 18,
   },
   legend: {

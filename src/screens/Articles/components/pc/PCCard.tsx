@@ -123,7 +123,7 @@ export const PCCard: React.FC<PCCardProps> = ({ article, index, onPress, onMarkH
 
                 {state.key === 'en_panne' ? (
                   <View style={styles.panneRow}>
-                    <Icon name="alert-circle-outline" size={11} color="#FCA5A5" />
+                    <Icon name="alert-circle-outline" size={11} color="#DC2626" />
                     <Text style={styles.panneText} numberOfLines={1}>Nature: {panneLabel}</Text>
                   </View>
                 ) : null}
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   panneText: {
-    color: '#FCA5A5',
+    color: '#DC2626',
     fontSize: 11,
     fontWeight: '700',
   },

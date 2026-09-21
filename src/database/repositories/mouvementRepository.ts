@@ -118,10 +118,12 @@ function matchesTrendMetric(dbType: string, metric: TrendMetric): boolean {
 }
 
 function mapRowToMouvement(row: MouvementRow, stockAvant = 0, stockApres = 0): Mouvement {
+  const effectiveSiteId = row.fromSiteId || row.toSiteId;
+  const effectiveSite = row.FromSite || row.ToSite;
   return {
     id: row.id as any,
     articleId: row.articleId as any,
-    siteId: row.fromSiteId as any,
+    siteId: effectiveSiteId as any,
     type: mapDbTypeToApp(row.type),
     quantite: row.quantity,
     stockAvant,
@@ -131,10 +133,10 @@ function mapRowToMouvement(row: MouvementRow, stockAvant = 0, stockApres = 0): M
     commentaire: row.reason ?? undefined,
     transfertVersSiteId: (row.toSiteId ?? undefined) as any,
     syncStatus: SyncStatus.SYNCED,
-    site: row.FromSite
+    site: effectiveSite
       ? {
-          id: row.fromSiteId as any,
-          nom: row.FromSite.name,
+          id: effectiveSiteId as any,
+          nom: effectiveSite.name,
           adresse: '',
           actif: true,
           dateCreation: new Date(),
@@ -244,8 +246,9 @@ async function computeStockLevels(rows: MouvementRow[]): Promise<Mouvement[]> {
   // Collect unique article+site pairs
   const pairs = new Map<string, { articleId: string; siteId: string }>();
   for (const r of rows) {
-    const key = `${r.articleId}|${r.fromSiteId}`;
-    if (!pairs.has(key)) pairs.set(key, { articleId: r.articleId, siteId: r.fromSiteId });
+    const siteId = r.fromSiteId || r.toSiteId || '';
+    const key = `${r.articleId}|${siteId}`;
+    if (!pairs.has(key)) pairs.set(key, { articleId: r.articleId, siteId });
   }
 
   // Fetch current stock for each pair
@@ -267,7 +270,8 @@ async function computeStockLevels(rows: MouvementRow[]): Promise<Mouvement[]> {
   // Group rows by article+site (rows are already sorted newest→oldest)
   const groups = new Map<string, MouvementRow[]>();
   for (const r of rows) {
-    const key = `${r.articleId}|${r.fromSiteId}`;
+    const siteId = r.fromSiteId || r.toSiteId || '';
+    const key = `${r.articleId}|${siteId}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(r);
   }
@@ -290,7 +294,7 @@ async function computeStockLevels(rows: MouvementRow[]): Promise<Mouvement[]> {
       .from(tables.mouvements)
       .select('quantity')
       .eq('articleId', articleId)
-      .eq('fromSiteId', siteId)
+      .or(`fromSiteId.eq.${siteId},toSiteId.eq.${siteId}`)
       .gt('createdAt', newestDate);
 
     const newerSum = (newerData ?? []).reduce((sum: number, m: any) => sum + (m.quantity ?? 0), 0);
@@ -334,7 +338,7 @@ export const mouvementRepository = {
 
     if (siteId) {
       const siteIds = await getEffectiveSiteIds(siteId);
-      query = query.in('fromSiteId', siteIds);
+      query = query.or(`fromSiteId.in.(${siteIds.join(',')}),toSiteId.in.(${siteIds.join(',')})`);
     }
 
     const { data, error, count } = await query;
@@ -365,7 +369,7 @@ export const mouvementRepository = {
       .from(tables.mouvements)
       .select('*')
       .eq('articleId', articleId)
-      .in('fromSiteId', siteIds)
+      .or(`fromSiteId.in.(${siteIds.join(',')}),toSiteId.in.(${siteIds.join(',')})`)
       .order('createdAt', { ascending: false })
       .limit(limit);
     if (error) throw new Error(error.message);
@@ -382,7 +386,7 @@ export const mouvementRepository = {
       .limit(limit);
     if (siteId != null) {
       const siteIds = await getEffectiveSiteIds(siteId);
-      query = query.in('fromSiteId', siteIds);
+      query = query.or(`fromSiteId.in.(${siteIds.join(',')}),toSiteId.in.(${siteIds.join(',')})`);
     }
     const { data, error } = await query;
     if (error) throw new Error(error.message);
@@ -403,7 +407,7 @@ export const mouvementRepository = {
       .order('createdAt', { ascending: false });
     if (siteId != null) {
       const siteIds = await getEffectiveSiteIds(siteId);
-      query = query.in('fromSiteId', siteIds);
+      query = query.or(`fromSiteId.in.(${siteIds.join(',')}),toSiteId.in.(${siteIds.join(',')})`);
     }
     const { data, error } = await query;
     if (error) throw new Error(error.message);
@@ -423,7 +427,7 @@ export const mouvementRepository = {
       .lte('createdAt', end);
     if (siteId != null) {
       const siteIds = await getEffectiveSiteIds(siteId);
-      query = query.in('fromSiteId', siteIds);
+      query = query.or(`fromSiteId.in.(${siteIds.join(',')}),toSiteId.in.(${siteIds.join(',')})`);
     }
     const { count, error } = await query;
     if (error) throw new Error(error.message);
@@ -440,7 +444,7 @@ export const mouvementRepository = {
         .select('type');
 
       if (siteIds) {
-        query = query.in('fromSiteId', siteIds);
+        query = query.or(`fromSiteId.in.(${siteIds.join(',')}),toSiteId.in.(${siteIds.join(',')})`);
       }
 
       const { data, error } = await query;
@@ -644,7 +648,7 @@ export const mouvementRepository = {
     const { data, error } = await supabase
       .from(tables.mouvements)
       .select('createdAt, type')
-      .in('fromSiteId', siteIds)
+      .or(`fromSiteId.in.(${siteIds.join(',')}),toSiteId.in.(${siteIds.join(',')})`)
       .gte('createdAt', startDate.toISOString())
       .order('createdAt', { ascending: true });
 
@@ -688,7 +692,7 @@ export const mouvementRepository = {
         .select('userId, type, createdAt');
 
       if (siteIds) {
-        query = query.in('fromSiteId', siteIds);
+        query = query.or(`fromSiteId.in.(${siteIds.join(',')}),toSiteId.in.(${siteIds.join(',')})`);
       }
 
       if (typeof days === 'number' && Number.isFinite(days) && days > 0) {

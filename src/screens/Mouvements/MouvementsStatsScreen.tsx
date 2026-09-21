@@ -100,7 +100,7 @@ const trendMetaByMetric: Record<
     icon: 'arrow-up-bold',
     primary: '#047857',
     pillBg: '#D1FAE5',
-    gradientLight: ['#ECFDF5', '#F0FDF4'],
+    gradientLight: ['#ECFDF5', '#1A1A1A'],
     gradientDark: ['rgba(16,185,129,0.14)', 'rgba(16,185,129,0.02)'],
     barMain: '#10B981',
     barSoft: 'rgba(16,185,129,0.34)',
@@ -190,10 +190,10 @@ const getPodiumStyle = (index: number) => {
   }
   if (index === 1) {
     return {
-      stripe: ['#94A3B8', '#64748B'] as [string, string],
-      medal: ['#E2E8F0', '#94A3B8'] as [string, string],
+      stripe: ['#5A5A55', '#64748B'] as [string, string],
+      medal: ['#E2E8F0', '#5A5A55'] as [string, string],
       medalInner: '#F8FAFC',
-      crown: ['#CBD5E1', '#94A3B8'] as [string, string],
+      crown: ['#CBD5E1', '#5A5A55'] as [string, string],
       badgeBg: '#E2E8F0',
       badgeText: '#475569',
       icon: 'medal-outline',
@@ -213,7 +213,7 @@ const getPodiumStyle = (index: number) => {
 
   return {
     stripe: ['#007A39', '#10B981'] as [string, string],
-    medal: ['#86EFAC', '#10B981'] as [string, string],
+    medal: ['#5A5A55', '#10B981'] as [string, string],
     medalInner: '#ECFDF5',
     crown: ['#34D399', '#10B981'] as [string, string],
     badgeBg: '#DCEFE5',
@@ -505,7 +505,7 @@ export const MouvementsStatsScreen: React.FC = () => {
 
             <View style={styles.headerTop}>
               <TouchableOpacity
-                style={[styles.backBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}
+                style={[styles.backBtn, { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : 'rgba(0,0,0,0.04)' }]}
                 onPress={() => {
                   Vibration.vibrate(10);
                   navigation.goBack();
@@ -634,7 +634,7 @@ export const MouvementsStatsScreen: React.FC = () => {
 
               <View style={styles.trendHeader}>
                 <View style={styles.trendTitleGroup}>
-                  <View style={[styles.trendIconPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : trendMeta.pillBg }]}>
+                  <View style={[styles.trendIconPill, { backgroundColor: isDark ? 'rgba(0,125,112,0.12)' : trendMeta.pillBg }]}>
                     <Icon name={trendMeta.icon} size={14} color={trendMeta.primary} />
                   </View>
                   <View>
@@ -646,7 +646,7 @@ export const MouvementsStatsScreen: React.FC = () => {
                 </View>
 
                 <View style={styles.trendRightCol}>
-                  <View style={[styles.deltaPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : trendMeta.deltaBg }]}>
+                  <View style={[styles.deltaPill, { backgroundColor: isDark ? 'rgba(0,125,112,0.12)' : trendMeta.deltaBg }]}>
                     <Icon
                       name={trendDelta >= 0 ? 'trending-up' : 'trending-down'}
                       size={14}
@@ -656,7 +656,7 @@ export const MouvementsStatsScreen: React.FC = () => {
                       {trendDelta >= 0 ? '+' : ''}{trendDelta}
                     </Text>
                   </View>
-                  <View style={[styles.trendMiniPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFFB8', borderColor: isDark ? 'rgba(255,255,255,0.10)' : '#E2E8F0' }]}>
+                  <View style={[styles.trendMiniPill, { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : '#FFFFFFB8', borderColor: isDark ? 'rgba(0,125,112,0.12)' : '#E2E8F0' }]}>
                     <Icon name={trendMeta.miniIcon} size={12} color={trendMeta.primary} />
                     <Text style={styles.trendMiniPillText}>{Math.round(trendTotal / Math.max(1, trendData.length))}/j</Text>
                   </View>
@@ -664,7 +664,7 @@ export const MouvementsStatsScreen: React.FC = () => {
               </View>
 
               <View style={styles.sparklineWrap}>
-                <View style={[styles.sparklineTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#DDE7DF' }]} />
+                <View style={[styles.sparklineTrack, { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : '#DDE7DF' }]} />
                 {trendData.map((value, idx) => {
                   const barHeight = Math.max(6, Math.round((value / trendMax) * 44));
                   const isPeak = value === trendMax && trendMax > 0;
@@ -821,7 +821,7 @@ export const MouvementsStatsScreen: React.FC = () => {
                         <Text style={[styles.rankBadgeText, { color: podium.badgeText }]}>#{index + 1}</Text>
                       </View>
 
-                      <View style={[styles.rankIconPill, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F8FAFC' }]}>
+                      <View style={[styles.rankIconPill, { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : '#F8FAFC' }]}>
                         <Icon name={podium.icon} size={14} color={podium.badgeText} />
                       </View>
 
@@ -841,7 +841,7 @@ export const MouvementsStatsScreen: React.FC = () => {
                     style={[
                       styles.barTrack,
                       viewMode === 'compact' && styles.barTrackCompact,
-                      { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0' },
+                      { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : '#E2E8F0' },
                     ]}
                   >
                     <Animated.View

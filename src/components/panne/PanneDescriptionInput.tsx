@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   input: {
-    backgroundColor: '#0A0F0D',
+    backgroundColor: '#F5F5F0',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.15)',

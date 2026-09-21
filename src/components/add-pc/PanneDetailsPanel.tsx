@@ -66,7 +66,7 @@ export const PanneDetailsPanel: React.FC<PanneDetailsPanelProps> = ({
 const styles = StyleSheet.create({
   panel: {
     marginTop: 8,
-    backgroundColor: '#16231A',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: 'rgba(239,68,68,0.22)',

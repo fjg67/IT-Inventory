@@ -46,7 +46,7 @@ export const TransfertPreview: React.FC<Props> = ({
             </Animated.View>
             <Text style={styles.site}>{toSite}</Text>
           </View>
-          <Text style={styles.qty}>{fromBefore} pcs  -{qty} pcs  ->  {fromAfter} pcs</Text>
+          <Text style={styles.qty}>{fromBefore} pcs  -{qty} pcs  {'->'}  {fromAfter} pcs</Text>
         </View>
       </View>
     </View>
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   name: {
-    color: '#F0FDF4',
+    color: '#1A1A1A',
     fontSize: 14,
     fontWeight: '700',
   },

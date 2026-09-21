@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     width: '47.5%',
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#16231A',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.08)',
     alignItems: 'center',
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: 'rgba(0,125,112,0.08)',
   },
   typeBtnLabel: {
     fontSize: 12,

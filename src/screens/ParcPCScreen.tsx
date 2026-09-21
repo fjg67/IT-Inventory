@@ -10,17 +10,15 @@ import { PCStateKey } from '@/constants/pcStates';
 import ArticleEmptyState from '@/screens/Articles/components/ArticleEmptyState';
 import SkeletonArticleList from '@/screens/Articles/components/SkeletonArticleList';
 import {
-  PCCard,
-  PCFilterChips,
-  PCHeader,
-  PCModelsSection,
-  PCRepartitionSection,
-  PCSearchBar,
-  PCStateGrid,
-  PCTotalCard,
   PARC_PC_COLORS,
   PCRenameModal,
 } from '@/components/parcpc';
+import { CAPCCard } from '@/components/parcpc/CAPCCard';
+import { CAParcPCHeader } from '@/components/parcpc/CAParcPCHeader';
+import { CAParcPCSearchBar } from '@/components/parcpc/CAParcPCSearchBar';
+import { CAParcPCStatGrid } from '@/components/parcpc/CAParcPCStatGrid';
+import { CAParcPCHeroCard } from '@/components/parcpc/CAParcPCHeroCard';
+import { CA_THEME } from '@/constants/caTheme';
 
 type ControlItem = { type: 'controls'; id: string };
 type EmptyItem = { type: 'empty'; id: string };
@@ -121,20 +119,17 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
         }
       }}
     >
-      <PCHeader activeCount={stats.activeCount} trendLabel={stats.trendLabel} />
-      <PCTotalCard total={stats.total} segments={stats.totalSegments.map((segment) => ({ ...segment, total: stats.total }))} />
-      <PCStateGrid
-        items={stats.stateCards}
-        onPressState={handleStateCardPress}
-        activeStateKey={filters.activeStates.length === 1 ? filters.activeStates[0] : null}
-      />
-      <PCModelsSection items={modelStatsForSelection} />
-      <PCRepartitionSection
-        total={stats.total}
-        agence={stats.repartition.agence}
-        siege={stats.repartition.siege}
-        agencePct={stats.repartition.agencePct}
-        siegePct={stats.repartition.siegePct}
+      <CAParcPCHeader activeCount={stats.activeCount} vsLastWeek={weeklyTrendDelta} />
+      <View style={{ paddingTop: 12 }}>
+        <CAParcPCHeroCard totalCount={stats.total} counts={filters.countByState as any} />
+      </View>
+      <CAParcPCStatGrid
+        counts={filters.countByState as any}
+        activeFilter={filters.activeStates.length === 1 ? filters.activeStates[0] as any : null}
+        onFilterChange={(status) => {
+          if (status) filters.setOnlyState(status as any);
+          else filters.clearStates();
+        }}
       />
     </View>
   );
@@ -144,12 +139,17 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
       if (item.type === 'controls') {
         return (
           <View style={styles.stickyControls}>
-            <PCSearchBar
-              value={filters.query}
-              onChangeText={filters.setQuery}
+            <CAParcPCSearchBar
+              query={filters.query}
+              onQueryChange={filters.setQuery}
               onClear={() => filters.setQuery('')}
+              statusCounts={filters.countByState as any}
+              activeStatus={filters.activeStates.length === 1 ? filters.activeStates[0] as any : null}
+              onStatusChange={(status) => {
+                if (status) filters.setOnlyState(status as any);
+                else filters.clearStates();
+              }}
             />
-            <PCFilterChips activeStates={filters.activeStates} counts={filters.countByState} onToggle={filters.toggleState} />
             {filters.activeStates.includes('envoye') ? (
               <TouchableOpacity
                 activeOpacity={0.84}
@@ -178,28 +178,33 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
     }
 
     return (
-      <PCCard
+      <CAPCCard
         article={item}
-        index={Math.max(0, index - 1)}
         onRename={openRenameModal}
-        onMarkSent={onMarkSent}
-        onMarkHot={onMarkHot}
-        onMarkAvailable={onMarkAvailable}
-        onMarkBreakdown={onMarkBreakdown}
-        onResolveBreakdown={onResolveBreakdown}
-        onDelete={onDelete}
+        onBreakdown={onMarkBreakdown as any}
+        onResolve={onResolveBreakdown as any}
+        onPress={() => onArticlePress(item.id)}
       />
     );
   };
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: CA_THEME.lightGray }}>
       {isLoading ? (
         <View style={styles.loadingWrap}>
           {renderHeader()}
           <View style={styles.stickyControls}>
-            <PCSearchBar value={filters.query} onChangeText={filters.setQuery} onClear={() => filters.setQuery('')} />
-            <PCFilterChips activeStates={filters.activeStates} counts={filters.countByState} onToggle={filters.toggleState} />
+            <CAParcPCSearchBar
+              query={filters.query}
+              onQueryChange={filters.setQuery}
+              onClear={() => filters.setQuery('')}
+              statusCounts={filters.countByState as any}
+              activeStatus={filters.activeStates.length === 1 ? filters.activeStates[0] as any : null}
+              onStatusChange={(status) => {
+                if (status) filters.setOnlyState(status as any);
+                else filters.clearStates();
+              }}
+            />
           </View>
           <SkeletonArticleList count={6} />
         </View>
@@ -214,7 +219,6 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
           maxToRenderPerBatch={6}
           windowSize={8}
           removeClippedSubviews
-          stickyHeaderIndices={[0]}
           ListHeaderComponent={renderHeader}
           ListHeaderComponentStyle={styles.headerWrap}
           contentContainerStyle={styles.content}
@@ -242,7 +246,7 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
           onSuccess={handleRenameSuccess}
         />
       ) : null}
-    </>
+    </View>
   );
 };
 
@@ -263,7 +267,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 10,
     gap: 12,
-    backgroundColor: PARC_PC_COLORS.bg_primary,
+    backgroundColor: CA_THEME.lightGray,
   },
   exportButton: {
     minHeight: 44,

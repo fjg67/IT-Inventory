@@ -1,4 +1,4 @@
-﻿// ============================================
+// ============================================
 // AUTH SCREEN - Premium Profile Selection
 // IT-Inventory - Interface Premium
 // ============================================
@@ -112,9 +112,9 @@ export const AuthScreen: React.FC = () => {
     const techniciensWithoutExcluded = techniciens.filter((technicien) => !shouldHideTechnicien(technicien));
     const normalizedSiteName = normalizeForMatch(siteActif?.nom);
     const isStockOrTcsSite =
-      normalizedSiteName.includes('STOCK 5') ||
-      normalizedSiteName.includes('STOCK 8') ||
-      normalizedSiteName.includes('TCS');
+      normalizedSiteName.includes('STOCK 1ER') ||
+      normalizedSiteName.includes('COMPTOIR') ||
+      normalizedSiteName.includes('SOUS SOL');
 
     if (isStockOrTcsSite) {
       return techniciensWithoutExcluded.filter((technicien) => {
@@ -344,9 +344,9 @@ export const AuthScreen: React.FC = () => {
 
     <!-- HEADER GRADIENT -->
     <div style="background:linear-gradient(135deg,#005C2B 0%,#007A39 50%,#4EB35A 100%);border-radius:20px 20px 0 0;padding:40px 32px 48px 32px;text-align:center;position:relative;">
-      <div style="position:absolute;top:16px;right:24px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.08);"></div>
-      <div style="position:absolute;bottom:-8px;left:32px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.06);"></div>
-      <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.15);margin:0 auto 16px auto;display:flex;align-items:center;justify-content:center;">
+      <div style="position:absolute;top:16px;right:24px;width:60px;height:60px;border-radius:50%;background:rgba(0,125,112,0.08);"></div>
+      <div style="position:absolute;bottom:-8px;left:32px;width:40px;height:40px;border-radius:50%;background:rgba(0,125,112,0.08);"></div>
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(0,125,112,0.12);margin:0 auto 16px auto;display:flex;align-items:center;justify-content:center;">
         <span style="font-size:24px;line-height:56px;">📋</span>
       </div>
       <h1 style="color:#FFFFFF;font-size:22px;font-weight:700;margin:0 0 6px 0;letter-spacing:-0.3px;">Nouvelle demande de profil</h1>
@@ -717,7 +717,7 @@ export const AuthScreen: React.FC = () => {
       />
 
       <LinearGradient
-        colors={['rgba(10,15,13,0)', ONBOARDING_COLORS.bg_primary]}
+        colors={['rgba(255,255,255,0)', ONBOARDING_COLORS.bg_primary]}
         style={styles.listBottomFade}
         pointerEvents="none"
       />
@@ -1155,7 +1155,7 @@ export const AuthScreen: React.FC = () => {
                           colors={
                             isFormValid && !isCreating
                               ? ['#007A39', '#007A39']
-                              : isDark ? [colors.surfaceElevated, colors.surfaceElevated] : ['#94A3B8', '#64748B']
+                              : isDark ? [colors.surfaceElevated, colors.surfaceElevated] : ['#5A5A55', '#64748B']
                           }
                           style={styles.submitBtnGradient}
                         >
@@ -1363,7 +1363,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.5)',
+    borderColor: 'rgba(0,125,112,0.1)',
   },
   profileAvatarText: {
     fontSize: 20,

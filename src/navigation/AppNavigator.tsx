@@ -25,7 +25,7 @@ import { NoConnectionScreen } from '@/components';
 import SplashScreen from '@/screens/SplashScreen';
 import { AuthScreen } from '@/screens/Auth/AuthScreen';
 import { BranchSelectionScreen } from '@/screens/Auth/BranchSelectionScreen';
-import ForceUpdateScreen from '@/screens/Auth/ForceUpdateScreen';
+
 import { LoginScreen } from '@/screens/Auth/LoginScreen';
 import { SiteSelectionScreen } from '@/screens/Auth/SiteSelectionScreen';
 import { DashboardScreen } from '@/screens/Dashboard/DashboardScreen';
@@ -41,13 +41,16 @@ import { ScanMouvementScreen } from '@/screens/Mouvements/ScanMouvementScreen';
 import { SettingsScreen } from '@/screens/Settings/SettingsScreen';
 import { TermsScreen } from '@/screens/Settings/TermsScreen';
 import { HelpScreen } from '@/screens/Settings/HelpScreen';
+import { StockMapScreen } from '@/screens/StockMap/StockMapScreen';
 import OnboardingScreen from '@/screens/Onboarding/OnboardingScreen';
 import { KitScreen } from '@/screens/Kit/KitScreen';
 import { colors, typography } from '@/constants/theme';
 import { useTheme } from '@/theme';
 import { checkAppVersion, VersionCheckResult } from '@/services/versionService';
 import PremiumTabBar from '@/components/navigation/PremiumTabBar';
+import { CABottomNav } from '@/components/dashboard/CABottomNav';
 import { type InitStep } from '@/hooks/useSplashSequence';
+import { UpdateBlockingScreen } from '@/screens/UpdateBlockingScreen';
 
 import {
   RootStackParamList,
@@ -150,8 +153,8 @@ const MouvementsIcon = ({ focused }: { focused: boolean }) => (
   <TabIcon focused={focused} emoji="📊" label="Mouvements" />
 );
 
-const SettingsIcon = ({ focused }: { focused: boolean }) => (
-  <TabIcon focused={focused} emoji="⚙️" label="Paramètres" />
+const StockMapIcon = ({ focused }: { focused: boolean }) => (
+  <TabIcon focused={focused} emoji="🗺️" label="Plan" />
 );
 
 const PCIcon = ({ focused }: { focused: boolean }) => (
@@ -162,12 +165,11 @@ const PCIcon = ({ focused }: { focused: boolean }) => (
 const MainNavigator: React.FC = () => {
   return (
     <MainTab.Navigator
-      tabBar={(props) => <PremiumTabBar {...props} />}
+      tabBar={(props) => <CABottomNav {...props} />}
       screenOptions={{
         headerShown: false,
         sceneStyle: {
-          paddingBottom: 92,
-          backgroundColor: '#0A0F0D',
+          backgroundColor: '#F5F5F0',
         },
       }}
     >
@@ -213,10 +215,10 @@ const MainNavigator: React.FC = () => {
         }}
       />
       <MainTab.Screen
-        name="Settings"
-        component={SettingsNavigator}
+        name="StockMap"
+        component={StockMapScreen}
         options={{
-          tabBarIcon: SettingsIcon,
+          tabBarIcon: StockMapIcon,
           tabBarLabel: () => null,
         }}
       />
@@ -231,6 +233,14 @@ export const AppNavigator: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading, redirectToTechnicianChoiceAfterLogout, currentTechnicien } = useAppSelector((state) => state.auth);
   const { isConnected, isInternetReachable } = useAppSelector((state) => state.network);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
+
+  const MyTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: '#F5F5F0',
+    },
+  };
 
   const [isInitializing, setIsInitializing] = React.useState(true);
   const [initStep, setInitStep] = React.useState<InitStep>('connecting');
@@ -280,14 +290,14 @@ export const AppNavigator: React.FC = () => {
     try {
       const versionResult = await checkAppVersion();
       setForceUpdate(versionResult.updateRequired ? versionResult : null);
-
       if (!versionResult.updateRequired && versionResult.updateAvailable) {
-        const dismissKey = `${OPTIONAL_UPDATE_DISMISS_KEY}:${versionResult.latestVersion || versionResult.minVersion || 'unknown'}`;
-        const dismissed = await AsyncStorage.getItem(dismissKey);
-        setOptionalUpdate(dismissed === 'true' ? null : versionResult);
+         const dismissKey = `${OPTIONAL_UPDATE_DISMISS_KEY}:${versionResult.latestVersion || versionResult.minVersion || 'unknown'}`;
+         const dismissed = await AsyncStorage.getItem(dismissKey);
+         setOptionalUpdate(dismissed === 'true' ? null : versionResult);
       } else {
-        setOptionalUpdate(null);
+         setOptionalUpdate(null);
       }
+
     } catch (error) {
       console.warn('[AppNavigator] checkAppVersion error:', error);
     }
@@ -496,20 +506,14 @@ export const AppNavigator: React.FC = () => {
     );
   }
 
-  // Version trop ancienne → écran de mise à jour obligatoire
-  if (forceUpdate?.updateRequired) {
-    return (
-      <ForceUpdateScreen
-        minVersion={forceUpdate.minVersion}
-        updateUrl={forceUpdate.updateUrl}
-        releaseNotes={forceUpdate.releaseNotes}
-      />
-    );
-  }
-
   // Pas de connexion internet → écran offline
   if (!isConnected || !isInternetReachable) {
     return <NoConnectionScreen />;
+  }
+
+  // Si une mise à jour critique est requise, bloquer l'application
+  if (forceUpdate) {
+    return <UpdateBlockingScreen updateInfo={forceUpdate} />;
   }
 
   return (
@@ -530,7 +534,7 @@ export const AppNavigator: React.FC = () => {
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
-          contentStyle: { backgroundColor: '#0A0F0D' },
+          contentStyle: { backgroundColor: '#F5F5F0' },
         }}
         initialRouteName={isAuthenticated ? 'Main' : redirectToTechnicianChoiceAfterLogout ? 'Auth' : onboardingSeen ? 'Login' : 'Onboarding'}
       >
@@ -543,6 +547,7 @@ export const AppNavigator: React.FC = () => {
             />
             <RootStack.Screen name="Auth" component={AuthScreen} />
             <RootStack.Screen name="Main" component={MainNavigator} />
+            <RootStack.Screen name="Settings" component={SettingsNavigator} />
           </>
         ) : onboardingSeen ? (
           // Onboarding déjà vu → connexion → branche → site → technicien
@@ -572,15 +577,17 @@ export const AppNavigator: React.FC = () => {
           <Text style={styles.updateTitle}>Nouvelle version de l'application</Text>
           <Text style={styles.updateMessage}>
             Une nouvelle version est disponible sur le Play Store avec des ameliorations importantes.
+            Mettez a jour pour profiter des nouveautes et acceder aux corrections recentes.
           </Text>
 
           <Text style={styles.updateSectionTitle}>Ameliorations apportees</Text>
           {(optionalUpdate?.releaseNotes?.length
             ? optionalUpdate.releaseNotes
             : [
-                'Correction de la stabilite au demarrage et ecran de connexion.',
-                'Nouveau parcours onboarding plus fluide.',
-                'Optimisations globales des performances et de la navigation.',
+                'Nouvelle animation de succes lors de l\'enregistrement d\'un PC.',
+                'Corrections de stabilite et de navigation sur Android.',
+                'Ameliorations des performances globales de l\'application.',
+                'Acces direct au parc PC apres creation via le nouvel ecran de succes.',
               ]).slice(0, 4).map((note, index) => (
             <Text key={`${index}-${note}`} style={styles.updateBullet}>• {note}</Text>
           ))}
@@ -648,7 +655,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   updateTitle: {
-    color: '#F0FDF4',
+    color: '#1A1A1A',
     fontSize: 19,
     fontWeight: '800',
   },

@@ -53,10 +53,32 @@ export const useMovementFlow = (defaultType?: MovementType) => {
 
   const currentStepIndex = useMemo(() => STEP_INDEX[state.step], [state.step]);
 
+  const nextStep = useCallback(() => {
+    setState((prev) => {
+      const idx = STEP_INDEX[prev.step];
+      if (idx < 2) {
+        return { ...prev, step: (['article', 'type', 'details'] as MovementStep[])[idx + 1] };
+      }
+      return prev;
+    });
+  }, []);
+
+  const prevStep = useCallback(() => {
+    setState((prev) => {
+      const idx = STEP_INDEX[prev.step];
+      if (idx > 0) {
+        return { ...prev, step: (['article', 'type', 'details'] as MovementStep[])[idx - 1] };
+      }
+      return prev;
+    });
+  }, []);
+
   return {
     state,
     setState,
     goToStep,
+    nextStep,
+    prevStep,
     selectArticle,
     clearArticle,
     updateField,

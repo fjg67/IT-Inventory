@@ -12,7 +12,7 @@ type ScanCheckCircleProps = {
 
 export const ScanCheckCircle: React.FC<ScanCheckCircleProps> = ({ variant, checkStyle, ringStyle }) => {
   const tone = variant === 'error'
-    ? { bg: SCAN_COLORS.danger, border: '#FCA5A5', icon: 'close' as const }
+    ? { bg: SCAN_COLORS.danger, border: '#DC2626', icon: 'close' as const }
     : { bg: SCAN_COLORS.green_primary, border: SCAN_COLORS.green_light, icon: 'check' as const };
 
   return (

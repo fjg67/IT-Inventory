@@ -10,7 +10,6 @@ const STATUS_ORDER: PCStatus[] = [
   'a_reusiner',
   'en_usinage',
   'disponible',
-  'envoye',
   'en_panne',
 ];
 

@@ -142,7 +142,7 @@ const OnboardingScreen: React.FC = () => {
   if (checkingOnboarding) {
     return (
       <View style={styles.loaderScreen}>
-        <StatusBar barStyle="light-content" backgroundColor="#0A0F0D" />
+        <StatusBar barStyle="light-content" backgroundColor="#F5F5F0" />
         <ActivityIndicator size="small" color="#22C55E" />
       </View>
     );
@@ -150,7 +150,7 @@ const OnboardingScreen: React.FC = () => {
 
   return (
     <View style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A0F0D" />
+      <StatusBar barStyle="light-content" backgroundColor="#F5F5F0" />
 
       <OnboardingBackground accentColor={accentColor} />
 
@@ -178,13 +178,13 @@ const OnboardingScreen: React.FC = () => {
 const styles = StyleSheet.create({
   loaderScreen: {
     flex: 1,
-    backgroundColor: '#0A0F0D',
+    backgroundColor: '#F5F5F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
   screen: {
     flex: 1,
-    backgroundColor: '#0A0F0D',
+    backgroundColor: '#F5F5F0',
   },
   pager: {
     flex: 1,

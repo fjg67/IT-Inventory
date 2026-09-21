@@ -84,7 +84,7 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
               backgroundColor: isFocused
                 ? colors.primary + '15'
                 : isDark
-                  ? 'rgba(255,255,255,0.06)'
+                  ? 'rgba(0,125,112,0.08)'
                   : '#F1F5F9',
             },
           ]}
@@ -123,7 +123,7 @@ const PremiumSearchBar: React.FC<PremiumSearchBarProps> = ({
               styles.clearButton,
               {
                 backgroundColor: isDark
-                  ? 'rgba(255,255,255,0.08)'
+                  ? 'rgba(0,125,112,0.08)'
                   : '#F1F5F9',
               },
             ]}

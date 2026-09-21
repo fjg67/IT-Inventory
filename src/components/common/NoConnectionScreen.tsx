@@ -385,7 +385,7 @@ const s = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     fontWeight: '400',
-    color: 'rgba(148, 163, 184, 0.7)',
+    color: 'rgba(0,125,112,0.7)',
     letterSpacing: 0.3,
     textAlign: 'center',
     lineHeight: 20,
@@ -397,10 +397,10 @@ const s = StyleSheet.create({
   infoCards: {
     width: '100%',
     maxWidth: 320,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: 'rgba(0,125,112,0.08)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(0,125,112,0.08)',
     padding: 16,
     marginBottom: 32,
   },
@@ -430,12 +430,12 @@ const s = StyleSheet.create({
   infoDesc: {
     fontSize: 11,
     fontWeight: '400',
-    color: 'rgba(148, 163, 184, 0.5)',
+    color: 'rgba(0,125,112,0.5)',
     lineHeight: 15,
   },
   cardDivider: {
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(0,125,112,0.08)',
     marginVertical: 12,
   },
 
@@ -472,11 +472,11 @@ const s = StyleSheet.create({
   footerLine: {
     width: 30,
     height: 1,
-    backgroundColor: 'rgba(148, 163, 184, 0.15)',
+    backgroundColor: 'rgba(0,125,112,0.15)',
   },
   footerText: {
     fontSize: 11,
-    color: 'rgba(148, 163, 184, 0.25)',
+    color: 'rgba(0,125,112,0.25)',
     fontWeight: '600',
     letterSpacing: 2,
     textTransform: 'uppercase',

@@ -155,6 +155,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: LOGIN_COLORS.text_primary,
     fontSize: 15,
+    fontWeight: '500',
     paddingVertical: 0,
   },
   eyeBtn: {

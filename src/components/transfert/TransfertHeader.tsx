@@ -20,7 +20,7 @@ export const TransfertHeader: React.FC<Props> = ({ onBack }) => {
       <View style={[styles.orb, { backgroundColor: identity.glow }]} />
 
       <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-        <Icon name="arrow-left" size={21} color="#F0FDF4" />
+        <Icon name="arrow-left" size={21} color="#1A1A1A" />
       </TouchableOpacity>
       <View style={styles.centerRow}>
         <View style={styles.iconWrap}>
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(17,26,20,0.8)',
+    backgroundColor: 'rgba(255,255,255,0.8)',
     borderWidth: 1,
     borderColor: 'rgba(139,92,246,0.35)',
     alignItems: 'center',
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    color: '#F0FDF4',
+    color: '#1A1A1A',
     fontSize: 17,
     fontWeight: '700',
   },

@@ -21,7 +21,7 @@ interface ParticleData {
 }
 
 const generateParticles = (color: string): ParticleData[] => {
-  const COLORS = [color, '#22C55E', '#86EFAC', '#F0FDF4', '#6B7280'];
+  const COLORS = [color, '#22C55E', '#5A5A55', '#1A1A1A', '#6B7280'];
   return Array.from({ length: 28 }, (_, i) => ({
     id: i,
     angle: (i / 28) * Math.PI * 2 + (Math.random() - 0.5) * 0.4,

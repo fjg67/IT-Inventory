@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 18,
     borderWidth: 1.5,
-    backgroundColor: '#0A0F0D',
+    backgroundColor: '#F5F5F0',
     overflow: 'hidden',
     paddingHorizontal: 20,
     paddingTop: 20,

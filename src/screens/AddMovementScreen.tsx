@@ -35,19 +35,16 @@ import { useMovementColor } from '@/hooks/useMovementColor';
 import { useStockPreview } from '@/hooks/useStockPreview';
 import { useArticleSearch } from '@/hooks/useArticleSearch';
 import { useQuantityStepper } from '@/hooks/useQuantityStepper';
-import {
-  ArticleSearchInput,
-  CommentTextarea,
-  MovementHeader,
-  MovementSubmitButton,
-  MovementType,
-  MovementTypeSelector,
-  MOVEMENT_COLORS,
-  QuantityStepper,
-  ScanZone,
-  SelectedArticleCard,
-  StockPreviewCard,
-} from '@/components/movement';
+import { CAMouvementTopBar } from '@/components/create-mouvement/CAMouvementTopBar';
+import { CAMouvementStepper, type StepStatus } from '@/components/create-mouvement/CAMouvementStepper';
+import { CAMouvementArticleCard } from '@/components/create-mouvement/CAMouvementArticleCard';
+import { CAMouvementTypeGrid, type MovementType } from '@/components/create-mouvement/CAMouvementTypeGrid';
+import { CAMouvementQtyStepper } from '@/components/create-mouvement/CAMouvementQtyStepper';
+import { CAMouvementStockPreview } from '@/components/create-mouvement/CAMouvementStockPreview';
+import { CAMouvementStepArticle } from '@/components/create-mouvement/CAMouvementStepArticle';
+import { CAScreenWrapper } from '@/components/dashboard/CAScreenWrapper';
+import { CA_THEME } from '@/constants/caTheme';
+import { TextInput, ActivityIndicator } from 'react-native';
 
 const BARCODE_TYPES = [
   'ean-13', 'ean-8', 'upc-a', 'upc-e', 'code-128', 'code-39', 'code-93',
@@ -360,267 +357,149 @@ export const AddMovementScreen: React.FC = () => {
     Vibration.vibrate(10);
   }, []);
 
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={MOVEMENT_COLORS.bg_primary} />
+  const steps = [
+    { key: 'article', label: 'Article', status: flow.currentStepIndex > 0 ? 'done' : flow.state.step === 'article' ? 'active' : 'pending' },
+    { key: 'type',    label: 'Type',    status: flow.currentStepIndex > 1 ? 'done' : flow.state.step === 'type' ? 'active' : 'pending' },
+    { key: 'details', label: 'Détails', status: flow.state.step === 'details' ? 'active' : 'pending' },
+  ] as { key: string; label: string; status: StepStatus }[];
 
-      <MovementHeader
-        title="Mouvement de stock"
-        identity={identityPack.identity}
-        currentStep={flow.currentStepIndex}
+  return (
+    <CAScreenWrapper>
+      <CAMouvementTopBar
         onBack={handleBack}
-        overlayStyle={identityPack.headerOverlayStyle}
+        onHistory={() => navigation.navigate('Mouvements')}
+        onHelp={() => Alert.alert('Aide', 'Sélectionnez un article, un type de mouvement et la quantité pour valider le mouvement.')}
       />
 
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          ref={scrollViewRef}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: flow.state.step === 'details' ? 124 : 24 }]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {errors.article ? (
-            <Animated.View entering={FadeInDown.duration(180)} style={styles.errorBanner}>
-              <Icon name="alert-circle-outline" size={14} color={MOVEMENT_COLORS.danger} />
-              <Text style={styles.errorText}>{errors.article}</Text>
-            </Animated.View>
-          ) : null}
+      <CAMouvementStepper steps={steps} />
 
-          <View onLayout={(event) => { articleStepYRef.current = event.nativeEvent.layout.y; }}>
-            {flow.state.step === 'article' ? (
-              <Animated.View entering={FadeInRight.duration(250)}>
-              {flow.state.article ? (
-                <>
-                  <SelectedArticleCard
-                    article={flow.state.article}
-                    stock={stockActuel}
-                    siteName={siteActif?.nom}
-                    identity={identityPack.identity}
-                    onClear={() => {
-                      flow.clearArticle();
-                      setErrors({});
-                      search.reset();
-                    }}
-                  />
+      {flow.state.step === 'article' && (
+        <CAMouvementStepArticle
+          onScan={openScanner}
+          onManualSearch={search.onChangeQuery}
+          searchQuery={search.query}
+          searchResults={search.results.map(r => ({
+            id: String(r.id),
+            reference: r.reference,
+            label: r.label,
+            stock_actuel: r.quantiteActuelle,
+          }))}
+          onSelectArticle={(art) => {
+            const fullArticle = search.results.find(r => String(r.id) === art.id);
+            if (fullArticle) {
+              flow.selectArticle(fullArticle);
+              setErrors({});
+              search.reset();
+            }
+          }}
+        />
+      )}
 
-                  <TouchableOpacity
-                    style={[styles.continueBtn, { borderColor: identityPack.identity.border, backgroundColor: identityPack.identity.subtle }]}
-                    onPress={() => flow.goToStep('type')}
-                  >
-                    <Text style={[styles.continueText, { color: identityPack.identity.color }]}>Continuer</Text>
-                    <Icon name="arrow-right" size={16} color={identityPack.identity.color} />
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <>
-                  <ScanZone identity={identityPack.identity} onPress={openScanner} />
-                  <ArticleSearchInput
-                    identity={identityPack.identity}
-                    value={search.query}
-                    searching={search.searching}
-                    results={search.results}
-                    onChange={search.onChangeQuery}
-                    onSubmit={() => {
-                      if (search.query.trim()) {
-                        searchByBarcode(search.query.trim());
-                      }
-                    }}
-                    onSelect={(article) => {
-                      flow.selectArticle(article);
-                      search.reset();
-                      setErrors({});
-                    }}
-                  />
-                </>
-              )}
-              </Animated.View>
-            ) : null}
-          </View>
-
-          <View onLayout={(event) => { typeStepYRef.current = event.nativeEvent.layout.y; }}>
-            {flow.state.article && flow.state.step === 'type' ? (
-              <Animated.View entering={FadeInRight.duration(250)}>
-              <SelectedArticleCard
-                article={flow.state.article}
-                stock={stockActuel}
-                siteName={siteActif?.nom}
-                identity={identityPack.identity}
-                onClear={() => {
-                  flow.clearArticle();
-                  flow.goToStep('article');
-                }}
-              />
-
-              {!isTypePreset ? (
-                <MovementTypeSelector
-                  value={flow.state.type ?? 'entree'}
-                  identity={identityPack.identity}
-                  onChange={(value) => {
-                    flow.updateField('type', value);
-                    Vibration.vibrate(10);
-                  }}
-                />
-              ) : null}
-
-              <View style={{ marginTop: 2 }}>
-                <QuantityStepper
-                  identity={identityPack.identity}
-                  value={flow.state.quantity}
-                  min={minQty}
-                  onValueChange={(next) => {
-                    const parsed = parseInt(next, 10);
-                    if (Number.isNaN(parsed)) {
-                      flow.updateField('quantity', minQty);
-                      return;
-                    }
-                    flow.updateField('quantity', Math.max(minQty, Math.min(maxQty, parsed)));
-                  }}
-                  onIncrement={quantityStepper.increment}
-                  onDecrement={quantityStepper.decrement}
-                  onIncrementHoldStart={quantityStepper.startIncrementHold}
-                  onDecrementHoldStart={quantityStepper.startDecrementHold}
-                  onHoldEnd={quantityStepper.stopHold}
-                />
-              </View>
-
-              {flow.state.type === 'sortie' && flow.state.quantity > stockActuel ? (
-                <Text style={styles.warningText}>Stock insuffisant (disponible : {stockActuel})</Text>
-              ) : null}
-
-              <TouchableOpacity
-                style={[styles.continueBtn, { borderColor: identityPack.identity.border, backgroundColor: identityPack.identity.subtle }]}
-                onPress={() => flow.goToStep('details')}
-                disabled={!isTypeStepValid}
-              >
-                <Text style={[styles.continueText, { color: identityPack.identity.color }]}>Continuer</Text>
-                <Icon name="arrow-right" size={16} color={identityPack.identity.color} />
-              </TouchableOpacity>
-              </Animated.View>
-            ) : null}
-          </View>
-
-          <View onLayout={(event) => { detailsStepYRef.current = event.nativeEvent.layout.y; }}>
-            {flow.state.article && flow.state.step === 'details' ? (
-              <Animated.View entering={FadeInRight.duration(250)}>
-              <SelectedArticleCard
-                article={flow.state.article}
-                stock={stockActuel}
-                siteName={siteActif?.nom}
-                identity={identityPack.identity}
-                onClear={() => {
-                  flow.clearArticle();
-                  flow.goToStep('article');
-                }}
-              />
-
-              <StockPreviewCard
-                identity={identityPack.identity}
-                currentStock={stockActuel}
-                newStock={preview.newStock}
-                stockMin={stockMin}
-              />
-
-              <CommentTextarea
-                identity={identityPack.identity}
-                value={flow.state.comment}
-                onChange={(next) => flow.updateField('comment', next)}
-              />
-              </Animated.View>
-            ) : null}
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      {flow.state.step === 'details' ? (
-        <>
-          <Animated.View
-            entering={FadeInDown.duration(220)}
-            style={[styles.cancelWrap, { bottom: Math.max(84, insets.bottom + 72) }]}
-          >
-            <TouchableOpacity activeOpacity={0.92} onPress={cancelMovement} style={styles.cancelTouchable}>
-              <LinearGradient
-                colors={['rgba(127,29,29,0.96)', 'rgba(153,27,27,0.96)', 'rgba(185,28,28,0.98)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.cancelBtn}
-              >
-                <View style={styles.cancelIconWrap}>
-                  <Icon name="close-circle-outline" size={17} color="#FECACA" />
-                </View>
-                <Text style={styles.cancelText}>Annuler le mouvement</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animated.View>
-
-          <MovementSubmitButton
-            identity={identityPack.identity}
-            disabled={!isFormValid || isSubmitting}
-            loading={isSubmitting}
-            success={submitSuccess}
-            onPress={submit}
-            bottomInset={insets.bottom}
+      {flow.state.step === 'type' && flow.state.article && (
+        <ScrollView contentContainerStyle={{ padding: 12, gap: 12 }}>
+          <Text style={styles.sectionLabel}>Article sélectionné</Text>
+          <CAMouvementArticleCard
+            article={{
+              reference: flow.state.article.reference,
+              label: flow.state.article.label,
+              stockActuel: flow.state.article.quantiteActuelle,
+              site: siteActif?.nom ?? 'Site non sélectionné',
+              imageUrl: flow.state.article.photoUrl,
+            }}
+            onDeselect={() => {
+              flow.setState(prev => ({ ...prev, article: null, step: 'article' }));
+            }}
           />
-        </>
-      ) : null}
 
-      <Modal
-        visible={showCancelModal}
-        transparent
-        animationType="none"
-        onRequestClose={() => setShowCancelModal(false)}
-      >
-        <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(160)} style={styles.cancelModalBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowCancelModal(false)} />
+          <Text style={styles.sectionLabel}>Type de mouvement <Text style={{color:CA_THEME.danger}}>*</Text></Text>
+          <CAMouvementTypeGrid
+            selected={flow.state.type as MovementType}
+            onSelect={(t) => flow.updateField('type', t)}
+          />
 
-          <Animated.View entering={ZoomIn.duration(220)} exiting={ZoomOut.duration(170)} style={styles.cancelModalCardWrap}>
-            <LinearGradient
-              colors={['rgba(6,18,13,0.98)', 'rgba(7,23,16,0.98)', 'rgba(8,30,20,0.98)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.cancelModalCard}
-            >
-              <View style={styles.cancelModalIconWrap}>
-                <Icon name="close-octagon-outline" size={24} color="#FCA5A5" />
-              </View>
+          <Text style={styles.sectionLabel}>Quantité <Text style={{color:CA_THEME.danger}}>*</Text></Text>
+          <CAMouvementQtyStepper
+            value={flow.state.quantity}
+            onChange={(next) => {
+              flow.updateField('quantity', next);
+              Vibration.vibrate(8);
+            }}
+            movementType={(flow.state.type as MovementType) ?? 'entree'}
+            max={maxQty}
+            min={minQty}
+          />
 
-              <Text style={styles.cancelModalTitle}>Annuler le mouvement</Text>
-              <Text style={styles.cancelModalDesc}>
-                Voulez-vous vraiment annuler ce mouvement ? Les informations saisies seront perdues.
-              </Text>
+          <Pressable
+            onPress={() => flow.nextStep()}
+            disabled={!flow.state.type}
+            style={[styles.btnContinue, !flow.state.type && { opacity: 0.4 }]}
+            accessibilityRole="button" accessibilityLabel="Continuer vers les détails"
+          >
+            <Text style={styles.btnContinueText}>Continuer</Text>
+            <Icon name="arrow-right" size={16} color={CA_THEME.white} />
+          </Pressable>
+        </ScrollView>
+      )}
 
-              <View style={styles.cancelModalActions}>
-                <TouchableOpacity
-                  activeOpacity={0.92}
-                  onPress={() => setShowCancelModal(false)}
-                  style={styles.cancelSecondaryWrap}
-                >
-                  <LinearGradient
-                    colors={['rgba(17,36,28,0.95)', 'rgba(12,28,21,0.95)']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.cancelSecondaryBtn}
-                  >
-                    <Icon name="pencil-outline" size={15} color="#86EFAC" />
-                    <Text style={styles.cancelSecondaryText}>Continuer la saisie</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
+      {flow.state.step === 'details' && flow.state.article && flow.state.type && (
+        <ScrollView contentContainerStyle={{ padding: 12, gap: 12 }}>
+          <Text style={styles.sectionLabel}>Article sélectionné</Text>
+          <CAMouvementArticleCard
+            article={{
+              reference: flow.state.article.reference,
+              label: flow.state.article.label,
+              stockActuel: flow.state.article.quantiteActuelle,
+              site: siteActif?.nom ?? 'Site non sélectionné',
+              imageUrl: flow.state.article.photoUrl,
+            }}
+            onDeselect={() => {
+              flow.setState(prev => ({ ...prev, article: null, step: 'article' }));
+            }}
+          />
 
-                <TouchableOpacity activeOpacity={0.92} onPress={confirmCancelMovement} style={styles.cancelPrimaryWrap}>
-                  <LinearGradient
-                    colors={['#7F1D1D', '#991B1B', '#B91C1C']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.cancelPrimaryBtn}
-                  >
-                    <Icon name="close-circle-outline" size={16} color="#FEE2E2" />
-                    <Text style={styles.cancelPrimaryText}>Oui, annuler</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
-          </Animated.View>
-        </Animated.View>
-      </Modal>
+          <CAMouvementStockPreview
+            stockBefore={stockActuel}
+            stockAfter={preview.newStock}
+            movementType={flow.state.type as MovementType}
+            quantity={flow.state.quantity}
+            threshold={stockMin}
+          />
+
+          <View>
+            <Text style={styles.sectionLabel}>Commentaire (optionnel)</Text>
+            <TextInput
+              value={flow.state.comment}
+              onChangeText={(c) => flow.updateField('comment', c)}
+              placeholder="Motif, précision..."
+              placeholderTextColor={CA_THEME.textMuted}
+              multiline
+              maxLength={200}
+              textAlignVertical="top"
+              style={styles.commentInput}
+              accessibilityLabel="Commentaire optionnel"
+            />
+            <Text style={styles.charCount}>{(flow.state.comment || '').length}/200</Text>
+          </View>
+
+          <Pressable onPress={() => navigation.goBack()} style={styles.btnCancel}
+            accessibilityRole="button" accessibilityLabel="Annuler le mouvement">
+            <Icon name="close-circle" size={16} color={CA_THEME.danger} />
+            <Text style={styles.btnCancelText}>Annuler le mouvement</Text>
+          </Pressable>
+
+          <Pressable onPress={submit} disabled={isSubmitting} style={styles.btnValidate}
+            accessibilityRole="button" accessibilityLabel="Valider le mouvement">
+            {isSubmitting ? (
+              <ActivityIndicator color={CA_THEME.white} />
+            ) : (
+              <>
+                <Icon name="check-circle" size={16} color={CA_THEME.white} />
+                <Text style={styles.btnValidateText}>Valider le mouvement</Text>
+              </>
+            )}
+          </Pressable>
+        </ScrollView>
+      )}
 
       <Modal visible={showCamera} animationType="slide" onRequestClose={() => setShowCamera(false)}>
         <View style={styles.cameraContainer}>
@@ -649,25 +528,56 @@ export const AddMovementScreen: React.FC = () => {
 
             <View style={styles.cameraFrameWrap}>
               <View style={styles.cameraFrame}>
-                <View style={[styles.corner, styles.tl, { borderColor: identityPack.identity.color }]} />
-                <View style={[styles.corner, styles.tr, { borderColor: identityPack.identity.color }]} />
-                <View style={[styles.corner, styles.bl, { borderColor: identityPack.identity.color }]} />
-                <View style={[styles.corner, styles.br, { borderColor: identityPack.identity.color }]} />
+                <View style={[styles.corner, styles.tl, { borderColor: CA_THEME.green }]} />
+                <View style={[styles.corner, styles.tr, { borderColor: CA_THEME.green }]} />
+                <View style={[styles.corner, styles.bl, { borderColor: CA_THEME.green }]} />
+                <View style={[styles.corner, styles.br, { borderColor: CA_THEME.green }]} />
               </View>
             </View>
           </View>
         </View>
       </Modal>
-    </View>
+    </CAScreenWrapper>
   );
 };
 
 export default AddMovementScreen;
 
 const styles = StyleSheet.create({
+  sectionLabel: {
+    fontSize: 11, fontWeight: '700', color: CA_THEME.green,
+    textTransform: 'uppercase', letterSpacing: 1.0,
+    marginBottom: 0,
+  },
+  btnContinue: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, padding: 14, borderRadius: 12,
+    backgroundColor: CA_THEME.green,
+  },
+  btnContinueText: { fontSize: 15, fontWeight: '700', color: CA_THEME.white },
+  commentInput: {
+    backgroundColor: CA_THEME.white,
+    borderRadius: 10, borderWidth: 1, borderColor: CA_THEME.borderGray,
+    padding: 12, fontSize: 13, color: CA_THEME.textPrimary,
+    minHeight: 70,
+  },
+  charCount: { fontSize: 10, color: CA_THEME.textMuted, textAlign: 'right', marginTop: 4 },
+  btnCancel: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, padding: 13, borderRadius: 12,
+    backgroundColor: CA_THEME.dangerBg,
+    borderWidth: 1.5, borderColor: 'rgba(211,47,47,0.25)',
+  },
+  btnCancelText:   { fontSize: 14, fontWeight: '700', color: CA_THEME.danger },
+  btnValidate: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, padding: 14, borderRadius: 12,
+    backgroundColor: CA_THEME.green,
+  },
+  btnValidateText: { fontSize: 15, fontWeight: '700', color: CA_THEME.white },
   container: {
     flex: 1,
-    backgroundColor: MOVEMENT_COLORS.bg_primary,
+    backgroundColor: CA_THEME.bgLight,
   },
   flex: {
     flex: 1,
@@ -681,16 +591,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: MOVEMENT_COLORS.danger_subtle,
-    borderRadius: 10,
+    gap: 8,
+    backgroundColor: CA_THEME.dangerBg,
+    padding: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.28)',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    borderColor: 'rgba(211,47,47,0.15)',
   },
   errorText: {
-    color: MOVEMENT_COLORS.danger,
+    flex: 1,
+    color: CA_THEME.danger,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -710,7 +620,7 @@ const styles = StyleSheet.create({
   },
   warningText: {
     marginTop: 8,
-    color: MOVEMENT_COLORS.danger,
+    color: CA_THEME.danger,
     fontSize: 12,
     fontWeight: '600',
   },

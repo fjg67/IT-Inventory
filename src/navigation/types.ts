@@ -12,6 +12,7 @@ export type RootStackParamList = {
   SiteSelection: { rememberMe?: boolean; branch?: string; startupMode?: boolean };
   Auth: { rememberMe?: boolean; siteId?: string | number; parentSiteId?: string | number };
   Main: NavigatorScreenParams<MainTabParamList>;
+  Settings: NavigatorScreenParams<SettingsStackParamList>;
 };
 
 // Main Tab Navigator
@@ -21,7 +22,7 @@ export type MainTabParamList = {
   PC: NavigatorScreenParams<ArticlesStackParamList>;
   Mouvements: NavigatorScreenParams<MouvementsStackParamList>;
   Scan: undefined;
-  Settings: NavigatorScreenParams<SettingsStackParamList>;
+  StockMap: { highlightBarcode?: string } | undefined;
 };
 
 // Settings Stack

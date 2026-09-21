@@ -1,6 +1,6 @@
 {
   "name": "StockProApp",
-  "version": "2.36.0",
+  "version": "2.45",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -15,6 +15,7 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
+    "@expo-google-fonts/montserrat": "^0.4.2",
     "@notifee/react-native": "^9.1.8",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-clipboard/clipboard": "^1.16.3",
@@ -22,6 +23,7 @@
     "@react-native-firebase/app": "^23.8.8",
     "@react-native-firebase/messaging": "^23.8.8",
     "@react-native-picker/picker": "^2.11.4",
+    "@react-native-voice/voice": "^3.2.4",
     "@react-native/new-app-screen": "0.83.1",
     "@react-navigation/bottom-tabs": "^7.12.0",
     "@react-navigation/native": "^7.1.28",
@@ -42,8 +44,10 @@
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.30.0",
     "react-native-get-random-values": "^2.0.0",
+    "react-native-gifted-charts": "^1.4.77",
     "react-native-image-picker": "^8.2.1",
     "react-native-linear-gradient": "^2.8.3",
+    "react-native-permissions": "^5.5.3",
     "react-native-reanimated": "^4.2.0",
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "^4.23.0",

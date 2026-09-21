@@ -71,7 +71,7 @@ export const premiumColors = {
   text: {
     primary: '#0F172A',
     secondary: '#475569',
-    tertiary: '#94A3B8',
+    tertiary: '#5A5A55',
     inverse: '#FFFFFF',
     link: '#007A39',
   },

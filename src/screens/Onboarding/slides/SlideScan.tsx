@@ -52,7 +52,7 @@ export const SlideScan: React.FC<SlideScanProps> = ({ isActive }) => {
         </View>
 
         <View style={styles.tc22Badge}>
-          <Icon name="cellphone-cog" size={12} color="#86EFAC" />
+          <Icon name="cellphone-cog" size={12} color="#5A5A55" />
           <Text style={styles.tc22Text}>TC22 · Zebra Ready</Text>
         </View>
       </View>
@@ -108,6 +108,6 @@ const styles = StyleSheet.create({
   tc22Text: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#86EFAC',
+    color: '#5A5A55',
   },
 });

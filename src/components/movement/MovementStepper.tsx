@@ -91,7 +91,7 @@ export default memo(MovementStepper);
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: 'rgba(17,26,20,0.5)',
+    backgroundColor: 'rgba(0,125,112,0.1)',
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,

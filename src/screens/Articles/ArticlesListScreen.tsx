@@ -8,7 +8,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   RefreshControl,
   Vibration,
@@ -39,6 +38,7 @@ import Animated, {
   LinearTransition,
 } from 'react-native-reanimated';
 import { FlashList } from '@shopify/flash-list';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { debounce } from 'lodash';
 import { useAppSelector } from '@/store';
@@ -49,6 +49,9 @@ import { pcSentService, SentPCRecord } from '@/services/pcSentService';
 import { articleRepository, stockRepository } from '@/database';
 import { Article, ArticleFilters, PaginatedResult, SyncStatus } from '@/types';
 import { APP_CONFIG } from '@/constants';
+import { getNomAgenceParEDS } from '@/constants/agences';
+import { tabConfig } from '@/constants/tabConfig';
+import { premiumTheme } from '@/constants/premiumTheme';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
 import { premiumSpacing } from '@/constants/premiumTheme';
 import { useResponsive } from '@/utils/responsive';
@@ -64,12 +67,15 @@ import ArticleEmptyState from './components/ArticleEmptyState';
 import FABMultiAction from './components/FABMultiAction';
 import { ParcPCScreen } from '@/screens/ParcPCScreen';
 import {
-  ArticleCard,
+  CAArticleCard,
   ArticleFAB,
-  ArticleFilters as ArticleFiltersBar,
-  ArticleSearchBar,
-  ArticlesHeader,
+  CAArticleFilters as ArticleFiltersBar,
+  CAArticleSearchBar,
+  CAArticlesHeader,
+  CAArticlesStatGrid,
+  CAAvailabilityBar,
 } from '@/components/articles';
+import { CA_THEME } from '@/constants/caTheme';
 import { PCHeader } from './components/pc/PCHeader';
 import { PCCard } from './components/pc/PCCard';
 import { PCCardCompact } from './components/pc/PCCardCompact';
@@ -344,7 +350,7 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
     >
       <View style={[styles.pcActionTopAccent, { backgroundColor: accent }]} />
       <View pointerEvents="none" style={[styles.pcActionModalOrbOne, { backgroundColor: isDark ? `${accent}18` : `${accent}14` }]} />
-      <View pointerEvents="none" style={[styles.pcActionModalOrbTwo, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.55)' }]} />
+      <View pointerEvents="none" style={[styles.pcActionModalOrbTwo, { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : 'rgba(255,255,255,0.55)' }]} />
 
       <LinearGradient
         colors={isSent ? ['#FFF1F2', '#FBCFE8'] : isHot ? ['#DCFCE7', '#BBF7D0'] : isProcessing ? ['#FFF7ED', '#FED7AA'] : ['#DBEAFE', '#BFDBFE']}
@@ -375,7 +381,7 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
         <View
           style={[
             styles.pcActionCommandChip,
-            { backgroundColor: modalSurfaceAlt, borderColor: isDark ? 'rgba(148,163,184,0.24)' : '#E2E8F0' },
+            { backgroundColor: modalSurfaceAlt, borderColor: isDark ? 'rgba(0,125,112,0.24)' : '#E2E8F0' },
           ]}
         >
           <Icon name="laptop" size={13} color={colors.textMuted} />
@@ -398,7 +404,7 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
             styles.pcActionInfoCard,
             {
               backgroundColor: modalSurfaceAlt,
-              borderColor: isDark ? 'rgba(148,163,184,0.25)' : '#E2E8F0',
+              borderColor: isDark ? 'rgba(0,125,112,0.25)' : '#E2E8F0',
             },
           ]}
         >
@@ -434,6 +440,13 @@ const PCActionModalContent: React.FC<PCActionModalContentProps> = ({
                     },
                   ]}
                 />
+                {destinationEds ? (
+                  <Text style={{ marginTop: 4, marginLeft: 2, fontSize: 12, color: '#007D70', fontWeight: '600' }}>
+                    {getNomAgenceParEDS(destinationEds) 
+                      ? `📍 ${getNomAgenceParEDS(destinationEds)}` 
+                      : `❓ Agence non répertoriée`}
+                  </Text>
+                ) : null}
               </View>
 
               <View style={styles.pcActionInputBlock}>
@@ -561,7 +574,7 @@ const DeletePCModalContent: React.FC<DeletePCModalContentProps> = ({
         <View
           style={[
             styles.deletePcCommandChip,
-            { backgroundColor: isDark ? 'rgba(15,23,42,0.45)' : '#F8FAFC', borderColor: isDark ? 'rgba(148,163,184,0.25)' : '#E2E8F0' },
+            { backgroundColor: isDark ? 'rgba(15,23,42,0.45)' : '#F8FAFC', borderColor: isDark ? 'rgba(0,125,112,0.25)' : '#E2E8F0' },
           ]}
         >
           <Icon name="laptop" size={13} color={colors.textMuted} />
@@ -596,7 +609,7 @@ const DeletePCModalContent: React.FC<DeletePCModalContentProps> = ({
         ]}
       >
         <Icon name="alert-circle-outline" size={15} color="#DC2626" />
-        <Text style={[styles.deletePcWarningText, { color: isDark ? '#FCA5A5' : '#991B1B' }]}>Cette action est irréversible. Vérifie le hostname avant confirmation.</Text>
+        <Text style={[styles.deletePcWarningText, { color: isDark ? '#DC2626' : '#991B1B' }]}>Cette action est irréversible. Vérifie le hostname avant confirmation.</Text>
       </View>
 
       <View style={styles.deleteActionsRow}>
@@ -695,6 +708,7 @@ export const ArticlesListScreen: React.FC = () => {
 
   // Search
   const [searchQuery, setSearchQuery] = useState('');
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
 
   // Filters
   const [filters, setFilters] = useState<ArticleFilters>({
@@ -1375,6 +1389,7 @@ export const ArticlesListScreen: React.FC = () => {
 
   const handleSearchChange = useCallback(
     (text: string) => {
+      setLocalSearchQuery(text);
       debouncedSearch(text);
     },
     [debouncedSearch],
@@ -1382,6 +1397,7 @@ export const ArticlesListScreen: React.FC = () => {
 
   const handleClearSearch = useCallback(() => {
     debouncedSearch.cancel();
+    setLocalSearchQuery('');
     setSearchQuery('');
     setFilters(prev => ({ ...prev, searchQuery: '' }));
   }, [debouncedSearch]);
@@ -1484,6 +1500,7 @@ export const ArticlesListScreen: React.FC = () => {
   }, [filters.condition, filters.famille, filters.marque, filters.stockFaible, handleClearSearch, searchQuery]);
 
   const resetFilters = useCallback(() => {
+    setLocalSearchQuery('');
     setSearchQuery('');
     setPcStatusFilter(null);
     setTabletStatusFilter('all');
@@ -2498,12 +2515,16 @@ export const ArticlesListScreen: React.FC = () => {
 
   // ===== RENDER =====
   const renderArticle = useCallback(
-    ({ item, index }: { item: Article; index: number }) => (
+    ({ item, index }: { item: Article; index: number }) => {
+      const isSearching = searchQuery.trim().length > 0;
+      return (
       <Animated.View
         entering={
-          isPCTab && pcDensity === 'compact'
-            ? FadeInUp.delay(Math.min(index, 12) * 20).duration(220)
-            : FadeInUp.delay(Math.min(index, 10) * 40).duration(320)
+          isSearching 
+            ? undefined 
+            : (isPCTab && pcDensity === 'compact'
+              ? FadeInUp.delay(Math.min(index, 12) * 20).duration(220)
+              : FadeInUp.delay(Math.min(index, 10) * 40).duration(320))
         }
         layout={
           isPCTab
@@ -2541,7 +2562,7 @@ export const ArticlesListScreen: React.FC = () => {
             />
           )
         ) : (
-          <ArticleCard
+          <CAArticleCard
             article={item}
             index={index}
             query={searchQuery}
@@ -2549,7 +2570,8 @@ export const ArticlesListScreen: React.FC = () => {
           />
         )}
       </Animated.View>
-    ),
+      );
+    },
     [handleArticlePress, handleSentArticlePress, pcStatusFilter, isTabletTab, handleDecommissionTablet, isPCTab, handleMarkPCSent, handleMarkPCAvailable, handleMarkPCHot, handleMarkPCProcessing, handleDeletePC, isTablet, pcDensity, searchQuery],
   );
 
@@ -2636,40 +2658,47 @@ export const ArticlesListScreen: React.FC = () => {
     );
   }, [isLoading, emptyType, searchQuery, emptyAction, isPCTab]);
 
-const renderListHeader = useCallback(() => {
+  const renderListHeader = useCallback(() => {
     if (!isPCTab) {
       return (
         <>
           <Animated.View style={headerParallaxStyle}>
-            <ArticlesHeader
-              totalArticles={normalizedTotalArticles}
-              stockOk={stockOK}
-              alertes={normalizedAlertes}
-              defectueux={defectiveArticlesCount}
-              onTotalPress={resetFilters}
-              onStockOKPress={() => {
-                if (filters.stockFaible) {
-                  setFilters((prev) => ({ ...prev, stockFaible: false }));
-                }
+            <CAArticlesHeader
+              totalCount={normalizedTotalArticles}
+              lastSyncedAt={undefined}
+            />
+            <CAArticlesStatGrid
+              stats={{
+                total: normalizedTotalArticles,
+                stockOk: stockOK,
+                alertes: normalizedAlertes,
+                defectueux: defectiveArticlesCount,
               }}
-              onAlertesPress={() => {
-                setFilters((prev) => ({ ...prev, stockFaible: !prev.stockFaible }));
+              activeFilter={filters.condition === 'defectueux' ? 'defectueux' : (filters.stockFaible ? 'alertes' : null)}
+              onFilterChange={(key) => {
+                if (key === null) resetFilters();
+                else if (key === 'alertes') setFilters((prev) => ({ ...prev, stockFaible: true, condition: null }));
+                else if (key === 'defectueux') setFilters((prev) => ({ ...prev, condition: 'defectueux', stockFaible: false }));
+                else if (key === 'stockOk') setFilters((prev) => ({ ...prev, stockFaible: false, condition: null }));
               }}
-              onDefectueuxPress={() => {
-                setFilters((prev) => ({
-                  ...prev,
-                  condition: prev.condition === 'defectueux' ? null : 'defectueux',
-                }));
+            />
+            <CAAvailabilityBar
+              stockOkCount={stockOK}
+              alertesCount={normalizedAlertes}
+              totalCount={normalizedTotalArticles}
+              activeFilter={filters.stockFaible ? 'alertes' : null}
+              onFilterChange={(key) => {
+                if (key === 'alertes') setFilters((prev) => ({ ...prev, stockFaible: true }));
+                else setFilters((prev) => ({ ...prev, stockFaible: false }));
               }}
             />
           </Animated.View>
 
           <View style={styles.articleSearchBlock}>
-            <ArticleSearchBar
-              value={searchQuery}
-              onChangeText={handleSearchChange}
+            <CAArticleSearchBar
+              value={localSearchQuery}
+              onChange={handleSearchChange}
               onClear={handleClearSearch}
-              resultsCount={searchQuery.trim().length > 0 ? displayedArticles.length : undefined}
             />
 
             <ArticleFiltersBar
@@ -2677,8 +2706,14 @@ const renderListHeader = useCallback(() => {
               hasFilters={hasActiveFilters}
               onSortPress={() => setSortModalVisible(true)}
               onFiltersPress={() => setFiltersSheetVisible(true)}
-              activeChips={activeArticleChips}
-              onClearAll={resetFilters}
+              defectiveCount={defectiveArticlesCount}
+              showDefective={filters.condition === 'defectueux'}
+              onToggleDefective={() => {
+                setFilters((prev) => ({
+                  ...prev,
+                  condition: prev.condition === 'defectueux' ? null : 'defectueux',
+                }));
+              }}
             />
 
             <View style={styles.quickFilterRow}>
@@ -2698,7 +2733,7 @@ const renderListHeader = useCallback(() => {
                 <Icon
                   name="tools"
                   size={13}
-                  color={filters.condition === 'defectueux' ? '#FCA5A5' : OBSIDIAN_COLORS.text_muted}
+                  color={filters.condition === 'defectueux' ? '#DC2626' : OBSIDIAN_COLORS.text_muted}
                 />
                 <Text
                   style={[
@@ -2806,7 +2841,7 @@ const renderListHeader = useCallback(() => {
           maxWidth={contentMaxWidth ? contentMaxWidth : undefined}
         >
           <PCSearchBar
-            value={searchQuery}
+            value={localSearchQuery}
             onChangeText={handleSearchChange}
             onClear={handleClearSearch}
             resultsCount={searchQuery.trim().length > 0 ? displayedArticles.length : undefined}
@@ -2913,10 +2948,10 @@ const renderListHeader = useCallback(() => {
   ]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: OBSIDIAN_COLORS.bg_primary }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: CA_THEME.lightGray }]}>
       <StatusBar
-        barStyle="light-content"
-        backgroundColor={OBSIDIAN_COLORS.bg_primary}
+        barStyle="dark-content"
+        backgroundColor="transparent"
       />
 
       {/* Articles List */}
@@ -2960,7 +2995,6 @@ const renderListHeader = useCallback(() => {
           maxToRenderPerBatch={5}
           windowSize={10}
           removeClippedSubviews={Platform.OS === 'android'}
-          stickyHeaderIndices={[0]}
           contentContainerStyle={[
             styles.listContent,
             isTabletTab && styles.listContentTablet,
@@ -3111,7 +3145,7 @@ const renderListHeader = useCallback(() => {
                           end={{ x: 1, y: 1 }}
                           style={styles.tabletScreen}
                         >
-                          <Icon name={isPCTab ? 'laptop' : 'tablet-dashboard'} size={34} color={isPCTab ? '#86EFAC' : '#0284C7'} />
+                          <Icon name={isPCTab ? 'laptop' : 'tablet-dashboard'} size={34} color={isPCTab ? '#5A5A55' : '#0284C7'} />
                         </LinearGradient>
                         <View style={[styles.tabletCameraDot, !isPCTab && styles.tabletCameraDotLight]} />
                       </View>
@@ -3380,7 +3414,7 @@ const renderListHeader = useCallback(() => {
                       style={[styles.quickBtn, styles.quickBtnPrimary, isQuickSubmitBlocked && styles.quickBtnPrimaryDisabled]}
                     >
                       <LinearGradient
-                        colors={isQuickSubmitBlocked ? ['#94A3B8', '#64748B'] : ['#007A39', '#059669']}
+                        colors={isQuickSubmitBlocked ? ['#5A5A55', '#64748B'] : ['#007A39', '#059669']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={styles.quickBtnPrimaryGradient}
@@ -3598,6 +3632,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
+    overflow: 'hidden',
   },
   searchWrapper: {
     paddingTop: premiumSpacing.md,
@@ -3639,7 +3674,7 @@ const styles = StyleSheet.create({
     color: OBSIDIAN_COLORS.text_muted,
   },
   quickFilterChipTextActive: {
-    color: '#FCA5A5',
+    color: '#DC2626',
   },
   listContentTablet: {
     paddingHorizontal: premiumSpacing.sm,
@@ -3731,7 +3766,7 @@ const styles = StyleSheet.create({
     height: 82,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.18)',
+    borderColor: 'rgba(0,125,112,0.18)',
     opacity: 0.25,
   },
   tabletHero: {
@@ -3774,7 +3809,7 @@ const styles = StyleSheet.create({
     width: 92,
     height: 92,
     borderRadius: 46,
-    backgroundColor: 'rgba(148,163,184,0.14)',
+    backgroundColor: 'rgba(0,125,112,0.14)',
   },
   tabletHeroGlowSecondaryLight: {
     backgroundColor: 'rgba(16,185,129,0.16)',
@@ -3790,7 +3825,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#020617',
     padding: 5,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(0,125,112,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -3818,7 +3853,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#64748B',
   },
   tabletCameraDotLight: {
-    backgroundColor: '#94A3B8',
+    backgroundColor: '#5A5A55',
   },
   tabletHeroTextWrap: {
     marginTop: 12,

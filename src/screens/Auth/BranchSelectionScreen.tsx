@@ -1,19 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   Vibration,
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useAppDispatch } from '@/store';
-import { selectSite } from '@/store/slices/siteSlice';
 import {
   OnboardingFooter,
   OnboardingLayout,
@@ -45,51 +42,10 @@ const WORKSPACES = [
   },
 ] as const;
 
-type ResumeState = {
-  siteId: string;
-  siteName: string;
-  profileName: string;
-} | null;
-
 export const BranchSelectionScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const dispatch = useAppDispatch();
-
   const rememberMe = route.params?.rememberMe ?? true;
-  const [resumeState, setResumeState] = useState<ResumeState>(null);
-
-  useEffect(() => {
-    const loadResume = async () => {
-      try {
-        const [siteId, siteName, profileName] = await Promise.all([
-          AsyncStorage.getItem('lastSite'),
-          AsyncStorage.getItem('lastSiteName'),
-          AsyncStorage.getItem('lastProfileName'),
-        ]);
-
-        if (siteId && siteName && profileName) {
-          setResumeState({ siteId, siteName, profileName });
-        }
-      } catch {
-        setResumeState(null);
-      }
-    };
-
-    loadResume().catch(() => {});
-  }, []);
-
-  const handleResume = useCallback(async () => {
-    if (!resumeState) return;
-    Vibration.vibrate(10);
-
-    try {
-      await dispatch(selectSite(resumeState.siteId)).unwrap();
-      navigation.navigate('Auth', { rememberMe, siteId: resumeState.siteId });
-    } catch {
-      navigation.navigate('SiteSelection', { rememberMe, branch: 'strasbourg' });
-    }
-  }, [dispatch, navigation, rememberMe, resumeState]);
 
   const handleWorkspacePress = useCallback(
     async (workspace: string) => {
@@ -105,20 +61,6 @@ export const BranchSelectionScreen: React.FC = () => {
       <StatusBar barStyle="light-content" backgroundColor={ONBOARDING_COLORS.bg_primary} />
 
       <OnboardingLogo />
-
-      {resumeState ? (
-        <Animated.View entering={FadeInDown.delay(140).duration(240)}>
-          <TouchableOpacity activeOpacity={0.88} style={styles.resumeCard} onPress={handleResume}>
-            <View style={styles.resumeLeft}>
-              <Icon name="history" size={15} color={ONBOARDING_COLORS.green_light} />
-              <Text style={styles.resumeText}>
-                Reprendre {resumeState.profileName} - {resumeState.siteName}
-              </Text>
-            </View>
-            <Icon name="chevron-right" size={18} color={ONBOARDING_COLORS.green_light} />
-          </TouchableOpacity>
-        </Animated.View>
-      ) : null}
 
       <Animated.View entering={FadeInDown.delay(210).duration(220)} style={styles.guidance}>
         <Icon name="domain" size={16} color={ONBOARDING_COLORS.text_secondary} />

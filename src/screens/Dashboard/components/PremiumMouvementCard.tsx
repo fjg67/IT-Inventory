@@ -88,7 +88,7 @@ const PremiumMouvementCard: React.FC<PremiumMouvementCardProps> = ({
   const typeConfig = useMemo(() => {
     return TYPE_CONFIGS[mouvement.type] || {
       icon: 'circle',
-      gradient: ['#94A3B8', '#64748B'] as [string, string],
+      gradient: ['#5A5A55', '#64748B'] as [string, string],
       label: mouvement.type,
       sign: '',
     };

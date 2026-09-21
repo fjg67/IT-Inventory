@@ -28,10 +28,10 @@ export const loginTheme = {
     error: '#EF4444',
     warning: '#F59E0B',
     input: {
-      background: 'rgba(255, 255, 255, 0.08)',
-      border: 'rgba(255, 255, 255, 0.15)',
+      background: 'rgba(0,125,112,0.08)',
+      border: 'rgba(0,125,112,0.12)',
       borderFocus: '#2563EB',
-      placeholder: 'rgba(255, 255, 255, 0.5)',
+      placeholder: 'rgba(0,125,112,0.1)',
     },
   },
 } as const;

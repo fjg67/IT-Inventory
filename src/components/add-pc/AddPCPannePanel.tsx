@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   subtitle: {
-    color: '#FCA5A5',
+    color: '#DC2626',
     fontSize: 11,
   },
   section: {

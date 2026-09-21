@@ -36,7 +36,7 @@ export const ScanActionGrid: React.FC<ScanActionGridProps> = ({ actions }) => {
               end={{ x: 1, y: 1 }}
               style={[styles.card, action.disabled && styles.cardDisabled]}
             >
-              <View style={[styles.iconWrap, { backgroundColor: 'rgba(255,255,255,0.14)' }]}>
+              <View style={[styles.iconWrap, { backgroundColor: 'rgba(0,125,112,0.12)' }]}>
                 <View style={styles.iconInner}>
                   <Icon name={action.icon || tone.icon} size={19} color={tone.color} />
                 </View>
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
+    borderColor: 'rgba(0,125,112,0.12)',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 16,

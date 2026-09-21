@@ -30,7 +30,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
   return (
     <View style={styles.screen}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A0F0D" />
+      <StatusBar barStyle="light-content" backgroundColor="#F5F5F0" />
 
       {stripesVisible ? <SplashStripes onComplete={() => setStripesVisible(false)} /> : null}
 
@@ -66,7 +66,7 @@ export default SplashScreen;
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#0A0F0D',
+    backgroundColor: '#F5F5F0',
     alignItems: 'center',
     justifyContent: 'center',
   },

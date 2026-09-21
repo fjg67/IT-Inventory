@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 999,
-    backgroundColor: 'rgba(10,15,13,0.88)',
+    backgroundColor: 'rgba(255,255,255,0.88)',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   bigTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#F0FDF4',
+    color: '#1A1A1A',
     letterSpacing: -0.8,
     textAlign: 'center',
   },

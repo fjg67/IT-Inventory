@@ -34,11 +34,11 @@ export const AddPCCategorySelector: React.FC<AddPCCategorySelectorProps> = ({
             style={[
               styles.chip,
               active
-                ? { borderColor: activeColor, backgroundColor: 'rgba(255,255,255,0.02)' }
+                ? { borderColor: activeColor, backgroundColor: 'rgba(0,125,112,0.08)' }
                 : null,
             ]}
           >
-            <Icon name={option.icon} size={18} color={active ? activeColor : '#8CA09A'} />
+            <Icon name={option.icon} size={18} color={active ? activeColor : '#5A5A55'} />
             <Text style={[styles.label, active ? { color: activeColor } : null]}>{option.label}</Text>
           </Pressable>
         );
@@ -57,14 +57,14 @@ const styles = StyleSheet.create({
     minHeight: 58,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: 'rgba(148,163,184,0.2)',
-    backgroundColor: '#111B17',
+    borderColor: 'rgba(0,125,112,0.2)',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   },
   label: {
-    color: '#CAD7D3',
+    color: '#1A1A1A',
     fontSize: 12,
     fontWeight: '700',
   },

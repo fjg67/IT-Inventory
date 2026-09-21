@@ -26,7 +26,7 @@ export const AddPCModelSelector: React.FC<AddPCModelSelectorProps> = ({
             onPress={() => onSelect(model)}
             style={[
               styles.item,
-              active ? { borderColor: activeColor, backgroundColor: 'rgba(255,255,255,0.02)' } : null,
+              active ? { borderColor: activeColor, backgroundColor: 'rgba(0,125,112,0.08)' } : null,
             ]}
           >
             <View style={styles.textWrap}>
@@ -50,8 +50,8 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.2)',
-    backgroundColor: '#101915',
+    borderColor: 'rgba(0,125,112,0.2)',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 1.5,
-    borderColor: 'rgba(148,163,184,0.4)',
+    borderColor: 'rgba(0,125,112,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
   },

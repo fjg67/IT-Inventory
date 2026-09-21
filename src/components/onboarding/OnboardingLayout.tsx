@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { GridBackground } from './GridBackground';
 import { StepDots } from './StepDots';
 import { ONBOARDING_COLORS } from './tokens';
@@ -16,7 +17,7 @@ export const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
   totalSteps = 3,
 }) => {
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <GridBackground />
 
       <View style={[styles.glowCircle, styles.glowTop]} pointerEvents="none" />
@@ -26,7 +27,7 @@ export const OnboardingLayout: React.FC<OnboardingLayoutProps> = ({
         <StepDots step={step} totalSteps={totalSteps} />
         {children}
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

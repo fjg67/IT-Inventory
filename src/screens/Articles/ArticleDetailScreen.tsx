@@ -1,4 +1,4 @@
-﻿// ============================================
+// ============================================
 // ARTICLE DETAIL SCREEN - Premium Design
 // IT-Inventory Application
 // ============================================
@@ -395,6 +395,13 @@ export const ArticleDetailScreen: React.FC = () => {
     if (isPCArticle) {
       return [
         {
+          icon: 'map-search-outline',
+          label: 'Localiser',
+          gradient: ['#00A391', '#007D70'] as [string, string],
+          onPress: () => navigation.navigate('StockMap', { highlightBarcode: article?.emplacement || article?.reference }),
+          disabled: false,
+        },
+        {
           icon: 'check-circle-outline',
           label: 'Disponible',
           gradient: ['#2563EB', '#1D4ED8'] as [string, string],
@@ -440,6 +447,7 @@ export const ArticleDetailScreen: React.FC = () => {
     }
 
     return [
+      { icon: 'map-search-outline', label: 'Localiser', gradient: ['#00A391', '#007D70'] as [string, string], onPress: () => navigation.navigate('StockMap', { highlightBarcode: article?.emplacement || article?.reference }), disabled: false },
       { icon: 'arrow-up-bold', label: 'Entrée', gradient: ['#10B981', '#059669'] as [string, string], onPress: () => handleMouvement('entree'), disabled: false },
       { icon: 'arrow-down-bold', label: 'Sortie', gradient: ['#EF4444', '#DC2626'] as [string, string], onPress: () => handleMouvement('sortie'), disabled: stockActuel === 0 },
       { icon: 'tune-vertical', label: 'Ajustement', gradient: ['#F59E0B', '#D97706'] as [string, string], onPress: () => handleMouvement('ajustement'), disabled: false },
@@ -639,10 +647,10 @@ export const ArticleDetailScreen: React.FC = () => {
                 style={[styles.saveConditionBtn, isSavingCondition && styles.saveConditionBtnDisabled]}
               >
                 {isSavingCondition ? (
-                  <ActivityIndicator size="small" color="#F0FDF4" />
+                  <ActivityIndicator size="small" color="#1A1A1A" />
                 ) : (
                   <>
-                    <Icon name="content-save-outline" size={16} color="#F0FDF4" />
+                    <Icon name="content-save-outline" size={16} color="#1A1A1A" />
                     <Text style={styles.saveConditionBtnText}>Sauvegarder l'etat</Text>
                   </>
                 )}
@@ -779,7 +787,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   saveConditionBtnText: {
-    color: '#F0FDF4',
+    color: '#1A1A1A',
     fontSize: 13,
     fontWeight: '700',
   },

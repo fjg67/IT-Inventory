@@ -1,4 +1,4 @@
-﻿// ============================================
+// ============================================
 // MOUVEMENTS LIST SCREEN - Modern Redesign
 // IT-Inventory Application
 // ============================================
@@ -47,17 +47,17 @@ import {
   premiumSpacing,
 } from '@/constants/premiumTheme';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
-import { MovementCard } from '@/components/movements/MovementCard';
-import { DateSeparator } from '@/components/movements/DateSeparator';
-import { MovementsHeader } from '@/components/movements/MovementsHeader';
+import { CAMovementCard } from '@/components/movements/CAMovementCard';
+import { CADateSeparator } from '@/components/movements/CADateSeparator';
+import { CAMouvementsHeader } from '@/components/movements/CAMouvementsHeader';
 import { MovementSearchBar } from '@/components/movements/MovementSearchBar';
-import { MovementStatCards } from '@/components/movements/MovementStatCards';
-import { MovementFilters } from '@/components/movements/MovementFilters';
-import { PeriodToggle } from '@/components/movements/PeriodToggle';
-import { TrendPill } from '@/components/movements/TrendPill';
+import { CAMouvementsStatRow } from '@/components/movements/CAMouvementsStatRow';
+import { CAMouvementsFilters } from '@/components/movements/CAMouvementsFilters';
+import { CAPeriodToggle } from '@/components/movements/CAPeriodToggle';
 import { MovementFAB } from '@/components/movements/MovementFAB';
 import { MovementPeriod, MovementTypeKey, getMovementTypeKey } from '@/constants/movementTypes';
 import { MovementStatsChart } from '@/components/movements/MovementStatsChart';
+import { CA_THEME } from '@/constants/caTheme';
 
 // ==================== HELPERS ====================
 const TYPE_CONFIG: Record<string, { icon: string; color: string; gradient: [string, string]; label: string; prefix: string }> = {
@@ -467,34 +467,32 @@ export const MouvementsListScreen: React.FC = () => {
   }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: OBSIDIAN_COLORS.bg_primary }]}>
-      <StatusBar barStyle="light-content" backgroundColor={OBSIDIAN_COLORS.bg_primary} />
+    <View style={[styles.container, { backgroundColor: CA_THEME.lightGray }]}>
+      <StatusBar barStyle="light-content" backgroundColor={CA_THEME.green} />
 
       <SectionList
         sections={movementSections}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item, index }) => (
-          <MovementCard
-            item={item}
-            index={index}
-            onPress={(movement) => {
+          <CAMovementCard
+            movement={item}
+            onPress={() => {
               Vibration.vibrate(10);
-              setSelectedMouvement(movement);
+              setSelectedMouvement(item);
             }}
           />
         )}
-        renderSectionHeader={({ section }) => <DateSeparator title={section.title} isToday={section.isToday} />}
+        renderSectionHeader={({ section }) => <CADateSeparator label={section.title} />}
         ListHeaderComponent={
-          <View style={{ gap: 14, paddingTop: premiumSpacing.xl + 18, paddingBottom: 10 }}>
-            <MovementsHeader
-              totalLabel={`${stats.total} mouvement${stats.total !== 1 ? 's' : ''} enregistrés`}
+          <View style={{ gap: 14, paddingTop: 0, paddingBottom: 10 }}>
+            <CAMouvementsHeader
+              totalCount={stats.total}
               todayCount={todayMouvementsCount}
-              onOpenStats={toggleChart}
-              onToggleSearch={() => {
+              onOpenChart={toggleChart}
+              onOpenSearch={() => {
                 Vibration.vibrate(10);
                 setShowSearch((prev) => !prev);
               }}
-              searchActive={showSearch}
             />
 
             {showChart ? (
@@ -517,28 +515,39 @@ export const MouvementsListScreen: React.FC = () => {
             />
 
             <View style={{ gap: 10 }}>
-              <MovementStatCards
-                counts={movementTypeCounts}
-                onTypePress={(type) => {
-                  setTypeFilter(type === 'tous' ? 'all' : type);
+              <CAMouvementsStatRow
+                stats={{
+                  entree: movementTypeCounts.entree || 0,
+                  sortie: movementTypeCounts.sortie || 0,
+                  ajustement: movementTypeCounts.ajustement || 0,
+                  transfert: movementTypeCounts.transfert || 0,
+                }}
+                activeType={typeFilter === 'all' ? null : typeFilter}
+                onTypeChange={(type) => {
+                  setTypeFilter(type === null ? 'all' : type as any);
                 }}
               />
 
-              <PeriodToggle
-                value={movementPeriodValue}
+              <CAPeriodToggle
+                selected={movementPeriodValue as any}
                 onChange={(value) => {
                   setPeriodFilter(value === 'today' ? 'today' : value === '30days' ? '30d' : '7d');
                 }}
+                vsYesterday={todayDelta}
               />
-
-              <TrendPill value={todayDelta} />
             </View>
 
-            <MovementFilters
-              counts={movementTypeCounts}
-              activeType={movementTypeValue}
-              onTypeChange={(type) => {
-                setTypeFilter(type === 'tous' ? 'all' : type);
+            <CAMouvementsFilters
+              counts={{
+                all: stats.total,
+                entree: movementTypeCounts.entree || 0,
+                sortie: movementTypeCounts.sortie || 0,
+                ajustement: movementTypeCounts.ajustement || 0,
+                transfert: movementTypeCounts.transfert || 0,
+              }}
+              activeFilter={movementTypeValue === 'tous' ? 'all' : movementTypeValue}
+              onFilterChange={(type) => {
+                setTypeFilter(type === 'all' ? 'all' : type as any);
               }}
             />
           </View>
@@ -765,7 +774,7 @@ export const MouvementsListScreen: React.FC = () => {
                     key={period.key}
                     style={[
                       styles.periodSegmentBtn,
-                      { backgroundColor: active ? '#007A39' : (isDark ? 'rgba(148,163,184,0.14)' : '#EEF2F7') },
+                      { backgroundColor: active ? '#007A39' : (isDark ? 'rgba(0,125,112,0.14)' : '#EEF2F7') },
                     ]}
                     activeOpacity={0.8}
                     onPress={() => {
@@ -873,7 +882,7 @@ export const MouvementsListScreen: React.FC = () => {
                       {
                         backgroundColor: isActive
                           ? (isDark ? `${f.color}26` : `${f.color}16`)
-                          : (isDark ? 'rgba(148,163,184,0.16)' : 'rgba(148,163,184,0.10)'),
+                          : (isDark ? 'rgba(0,125,112,0.16)' : 'rgba(0,125,112,0.10)'),
                       },
                     ]}>
                       <Icon name={f.icon} size={13} color={isActive ? f.color : colors.textMuted} />
@@ -886,7 +895,7 @@ export const MouvementsListScreen: React.FC = () => {
                       {
                         backgroundColor: isActive
                           ? (isDark ? `${f.color}2A` : `${f.color}18`)
-                          : (isDark ? 'rgba(148,163,184,0.16)' : 'rgba(148,163,184,0.10)'),
+                          : (isDark ? 'rgba(0,125,112,0.16)' : 'rgba(0,125,112,0.10)'),
                       },
                     ]}>
                       <Text style={[styles.filterCountText, { color: isActive ? f.color : colors.textMuted }]}>{f.count}</Text>
@@ -927,7 +936,7 @@ export const MouvementsListScreen: React.FC = () => {
                   <Text style={[styles.loaderHeroSubtitle, { color: colors.textMuted }]}>Mise à jour des données en cours...</Text>
                 </View>
               </View>
-              <View style={[styles.loaderProgressTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : '#D7E3DA' }]}>
+              <View style={[styles.loaderProgressTrack, { backgroundColor: isDark ? 'rgba(0,125,112,0.12)' : '#D7E3DA' }]}>
                 <Animated.View style={[styles.loaderProgressSweep, loaderSweepStyle]}>
                   <LinearGradient
                     colors={['rgba(255,255,255,0)', 'rgba(16,185,129,0.85)', 'rgba(255,255,255,0)']}
@@ -1018,7 +1027,7 @@ export const MouvementsListScreen: React.FC = () => {
         ) : (
           /* Timeline list */
           <View style={styles.timelineContainer}>
-            <View pointerEvents="none" style={[styles.timelineRail, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#E2E8F0' }]} />
+            <View pointerEvents="none" style={[styles.timelineRail, { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : '#E2E8F0' }]} />
             {groupedMouvements.map((group) => (
               <Animated.View key={group.date.toISOString()} layout={LinearTransition.springify().damping(17)}>
                 {/* Date header */}
@@ -1053,7 +1062,7 @@ export const MouvementsListScreen: React.FC = () => {
                           },
                           pressed && styles.mouvCardPressed,
                         ])}
-                        android_ripple={{ color: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.06)' }}
+                        android_ripple={{ color: isDark ? 'rgba(0,125,112,0.08)' : 'rgba(15,23,42,0.06)' }}
                         onPress={() => {
                           Vibration.vibrate(10);
                           setSelectedMouvement(mouvement);
@@ -1089,8 +1098,8 @@ export const MouvementsListScreen: React.FC = () => {
                                 {mouvement.article?.nom || 'Article inconnu'}
                               </Text>
                               <View style={[styles.mouvRefBadge, {
-                                backgroundColor: isDark ? 'rgba(148,163,184,0.14)' : '#EEF2F7',
-                                borderColor: isDark ? 'rgba(148,163,184,0.22)' : '#D7E0EA',
+                                backgroundColor: isDark ? 'rgba(0,125,112,0.14)' : '#EEF2F7',
+                                borderColor: isDark ? 'rgba(0,125,112,0.22)' : '#D7E0EA',
                               }]}>
                                 <Icon name="barcode" size={12} color={colors.textMuted} />
                                 <Text style={[styles.mouvRef, { color: colors.textMuted }]} numberOfLines={1}>
@@ -1133,7 +1142,7 @@ export const MouvementsListScreen: React.FC = () => {
                                 {formatTime(new Date(mouvement.dateMouvement))}
                               </Text>
                               {mouvement.technicien && (
-                                <View style={[styles.mouvTechBadge, { backgroundColor: isDark ? 'rgba(148,163,184,0.14)' : '#EEF2F7' }]}>
+                                <View style={[styles.mouvTechBadge, { backgroundColor: isDark ? 'rgba(0,125,112,0.14)' : '#EEF2F7' }]}>
                                   <Text style={[styles.mouvTechBadgeText, { color: colors.textMuted }]}>
                                     {toAbbreviation(`${mouvement.technicien.prenom || ''} ${mouvement.technicien.nom || ''}`, 3, 'N/A')}
                                   </Text>
@@ -1143,7 +1152,7 @@ export const MouvementsListScreen: React.FC = () => {
                           </View>
                         </View>
 
-                        <View style={[styles.mouvChevronWrap, { backgroundColor: isDark ? 'rgba(148,163,184,0.12)' : '#F1F5F9' }]}>
+                        <View style={[styles.mouvChevronWrap, { backgroundColor: isDark ? 'rgba(0,125,112,0.12)' : '#F1F5F9' }]}>
                           <Icon name="chevron-right" size={16} color={colors.borderMedium} />
                         </View>
                       </Pressable>
@@ -1284,7 +1293,7 @@ export const MouvementsListScreen: React.FC = () => {
                       </LinearGradient>
 
                       {/* ===== STOCK EVOLUTION CARD ===== */}
-                      <View style={[styles.detailStockCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)', borderColor: colors.borderSubtle }]}>
+                      <View style={[styles.detailStockCard, { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : 'rgba(0,0,0,0.02)', borderColor: colors.borderSubtle }]}>
                         <View style={styles.detailStockCol}>
                           <Text style={[styles.detailStockNum, { color: colors.textMuted }]}>{mouvement.stockAvant}</Text>
                           <Text style={[styles.detailStockCaption, { color: colors.textMuted }]}>Avant</Text>
@@ -1302,7 +1311,7 @@ export const MouvementsListScreen: React.FC = () => {
                       </View>
 
                       {/* ===== INFO ROWS ===== */}
-                      <View style={[styles.detailInfoCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#FFF', borderColor: colors.borderSubtle }]}>
+                      <View style={[styles.detailInfoCard, { backgroundColor: isDark ? 'rgba(0,125,112,0.08)' : '#FFF', borderColor: colors.borderSubtle }]}>
                         <View style={styles.detailInfoRow}>
                           <View style={[styles.detailInfoIconCircle, { backgroundColor: '#007A39' + '14' }]}>
                             <Icon name="account-outline" size={16} color="#007A39" />
@@ -2164,7 +2173,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(0,125,112,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2197,7 +2206,7 @@ const styles = StyleSheet.create({
   },
   detailHeroRefBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(0,125,112,0.12)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,

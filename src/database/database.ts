@@ -235,10 +235,10 @@ export async function initializeTables(): Promise<void> {
 
     // Migration : remplacer anciens sites par les vrais sites
     await db.executeSql(
-      "UPDATE sites SET code='STOCK5', nom='Stock 5ième', adresse='5ème étage' WHERE id=1 AND code='MAIN'",
+      "UPDATE sites SET nom='Stock 1er', adresse='1er étage' WHERE code='STOCK5' OR (id=1 AND code='MAIN')",
     );
     await db.executeSql(
-      "INSERT OR IGNORE INTO sites (id, code, nom, adresse, actif, sync_status) VALUES (2, 'STOCK8', 'Stock 8ième', '8ème étage', 1, 'synced')",
+      "INSERT OR IGNORE INTO sites (id, code, nom, adresse, actif, sync_status) VALUES (2, 'STOCK8', 'Comptoir', 'Comptoir, Bâtiment siège', 1, 'synced')",
     );
     await db.executeSql(
       "INSERT OR IGNORE INTO sites (id, code, nom, adresse, actif, sync_status) VALUES (3, 'STOCKEPINAL', 'Stock Epinal', 'Site Epinal', 1, 'synced')",

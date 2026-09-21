@@ -174,7 +174,7 @@ export const SettingsScreen: React.FC = () => {
         .eq('userId', userId);
 
       if (siteActif?.id) {
-        movementCountQuery = movementCountQuery.eq('fromSiteId', String(siteActif.id));
+        movementCountQuery = movementCountQuery.or(`fromSiteId.eq.${siteActif.id},toSiteId.eq.${siteActif.id}`);
       }
 
       const [sessionCountRes, lastLoginRes, movementCountRes] = await Promise.all([
@@ -475,6 +475,11 @@ export const SettingsScreen: React.FC = () => {
 
   const lastRecountDateLabel = lastRecount ? formatDate(lastRecount.recountDate) : 'Aucun inventaire';
   const complianceVisual = getComplianceVisual(daysSinceRecount);
+
+  let auditLevel: AuditLevel = 'ok';
+  if (daysSinceRecount === null || daysSinceRecount > 30) auditLevel = 'critique';
+  else if (daysSinceRecount > 15) auditLevel = 'warning';
+
 
   return (
     <View style={styles.container}>

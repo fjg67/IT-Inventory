@@ -28,8 +28,8 @@ export const PannePrioriteSelector: React.FC<PannePrioriteSelectorProps> = ({ se
                 ? isCritical
                   ? '#EF4444'
                   : config.subtle
-                : '#16231A',
-              borderColor: isActive ? config.border : 'rgba(255, 255, 255, 0.04)',
+                : '#FFFFFF',
+              borderColor: isActive ? config.border : 'rgba(0,125,112,0.08)',
             },
           ]}
           activeOpacity={0.85}

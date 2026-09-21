@@ -6,15 +6,15 @@
 import { StyleSheet } from 'react-native';
 
 export const colors = {
-  // Couleurs principales — Crédit Agricole Alsace Vosges
-  primary: '#007A39',
-  primaryLight: '#4EB35A',
-  primaryDark: '#005C2B',
+  // Couleurs principales — Crédit Agricole (Teal CA)
+  primary: '#007D70',
+  primaryLight: '#00A391',
+  primaryDark: '#006359',
   
   // Couleurs secondaires
-  secondary: '#00A651',
-  secondaryLight: '#60AD5E',
-  secondaryDark: '#005C2B',
+  secondary: '#1B8A3E',
+  secondaryLight: '#22C55E',
+  secondaryDark: '#156B2F',
   
   // États
   success: '#10B981',
@@ -33,19 +33,19 @@ export const colors = {
   infoLight: '#60A5FA',
   infoDark: '#2563EB',
   
-  // Surfaces
-  background: '#F8FAFC',
-  backgroundDark: '#0F172A',
+  // Surfaces (On force le mode clair CA partout)
+  background: '#F5F5F0',
+  backgroundDark: '#F5F5F0',
   surface: '#FFFFFF',
-  surfaceDark: '#1E293B',
-  border: '#E2E8F0',
-  borderDark: '#334155',
+  surfaceDark: '#FFFFFF',
+  border: '#E0E0D8',
+  borderDark: '#E0E0D8',
   
   // Texte
   text: {
-    primary: '#0F172A',
-    secondary: '#475569',
-    disabled: '#94A3B8',
+    primary: '#1A1A1A',
+    secondary: '#5A5A55',
+    disabled: '#888880',
     inverse: '#FFFFFF',
   },
   

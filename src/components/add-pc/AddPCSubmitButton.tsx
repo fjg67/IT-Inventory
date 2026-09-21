@@ -43,7 +43,7 @@ const AddPCSubmitButton: React.FC<AddPCSubmitButtonProps> = ({
     <View style={[styles.footer, { paddingBottom: Math.max(12, insets.bottom) }]}>
       <LinearGradient
         pointerEvents="none"
-        colors={['rgba(10, 15, 13, 0)', OBSIDIAN_COLORS.bg_primary]}
+        colors={['rgba(255,255,255,0)', OBSIDIAN_COLORS.bg_primary]}
         style={styles.fade}
       />
 

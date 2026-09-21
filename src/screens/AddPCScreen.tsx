@@ -275,7 +275,7 @@ export const AddPCScreen: React.FC = () => {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Icon name="arrow-left" size={19} color="#EAF5EF" />
+            <Icon name="arrow-left" size={19} color="#1A1A1A" />
           </TouchableOpacity>
           <Text style={styles.topTitle}>Ajout PC</Text>
           <View style={styles.topRightDot} />
@@ -402,7 +402,7 @@ export const AddPCScreen: React.FC = () => {
               />
 
               <View style={styles.noteBox}>
-                <Icon name="information-outline" size={12} color="#8FA39C" />
+                <Icon name="information-outline" size={12} color="#5A5A55" />
                 <Text style={styles.noteText}>Le modèle et le statut seront visibles directement sur la carte PC.</Text>
               </View>
             </View>
@@ -506,13 +506,13 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 11,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.24)',
-    backgroundColor: '#101915',
+    borderColor: 'rgba(0,125,112,0.24)',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   topTitle: {
-    color: '#EAF5EF',
+    color: '#1A1A1A',
     fontSize: 17,
     fontWeight: '800',
   },
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(148,163,184,0.6)',
+    backgroundColor: 'rgba(0,125,112,0.6)',
   },
   content: {
     paddingBottom: 132,
@@ -530,12 +530,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: {
-    color: '#ECF8F1',
+    color: '#1A1A1A',
     fontSize: 22,
     fontWeight: '800',
   },
   subtitle: {
-    color: '#8EA09A',
+    color: '#5A5A55',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   sectionTitle: {
-    color: '#DDEBE5',
+    color: '#1A1A1A',
     fontSize: 13,
     fontWeight: '700',
   },
@@ -569,8 +569,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.16)',
-    backgroundColor: '#101915',
+    borderColor: 'rgba(0,125,112,0.16)',
+    backgroundColor: '#FFFFFF',
     minHeight: 40,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   noteText: {
-    color: '#8FA39C',
+    color: '#5A5A55',
     fontSize: 12,
     flex: 1,
   },

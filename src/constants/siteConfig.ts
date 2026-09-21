@@ -1,8 +1,8 @@
 export const SITE_COLORS = {
   epinal: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)', icon: 'pine-tree', label: 'Epinal' },
-  stock5: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)', icon: 'archive-outline', label: 'Stock 5eme' },
-  stock8: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', icon: 'archive-outline', label: 'Stock 8eme' },
-  tcs: { color: '#EF4444', bg: 'rgba(239,68,68,0.12)', icon: 'tools', label: 'TCS' },
+  stock5: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)', icon: 'archive-outline', label: 'Stock 1er' },
+  stock8: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', icon: 'archive-outline', label: 'Comptoir' },
+  tcs: { color: '#EF4444', bg: 'rgba(239,68,68,0.12)', icon: 'tools', label: 'Sous sol' },
   strasgen: { color: '#3B82F6', bg: 'rgba(59,130,246,0.12)', icon: 'city-variant-outline', label: 'Strasbourg General' },
   agences: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)', icon: 'map-marker-outline', label: 'Agences' },
 } as const;
@@ -27,9 +27,9 @@ export const resolveSiteVisual = (name: string): SiteVisual => {
   const normalized = name.toLowerCase().trim();
 
   if (normalized.includes('epinal')) return SITE_COLORS.epinal;
-  if (normalized.includes('stock 5')) return SITE_COLORS.stock5;
-  if (normalized.includes('stock 8')) return SITE_COLORS.stock8;
-  if (normalized.includes('tcs')) return SITE_COLORS.tcs;
+  if (normalized.includes('stock 1') || normalized.includes('1er')) return SITE_COLORS.stock5;
+  if (normalized.includes('comptoir')) return SITE_COLORS.stock8;
+  if (normalized.includes('sous sol') || normalized.includes('sous-sol')) return SITE_COLORS.tcs;
   if (normalized.includes('strasbourg') || normalized.includes('siege')) return SITE_COLORS.strasgen;
   if (normalized.includes('agence')) return SITE_COLORS.agences;
 
@@ -57,31 +57,31 @@ export const STOCK_PICKER_SITE_CONFIG: Record<'epinal' | 'stock_5' | 'stock_8' |
     abbr: 'EP',
   },
   stock_5: {
-    label: 'Stock 5eme',
-    subtitle: '5eme etage, batiment siege',
+    label: 'Stock 1er',
+    subtitle: '1er etage, batiment siege',
     color: '#22C55E',
     subtle: 'rgba(34,197,94,0.10)',
     border: 'rgba(34,197,94,0.25)',
     icon: 'office-building',
-    abbr: 'S5',
+    abbr: 'S1',
   },
   stock_8: {
-    label: 'Stock 8eme',
-    subtitle: '8eme etage, batiment siege',
+    label: 'Comptoir',
+    subtitle: 'Comptoir, batiment siege',
     color: '#F59E0B',
     subtle: 'rgba(245,158,11,0.10)',
     border: 'rgba(245,158,11,0.25)',
     icon: 'office-building',
-    abbr: 'S8',
+    abbr: 'CP',
   },
   tcs: {
-    label: 'TCS',
-    subtitle: 'Strasbourg',
+    label: 'Sous sol',
+    subtitle: 'Siege de Strasbourg',
     color: '#EF4444',
     subtle: 'rgba(239,68,68,0.10)',
     border: 'rgba(239,68,68,0.25)',
     icon: 'wrench',
-    abbr: 'TC',
+    abbr: 'SS',
   },
 };
 
@@ -119,13 +119,13 @@ export const resolveStockPickerSiteConfig = (siteName: string): StockPickerSiteC
   if (normalized.includes('epinal')) {
     return { ...STOCK_PICKER_SITE_CONFIG.epinal, label: siteName || STOCK_PICKER_SITE_CONFIG.epinal.label };
   }
-  if (normalized.includes('stock 5') || normalized.includes('5eme')) {
+  if (normalized.includes('stock 1') || normalized.includes('1er')) {
     return { ...STOCK_PICKER_SITE_CONFIG.stock_5, label: siteName || STOCK_PICKER_SITE_CONFIG.stock_5.label };
   }
-  if (normalized.includes('stock 8') || normalized.includes('8eme')) {
+  if (normalized.includes('comptoir')) {
     return { ...STOCK_PICKER_SITE_CONFIG.stock_8, label: siteName || STOCK_PICKER_SITE_CONFIG.stock_8.label };
   }
-  if (normalized.includes('tcs')) {
+  if (normalized.includes('sous sol') || normalized.includes('sous-sol')) {
     return { ...STOCK_PICKER_SITE_CONFIG.tcs, label: siteName || STOCK_PICKER_SITE_CONFIG.tcs.label };
   }
 

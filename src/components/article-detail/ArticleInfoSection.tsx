@@ -41,7 +41,7 @@ export const ArticleInfoSection: React.FC<ArticleInfoSectionProps> = ({
     ...(article.modele ? [{ key: 'mod', label: 'Modèle', value: article.modele, badge: INFO_BADGE.modele }] : []),
     ...(article.barcode ? [{ key: 'bc', label: 'Asset', value: article.barcode, badge: INFO_BADGE.barcode }] : []),
     ...(inventoryStatus && statusBadge ? [{ key: 'stat', label: 'Statut', value: inventoryStatus, badge: statusBadge }] : []),
-    ...(article.emplacement ? [{ key: 'emp', label: 'Emplacement', value: article.emplacement, badge: INFO_BADGE.emplacement }] : []),
+    { key: 'emp', label: 'Emplacement', value: article.emplacement || 'Non défini', badge: INFO_BADGE.emplacement },
     { key: 'site', label: 'Site', value: siteName ?? '—' },
     ...(article.description ? [{ key: 'desc', label: 'Description', value: article.description }] : []),
   ];

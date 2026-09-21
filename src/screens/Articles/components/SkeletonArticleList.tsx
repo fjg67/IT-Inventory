@@ -43,7 +43,7 @@ const SkeletonCard: React.FC<{ delay: number }> = ({ delay }) => {
   }));
 
   const shimmerColor = isDark
-    ? 'rgba(255,255,255,0.06)'
+    ? 'rgba(0,125,112,0.08)'
     : 'rgba(255,255,255,0.55)';
 
   return (

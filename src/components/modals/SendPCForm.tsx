@@ -8,6 +8,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { getNomAgenceParEDS } from '@/constants/agences';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
 import type { SendPCFormState } from '@/hooks/useSendPCForm';
 
@@ -23,8 +24,9 @@ const DangerInput: React.FC<{
   value: string;
   keyboardType?: 'default' | 'numeric';
   autoCapitalize?: 'none' | 'words';
+  bottomText?: React.ReactNode;
   onChangeText: (value: string) => void;
-}> = ({ label, icon, placeholder, value, keyboardType = 'default', autoCapitalize = 'none', onChangeText }) => {
+}> = ({ label, icon, placeholder, value, keyboardType = 'default', autoCapitalize = 'none', bottomText, onChangeText }) => {
   const focus = useSharedValue(0);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -59,6 +61,7 @@ const DangerInput: React.FC<{
           }}
         />
       </Animated.View>
+      {bottomText}
     </View>
   );
 };
@@ -73,7 +76,16 @@ export const SendPCForm: React.FC<SendPCFormProps> = ({ form, onChange }) => {
           placeholder="Ex: 872"
           value={form.edsNumber}
           keyboardType="numeric"
-          onChangeText={(value) => onChange('edsNumber', value)}
+          onChangeText={(value) => onChange('edsNumber', value.replace(/[^\d]/g, ''))}
+          bottomText={
+            form.edsNumber ? (
+              <Text style={{ marginTop: 4, marginLeft: 2, fontSize: 12, color: '#007D70', fontWeight: '600' }}>
+                {getNomAgenceParEDS(form.edsNumber) 
+                  ? `📍 ${getNomAgenceParEDS(form.edsNumber)}` 
+                  : `❓ Agence non répertoriée`}
+              </Text>
+            ) : null
+          }
         />
       </Animated.View>
 
@@ -140,7 +152,7 @@ const styles = StyleSheet.create({
   },
   noteText: {
     flex: 1,
-    color: '#FCA5A5',
+    color: '#DC2626',
     fontSize: 11,
     lineHeight: 15,
   },

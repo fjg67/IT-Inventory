@@ -47,8 +47,8 @@ const SkeletonLine: React.FC<{ delay: number; index: number }> = ({ delay, index
   }));
 
   const shimmerColor = colors.isDark
-    ? 'rgba(255,255,255,0.07)'
-    : 'rgba(255,255,255,0.5)';
+    ? 'rgba(0,125,112,0.08)'
+    : 'rgba(0,125,112,0.1)';
 
   return (
     <Animated.View

@@ -5,7 +5,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -16,6 +15,7 @@ import {
   Vibration,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -543,9 +543,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(148,163,184,0.12)',
+    backgroundColor: 'rgba(0,125,112,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.28)',
+    borderColor: 'rgba(0,125,112,0.28)',
   },
   startupLoaderTitle: {
     color: '#E5E7EB',

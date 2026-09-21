@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   iconLine: {
     height: 5,
     borderRadius: 2,
-    backgroundColor: '#22C55E',
+    backgroundColor: '#007D70',
   },
   iconStem: {
     position: 'absolute',

@@ -80,7 +80,7 @@ const LoginButton: React.FC<LoginButtonProps> = ({
       <Pressable style={styles.pressable} onPress={handlePress} disabled={disabled}>
         {isValid || isLoading || isSyncing || isSuccess ? (
           <LinearGradient
-            colors={isSuccess ? ['#22C55E', '#1B8A3E'] : ['#1B8A3E', '#145C26']}
+            colors={isSuccess ? ['#00A391', '#007D70'] : ['#007D70', '#006359']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={styles.gradient}

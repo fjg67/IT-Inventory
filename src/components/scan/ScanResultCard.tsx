@@ -26,7 +26,7 @@ export const ScanResultCard: React.FC<ScanResultCardProps> = ({ article, siteNam
     <GestureDetector gesture={gesture}>
       <Animated.View entering={FadeInUp.duration(420)} style={[styles.shell, animatedStyle]}>
         <LinearGradient
-          colors={['rgba(17,26,20,0.98)', 'rgba(10,15,13,0.98)']}
+          colors={['rgba(255,255,255,0.98)', 'rgba(255,255,255,0.98)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.card}
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     borderRadius: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(0,125,112,0.08)',
     marginVertical: 16,
   },
   newScanBtn: {
@@ -151,9 +151,9 @@ const styles = StyleSheet.create({
   newScanInner: {
     height: 56,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'rgba(0,125,112,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(0,125,112,0.08)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

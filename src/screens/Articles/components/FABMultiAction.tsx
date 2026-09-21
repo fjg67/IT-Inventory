@@ -129,7 +129,7 @@ const FABMultiAction: React.FC<FABMultiActionProps> = ({ onScan, onAdd, onKit })
                   styles.secondaryAction,
                   {
                     backgroundColor: isDark
-                      ? 'rgba(255,255,255,0.06)'
+                      ? 'rgba(0,125,112,0.08)'
                       : '#FFFFFF',
                     borderColor: isDark
                       ? 'rgba(255,255,255,0.1)'

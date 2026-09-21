@@ -138,9 +138,9 @@ export async function exportMouvements(options: ExportOptions = { type: 'mouveme
   const supabase = getSupabaseClient();
   let query = supabase
     .from(tables.mouvements)
-    .select('createdAt, type, quantity, reason, articleId, fromSiteId, userId')
+    .select('createdAt, type, quantity, reason, articleId, fromSiteId, toSiteId, userId')
     .order('createdAt', { ascending: false });
-  if (options.siteId) query = query.eq('fromSiteId', options.siteId);
+  if (options.siteId) query = query.or(`fromSiteId.eq.${options.siteId},toSiteId.eq.${options.siteId}`);
   if (options.dateDebut) query = query.gte('createdAt', options.dateDebut.toISOString());
   if (options.dateFin) query = query.lte('createdAt', options.dateFin.toISOString());
   const { data: mouvements, error } = await query;
@@ -155,7 +155,7 @@ export async function exportMouvements(options: ExportOptions = { type: 'mouveme
   for (const a of articles ?? []) articleMap.set(a.id, a);
 
   // Fetch site info
-  const siteIds = [...new Set((mouvements ?? []).map((m: any) => m.fromSiteId))];
+  const siteIds = [...new Set((mouvements ?? []).map((m: any) => m.fromSiteId || m.toSiteId).filter(Boolean))];
   const { data: sites } = siteIds.length > 0
     ? await supabase.from(tables.sites).select('id, name').in('id', siteIds)
     : { data: [] };
@@ -172,7 +172,7 @@ export async function exportMouvements(options: ExportOptions = { type: 'mouveme
       m.createdAt,
       art?.reference ?? '',
       art?.name ?? '',
-      siteMap.get(m.fromSiteId) ?? '',
+      siteMap.get(m.fromSiteId || m.toSiteId) ?? '',
       m.type,
       m.quantity,
       m.reason ?? '',

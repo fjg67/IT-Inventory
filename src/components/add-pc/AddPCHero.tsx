@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   heroSub: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#F0FDF4',
+    color: '#1A1A1A',
     marginBottom: 12,
     textAlign: 'center',
   },

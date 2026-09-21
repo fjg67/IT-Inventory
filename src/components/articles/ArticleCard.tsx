@@ -71,6 +71,7 @@ const renderNameWithHighlight = (name: string, query?: string) => {
 };
 
 const ArticleCardComponent: React.FC<ArticleCardProps> = ({ article, index, query, onPress }) => {
+  const [imageError, setImageError] = React.useState(false);
   const press = useSharedValue(0);
   const accent = useMemo(() => getAccentColor(article), [article]);
 
@@ -92,8 +93,8 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({ article, index, quer
           style={[styles.card, { borderLeftColor: accent }]}
         >
           <View style={styles.thumbWrap}>
-            {article.photoUrl ? (
-              <Image source={{ uri: article.photoUrl }} resizeMode="contain" style={styles.thumb} />
+            {article.photoUrl && article.photoUrl !== 'null' && !imageError ? (
+              <Image source={{ uri: article.photoUrl }} resizeMode="contain" style={styles.thumb} onError={() => setImageError(true)} />
             ) : (
               <Icon name="cube-outline" size={24} color={OBSIDIAN_COLORS.text_muted} />
             )}

@@ -75,7 +75,7 @@ export const ArticleConditionSelector: React.FC<ArticleConditionSelectorProps> =
           >
             <Icon name="check-circle-outline" size={20} color={condition === 'bon_etat' ? '#22C55E' : '#6B7280'} />
           </View>
-          <Text style={[styles.toggleLabel, { color: condition === 'bon_etat' ? '#86EFAC' : '#6B7280' }]}>Bon etat</Text>
+          <Text style={[styles.toggleLabel, { color: condition === 'bon_etat' ? '#5A5A55' : '#6B7280' }]}>Bon etat</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -93,7 +93,7 @@ export const ArticleConditionSelector: React.FC<ArticleConditionSelectorProps> =
           >
             <Icon name="alert-circle-outline" size={20} color={condition === 'defectueux' ? '#EF4444' : '#6B7280'} />
           </View>
-          <Text style={[styles.toggleLabel, { color: condition === 'defectueux' ? '#FCA5A5' : '#6B7280' }]}>Defectueux</Text>
+          <Text style={[styles.toggleLabel, { color: condition === 'defectueux' ? '#DC2626' : '#6B7280' }]}>Defectueux</Text>
         </TouchableOpacity>
       </View>
 
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   container: { gap: 12 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionBar: { width: 3, height: 16, borderRadius: 2, backgroundColor: '#1B8A3E' },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#F0FDF4' },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#1A1A1A' },
   toggleRow: { flexDirection: 'row', gap: 10 },
   toggleBtn: {
     flex: 1,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(34,197,94,0.40)',
   },
   toggleBtnOkInactive: {
-    backgroundColor: '#16231A',
+    backgroundColor: '#FFFFFF',
     borderColor: 'rgba(34,197,94,0.08)',
   },
   toggleBtnDefActive: {
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239,68,68,0.40)',
   },
   toggleBtnDefInactive: {
-    backgroundColor: '#16231A',
+    backgroundColor: '#FFFFFF',
     borderColor: 'rgba(239,68,68,0.08)',
   },
   toggleIconCircle: {
@@ -196,22 +196,22 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239,68,68,0.25)',
   },
   toggleIconCircleInactive: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'rgba(0,125,112,0.08)',
   },
   toggleLabel: { fontSize: 13, fontWeight: '700' },
   defectPanel: {
-    backgroundColor: '#16231A',
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(239,68,68,0.20)',
     padding: 16,
     gap: 10,
   },
-  defectPanelTitle: { fontSize: 13, fontWeight: '700', color: '#F0FDF4' },
+  defectPanelTitle: { fontSize: 13, fontWeight: '700', color: '#1A1A1A' },
   defectPanelSub: { fontSize: 12, color: '#6B7280' },
   stepper: {
     flexDirection: 'row',
-    backgroundColor: '#0A0F0D',
+    backgroundColor: '#F5F5F0',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(239,68,68,0.18)',
@@ -237,12 +237,12 @@ const styles = StyleSheet.create({
   noteInput: { gap: 6 },
   noteLabel: { fontSize: 11, fontWeight: '600', color: '#6B7280' },
   noteTextInput: {
-    backgroundColor: '#0A0F0D',
+    backgroundColor: '#F5F5F0',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(239,68,68,0.15)',
     padding: 10,
-    color: '#F0FDF4',
+    color: '#1A1A1A',
     fontSize: 13,
     textAlignVertical: 'top',
     minHeight: 60,
@@ -257,5 +257,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(34,197,94,0.12)',
   },
-  goodStateText: { fontSize: 12, color: '#86EFAC', fontWeight: '500' },
+  goodStateText: { fontSize: 12, color: '#5A5A55', fontWeight: '500' },
 });

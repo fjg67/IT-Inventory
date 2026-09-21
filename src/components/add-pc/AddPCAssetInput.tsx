@@ -21,13 +21,13 @@ export const AddPCAssetInput: React.FC<AddPCAssetInputProps> = ({
 }) => {
   return (
     <View style={styles.wrap}>
-      <View style={[styles.inputWrap, { borderColor: error ? '#EF4444' : 'rgba(148,163,184,0.25)' }]}>
+      <View style={[styles.inputWrap, { borderColor: error ? '#EF4444' : 'rgba(0,125,112,0.25)' }]}>
         <Icon name="tag-outline" size={17} color={accentColor} />
         <TextInput
           value={value}
           onChangeText={onChangeText}
           placeholder="Ex: AO44XXXX"
-          placeholderTextColor="#647570"
+          placeholderTextColor="#888880"
           style={styles.input}
           autoCapitalize="characters"
           autoCorrect={false}
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 13,
     borderWidth: 1.5,
-    backgroundColor: '#101915',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#F1F7F4',
+    color: '#1A1A1A',
     fontSize: 14,
     fontWeight: '700',
   },
@@ -69,10 +69,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(10,15,13,0.5)',
+    backgroundColor: 'rgba(0,125,112,0.1)',
   },
   error: {
-    color: '#FCA5A5',
+    color: '#DC2626',
     fontSize: 11,
     fontWeight: '600',
   },

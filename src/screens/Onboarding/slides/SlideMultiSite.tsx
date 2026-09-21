@@ -30,8 +30,8 @@ const SITES: SiteNodeItem[] = [
     isActive: false,
   },
   {
-    abbr: 'S5',
-    label: 'Stock 5eme',
+    abbr: 'S1',
+    label: 'Stock 1er',
     color: '#22C55E',
     subtle: 'rgba(34,197,94,0.15)',
     border: 'rgba(34,197,94,0.45)',
@@ -39,8 +39,8 @@ const SITES: SiteNodeItem[] = [
     isActive: true,
   },
   {
-    abbr: 'S8',
-    label: 'Stock 8eme',
+    abbr: 'CP',
+    label: 'Comptoir',
     color: '#3B82F6',
     subtle: 'rgba(59,130,246,0.12)',
     border: 'rgba(59,130,246,0.30)',
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   activePillText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#86EFAC',
+    color: '#5A5A55',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },

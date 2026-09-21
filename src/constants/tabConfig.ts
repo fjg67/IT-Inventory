@@ -1,14 +1,14 @@
 import type { MainTabParamList } from '@/navigation/types';
 
 export const TAB_BAR_COLORS = {
-  bgPrimary: '#0A0F0D',
-  bgCard: '#111A14',
-  bgCardElevated: '#16231A',
-  greenPrimary: '#1B8A3E',
-  greenLight: '#22C55E',
+  bgPrimary: '#F5F5F0',
+  bgCard: '#FFFFFF',
+  bgCardElevated: '#FFFFFF',
+  greenPrimary: '#007D70',
+  greenLight: '#00A391',
   greenGlow: 'rgba(34, 197, 94, 0.15)',
   greenSubtle: 'rgba(27, 138, 62, 0.12)',
-  textPrimary: '#F0FDF4',
+  textPrimary: '#1A1A1A',
   textMuted: '#6B7280',
   textDim: '#374151',
   borderSubtle: 'rgba(34, 197, 94, 0.08)',

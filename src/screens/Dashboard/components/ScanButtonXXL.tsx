@@ -218,11 +218,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     gap: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: 'rgba(0,125,112,0.12)',
   },
   glassOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(0,125,112,0.08)',
   },
   decoCircle1: {
     position: 'absolute',
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(0,125,112,0.08)',
   },
   decoCircle2: {
     position: 'absolute',
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'rgba(0,125,112,0.08)',
   },
   iconSection: {
     position: 'relative',
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     right: 6,
     height: 1.5,
     borderRadius: 1,
-    backgroundColor: '#FCA5A5',
+    backgroundColor: '#DC2626',
     shadowColor: '#EF4444',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
@@ -300,9 +300,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(0,125,112,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: 'rgba(0,125,112,0.12)',
   },
   tagText: {
     fontSize: 10,

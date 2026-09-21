@@ -4,6 +4,7 @@
 // ============================================
 
 import notifee, { AndroidImportance, AndroidStyle } from '@notifee/react-native';
+import { getNomAgenceParEDS } from '@/constants/agences';
 import { Article } from '@/types';
 
 const PC_STATUS_CHANNEL_ID = 'pc-status-changes-v1';
@@ -69,7 +70,9 @@ function buildBody(payload: PCStatusNotificationPayload): string {
     `Modèle   : ${modeleLine}`,
     `Emplacement: ${emplacement}`,
     ...(sourceAgencyName ? [`Agence source: ${sourceAgencyName}${sourceAgencyEds ? ` (EDS ${sourceAgencyEds})` : ''}`] : []),
-    ...(destinationAgencyEds ? [`Agence destination: EDS ${destinationAgencyEds}`] : []),
+    ...(destinationAgencyEds ? [
+      `Agence destination: ${getNomAgenceParEDS(destinationAgencyEds) || 'Inconnue'} (EDS ${destinationAgencyEds})`
+    ] : []),
     `Statut   → ${nextStatus}`,
     `Technicien: ${technicienName}${technicienAcronym ? ` (${technicienAcronym})` : ''}`,
   ];

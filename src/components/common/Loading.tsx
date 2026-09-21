@@ -151,7 +151,7 @@ const splashStyles = StyleSheet.create({
   retryText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#FCA5A5',
+    color: '#DC2626',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },

@@ -32,11 +32,11 @@ function isExcludedForEpinal(value?: string | null): boolean {
   if (!value) return false;
   const normalized = normalizeSiteName(value);
   return (
-    normalized.includes('stock 5') ||
-    normalized.includes('stock5') ||
-    normalized.includes('stock 8') ||
-    normalized.includes('stock8') ||
-    normalized.includes('tcs')
+    normalized.includes('stock 1') ||
+    normalized.includes('1er') ||
+    normalized.includes('comptoir') ||
+    normalized.includes('sous sol') ||
+    normalized.includes('sous-sol')
   );
 }
 

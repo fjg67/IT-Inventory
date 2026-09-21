@@ -9,13 +9,13 @@ import { ThemeGradients } from './types';
 export const darkGradients: ThemeGradients = {
   primary: ['#4EB35A', '#007A39'],
   primaryHorizontal: ['#00A651', '#007A39'],
-  header: ['#0A0F1A', '#131D2E'],
-  surface: ['rgba(255,255,255,0.03)', 'rgba(255,255,255,0.01)'],
+  header: ['#FFFFFF', '#131D2E'],
+  surface: ['rgba(0,125,112,0.08)', 'rgba(0,125,112,0.08)'],
   success: ['#10B981', '#059669'],
   danger: ['#EF4444', '#DC2626'],
   warning: ['#FBBF24', '#F59E0B'],
   info: ['#60A5FA', '#2563EB'],
-  login: ['#0A0F1A', '#0E1520', '#0A0F1A'],
+  login: ['#FFFFFF', '#0E1520', '#FFFFFF'],
   scanButton: ['#4EB35A', '#007A39', '#005C2B'],
   avatar: ['#007A39', '#005C2B'],
 };

@@ -45,8 +45,8 @@ export const AddPCStatusChip: React.FC<AddPCStatusChipProps> = ({
 
   const chipStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    backgroundColor: isActive ? config.subtle : '#16231A',
-    borderColor: isActive ? config.border : 'rgba(148,163,184,0.14)',
+    backgroundColor: isActive ? config.subtle : '#FFFFFF',
+    borderColor: isActive ? config.border : 'rgba(0,125,112,0.14)',
   }));
 
   const rippleStyle = useAnimatedStyle(() => ({
@@ -98,6 +98,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   labelMuted: {
-    color: '#9AA8A4',
+    color: '#888880',
   },
 });

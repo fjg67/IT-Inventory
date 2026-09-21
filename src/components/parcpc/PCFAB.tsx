@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(0,125,112,0.12)',
     shadowColor: PARC_PC_COLORS.green_light,
     shadowOpacity: 0.36,
     shadowRadius: 18,

@@ -49,6 +49,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   errorText: {
-    color: '#FCA5A5',
+    color: '#DC2626',
   },
 });

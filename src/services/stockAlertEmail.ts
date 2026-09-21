@@ -76,7 +76,7 @@ function buildHtmlContent(products: ProductAlert[], siteNom?: string): string {
         <tr style="background:${rowBg};border-left:3px solid ${accentColor};">
           <td style="padding:14px 12px 14px 16px;">
             <div style="font-weight:700;color:#0F172A;font-size:14px;line-height:1.3;">${p.nom}</div>
-            ${p.emplacement ? `<div style="color:#94A3B8;font-size:11px;margin-top:2px;">📍 ${p.emplacement}</div>` : ''}
+            ${p.emplacement ? `<div style="color:#5A5A55;font-size:11px;margin-top:2px;">📍 ${p.emplacement}</div>` : ''}
           </td>
           <td style="padding:14px 8px;color:#64748B;font-size:12px;font-family:'Courier New',monospace;white-space:nowrap;">${p.reference ?? '—'}</td>
           <td style="padding:14px 8px;text-align:center;min-width:80px;">
@@ -84,7 +84,7 @@ function buildHtmlContent(products: ProductAlert[], siteNom?: string): string {
             <div style="margin-top:5px;background:#E2E8F0;border-radius:3px;height:4px;width:60px;margin-left:auto;margin-right:auto;">
               <div style="background:${accentColor};height:4px;border-radius:3px;width:${barWidth}%;max-width:100%;"></div>
             </div>
-            <div style="color:#94A3B8;font-size:10px;margin-top:3px;">/ ${p.stockMini}</div>
+            <div style="color:#5A5A55;font-size:10px;margin-top:3px;">/ ${p.stockMini}</div>
           </td>
           <td style="padding:14px 12px 14px 8px;text-align:right;">
             <span style="display:inline-block;background:${badgeBg};color:${badgeTextColor};padding:3px 9px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:0.5px;">${badgeText}</span>
@@ -122,10 +122,10 @@ function buildHtmlContent(products: ProductAlert[], siteNom?: string): string {
         <td style="background:linear-gradient(160deg,#1E293B 0%,#0F172A 60%,#1a0505 100%);padding:36px 32px 32px;text-align:center;border-left:1px solid #1E293B;border-right:1px solid #1E293B;">
           <div style="display:inline-block;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:30px;margin-bottom:16px;">📦</div>
           <h1 style="color:#F8FAFC;font-size:28px;font-weight:800;margin:0 0 6px 0;letter-spacing:-0.5px;font-family:Georgia,'Times New Roman',serif;">Alerte Stock Critique</h1>
-          <p style="color:#94A3B8;font-size:13px;margin:0 0 0 0;letter-spacing:0.5px;">IT-Inventory &nbsp;·&nbsp; ${date}</p>
+          <p style="color:#5A5A55;font-size:13px;margin:0 0 0 0;letter-spacing:0.5px;">IT-Inventory &nbsp;·&nbsp; ${date}</p>
           ${siteNom ? `
           <div style="margin-top:14px;">
-            <span style="display:inline-block;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);padding:6px 18px;border-radius:20px;color:#CBD5E1;font-size:13px;font-weight:600;">📍 ${siteNom}</span>
+            <span style="display:inline-block;background:rgba(0,125,112,0.08);border:1px solid rgba(0,125,112,0.12);padding:6px 18px;border-radius:20px;color:#CBD5E1;font-size:13px;font-weight:600;">📍 ${siteNom}</span>
           </div>` : ''}
         </td>
       </tr>
@@ -203,7 +203,7 @@ function buildHtmlContent(products: ProductAlert[], siteNom?: string): string {
       <tr>
         <td style="background:#FFFFFF;padding:20px 24px 0;border-radius:0 0 0 0;">
           <div style="border-top:1px solid #F1F5F9;padding-top:16px;padding-bottom:4px;text-align:center;">
-            <p style="color:#94A3B8;font-size:11px;margin:0;line-height:1.6;">
+            <p style="color:#5A5A55;font-size:11px;margin:0;line-height:1.6;">
               Généré automatiquement par <strong style="color:#64748B;">IT-Inventory</strong> &nbsp;·&nbsp; ${date}
             </p>
           </div>

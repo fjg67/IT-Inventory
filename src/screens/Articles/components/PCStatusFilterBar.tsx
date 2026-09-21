@@ -113,14 +113,14 @@ const PCStatusFilterChip: React.FC<{
               : isDark
                 ? 'rgba(15, 23, 42, 0.55)'
                 : 'rgba(255, 255, 255, 0.86)',
-            borderColor: isActive ? config.color : 'rgba(148, 163, 184, 0.2)',
+            borderColor: isActive ? config.color : 'rgba(0,125,112,0.2)',
           },
         ]}
       >
         <Icon
           name={config.icon}
           size={16}
-          color={isActive ? config.color : '#94A3B8'}
+          color={isActive ? config.color : '#5A5A55'}
         />
         <Text
           numberOfLines={1}
@@ -178,7 +178,7 @@ const PCStatusFilterBar: React.FC<PCStatusFilterBarProps> = ({
       >
       <View style={styles.header}>
         <View style={styles.headerLabel}>
-          <Icon name="filter-outline" size={14} color="#94A3B8" />
+          <Icon name="filter-outline" size={14} color="#5A5A55" />
           <Text style={styles.headerText}>État du parc</Text>
         </View>
         {hasActiveFilter && (
@@ -187,7 +187,7 @@ const PCStatusFilterBar: React.FC<PCStatusFilterBarProps> = ({
             onPress={() => onStatusChange(null)}
             style={styles.clearButton}
           >
-            <Icon name="close" size={14} color="#94A3B8" />
+            <Icon name="close" size={14} color="#5A5A55" />
           </TouchableOpacity>
         )}
       </View>
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.18)',
+    borderColor: 'rgba(0,125,112,0.18)',
   },
   header: {
     flexDirection: 'row',
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#94A3B8',
+    color: '#5A5A55',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     borderWidth: 1.5,
     minHeight: 44,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: 'rgba(0,125,112,0.1)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
