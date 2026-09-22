@@ -1,30 +1,50 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#0D1F12"/>
-      <stop offset="100%" stop-color="#1A5C2E"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#081A2B"/>
+      <stop offset="58%" stop-color="#0D3550"/>
+      <stop offset="100%" stop-color="#092A36"/>
     </linearGradient>
-    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#22C55E" stop-opacity="0.15"/>
-      <stop offset="100%" stop-color="#22C55E" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.30"/>
+    <linearGradient id="box" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#36D6C3"/>
+      <stop offset="100%" stop-color="#1398A8"/>
+    </linearGradient>
+    <linearGradient id="boxHighlight" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#9BFFD6"/>
+      <stop offset="100%" stop-color="#57E8D2"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#00121F" flood-opacity="0.45"/>
     </filter>
   </defs>
 
-  <rect x="0" y="0" width="512" height="512" rx="113" fill="url(#bg)"/>
-  <circle cx="256" cy="248" r="120" fill="url(#halo)"/>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <path d="M64 160C112 96 184 70 256 70s144 26 192 90" fill="none" stroke="#54E4D2" stroke-opacity="0.12" stroke-width="2"/>
+  <path d="M54 388c62 44 128 64 202 64s140-20 202-64" fill="none" stroke="#9BFFD6" stroke-opacity="0.08" stroke-width="2"/>
 
-  <rect x="186" y="140" width="140" height="52" rx="12" fill="#22C55E" fill-opacity="0.50" filter="url(#shadow)"/>
-  <rect x="166" y="210" width="180" height="60" rx="12" fill="#22C55E" fill-opacity="0.75" filter="url(#shadow)"/>
-  <rect x="156" y="290" width="200" height="60" rx="12" fill="#22C55E" filter="url(#shadow)"/>
+  <g filter="url(#shadow)">
+    <path d="M162 144h188l-28 48H134z" fill="#1A7F99"/>
+    <path d="M134 192h188l28-48H162z" fill="url(#boxHighlight)"/>
+    <path d="M134 192h188v38c0 11-9 20-20 20H154c-11 0-20-9-20-20z" fill="url(#box)"/>
 
-  <rect x="187" y="141" width="138" height="1.5" rx="1" fill="#FFFFFF" fill-opacity="0.08"/>
-  <rect x="167" y="211" width="178" height="1.5" rx="1" fill="#FFFFFF" fill-opacity="0.12"/>
-  <rect x="157" y="291" width="198" height="1.5" rx="1" fill="#FFFFFF" fill-opacity="0.18"/>
+    <path d="M134 250h188l28 48H162z" fill="#167F99"/>
+    <path d="M134 250h188l28 48H162z" fill="url(#boxHighlight)" opacity="0.82"/>
+    <path d="M162 298h188v38c0 11-9 20-20 20H182c-11 0-20-9-20-20z" fill="url(#box)"/>
 
-  <line x1="256" y1="136" x2="256" y2="356" stroke="#86EFAC" stroke-width="8" stroke-linecap="round" opacity="0.9"/>
+    <path d="M162 356h188l28 48H190z" fill="#127487"/>
+    <path d="M162 356h188l28 48H190z" fill="url(#boxHighlight)" opacity="0.72"/>
+    <path d="M190 404h188v12c0 11-9 20-20 20H210c-11 0-20-9-20-20z" fill="#20B7B0"/>
+  </g>
 
-  <text x="370" y="370" font-family="Inter, SF Pro Display, Arial, sans-serif" font-size="32" font-weight="700" fill="#86EFAC" fill-opacity="0.6" text-anchor="middle">IT</text>
+  <g fill="#06293D">
+    <rect x="193" y="163" width="5" height="22" rx="2"/>
+    <rect x="204" y="163" width="3" height="22" rx="1"/>
+    <rect x="212" y="163" width="8" height="22" rx="2"/>
+    <rect x="226" y="163" width="4" height="22" rx="2"/>
+    <rect x="235" y="163" width="3" height="22" rx="1"/>
+    <rect x="243" y="163" width="7" height="22" rx="2"/>
+  </g>
+  <path d="M286 170l9 9 20-24" fill="none" stroke="#E9FFF5" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="384" cy="126" r="25" fill="#C6FF62"/>
+  <path d="M374 126l7 7 14-16" fill="none" stroke="#0A3443" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

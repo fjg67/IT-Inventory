@@ -45,6 +45,14 @@ export const TransfertScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
 
   const initialArticleId = route.params?.articleId as number | undefined;
+  
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const siteActif = useAppSelector((state) => state.site.siteActif);
   const sitesDisponibles = useAppSelector((state) => state.site.sitesDisponibles);
@@ -213,6 +221,7 @@ export const TransfertScreen: React.FC = () => {
       };
 
       await mouvementRepository.createTransfert(payload, technicien.id);
+      if (!isMounted.current) return;
 
       dispatch(showAlert({
         type: 'success',
@@ -222,10 +231,19 @@ export const TransfertScreen: React.FC = () => {
 
       navigation.goBack();
     } catch (error) {
+      if (!isMounted.current) return;
       const message = error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR;
-      dispatch(showAlert({ type: 'error', title: 'Erreur', message }));
+      
+      let displayMessage = message;
+      if (message === 'STOCK_CONFLICT') {
+        displayMessage = "Un autre mouvement vient d'être effectué en même temps. Veuillez réessayer.";
+      }
+      
+      dispatch(showAlert({ type: 'error', title: 'Erreur', message: displayMessage }));
     } finally {
-      setIsSubmitting(false);
+      if (isMounted.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 

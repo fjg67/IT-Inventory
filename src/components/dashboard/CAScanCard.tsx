@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
 import { CA_THEME } from '@/constants/caTheme';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -21,10 +21,11 @@ export const CAScanCard = ({ onScan, onEntree, onSortie, onConsultation }: CASca
         <Icon name="barcode-scan" size={28} color={CA_THEME.green} />
       </View>
       {/* Bouton scan */}
-      <Pressable onPress={onScan} style={styles.scanButton}
+      <TouchableOpacity onPress={onScan} style={styles.scanButton}
+        activeOpacity={0.8}
         accessibilityRole="button" accessibilityLabel="Ouvrir le scanner">
         <Icon name="qrcode-scan" size={22} color={CA_THEME.white} />
-      </Pressable>
+      </TouchableOpacity>
     </View>
 
     {/* 3 boutons d'action */}
@@ -100,7 +101,7 @@ const styles = StyleSheet.create({
 
 // Bouton d'action (Entrée / Sortie / Consultation)
 const ActionButton = ({ label, icon, color, bgColor, onPress }: any) => (
-  <Pressable
+  <TouchableOpacity
     onPress={onPress}
     style={{
       flex:            1,
@@ -114,9 +115,10 @@ const ActionButton = ({ label, icon, color, bgColor, onPress }: any) => (
       borderWidth:     1,
       borderColor:     color,
     }}
+    activeOpacity={0.7}
     accessibilityRole="button"
   >
     <Icon name={icon} size={14} color={color} />
     <Text style={{ fontSize: 11, fontFamily: CA_THEME.fontFamilySemiBold, fontWeight: '600', color }}>{label}</Text>
-  </Pressable>
+  </TouchableOpacity>
 );

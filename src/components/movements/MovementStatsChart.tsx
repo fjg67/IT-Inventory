@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { OBSIDIAN_COLORS } from '@/constants/colors';
+import { CA_THEME } from '@/constants/caTheme';
 
 export interface MovementChartBar {
   label: string;
@@ -33,14 +33,14 @@ export const MovementStatsChart: React.FC<MovementStatsChartProps> = ({ data, on
         <Text style={styles.title}>ACTIVITÉ 7 JOURS</Text>
         <View style={styles.actions}>
           <Pressable onPress={onOpenStats} style={styles.actionBtn}><Text style={styles.actionText}>Voir stats</Text></Pressable>
-          <Pressable onPress={onClose} style={styles.iconBtn}><Icon name="close" size={15} color={OBSIDIAN_COLORS.text_muted} /></Pressable>
+          <Pressable onPress={onClose} style={styles.iconBtn}><Icon name="close" size={15} color={CA_THEME.textMuted} /></Pressable>
         </View>
       </View>
 
       <Svg width={width} height={height}>
         {[0, 1, 2, 3].map((step) => {
           const y = pad + (chartHeight / 3) * step;
-          return <Line key={`grid-${step}`} x1={pad} y1={y} x2={width - pad} y2={y} stroke={OBSIDIAN_COLORS.border_subtle} strokeWidth={1} />;
+          return <Line key={`grid-${step}`} x1={pad} y1={y} x2={width - pad} y2={y} stroke={CA_THEME.borderGray} strokeWidth={1} />;
         })}
 
         {data.map((item, index) => {
@@ -55,8 +55,8 @@ export const MovementStatsChart: React.FC<MovementStatsChartProps> = ({ data, on
 
           return (
             <React.Fragment key={`${item.label}-${index}`}>
-              <Rect x={x} y={exitsY} width={barWidth} height={exitHeight} rx={4} fill={OBSIDIAN_COLORS.danger} opacity={item.isToday ? 0.95 : 0.6} />
-              <Rect x={x} y={entriesY} width={barWidth} height={entryHeight} rx={4} fill={OBSIDIAN_COLORS.green_light} opacity={item.isToday ? 1 : 0.8} />
+              <Rect x={x} y={exitsY} width={barWidth} height={exitHeight} rx={4} fill={CA_THEME.danger} opacity={item.isToday ? 0.95 : 0.6} />
+              <Rect x={x} y={entriesY} width={barWidth} height={entryHeight} rx={4} fill={CA_THEME.green} opacity={item.isToday ? 1 : 0.8} />
             </React.Fragment>
           );
         })}
@@ -75,8 +75,8 @@ const styles = StyleSheet.create({
   wrap: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: OBSIDIAN_COLORS.border_card,
-    backgroundColor: OBSIDIAN_COLORS.bg_card,
+    borderColor: CA_THEME.borderGray,
+    backgroundColor: CA_THEME.white,
     padding: 12,
     gap: 8,
   },
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    color: OBSIDIAN_COLORS.text_muted,
+    color: CA_THEME.textMuted,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1,
@@ -98,24 +98,22 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: OBSIDIAN_COLORS.border_subtle,
-    backgroundColor: OBSIDIAN_COLORS.bg_card_elevated,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingVertical: 4,
+    backgroundColor: CA_THEME.greenBg,
   },
   actionText: {
-    color: OBSIDIAN_COLORS.text_secondary,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
+    color: CA_THEME.green,
   },
   iconBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: OBSIDIAN_COLORS.bg_card_elevated,
+    backgroundColor: CA_THEME.lightGray,
   },
   labelsRow: {
     flexDirection: 'row',
@@ -123,13 +121,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   dayLabel: {
-    color: OBSIDIAN_COLORS.text_dim,
     fontSize: 10,
-    fontWeight: '700',
-    width: 24,
+    fontWeight: '600',
+    color: CA_THEME.textSecondary,
+    width: 28,
     textAlign: 'center',
   },
   dayLabelToday: {
-    color: OBSIDIAN_COLORS.green_light,
+    color: CA_THEME.green,
+    fontWeight: '800',
   },
 });

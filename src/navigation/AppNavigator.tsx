@@ -50,7 +50,7 @@ import { checkAppVersion, VersionCheckResult } from '@/services/versionService';
 import PremiumTabBar from '@/components/navigation/PremiumTabBar';
 import { CABottomNav } from '@/components/dashboard/CABottomNav';
 import { type InitStep } from '@/hooks/useSplashSequence';
-import { UpdateBlockingScreen } from '@/screens/UpdateBlockingScreen';
+import { ForceUpdateScreen } from '@/screens/ForceUpdateScreen';
 
 import {
   RootStackParamList,
@@ -513,7 +513,7 @@ export const AppNavigator: React.FC = () => {
 
   // Si une mise à jour critique est requise, bloquer l'application
   if (forceUpdate) {
-    return <UpdateBlockingScreen updateInfo={forceUpdate} />;
+    return <ForceUpdateScreen updateInfo={forceUpdate} />;
   }
 
   return (

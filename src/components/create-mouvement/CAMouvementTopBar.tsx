@@ -9,55 +9,100 @@ interface CAMouvementTopBarProps {
   onHelp?:      () => void;
 }
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 export const CAMouvementTopBar = ({
   onBack, onHistory, onHelp
-}: CAMouvementTopBarProps) => (
-  <View style={styles.bar}>
-    <Pressable onPress={onBack} style={styles.backBtn}
+}: CAMouvementTopBarProps) => {
+  const insets = useSafeAreaInsets();
+  
+  return (
+  <View style={[styles.bar, { paddingTop: (insets.top || 40) + 10, paddingBottom: 13 }]}> 
+    <Pressable onPress={onBack} style={({ pressed }) => [styles.backBtn, pressed && styles.controlPressed]}
       accessibilityRole="button" accessibilityLabel="Retour">
-      <Icon name="arrow-left" size={18} color={CA_THEME.textSecondary} />
+      <Icon name="arrow-left" size={19} color={CA_THEME.greenDark} />
     </Pressable>
 
-    <Text style={styles.title}>Mouvement de stock</Text>
+    <View style={styles.titleContainer}>
+      <View style={styles.subtitleRow}>
+        <View style={styles.subtitleDot} />
+        <Text style={styles.subtitle}>NOUVELLE OPÉRATION</Text>
+        <View style={styles.subtitleDot} />
+      </View>
+      <Text style={styles.title}>Mouvement de stock</Text>
+    </View>
 
     {onHistory && (
-      <Pressable onPress={onHistory} style={styles.iconBtn}
+      <Pressable onPress={onHistory} style={({ pressed }) => [styles.iconBtn, pressed && styles.controlPressed]}
         accessibilityRole="button" accessibilityLabel="Historique des mouvements">
-        <Icon name="clock-outline" size={15} color={CA_THEME.textMuted} />
+        <Icon name="clock-outline" size={18} color={CA_THEME.greenDark} />
       </Pressable>
     )}
     {onHelp && (
-      <Pressable onPress={onHelp} style={styles.iconBtn}
+      <Pressable onPress={onHelp} style={({ pressed }) => [styles.iconBtn, pressed && styles.controlPressed]}
         accessibilityRole="button" accessibilityLabel="Aide">
-        <Icon name="help-circle-outline" size={15} color={CA_THEME.textMuted} />
+        <Icon name="help-circle-outline" size={18} color={CA_THEME.greenDark} />
       </Pressable>
     )}
+    <View style={styles.caRule} pointerEvents="none">
+      <View style={[styles.caStripe, { backgroundColor: '#FFD700' }]} />
+      <View style={[styles.caStripe, { backgroundColor: CA_THEME.greenLight }]} />
+      <View style={[styles.caStripe, { backgroundColor: CA_THEME.greenDark }]} />
+    </View>
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   bar: {
     flexDirection:   'row',
     alignItems:      'center',
     backgroundColor: CA_THEME.white,
-    borderBottomWidth: 1,
-    borderBottomColor: CA_THEME.borderGray,
     paddingHorizontal: 12,
-    paddingVertical:   10,
     gap:               8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E3EEE7',
+    elevation: 2,
+    shadowColor: CA_THEME.greenDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
+    position: 'relative',
   },
   backBtn: {
-    width: 32, height: 32, borderRadius: 8,
-    backgroundColor: CA_THEME.lightGray,
-    borderWidth: 1, borderColor: CA_THEME.borderGray,
+    width: 38, height: 38, borderRadius: 11,
+    backgroundColor: CA_THEME.greenBg,
+    borderWidth: 1, borderColor: CA_THEME.greenBg2,
     alignItems: 'center', justifyContent: 'center',
     flexShrink: 0,
   },
-  title: { flex: 1, fontSize: 16, fontWeight: '700', color: CA_THEME.textPrimary, textAlign: 'center' },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subtitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 },
+  subtitleDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#FFD700' },
+  subtitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: CA_THEME.green,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+  },
+  title: { 
+    fontSize: 18,
+    fontWeight: '900', 
+    color: CA_THEME.textPrimary,
+    letterSpacing: 0,
+  },
   iconBtn: {
-    width: 30, height: 30, borderRadius: 7,
-    backgroundColor: CA_THEME.lightGray,
-    borderWidth: 1, borderColor: CA_THEME.borderGray,
+    width: 38, height: 38, borderRadius: 11,
+    backgroundColor: CA_THEME.greenBg,
+    borderWidth: 1, borderColor: CA_THEME.greenBg2,
     alignItems: 'center', justifyContent: 'center',
   },
+  controlPressed: { backgroundColor: CA_THEME.greenBg2, transform: [{ scale: 0.95 }] },
+  caRule: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, flexDirection: 'row' },
+  caStripe: { flex: 1 },
 });

@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CA_THEME } from '@/constants/caTheme';
 
 interface CAParcPCHeaderProps {
@@ -7,8 +8,11 @@ interface CAParcPCHeaderProps {
   vsLastWeek:   number;   // différence vs semaine dernière
 }
 
-export const CAParcPCHeader = ({ activeCount, vsLastWeek }: CAParcPCHeaderProps) => (
-  <View style={styles.header}>
+export const CAParcPCHeader = ({ activeCount, vsLastWeek }: CAParcPCHeaderProps) => {
+  const insets = useSafeAreaInsets();
+  
+  return (
+  <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
 
     <View style={styles.titleRow}>
       {/* Logo CA + titre */}
@@ -39,12 +43,12 @@ export const CAParcPCHeader = ({ activeCount, vsLastWeek }: CAParcPCHeaderProps)
       <View style={[styles.stripe, { backgroundColor: CA_THEME.greenDark }]} />
     </View>
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   header: {
     backgroundColor:   CA_THEME.green,
-    paddingTop:        StatusBar.currentHeight ?? 12,
     paddingHorizontal: 16,
     paddingBottom:     14,
     position:          'relative',

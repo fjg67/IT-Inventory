@@ -61,10 +61,25 @@ export const useMovementColor = (type: MovementType | null) => {
     return { borderColor };
   });
 
+  const solidBgStyle = useAnimatedStyle(() => {
+    const bgColor = interpolateColor(
+      progress.value,
+      [0, 1, 2],
+      [
+        MOVEMENT_IDENTITIES.entree.colorDark,
+        MOVEMENT_IDENTITIES.sortie.colorDark,
+        MOVEMENT_IDENTITIES.ajustement.colorDark,
+      ],
+    );
+
+    return { backgroundColor: bgColor };
+  });
+
   return {
     identity,
     headerOverlayStyle,
     colorStyle,
+    solidBgStyle,
     typeIndex: TYPE_TO_INDEX[type ?? 'entree'],
     activeType: INDEX_TO_TYPE[Math.round(progress.value)] ?? 'entree',
   };

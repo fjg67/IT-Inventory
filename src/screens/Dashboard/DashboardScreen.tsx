@@ -28,6 +28,7 @@ import { loadSiblingSites, loadSites, selectEffectiveSiteId } from '@/store/slic
 import { articleRepository, mouvementRepository } from '@/database';
 import { DashboardStats, MouvementType } from '@/types';
 import { StockPickerSheet } from '@/components/stock-picker';
+import { EmptyState, Skeleton } from '@/components/common';
 import { useActiveSite } from '@/hooks/useActiveSite';
 import { CA_THEME } from '@/constants/caTheme';
 
@@ -41,6 +42,11 @@ import { CAChartCard } from '@/components/dashboard/CAChartCard';
 import { CAQuickActions } from '@/components/dashboard/CAQuickActions';
 import { CAMovementItem } from '@/components/dashboard/CAMovementItem';
 import { CABottomNav } from '@/components/dashboard/CABottomNav';
+import { CAUrgencyCarousel } from '@/components/dashboard/CAUrgencyCarousel';
+import { CAHealthRings } from '@/components/dashboard/CAHealthRings';
+
+import { predictiveService, PredictiveAlert } from '@/services/predictiveService';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface SiteLike {
   id: number | string;
@@ -86,6 +92,7 @@ export const DashboardScreen: React.FC = () => {
     derniersMovements: [],
   });
   const [siteStatsById, setSiteStatsById] = useState<Record<string, SiteStats>>({});
+  const [predictiveAlerts, setPredictiveAlerts] = useState<PredictiveAlert[]>([]);
 
   const refreshSpin = useSharedValue(0);
   const siteSheetY = useSharedValue(420);
@@ -98,13 +105,14 @@ export const DashboardScreen: React.FC = () => {
     if (!effectiveSiteId) return;
     setLoading(true);
     try {
-      const [articles, alertes, mouvementsJour, trend, derniersMouvements] =
+      const [articles, alertes, mouvementsJour, trend, derniersMouvements, pAlerts] =
         await Promise.all([
           articleRepository.findAll(effectiveSiteId),
           articleRepository.countLowStock(effectiveSiteId),
           mouvementRepository.countToday(effectiveSiteId),
           mouvementRepository.getCountPerDayLast7(effectiveSiteId),
           mouvementRepository.findRecent(effectiveSiteId, 12),
+          predictiveService.getPredictiveAlerts(effectiveSiteId, 30, 14),
         ]);
 
       setStats({
@@ -114,6 +122,7 @@ export const DashboardScreen: React.FC = () => {
         mouvementsTrend: trend,
         derniersMovements: derniersMouvements,
       });
+      setPredictiveAlerts(pAlerts);
     } catch (error) {
       console.error('Erreur chargement stats:', error);
     } finally {
@@ -222,12 +231,20 @@ export const DashboardScreen: React.FC = () => {
     return () => { cancelled = true; };
   }, [showSiteModal, sitesList]);
 
+  const headerSubtitle = useMemo(() => {
+    if (loading) return 'Mise à jour des données...';
+    if (predictiveAlerts.length > 0) return `⚠️ ${predictiveAlerts.length} alerte(s) de rupture imminente.`;
+    if (stats.articlesAlerte > 0) return `⚠️ ${stats.articlesAlerte} article(s) en stock faible.`;
+    return '✨ Tout est opérationnel !';
+  }, [loading, predictiveAlerts.length, stats.articlesAlerte]);
+
   return (
     <CAScreenWrapper>
       <CAHeader
         firstName={technicien?.prenom ?? 'FJG'}
         lastName={technicien?.nom ?? ''}
         siteName={siteActif?.nom}
+        subtitle={headerSubtitle}
         onPressSite={openSiteModal}
         onPressSettings={() => navigation.navigate('Settings')}
       />
@@ -247,50 +264,59 @@ export const DashboardScreen: React.FC = () => {
           />
         )}
 
-        {/* Stats grid */}
-        <View style={styles.statsGrid}>
-          <CAStatCard
-            value={stats.totalArticles}
-            label="Articles en stock"
-            icon="package-variant"
-            variant="success"
-            sparklineData={[
-              Math.max(stats.totalArticles - 8, 0),
-              Math.max(stats.totalArticles - 5, 0),
-              Math.max(stats.totalArticles - 7, 0),
-              Math.max(stats.totalArticles - 3, 0),
-              Math.max(stats.totalArticles - 1, 0),
-              stats.totalArticles,
-            ]}
-            onPress={() => navigation.navigate('Articles')}
-          />
-          <CAStatCard
-            value={stats.articlesAlerte}
-            label="Alertes stock"
-            icon="alert-circle-outline"
-            variant="danger"
-            badge={stats.articlesAlerte > 0 ? stats.articlesAlerte : undefined}
-            sparklineData={[
-              Math.max(stats.articlesAlerte - 2, 0),
-              stats.articlesAlerte + 1,
-              Math.max(stats.articlesAlerte - 1, 0),
-              stats.articlesAlerte + 2,
-              Math.max(stats.articlesAlerte - 3, 0),
-              stats.articlesAlerte,
-            ]}
-            onPress={() => navigation.navigate('Articles', { screen: 'ArticlesList', params: { filter: 'lowStock' } })}
-          />
-        </View>
-
-
-
-        {/* Graphique Mouvements */}
-        <CAChartCard
-          value={stats.mouvementsAujourdhui}
-          label="Mouvements aujourd'hui"
-          trend={stats.mouvementsTrend}
-          onPress={() => navigation.navigate('Mouvements')}
+        {/* Section Stats : Anneaux de santé & KPI */}
+        {loading && stats.totalArticles === 0 ? (
+          <Skeleton height={140} borderRadius={16} style={{ marginBottom: 16 }} />
+        ) : (
+          <View style={styles.section}>
+            <View style={styles.healthCard}>
+              <View style={styles.healthRingsWrapper}>
+                <CAHealthRings 
+                  totalArticles={stats.totalArticles} 
+                  articlesAlerte={stats.articlesAlerte} 
+                  size={110}
+                  strokeWidth={10}
+                />
+              </View>
+              <View style={styles.healthStats}>
+                <View style={styles.healthStatItem}>
+                  <Icon name="cube-outline" size={18} color={CA_THEME.green} />
+                  <View>
+                    <Text style={styles.healthStatValue}>{stats.totalArticles}</Text>
+                    <Text style={styles.healthStatLabel}>Articles en stock</Text>
+                  </View>
+                </View>
+                <View style={styles.healthStatDivider} />
+                <View style={styles.healthStatItem}>
+                  <Icon name="alert-outline" size={18} color={stats.articlesAlerte > 0 ? CA_THEME.danger : CA_THEME.textMuted} />
+                  <View>
+                    <Text style={[styles.healthStatValue, { color: stats.articlesAlerte > 0 ? CA_THEME.danger : CA_THEME.textPrimary }]}>
+                      {stats.articlesAlerte}
+                    </Text>
+                    <Text style={styles.healthStatLabel}>En alerte</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+        {predictiveAlerts.length > 0 && (
+        <CAUrgencyCarousel 
+          alerts={predictiveAlerts} 
+          onPressAlert={(articleId) => navigation.navigate('Articles', { screen: 'ArticleDetail', params: { articleId } })} 
         />
+        )}
+        {/* Graphique Mouvements */}
+        {loading && stats.totalArticles === 0 ? (
+          <Skeleton height={200} borderRadius={16} style={{ marginBottom: 16 }} />
+        ) : (
+          <CAChartCard
+            value={stats.mouvementsAujourdhui}
+            label="Mouvements aujourd'hui"
+            trend={stats.mouvementsTrend}
+            onPress={() => navigation.navigate('Mouvements')}
+          />
+        )}
 
         {/* Actions rapides */}
         <CAQuickActions onAction={handleQuickAction} />
@@ -305,10 +331,19 @@ export const DashboardScreen: React.FC = () => {
             </Pressable>
           </View>
           
-          {loading ? (
-             <Text style={{color: CA_THEME.textSecondary, marginTop: 10}}>Chargement...</Text>
-          ) : (
+          {loading && stats.totalArticles === 0 ? (
+            <View style={{ gap: 12 }}>
+              <Skeleton height={60} borderRadius={12} />
+              <Skeleton height={60} borderRadius={12} />
+              <Skeleton height={60} borderRadius={12} />
+            </View>
+          ) : recentMovementItems.length > 0 ? (
             recentMovementItems.map(m => <CAMovementItem key={m.id} movement={m} />)
+          ) : (
+            <EmptyState
+              title="Aucun mouvement récent"
+              description="Il n'y a pas eu d'activité sur ce site récemment."
+            />
           )}
         </View>
 
@@ -367,6 +402,42 @@ const styles = StyleSheet.create({
   seeAll: {
     fontSize: 13, fontFamily: CA_THEME.fontFamilySemiBold, fontWeight: '600',
     color: CA_THEME.green,
+  },
+  healthCard: {
+    backgroundColor: CA_THEME.white,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: CA_THEME.borderGray,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  healthRingsWrapper: {
+    marginRight: 20,
+  },
+  healthStats: {
+    flex: 1,
+  },
+  healthStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  healthStatValue: {
+    fontSize: 20,
+    fontFamily: CA_THEME.fontFamilyBold,
+    color: CA_THEME.textPrimary,
+  },
+  healthStatLabel: {
+    fontSize: 12,
+    fontFamily: CA_THEME.fontFamilyMedium,
+    color: CA_THEME.textSecondary,
+  },
+  healthStatDivider: {
+    height: 1,
+    backgroundColor: CA_THEME.borderGray,
+    marginVertical: 12,
   },
   modalOverlay: {
     backgroundColor: 'rgba(0, 0, 0, 0.45)',

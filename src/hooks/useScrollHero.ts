@@ -31,6 +31,9 @@ export const useScrollHero = () => {
       {
         scale: interpolate(scrollY.value, [0, 80], [1, 0.7], Extrapolation.CLAMP),
       },
+      {
+        translateY: interpolate(scrollY.value, [-100, 0, 100], [50, 0, -20], Extrapolation.CLAMP),
+      },
     ],
   }));
 
@@ -38,5 +41,16 @@ export const useScrollHero = () => {
     opacity: interpolate(scrollY.value, [60, 100], [0, 1], Extrapolation.CLAMP),
   }));
 
-  return { scrollHandler, heroHeight, photoOpacity, compactTitleOpacity };
+  const parallaxBg = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(scrollY.value, [-100, 0, 100], [-30, 0, 30], Extrapolation.CLAMP),
+      },
+      {
+        scale: interpolate(scrollY.value, [-100, 0], [1.2, 1], Extrapolation.CLAMP),
+      }
+    ],
+  }));
+
+  return { scrollHandler, heroHeight, photoOpacity, compactTitleOpacity, parallaxBg, scrollY };
 };

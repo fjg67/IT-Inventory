@@ -1,16 +1,16 @@
 export const CA_THEME = {
-  // Verts CA officiels (Nouveau Teal CA)
-  green:         '#007D70',   // Teal principal CA (header, boutons primaires)
-  greenDark:     '#006359',   // Teal foncé (hover, pressed)
-  greenLight:    '#00A391',   // Teal clair (accents, highlights)
-  greenBg:       '#E5F2F0',   // Teal très clair (backgrounds cartes OK)
-  greenBg2:      '#B2DFD9',   // Teal moyen (bordures, dividers)
-  greenText:     '#00544B',   // Teal texte (labels sur fond clair)
+  // Verts CA officiels (Vert Forêt CA - credit-agricole.fr)
+  green:         '#1E6B52',   // Vert principal CA (header, boutons primaires)
+  greenDark:     '#145540',   // Vert foncé (hover, pressed)
+  greenLight:    '#3D8B6E',   // Vert clair (accents, highlights)
+  greenBg:       '#E8F5EF',   // Vert très clair (backgrounds cartes OK)
+  greenBg2:      '#B5D9C6',   // Vert moyen (bordures, dividers)
+  greenText:     '#145540',   // Vert texte (labels sur fond clair)
 
   // Fonds
   white:         '#FFFFFF',   // fond cartes, header vert clair
-  lightGray:     '#F5F5F0',   // fond page (légèrement chaud comme CA.fr)
-  borderGray:    '#E0E0D8',   // bordures (même ton chaud)
+  lightGray:     '#F4F5F7',   // fond page (Gris perle)
+  borderGray:    '#E0E0E0',   // bordures
 
   // Textes
   textPrimary:   '#1A1A1A',   // texte principal
@@ -18,9 +18,9 @@ export const CA_THEME = {
   textMuted:     '#888880',   // texte discret
 
   // Sémantiques
-  danger:        '#D32F2F',   // rouge (alertes, sorties)
-  dangerBg:      '#FFEBEE',   // rouge clair (backgrounds alertes)
-  dangerText:    '#7F1D1D',   // texte rouge foncé
+  danger:        '#E52454',   // rouge (alertes, sorties)
+  dangerBg:      '#FDEDF1',   // rouge clair (backgrounds alertes)
+  dangerText:    '#A0193B',   // texte rouge foncé
   warning:       '#E65100',   // orange (ajustements, warnings)
   warningBg:     '#FFF3E0',   // orange clair
   warningText:   '#7C2D12',   // texte orange foncé

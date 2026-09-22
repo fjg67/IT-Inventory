@@ -1,7 +1,9 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CA_THEME, PC_STATUS_CA } from '@/constants/caTheme';
+import { PCDonutChart } from './PCDonutChart';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 export type PCStatus = keyof typeof PC_STATUS_CA;
 
@@ -11,112 +13,130 @@ interface CAParcPCHeroCardProps {
 }
 
 export const CAParcPCHeroCard = ({ totalCount, counts }: CAParcPCHeroCardProps) => {
-  const segments = Object.entries(PC_STATUS_CA).map(([key, conf]) => ({
+  const segments = (Object.entries(PC_STATUS_CA) as [string, { color: string, label: string }][]).map(([key, conf]) => ({
     key,
-    count: counts[key as PCStatus] ?? 0,
+    value: counts[key as PCStatus] ?? 0,
     color: conf.color,
     label: conf.label,
-  })).filter(s => s.count > 0);
+  })).filter(s => s.value > 0);
+
+  // We sort segments by value for the chart so the biggest is first
+  const sortedSegments = [...segments].sort((a, b) => b.value - a.value);
 
   return (
-    <View style={styles.card}>
-      {/* Ligne top : icône + nombre + badge total */}
-      <View style={styles.topRow}>
-        <View style={styles.iconWrap} aria-hidden>
-          <Icon name="laptop" size={22} color={CA_THEME.green} />
-        </View>
-        <View style={styles.numBlock}>
-          <Text style={styles.bigNum} accessibilityLabel={`${totalCount} PC portables`}>
-            {totalCount}
-          </Text>
-          <Text style={styles.numLabel}>PC PORTABLES</Text>
-        </View>
-        <View style={styles.totalTag}>
-          <Text style={styles.totalTagText}>Total</Text>
-        </View>
-      </View>
-
-      {/* Barre de répartition colorée */}
-      <View style={styles.segBar}
-        accessibilityRole="progressbar"
-        accessibilityLabel={`Répartition : ${segments.map(s => `${s.count} ${s.label}`).join(', ')}`}
-      >
-        {totalCount > 0 && segments.map(seg => (
-          <View
-            key={seg.key}
-            style={[
-              styles.segPart,
-              {
-                flex: seg.count,
-                backgroundColor: seg.color,
-              }
-            ]}
-          />
-        ))}
-        {totalCount === 0 && (
-          <View style={[styles.segPart, { flex: 1, backgroundColor: CA_THEME.borderGray }]} />
-        )}
-      </View>
-
-      {/* Légende dots */}
-      <View style={styles.dotsRow}>
-        {Object.entries(PC_STATUS_CA).map(([key, conf]) => (
-          <View key={key} style={styles.dotItem}>
-            <View style={[styles.dot, { backgroundColor: conf.color }]} aria-hidden />
-            <Text style={[styles.dotCount, { color: conf.color }]}>
-              {counts[key as PCStatus] ?? 0}
-            </Text>
+    <Animated.View entering={FadeInDown.duration(400).springify()} style={styles.card}>
+      <View style={styles.contentRow}>
+        
+        {/* Left column: Title, Total, and Legend */}
+        <View style={styles.leftCol}>
+          <View style={styles.headerRow}>
+            <View style={styles.iconWrap} aria-hidden>
+              <Icon name="laptop" size={20} color={CA_THEME.green} />
+            </View>
+            <Text style={styles.cardTitle}>Vue d'ensemble</Text>
           </View>
-        ))}
+          
+          <View style={styles.legendContainer}>
+            {(Object.entries(PC_STATUS_CA) as [string, { color: string, label: string }][]).map(([key, conf], index) => {
+              const count = counts[key as PCStatus] ?? 0;
+              return (
+                <React.Fragment key={key}>
+                  <Animated.View entering={FadeIn.delay(100 + index * 50) as any} style={styles.legendItem}>
+                    <View style={[styles.dot, { backgroundColor: conf.color }]} aria-hidden />
+                    <Text style={styles.legendLabel}>{conf.label}</Text>
+                    <Text style={[styles.legendCount, { color: conf.color }]}>{count}</Text>
+                  </Animated.View>
+                </React.Fragment>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Right column: Donut Chart */}
+        <View style={styles.rightCol}>
+          <PCDonutChart 
+            segments={sortedSegments} 
+            total={totalCount} 
+            size={110} 
+            strokeWidth={12} 
+          />
+        </View>
+
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: CA_THEME.white,
-    borderRadius:    12,
-    borderWidth:     1,
-    borderColor:     CA_THEME.borderGray,
-    borderLeftWidth: 4,
-    borderLeftColor: CA_THEME.green,
-    padding:         14,
+    borderRadius: 16,
+    padding: 16,
     marginHorizontal: 12,
-    marginBottom:    10,
+    marginBottom: 12,
+    // Ombre premium (Glassmorphism shadow effect)
+    shadowColor: CA_THEME.green,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(0,151,130,0.1)',
   },
-  topRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  iconWrap: {
-    width: 44, height: 44, borderRadius: 11,
-    backgroundColor: CA_THEME.greenBg,
-    borderWidth: 1, borderColor: CA_THEME.greenBg2,
-    alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  },
-  numBlock: { flex: 1 },
-  bigNum: { fontSize: 36, fontFamily: CA_THEME.fontFamilyBold, fontWeight: '800', color: CA_THEME.green, lineHeight: 40 },
-  numLabel: {
-    fontSize: 10, fontFamily: CA_THEME.fontFamilyBold, fontWeight: '700',
-    textTransform: 'uppercase', letterSpacing: 0.8,
-    color: CA_THEME.textMuted,
-  },
-  totalTag: {
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: 20,
-    backgroundColor: CA_THEME.greenBg,
-    borderWidth: 1, borderColor: CA_THEME.greenBg2,
-  },
-  totalTagText: { fontSize: 11, fontFamily: CA_THEME.fontFamilySemiBold, fontWeight: '600', color: CA_THEME.greenText },
-  segBar: {
-    height: 6, borderRadius: 3,
-    overflow: 'hidden',
+  contentRow: {
     flexDirection: 'row',
-    marginBottom: 10,
-    backgroundColor: CA_THEME.borderGray,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  segPart: { height: '100%' },
-  dotsRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
-  dotItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  dot:     { width: 8, height: 8, borderRadius: 4 },
-  dotCount:{ fontSize: 12, fontFamily: CA_THEME.fontFamilyBold, fontWeight: '700' },
+  leftCol: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  rightCol: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 8,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  iconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: CA_THEME.greenBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontFamily: CA_THEME.fontFamilyBold,
+    color: CA_THEME.textPrimary,
+  },
+  legendContainer: {
+    gap: 8,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
+  },
+  legendLabel: {
+    fontSize: 13,
+    fontFamily: CA_THEME.fontFamilyMedium,
+    color: CA_THEME.textMuted,
+    flex: 1,
+  },
+  legendCount: {
+    fontSize: 14,
+    fontFamily: CA_THEME.fontFamilyBold,
+  },
 });

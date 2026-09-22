@@ -17,7 +17,7 @@ import {
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Camera, useCameraDevices, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Animated, { FadeIn, FadeInDown, FadeInRight, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInRight, FadeOut, ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -38,10 +38,12 @@ import { useQuantityStepper } from '@/hooks/useQuantityStepper';
 import { CAMouvementTopBar } from '@/components/create-mouvement/CAMouvementTopBar';
 import { CAMouvementStepper, type StepStatus } from '@/components/create-mouvement/CAMouvementStepper';
 import { CAMouvementArticleCard } from '@/components/create-mouvement/CAMouvementArticleCard';
-import { CAMouvementTypeGrid, type MovementType } from '@/components/create-mouvement/CAMouvementTypeGrid';
+import { CAMouvementTypeGrid } from '@/components/create-mouvement/CAMouvementTypeGrid';
 import { CAMouvementQtyStepper } from '@/components/create-mouvement/CAMouvementQtyStepper';
 import { CAMouvementStockPreview } from '@/components/create-mouvement/CAMouvementStockPreview';
 import { CAMouvementStepArticle } from '@/components/create-mouvement/CAMouvementStepArticle';
+import { CASwipeToConfirm } from '@/components/create-mouvement/CASwipeToConfirm';
+import { MOVEMENT_IDENTITIES, type MovementType } from '@/components/movement/movementTheme';
 import { CAScreenWrapper } from '@/components/dashboard/CAScreenWrapper';
 import { CA_THEME } from '@/constants/caTheme';
 import { TextInput, ActivityIndicator } from 'react-native';
@@ -62,6 +64,14 @@ export const AddMovementScreen: React.FC = () => {
   const route = useRoute<any>();
   const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const scrollViewRef = useRef<ScrollView | null>(null);
   const articleStepYRef = useRef(0);
   const typeStepYRef = useRef(0);
@@ -208,6 +218,23 @@ export const AddMovementScreen: React.FC = () => {
     onCodeScanned,
   });
 
+  const breathingScale = useSharedValue(1);
+  const animatedFrameStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: breathingScale.value }],
+  }));
+
+  useEffect(() => {
+    if (showCamera) {
+      breathingScale.value = Animated.withRepeat(
+        Animated.withTiming(1.05, { duration: 1200 }),
+        -1,
+        true
+      );
+    } else {
+      breathingScale.value = 1;
+    }
+  }, [showCamera, breathingScale]);
+
   useEffect(() => {
     requestAnimationFrame(() => {
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
@@ -296,6 +323,7 @@ export const AddMovementScreen: React.FC = () => {
         initialDefectiveCount > safeProjectedStock;
 
       await mouvementRepository.create(payload, technicienId);
+      if (!isMounted.current) return;
 
       if (willAdjustDefectiveCount) {
         dispatch(showAlert({
@@ -312,6 +340,7 @@ export const AddMovementScreen: React.FC = () => {
       Vibration.vibrate([0, 30, 60, 30]);
 
       setTimeout(() => {
+        if (!isMounted.current) return;
         setSubmitSuccess(false);
         const parent = navigation.getParent();
         // After a successful validation, always return to the Mouvements tab.
@@ -322,11 +351,20 @@ export const AddMovementScreen: React.FC = () => {
         }
       }, 800);
     } catch (error) {
+      if (!isMounted.current) return;
       const message = error instanceof Error ? error.message : ERROR_MESSAGES.UNKNOWN_ERROR;
-      Alert.alert('Erreur', message);
+      
+      let displayMessage = message;
+      if (message === 'STOCK_CONFLICT') {
+        displayMessage = "Un autre mouvement vient d'être effectué en même temps. Veuillez réessayer.";
+      }
+      
+      Alert.alert('Erreur', displayMessage);
       Vibration.vibrate(50);
     } finally {
-      setIsSubmitting(false);
+      if (isMounted.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -363,6 +401,10 @@ export const AddMovementScreen: React.FC = () => {
     { key: 'details', label: 'Détails', status: flow.state.step === 'details' ? 'active' : 'pending' },
   ] as { key: string; label: string; status: StepStatus }[];
 
+  const currentIdentity = flow.state.type ? MOVEMENT_IDENTITIES[flow.state.type as MovementType] : undefined;
+  const activeThemeColor = currentIdentity?.color || CA_THEME.green;
+  const activeThemeSubtle = currentIdentity?.subtle || CA_THEME.greenBg;
+
   return (
     <CAScreenWrapper>
       <CAMouvementTopBar
@@ -371,37 +413,44 @@ export const AddMovementScreen: React.FC = () => {
         onHelp={() => Alert.alert('Aide', 'Sélectionnez un article, un type de mouvement et la quantité pour valider le mouvement.')}
       />
 
-      <CAMouvementStepper steps={steps} />
+      <CAMouvementStepper 
+        steps={steps} 
+        themeColor={activeThemeColor}
+        themeSubtle={activeThemeSubtle}
+      />
 
       {flow.state.step === 'article' && (
-        <CAMouvementStepArticle
-          onScan={openScanner}
-          onManualSearch={search.onChangeQuery}
-          searchQuery={search.query}
-          searchResults={search.results.map(r => ({
-            id: String(r.id),
-            reference: r.reference,
-            label: r.label,
-            stock_actuel: r.quantiteActuelle,
-          }))}
-          onSelectArticle={(art) => {
-            const fullArticle = search.results.find(r => String(r.id) === art.id);
-            if (fullArticle) {
-              flow.selectArticle(fullArticle);
-              setErrors({});
-              search.reset();
-            }
-          }}
-        />
+        <Animated.View entering={FadeInRight.duration(300)} exiting={FadeOut.duration(200)} style={{ flex: 1 }}>
+          <CAMouvementStepArticle
+            onScan={openScanner}
+            onManualSearch={search.onChangeQuery}
+            searchQuery={search.query}
+            searchResults={search.results.map(r => ({
+              id: String(r.id),
+              reference: r.reference,
+              label: r.nom || r.displayName || r.display_name || r.reference,
+              stock_actuel: r.quantiteActuelle,
+              imageUrl: r.photoUrl,
+            }))}
+            onSelectArticle={(art) => {
+              const fullArticle = search.results.find(r => String(r.id) === art.id);
+              if (fullArticle) {
+                flow.selectArticle(fullArticle);
+                setErrors({});
+                search.reset();
+              }
+            }}
+          />
+        </Animated.View>
       )}
 
       {flow.state.step === 'type' && flow.state.article && (
-        <ScrollView contentContainerStyle={{ padding: 12, gap: 12 }}>
+        <Animated.ScrollView entering={FadeInRight.duration(300)} exiting={FadeOut.duration(200)} contentContainerStyle={{ padding: 12, gap: 12, flexGrow: 1, paddingBottom: Math.max(120, insets.bottom + 100) }}>
           <Text style={styles.sectionLabel}>Article sélectionné</Text>
           <CAMouvementArticleCard
             article={{
               reference: flow.state.article.reference,
-              label: flow.state.article.label,
+              label: flow.state.article.nom || flow.state.article.displayName || flow.state.article.display_name || flow.state.article.reference,
               stockActuel: flow.state.article.quantiteActuelle,
               site: siteActif?.nom ?? 'Site non sélectionné',
               imageUrl: flow.state.article.photoUrl,
@@ -424,30 +473,38 @@ export const AddMovementScreen: React.FC = () => {
               flow.updateField('quantity', next);
               Vibration.vibrate(8);
             }}
-            movementType={(flow.state.type as MovementType) ?? 'entree'}
             max={maxQty}
             min={minQty}
+            themeColor={CA_THEME.green}
           />
 
           <Pressable
             onPress={() => flow.nextStep()}
             disabled={!flow.state.type}
-            style={[styles.btnContinue, !flow.state.type && { opacity: 0.4 }]}
+            style={({ pressed }) => [
+              styles.btnContinue,
+              pressed && styles.btnContinuePressed,
+              !flow.state.type && styles.btnContinueDisabled,
+              { marginTop: 'auto', marginBottom: 20 },
+            ]}
             accessibilityRole="button" accessibilityLabel="Continuer vers les détails"
           >
+            <View style={styles.continueIcon}>
+              <Icon name="check" size={16} color={CA_THEME.green} />
+            </View>
             <Text style={styles.btnContinueText}>Continuer</Text>
-            <Icon name="arrow-right" size={16} color={CA_THEME.white} />
+            <Icon name="arrow-right" size={20} color={CA_THEME.white} />
           </Pressable>
-        </ScrollView>
+        </Animated.ScrollView>
       )}
 
       {flow.state.step === 'details' && flow.state.article && flow.state.type && (
-        <ScrollView contentContainerStyle={{ padding: 12, gap: 12 }}>
+        <Animated.ScrollView entering={FadeInRight.duration(300)} exiting={FadeOut.duration(200)} contentContainerStyle={{ padding: 12, gap: 12, flexGrow: 1, paddingBottom: Math.max(120, insets.bottom + 100) }}>
           <Text style={styles.sectionLabel}>Article sélectionné</Text>
           <CAMouvementArticleCard
             article={{
               reference: flow.state.article.reference,
-              label: flow.state.article.label,
+              label: flow.state.article.nom || flow.state.article.displayName || flow.state.article.display_name || flow.state.article.reference,
               stockActuel: flow.state.article.quantiteActuelle,
               site: siteActif?.nom ?? 'Site non sélectionné',
               imageUrl: flow.state.article.photoUrl,
@@ -481,24 +538,25 @@ export const AddMovementScreen: React.FC = () => {
             <Text style={styles.charCount}>{(flow.state.comment || '').length}/200</Text>
           </View>
 
-          <Pressable onPress={() => navigation.goBack()} style={styles.btnCancel}
-            accessibilityRole="button" accessibilityLabel="Annuler le mouvement">
-            <Icon name="close-circle" size={16} color={CA_THEME.danger} />
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={({ pressed }) => [
+              styles.btnCancel,
+              pressed && { backgroundColor: CA_THEME.lightGray, transform: [{ scale: 0.98 }] },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Annuler le mouvement"
+          >
+            <Icon name="close-circle-outline" size={20} color={CA_THEME.danger} />
             <Text style={styles.btnCancelText}>Annuler le mouvement</Text>
           </Pressable>
 
-          <Pressable onPress={submit} disabled={isSubmitting} style={styles.btnValidate}
-            accessibilityRole="button" accessibilityLabel="Valider le mouvement">
-            {isSubmitting ? (
-              <ActivityIndicator color={CA_THEME.white} />
-            ) : (
-              <>
-                <Icon name="check-circle" size={16} color={CA_THEME.white} />
-                <Text style={styles.btnValidateText}>Valider le mouvement</Text>
-              </>
-            )}
-          </Pressable>
-        </ScrollView>
+          <CASwipeToConfirm
+            onConfirm={submit}
+            isLoading={isSubmitting}
+            identity={currentIdentity}
+          />
+        </Animated.ScrollView>
       )}
 
       <Modal visible={showCamera} animationType="slide" onRequestClose={() => setShowCamera(false)}>
@@ -527,12 +585,19 @@ export const AddMovementScreen: React.FC = () => {
             </View>
 
             <View style={styles.cameraFrameWrap}>
-              <View style={styles.cameraFrame}>
-                <View style={[styles.corner, styles.tl, { borderColor: CA_THEME.green }]} />
-                <View style={[styles.corner, styles.tr, { borderColor: CA_THEME.green }]} />
-                <View style={[styles.corner, styles.bl, { borderColor: CA_THEME.green }]} />
-                <View style={[styles.corner, styles.br, { borderColor: CA_THEME.green }]} />
+              {/* Blur mask effect using multiple views or just a simple darker background with transparent center */}
+              <View style={styles.scannerMaskTop} />
+              <View style={styles.scannerMaskRow}>
+                <View style={styles.scannerMaskSide} />
+                <Animated.View style={[styles.cameraFrame, animatedFrameStyle]}>
+                  <View style={[styles.corner, styles.tl, { borderColor: CA_THEME.green }]} />
+                  <View style={[styles.corner, styles.tr, { borderColor: CA_THEME.green }]} />
+                  <View style={[styles.corner, styles.bl, { borderColor: CA_THEME.green }]} />
+                  <View style={[styles.corner, styles.br, { borderColor: CA_THEME.green }]} />
+                </Animated.View>
+                <View style={styles.scannerMaskSide} />
               </View>
+              <View style={styles.scannerMaskBottom} />
             </View>
           </View>
         </View>
@@ -551,24 +616,53 @@ const styles = StyleSheet.create({
   },
   btnContinue: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, padding: 14, borderRadius: 12,
+    gap: 8, minHeight: 56, paddingHorizontal: 18, borderRadius: 14,
     backgroundColor: CA_THEME.green,
+    shadowColor: CA_THEME.greenDark,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  btnContinueText: { fontSize: 15, fontWeight: '700', color: CA_THEME.white },
+  btnContinuePressed: { backgroundColor: CA_THEME.greenDark, transform: [{ scale: 0.98 }] },
+  btnContinueDisabled: { opacity: 0.4 },
+  continueIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: CA_THEME.white, alignItems: 'center', justifyContent: 'center' },
+  btnContinueText: { fontSize: 16, fontWeight: '800', color: CA_THEME.white, letterSpacing: 0.2 },
   commentInput: {
     backgroundColor: CA_THEME.white,
-    borderRadius: 10, borderWidth: 1, borderColor: CA_THEME.borderGray,
-    padding: 12, fontSize: 13, color: CA_THEME.textPrimary,
-    minHeight: 70,
+    borderRadius: 14, borderWidth: 1, borderColor: CA_THEME.greenBg2,
+    padding: 14, paddingTop: 14, fontSize: 14, color: CA_THEME.textPrimary,
+    minHeight: 96,
+    shadowColor: CA_THEME.greenDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 1,
   },
-  charCount: { fontSize: 10, color: CA_THEME.textMuted, textAlign: 'right', marginTop: 4 },
+  charCount: { fontSize: 10, color: CA_THEME.greenText, textAlign: 'right', marginTop: 5, fontWeight: '600' },
   btnCancel: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, padding: 13, borderRadius: 12,
-    backgroundColor: CA_THEME.dangerBg,
-    borderWidth: 1.5, borderColor: 'rgba(211,47,47,0.25)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    backgroundColor: '#FFF8FA',
+    borderWidth: 1.5,
+    borderColor: '#F1C5D0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
   },
-  btnCancelText:   { fontSize: 14, fontWeight: '700', color: CA_THEME.danger },
+  btnCancelText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: CA_THEME.danger,
+    letterSpacing: 0.2,
+  },
   btnValidate: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, padding: 14, borderRadius: 12,
@@ -783,9 +877,22 @@ const styles = StyleSheet.create({
   },
   cameraFrameWrap: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginTop: -40,
+  },
+  scannerMaskTop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  scannerMaskBottom: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  scannerMaskRow: {
+    flexDirection: 'row',
+  },
+  scannerMaskSide: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   cameraFrame: {
     width: SCAN_FRAME,

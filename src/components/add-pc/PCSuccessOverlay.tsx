@@ -1,4 +1,5 @@
 // components/add-pc/PCSuccessOverlay.tsx
+import { CA_THEME } from '@/constants/caTheme';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
   bigTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: CA_THEME.textPrimary,
     letterSpacing: -0.8,
     textAlign: 'center',
   },

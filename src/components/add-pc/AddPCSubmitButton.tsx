@@ -1,3 +1,4 @@
+import { CA_THEME } from '@/constants/caTheme';
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   submitText: {
-    color: '#FFFFFF',
+    color: CA_THEME.white,
     fontSize: 14,
     fontWeight: '700',
   },

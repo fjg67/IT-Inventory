@@ -7,6 +7,7 @@ interface CAHeaderProps {
   firstName: string;
   lastName?: string;
   siteName?: string;
+  subtitle?: string;
   onPressSite: () => void;
   onPressSettings?: () => void;
 }
@@ -32,11 +33,15 @@ const getInitials = (firstName: string, lastName?: string): string => {
   return `${a}${b}`.toUpperCase();
 };
 
-export const CAHeader = ({ firstName, lastName, siteName, onPressSite, onPressSettings }: CAHeaderProps) => {
-  const greeting = getGreeting();
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+export const CAHeader = ({ firstName, lastName, siteName, subtitle, onPressSite, onPressSettings }: CAHeaderProps) => {
+  const greeting = getGreeting();
+  const insets = useSafeAreaInsets();
+  
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === 'android' ? 10 : 12) }]}>
       {/* Ligne logo + avatar + paramètres */}
       <View style={styles.logoRow}>
         {/* Logo CA stylisé */}
@@ -67,6 +72,11 @@ export const CAHeader = ({ firstName, lastName, siteName, onPressSite, onPressSe
         <Text style={styles.greetingName}>
           {greeting}, {firstName}
         </Text>
+        {subtitle ? (
+          <Animated.Text entering={FadeInDown.delay(150).duration(400)} style={styles.subtitleText}>
+            {subtitle}
+          </Animated.Text>
+        ) : null}
       </View>
 
       {/* Sélecteur de site */}
@@ -89,7 +99,6 @@ export const CAHeader = ({ firstName, lastName, siteName, onPressSite, onPressSe
 const styles = StyleSheet.create({
   header: {
     backgroundColor: CA_THEME.green,
-    paddingTop:       Platform.OS === 'android' ? (StatusBar.currentHeight ?? 12) + 10 : 12,
     paddingHorizontal: 16,
     paddingBottom:    24,
   },
@@ -151,6 +160,12 @@ const styles = StyleSheet.create({
     fontSize:   20,
     fontFamily: CA_THEME.fontFamilyBold, fontWeight: '700',
     color:      CA_THEME.white,
+    marginBottom: 8,
+  },
+  subtitleText: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    fontFamily: CA_THEME.fontFamilyMedium,
     marginBottom: 12,
   },
   sitePill: {

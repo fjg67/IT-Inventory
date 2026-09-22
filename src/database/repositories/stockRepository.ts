@@ -84,7 +84,89 @@ function mapRowToStockSite(row: StockRow): StockSite {
   };
 }
 
+/** Max retry attempts for optimistic locking */
+const MAX_RETRY_ATTEMPTS = 3;
+/** Base delay (ms) between retries — each retry doubles this */
+const RETRY_BASE_DELAY_MS = 100;
+
+/** Sentinel error message for callers to detect a conflict after exhausting retries */
+export const STOCK_CONFLICT_ERROR = 'STOCK_CONFLICT';
+
 export const stockRepository = {
+  /**
+   * Atomically update stock using optimistic locking (compare-and-swap).
+   *
+   * 1. Read current quantity
+   * 2. Compute new quantity via `computeNewQuantity(currentQuantity)`
+   * 3. Conditional UPDATE: `SET quantity = newQty WHERE quantity = readQty`
+   * 4. If 0 rows affected → someone else changed it → retry (up to MAX_RETRY_ATTEMPTS)
+   *
+   * Returns the new stock quantity on success.
+   * Throws STOCK_CONFLICT_ERROR if all retries are exhausted.
+   */
+  async atomicUpdateQuantite(
+    articleId: string | number,
+    siteId: string | number,
+    computeNewQuantity: (currentQuantity: number) => number,
+    /** Optional validation run against the current stock before writing. Throw to abort. */
+    validate?: (currentQuantity: number, newQuantity: number) => void,
+  ): Promise<number> {
+    const supabase = getSupabaseClient();
+
+    for (let attempt = 0; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
+      // Step 1 — Read current stock
+      const { data: row, error: readErr } = await supabase
+        .from(tables.stocksSites)
+        .select('id, quantity')
+        .eq('articleId', articleId)
+        .eq('siteId', siteId)
+        .maybeSingle();
+
+      if (readErr) throw new Error(readErr.message);
+
+      // If the row doesn't exist yet, create it with quantity 0 then retry
+      if (!row) {
+        await this.createOrUpdate(articleId, siteId, 0);
+        continue;
+      }
+
+      const currentQty: number = row.quantity ?? 0;
+      const newQty = computeNewQuantity(currentQty);
+
+      // Step 2 — Optional validation (e.g. refuse negative stock)
+      if (validate) {
+        validate(currentQty, newQty);
+      }
+
+      // Step 3 — Conditional UPDATE (compare-and-swap)
+      // The WHERE clause includes `quantity = currentQty` so the update only
+      // succeeds if nobody else changed the stock since our read.
+      const { data: updated, error: updateErr } = await supabase
+        .from(tables.stocksSites)
+        .update({ quantity: newQty })
+        .eq('id', row.id)
+        .eq('quantity', currentQty)
+        .select('id');
+
+      if (updateErr) throw new Error(updateErr.message);
+
+      if (updated && updated.length > 0) {
+        // CAS succeeded — clamp defective count and return
+        await clampDefectiveCountToStock(String(articleId), newQty);
+        return newQty;
+      }
+
+      // Step 4 — CAS failed: another writer changed the stock → back off and retry
+      if (attempt < MAX_RETRY_ATTEMPTS - 1) {
+        const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    // All retries exhausted
+    throw new Error(STOCK_CONFLICT_ERROR);
+  },
+
   async getQuantite(articleId: string | number, siteId: string | number): Promise<number | null> {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase

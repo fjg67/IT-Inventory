@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { store } from '@/store';
 import { AppNavigator } from '@/navigation';
 import { ThemeProvider } from '@/theme';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { initializeSupabaseAuth } from '@/api/supabase';
 
 // Ignorer certains warnings non critiques en développement
@@ -31,7 +32,9 @@ const App: React.FC = () => {
       <Provider store={store}>
         <GestureHandlerRootView style={styles.container}>
           <SafeAreaProvider>
-            <AppNavigator />
+            <BottomSheetModalProvider>
+              <AppNavigator />
+            </BottomSheetModalProvider>
           </SafeAreaProvider>
         </GestureHandlerRootView>
       </Provider>

@@ -22,14 +22,14 @@ ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "siteId" TEXT REFERENCES "Site"("id"
 
 -- 4. Insérer les sous-sites de Strasbourg Général
 INSERT INTO "Site" ("id", "name", "address", "isActive", "parentSiteId", "createdAt", "updatedAt")
-SELECT gen_random_uuid()::text, 'Stock 5ème', '5ème étage, Bâtiment siège', true,
+SELECT gen_random_uuid()::text, 'Stock 1er', '1er étage, Bâtiment siège', true,
   (SELECT "id" FROM "Site" WHERE "name" = 'Siège Strasbourg' LIMIT 1), now(), now()
-WHERE NOT EXISTS (SELECT 1 FROM "Site" WHERE "name" = 'Stock 5ème');
+WHERE NOT EXISTS (SELECT 1 FROM "Site" WHERE "name" = 'Stock 1er');
 
 INSERT INTO "Site" ("id", "name", "address", "isActive", "parentSiteId", "createdAt", "updatedAt")
-SELECT gen_random_uuid()::text, 'Stock 8ème', '8ème étage, Bâtiment siège', true,
+SELECT gen_random_uuid()::text, 'Comptoir', 'Comptoir, Bâtiment siège', true,
   (SELECT "id" FROM "Site" WHERE "name" = 'Siège Strasbourg' LIMIT 1), now(), now()
-WHERE NOT EXISTS (SELECT 1 FROM "Site" WHERE "name" = 'Stock 8ème');
+WHERE NOT EXISTS (SELECT 1 FROM "Site" WHERE "name" = 'Comptoir');
 
 INSERT INTO "Site" ("id", "name", "address", "isActive", "parentSiteId", "createdAt", "updatedAt")
 SELECT gen_random_uuid()::text, 'Epinal', 'Epinal, Vosges', true,
@@ -42,13 +42,13 @@ SET "parentSiteId" = (SELECT "id" FROM "Site" WHERE "name" = 'Siège Strasbourg'
 WHERE "name" = 'Epinal' AND "parentSiteId" IS NULL;
 
 INSERT INTO "Site" ("id", "name", "address", "isActive", "parentSiteId", "createdAt", "updatedAt")
-SELECT gen_random_uuid()::text, 'TCS', 'Strasbourg', true,
+SELECT gen_random_uuid()::text, 'Sous sol', 'Siège de Strasbourg', true,
   (SELECT "id" FROM "Site" WHERE "name" = 'Siège Strasbourg' LIMIT 1), now(), now()
-WHERE NOT EXISTS (SELECT 1 FROM "Site" WHERE "name" = 'TCS');
+WHERE NOT EXISTS (SELECT 1 FROM "Site" WHERE "name" = 'Sous sol');
 
 -- 4b. Corriger les adresses existantes
-UPDATE "Site" SET "address" = '5ème étage, Bâtiment siège' WHERE "name" = 'Stock 5ème';
-UPDATE "Site" SET "address" = '8ème étage, Bâtiment siège' WHERE "name" = 'Stock 8ème';
+UPDATE "Site" SET "address" = '1er étage, Bâtiment siège' WHERE "name" = 'Stock 1er';
+UPDATE "Site" SET "address" = 'Comptoir, Bâtiment siège' WHERE "name" = 'Comptoir';
 
 -- 5. Vérifier le résultat
 SELECT id, "name", "address", "isActive", "parentSiteId" FROM "Site" ORDER BY "parentSiteId" NULLS FIRST, "name";

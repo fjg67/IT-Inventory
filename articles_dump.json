@@ -1,0 +1,942 @@
+[
+  {
+    "id": "50d65f6b-f137-4978-9cbb-03064145039e",
+    "reference": "KSAOP8725030",
+    "name": "KSAOP8725030"
+  },
+  {
+    "id": "2dcf5e71-a025-4c3e-9073-d3395f827e05",
+    "reference": "KSAOPSTR2345",
+    "name": "KSAOPSTR2345"
+  },
+  {
+    "id": "58154688-c89b-4323-9ddb-91ba246458be",
+    "reference": "1100005",
+    "name": "BASE Casque SF V1"
+  },
+  {
+    "id": "0b3bf0a8-8abc-4179-a855-70262f7e657c",
+    "reference": "1400004",
+    "name": "Alimentation Mini UC (90W)"
+  },
+  {
+    "id": "9beb57b1-3a64-483a-a9c4-f9b894d29700",
+    "reference": "KSAOPSTR2345",
+    "name": "KSAOPSTR2345"
+  },
+  {
+    "id": "1286a2fc-12aa-43b1-b6cc-1318cb953f82",
+    "reference": "1200019",
+    "name": "Adaptateur (divers)"
+  },
+  {
+    "id": "a3107fd3-1059-490f-8266-d439d95c3d11",
+    "reference": "1000022",
+    "name": "Souris SF Urban Factory"
+  },
+  {
+    "id": "f61c0198-1700-411d-8530-f61bfd9817c6",
+    "reference": "1100007",
+    "name": "Casque EPOS"
+  },
+  {
+    "id": "cmrx62s620004pli8oh9qx5wz",
+    "reference": "1000015",
+    "name": "Dongle Clavier / Souris CHERRY"
+  },
+  {
+    "id": "d586bef1-26b0-4640-a817-64d4bd36d2a0",
+    "reference": "1000014",
+    "name": "Dongle Clavier / Souris DELL"
+  },
+  {
+    "id": "86d2c0e7-1bf1-4574-b4b1-8e21e5af457c",
+    "reference": "1000015",
+    "name": "Dongle Clavier / Souris CHERRY"
+  },
+  {
+    "id": "2c250bd2-1138-4df6-9e8e-38c9fa41dbb6",
+    "reference": "1000016",
+    "name": "Dongle casque Plantronics BT 600"
+  },
+  {
+    "id": "1fe35ad3-03b9-4f57-bc8c-2718c0b55358",
+    "reference": "1000017",
+    "name": "POINTEUR LASER Aurora"
+  },
+  {
+    "id": "f0356e41-511a-47df-b5ae-91dc46cfeebe",
+    "reference": "1000020",
+    "name": "Kit clavier souris agence Urban Factory"
+  },
+  {
+    "id": "0a9497c4-1ca0-4e52-b7bb-b750627e7d04",
+    "reference": "1000021",
+    "name": "Dongle casque Plantronics BT 700"
+  },
+  {
+    "id": "1f3d6621-6b8f-4b42-b031-d53a663b7bed",
+    "reference": "1200001",
+    "name": "Câble DP / USB C 1 m"
+  },
+  {
+    "id": "3698fc96-45a9-48d0-981d-d12a8fd84b3b",
+    "reference": "1200003",
+    "name": "Câble HDMI/HDMI 3 et 2 mètre"
+  },
+  {
+    "id": "a0e06905-b09c-4886-9a44-bb4da8b36e90",
+    "reference": "1400003",
+    "name": "Alimentation Ecran 34\""
+  },
+  {
+    "id": "4a28ae37-9f19-4246-891d-f516ab7335d2",
+    "reference": "KSAOPSTR2325",
+    "name": "KSAOPSTR2325"
+  },
+  {
+    "id": "e40d1065-ed40-44a8-acad-480663587a77",
+    "reference": "KSAOP8725900",
+    "name": "KSAOP8725900"
+  },
+  {
+    "id": "cb82a646-ec69-41d7-b8f2-0a6e8d7d2de7",
+    "reference": "1200009",
+    "name": "Rallonge USB-A"
+  },
+  {
+    "id": "fdb465b5-ae13-47c9-9a03-057c2cab2f81",
+    "reference": "1200010",
+    "name": "Câble USB-C / USB-A"
+  },
+  {
+    "id": "fb4a6dec-95d0-483d-95e6-c1fc9fb5b406",
+    "reference": "1200011",
+    "name": "Câble USB-C / Lightning"
+  },
+  {
+    "id": "85ca7abd-fdf8-4961-ae91-64e38329be63",
+    "reference": "1200013",
+    "name": "RJ45 30 cm blanc"
+  },
+  {
+    "id": "521bf86c-7037-4dc2-b0b7-d6c8c2a37851",
+    "reference": "1200014",
+    "name": "RJ45 50 cm blanc"
+  },
+  {
+    "id": "2e604d0b-c343-4f81-8af8-04ae2521d902",
+    "reference": "1200016",
+    "name": "RJ45 2 mètre blanc"
+  },
+  {
+    "id": "aea8e16e-a311-4334-a0b8-47a0e2bcc3cf",
+    "reference": "1200023",
+    "name": "RJ45 30 cm rouge"
+  },
+  {
+    "id": "98da0a22-3225-4679-96c1-92a747a4e49e",
+    "reference": "KSAOPSTR2432",
+    "name": "KSAOPSTR2432"
+  },
+  {
+    "id": "e6ddc8f0-8987-48c9-be00-509287912ac7",
+    "reference": "5000003",
+    "name": "Kit audio > Casque EPOS + Dongle EPOS"
+  },
+  {
+    "id": "17051511-9bf3-4348-9988-a68af09b4cb6",
+    "reference": "5000005",
+    "name": "Kit clavier souris > Souris SF + clavier SF CHERRY"
+  },
+  {
+    "id": "e8a2cc52-a199-4293-98a9-f6ca632ee0ff",
+    "reference": "5000006",
+    "name": "Kit clavier souris > Souris SF + clavier SF DELL"
+  },
+  {
+    "id": "bf1b3d26-f795-413c-91ae-05477a5f77c3",
+    "reference": "1200025",
+    "name": "RJ45 1 mètre rouge"
+  },
+  {
+    "id": "00797305-405b-45a1-85f4-4a0ef8cff6e4",
+    "reference": "1200026",
+    "name": "RJ45 2 mètre rouge"
+  },
+  {
+    "id": "23498d7a-d2a7-46dd-9268-d278aeeda175",
+    "reference": "1200033",
+    "name": "RJ45 30 cm vert"
+  },
+  {
+    "id": "d53d9649-3cba-4778-b644-6780caf9e4f6",
+    "reference": "1200034",
+    "name": "RJ45 50 cm vert"
+  },
+  {
+    "id": "9c915e45-9c91-4a19-ac2f-3776d747a09c",
+    "reference": "1200036",
+    "name": "RJ45 2 mètre vert"
+  },
+  {
+    "id": "033a20b2-a8ff-4ed4-85bd-9b26f81bb7fe",
+    "reference": "1200043",
+    "name": "RJ45 30 cm jaune"
+  },
+  {
+    "id": "f5691e39-4d84-4239-ab12-a5f57dad6639",
+    "reference": "KSAOP8725949",
+    "name": "KSAOP8725949"
+  },
+  {
+    "id": "32e79172-45b7-4c4f-a083-d094478c117f",
+    "reference": "KSAOPSTR2335",
+    "name": "KSAOPSTR2335"
+  },
+  {
+    "id": "62915a27-4585-4287-aac1-ecd4ccf7b94b",
+    "reference": "KSAOP8725936",
+    "name": "KSAOP8725936"
+  },
+  {
+    "id": "3f744308-ced9-4a98-bdb2-5a81775f48ea",
+    "reference": "KSAOPSTR2284",
+    "name": "KSAOPSTR2284"
+  },
+  {
+    "id": "d5fe8cf5-ac0c-4423-84f6-f11adf08ac71",
+    "reference": "1200044",
+    "name": "RJ45 50 cm jaune"
+  },
+  {
+    "id": "8cbc76be-a556-4858-b4cf-21c8b3c81d71",
+    "reference": "1200046",
+    "name": "RJ45 2 mètre jaune"
+  },
+  {
+    "id": "7e18161c-bc1b-4033-9150-cbcff6f5bd69",
+    "reference": "1200048",
+    "name": "RJ45 5 mètre jaune"
+  },
+  {
+    "id": "9979d8ab-27e1-474c-b650-a6a13253ef8a",
+    "reference": "1300002",
+    "name": "Chargeur Précision DELL"
+  },
+  {
+    "id": "5970369d-9ed4-4330-8564-385cf3d6fd03",
+    "reference": "1400001",
+    "name": "Câble MICKEY (C5 / IEC 320)"
+  },
+  {
+    "id": "af566948-e114-4467-8233-19f285500564",
+    "reference": "1400002",
+    "name": "multiprise"
+  },
+  {
+    "id": "6e3992e8-85f7-461a-8c12-c10e3cc0dfed",
+    "reference": "1400004",
+    "name": "Alimentation Mini UC OPTIPLEX (90W fiche 4,5x3,0mm)"
+  },
+  {
+    "id": "df6e47fb-ed53-471c-aa69-36d108b8999c",
+    "reference": "1600001",
+    "name": "Scanner doc"
+  },
+  {
+    "id": "5b95df6c-3ec5-44c7-9c33-579b2b068f6d",
+    "reference": "1000018",
+    "name": "Coque téléphone"
+  },
+  {
+    "id": "1b2bfabb-7c6c-4c84-b0ef-dc63489cc231",
+    "reference": "1100001",
+    "name": "Casque SF Plantronics V1"
+  },
+  {
+    "id": "400e2124-5dc6-4a23-b6c6-06bb367e5711",
+    "reference": "1100007",
+    "name": "Casque EPOS"
+  },
+  {
+    "id": "dd28927b-fbd3-43c1-9d25-98d29d34fadf",
+    "reference": "1100009",
+    "name": "Base de charge EPOS"
+  },
+  {
+    "id": "f1fdde85-639b-4e9e-a39f-cc8cf35c4243",
+    "reference": "1200006",
+    "name": "Câble DP/DP 3 mètre"
+  },
+  {
+    "id": "dd8afb81-da7a-4675-afc1-ea422309c676",
+    "reference": "1200012",
+    "name": "Câble USB-A / Micro-USB 1 mètre"
+  },
+  {
+    "id": "eeee2b70-6905-4fe5-9253-d434091acbad",
+    "reference": "1200015",
+    "name": "RJ45 1 mètre blanc"
+  },
+  {
+    "id": "0595340e-5e57-47d6-99aa-75bfb0162c79",
+    "reference": "1200024",
+    "name": "RJ45 50 cm rouge"
+  },
+  {
+    "id": "e6e5f3b7-daf2-441f-8c58-1b830911369e",
+    "reference": "1200038",
+    "name": "RJ45 5 mètre vert"
+  },
+  {
+    "id": "773b3f56-eb01-4584-9672-e7ab8807e4ea",
+    "reference": "KSAOP8725376",
+    "name": "KSAOP8725376"
+  },
+  {
+    "id": "4d7ec3cd-c630-4734-a377-c70b9ccce950",
+    "reference": "KSAOPSTR2326",
+    "name": "KSAOPSTR2326"
+  },
+  {
+    "id": "9e4f9bf2-8b09-4fb4-aeaf-08c4f1862ec0",
+    "reference": "1000020",
+    "name": "Kit clavier souris agence Urban Factory (Retour)"
+  },
+  {
+    "id": "c2c68b4b-165b-4131-9918-552650612a52",
+    "reference": "5000001",
+    "name": "Kit audio > Casque V1 + Dongle plantronics"
+  },
+  {
+    "id": "59e30667-27af-4289-a211-7ebab9354440",
+    "reference": "KSAOPSTR2433",
+    "name": "KSAOPSTR2433"
+  },
+  {
+    "id": "6e2d4de9-85ec-4c74-8664-2777ecbbb929",
+    "reference": "1300001",
+    "name": "Chargeur USB-C DELL 65W"
+  },
+  {
+    "id": "2b3506ad-c10b-4e86-bf8f-3591041775e0",
+    "reference": "1400003",
+    "name": "Alimentation Ecran 34\""
+  },
+  {
+    "id": "2d2bf2de-41fb-470d-8433-8b412038591a",
+    "reference": "KSAOP8725723",
+    "name": "KSAOP8725723"
+  },
+  {
+    "id": "6f37dd54-20f7-47b0-87c3-8dbf4ff40e99",
+    "reference": "KSAOP8725117",
+    "name": "KSAOP8725117"
+  },
+  {
+    "id": "7b7067cf-ade2-4a19-9e7f-09388494e1e4",
+    "reference": "KSAOPSTR2187",
+    "name": "KSAOPSTR2187"
+  },
+  {
+    "id": "e1b02b26-aada-485e-a3ca-480369cad7e0",
+    "reference": "KSAOP8725900",
+    "name": "KSAOP8725900"
+  },
+  {
+    "id": "50fc6486-fa77-44fc-969d-24c25fd6af10",
+    "reference": "KSAOP8725006",
+    "name": "KSAOP8725006"
+  },
+  {
+    "id": "fad3c30a-a221-4773-be6d-2b49968e9ce1",
+    "reference": "KSAOP8725319",
+    "name": "KSAOP8725319"
+  },
+  {
+    "id": "7d1975cb-e52c-4374-86e9-41ea9fda1814",
+    "reference": "KSAOP8725051",
+    "name": "KSAOP8725051"
+  },
+  {
+    "id": "560c0b8d-15ec-4397-a3f6-54ee1ed33ae0",
+    "reference": "1300004",
+    "name": "Chargeur USB-C DELL 65W"
+  },
+  {
+    "id": "6adbc8ef-94f0-4d13-b6cc-1b0355b01c6c",
+    "reference": "1700001",
+    "name": "Vidéo Projecteur"
+  },
+  {
+    "id": "31c49386-09ad-4e2b-b616-e99074ff4d59",
+    "reference": "1000017",
+    "name": "POINTEUR LASER Aurora"
+  },
+  {
+    "id": "509b9a33-8e29-46bd-bb1e-ab0089488ead",
+    "reference": "1200010",
+    "name": "Câble USB-C / USB-A"
+  },
+  {
+    "id": "9fe520c5-b1f6-4e67-b49f-2cbf167ef84a",
+    "reference": "1000006",
+    "name": "D6000"
+  },
+  {
+    "id": "bcd7f1d3-6612-448c-8411-606f2d7422e4",
+    "reference": "1000001",
+    "name": "Souris filaire DELL"
+  },
+  {
+    "id": "d7133d6a-9446-49fb-a20f-75446d557bd1",
+    "reference": "KSAOP8725008",
+    "name": "KSAOP8725008"
+  },
+  {
+    "id": "a8039624-6e50-439a-a78c-d8f398dc5aab",
+    "reference": "KSAOP8725137",
+    "name": "KSAOP8725137"
+  },
+  {
+    "id": "87d034b8-b0d5-4c9a-acc8-fd4dd688d018",
+    "reference": "1000014",
+    "name": "Dongle Clavier / souris DELL"
+  },
+  {
+    "id": "455680b7-9264-42c3-8872-0c2a590b63c9",
+    "reference": "1300004",
+    "name": "Chargeur USB-C DELL 65W"
+  },
+  {
+    "id": "22b53e3f-fed2-4e18-9e95-68f0c2f1e4ed",
+    "reference": "KSAOPEPI0547",
+    "name": "KSAOPEPI0547"
+  },
+  {
+    "id": "21d21c87-9267-41ac-9213-92c4e57b59fd",
+    "reference": "1100004",
+    "name": "Dongle casque EPOS"
+  },
+  {
+    "id": "ddf73402-eed3-4949-a4c0-53096ad33d26",
+    "reference": "1200003",
+    "name": "Câble HDMI/HDMI 3 et 2 mètre"
+  },
+  {
+    "id": "932ac456-8797-47c6-a30e-149c0e01fe02",
+    "reference": "1200018",
+    "name": "RJ45 5 mètre blanc"
+  },
+  {
+    "id": "666bbdc1-84b9-46bf-9b9a-6ea9e2be061d",
+    "reference": "1200028",
+    "name": "RJ45 5 mètre rouge"
+  },
+  {
+    "id": "6d5d1c90-ac7d-4c7d-9143-240fce59c0c5",
+    "reference": "1200035",
+    "name": "RJ45 1 mètre vert"
+  },
+  {
+    "id": "bb744407-385e-425e-9805-f0fe1d4aa873",
+    "reference": "KSAOP8725126",
+    "name": "KSAOP8725126"
+  },
+  {
+    "id": "69288cd2-ff04-4baa-8bd0-1fd4660f4ee2",
+    "reference": "KSAOP8725102",
+    "name": "KSAOP8725102"
+  },
+  {
+    "id": "9514d8d0-651f-4fae-aec7-df8b79161f5a",
+    "reference": "KSAOPSTR2297",
+    "name": "KSAOPSTR2297"
+  },
+  {
+    "id": "cc4fa68d-d8e2-475b-beb4-bfd68d24fb53",
+    "reference": "1400001",
+    "name": "Câble MICKEY (C5 / IEC 320)"
+  },
+  {
+    "id": "f807f34c-edeb-45ad-b34a-41d896e5b84a",
+    "reference": "1000015",
+    "name": "Dongle Clavier / Souris CHERRY"
+  },
+  {
+    "id": "fc9bad21-a761-4122-b7ca-25ff466fb1d6",
+    "reference": "KSAOP8725215",
+    "name": "KSAOP8725215"
+  },
+  {
+    "id": "a7d14b29-92cc-4c9e-9224-c34cd45b3f80",
+    "reference": "1000025",
+    "name": "Sacoche casque"
+  },
+  {
+    "id": "80abcd5f-d311-48ee-b286-e526c81db9d5",
+    "reference": "1200045",
+    "name": "RJ45 1 mètre jaune"
+  },
+  {
+    "id": "eb196467-105a-4949-a6bd-6731ceab2f56",
+    "reference": "1000016",
+    "name": "Dongle casque Plantronics BT 600"
+  },
+  {
+    "id": "6bc8e9c5-f369-4d0c-a7af-e10241ed9cd0",
+    "reference": "1000023",
+    "name": "Sacoche"
+  },
+  {
+    "id": "70339d8d-455b-4fe8-990c-fc97ed3b9034",
+    "reference": "1000024",
+    "name": "Sac à dos"
+  },
+  {
+    "id": "bd57c0e3-0e41-4eb7-830a-196f010caf6e",
+    "reference": "1100002",
+    "name": "Casque SF Plantronics V2"
+  },
+  {
+    "id": "15a0ab3f-536f-4fe7-beaf-7253a13e21af",
+    "reference": "1100003",
+    "name": "Casque filaire"
+  },
+  {
+    "id": "93fa3893-78f2-4811-ad3c-fa1dd4533604",
+    "reference": "KSAOPSTR2161",
+    "name": "KSAOPSTR2161"
+  },
+  {
+    "id": "c28bc725-3e21-4fa7-b02c-f9caf52465a6",
+    "reference": "KSAOPSTR2265",
+    "name": "KSAOPSTR2265"
+  },
+  {
+    "id": "e241d079-c8c3-44b3-bc6b-b6a9fbbcd878",
+    "reference": "1000018",
+    "name": "Coque téléphone"
+  },
+  {
+    "id": "a962bed5-a5fd-4060-b4c1-626543a00d0e",
+    "reference": "1000005",
+    "name": "Clavier SF cherry"
+  },
+  {
+    "id": "fe83e7f8-77dc-45a3-b239-d4a9b7776835",
+    "reference": "1000004",
+    "name": "Clavier F"
+  },
+  {
+    "id": "6f7aeb8c-235d-4014-bc4b-6f2b3df2e942",
+    "reference": "1000007",
+    "name": "HUB Fiche USB C"
+  },
+  {
+    "id": "8c07df93-d81f-4f28-aed2-a0c3a6c2b4e8",
+    "reference": "KSAOPSTR2035",
+    "name": "KSAOPSTR2035"
+  },
+  {
+    "id": "6c0c0207-f158-4cc5-aceb-934fde49a7d2",
+    "reference": "1100005",
+    "name": "BASE Casque SF V1"
+  },
+  {
+    "id": "cc2ed70e-eca8-4bf6-8a01-02e2baf88c0e",
+    "reference": "1100006",
+    "name": "BASE Casque SF V2"
+  },
+  {
+    "id": "f2297bb7-395a-421f-9c2e-92eb5c6efe77",
+    "reference": "1100008",
+    "name": "Dongle casque Plantronics USB C"
+  },
+  {
+    "id": "cb730922-88c1-4fbc-b626-f47c74bb3125",
+    "reference": "1200001",
+    "name": "Câble DP / USB C 1 m"
+  },
+  {
+    "id": "22c90d2a-a4a2-44f0-9707-3076d98d074f",
+    "reference": "KSAOP8725110",
+    "name": "KSAOP8725110"
+  },
+  {
+    "id": "a55a4724-4cd0-40f8-81a2-acc7a96e5e0b",
+    "reference": "KSAOP8725067",
+    "name": "KSAOP8725067"
+  },
+  {
+    "id": "b05f522c-21ba-49bb-9808-945f1e2793d2",
+    "reference": "KSAOP8725617",
+    "name": "KSAOP8725617"
+  },
+  {
+    "id": "5fe72942-f31a-4fe7-bc0c-8ab84f51d373",
+    "reference": "KSAOPSTR2434",
+    "name": "KSAOPSTR2434"
+  },
+  {
+    "id": "5a800942-26c1-4ca3-90b2-82e3b60371ff",
+    "reference": "1000021",
+    "name": "Dongle casque Plantronics BT 700"
+  },
+  {
+    "id": "7212ecb5-9a8d-4eaa-957e-851e6573baa4",
+    "reference": "1200012",
+    "name": "Câble USB-A / Micro-USB 1 mètre"
+  },
+  {
+    "id": "3fcaf46c-ac2c-4364-b5c4-28ac84678d41",
+    "reference": "KSAOP8725724",
+    "name": "KSAOP8725724"
+  },
+  {
+    "id": "58f5f47b-8cd8-41ed-b70d-cf952d63f0fd",
+    "reference": "1200002",
+    "name": "Câble DP / HDMI 3 mètre"
+  },
+  {
+    "id": "9ba6a751-12d6-4e3c-bd93-d4002a42ecaf",
+    "reference": "1200004",
+    "name": "Câble HDMI/HDMI 5 et 10 mètre"
+  },
+  {
+    "id": "4316a23f-2851-48c9-9eea-95abccfde2f9",
+    "reference": "1200005",
+    "name": "Câble DP/DP 2 mètre"
+  },
+  {
+    "id": "a9174526-590d-418b-b2f5-2d2cc19ebeb9",
+    "reference": "1200007",
+    "name": "Câble USB-C / USB-C 2 M"
+  },
+  {
+    "id": "c073d550-e945-43a9-bb8b-2a73e82faf6a",
+    "reference": "1100004",
+    "name": "Dongle Casque Epos"
+  },
+  {
+    "id": "1bbd4dd3-408c-4f4b-97c9-d49c2ad32dfc",
+    "reference": "KSAOPSTR2184",
+    "name": "KSAOPSTR2184"
+  },
+  {
+    "id": "2dc87bc7-6ee0-41f3-9457-8eb1879ef38d",
+    "reference": "5000002",
+    "name": "Kit audio > Casque V2 + Dongle plantronics"
+  },
+  {
+    "id": "900f00d9-ea81-4959-86fd-1ccd11bdf396",
+    "reference": "KSAOP8725483",
+    "name": "KSAOP8725483"
+  },
+  {
+    "id": "a8826cca-899c-4da7-a94a-0b057eee4dc7",
+    "reference": "KSAOP8725282",
+    "name": "KSAOP8725282"
+  },
+  {
+    "id": "bf9684ed-bde0-4803-9c9e-58051181a233",
+    "reference": "KSAOPSTR2166",
+    "name": "KSAOPSTR2166"
+  },
+  {
+    "id": "48dab6df-33b9-4c9b-a9d9-8cc0c6841c3f",
+    "reference": "1100003",
+    "name": "Casque filaire"
+  },
+  {
+    "id": "760adc30-a3dd-4ccd-959f-2be9654dcd85",
+    "reference": "1200007",
+    "name": "Câble USB-C / USB-C 2 M"
+  },
+  {
+    "id": "b9f38b58-128c-4c7a-94e2-e513d748bc37",
+    "reference": "1100008",
+    "name": "Dongle casque Plantronics USB C"
+  },
+  {
+    "id": "01edcd41-98a8-4bb0-83b4-99cd0516ebe6",
+    "reference": "KSAOP8725347",
+    "name": "KSAOP8725347"
+  },
+  {
+    "id": "29cf2832-c7a4-4b42-b212-014aee6dfe57",
+    "reference": "KSAOPSTR2389",
+    "name": "KSAOPSTR2389"
+  },
+  {
+    "id": "6204427b-da0d-4038-bc8b-340bf0eaa993",
+    "reference": "KSAOP8725868",
+    "name": "KSAOP8725868"
+  },
+  {
+    "id": "cb75a6b5-f142-49a7-ac7c-89429a73dcb8",
+    "reference": "KSAOP8725889",
+    "name": "KSAOP8725889"
+  },
+  {
+    "id": "a1cfdbf0-5fcd-471b-a74e-8c0f11c48432",
+    "reference": "5000004",
+    "name": "Kit complet > souris filaire + Mickey + USB-C + Casque V1 + Dongle Plantronics"
+  },
+  {
+    "id": "71ec49ce-61a5-4360-8181-87364ed6fa0f",
+    "reference": "1500001",
+    "name": "Bras Ergotron / Bras Ecran"
+  },
+  {
+    "id": "575df85f-7869-4dfe-b1ce-755bfeb14473",
+    "reference": "1600001",
+    "name": "Scanner document"
+  },
+  {
+    "id": "6cf0213b-26f9-4a03-b400-e8af022a7600",
+    "reference": "5000007",
+    "name": "Kit clavier souris > Souris SF + clavier SF Urban Factory"
+  },
+  {
+    "id": "2e133fa2-a30f-4565-b0e2-e5ded0ab8a4d",
+    "reference": "1200003",
+    "name": "Câble HDMI/HDMI 3 et 2 mètre"
+  },
+  {
+    "id": "65e95911-91b1-40b6-86ce-c0aaeedac851",
+    "reference": "1400005",
+    "name": "Chargeur D6000 130W"
+  },
+  {
+    "id": "5b0be9a1-2bfe-496a-a633-e69b641fe643",
+    "reference": "1000023",
+    "name": "Sacoche"
+  },
+  {
+    "id": "5346b554-6216-4b39-a1ec-95e7ed398a4b",
+    "reference": "KSAOPSTR2283",
+    "name": "KSAOPSTR2283"
+  },
+  {
+    "id": "348dd0f7-e61e-4f75-810d-feed1871fd52",
+    "reference": "KSAOP8725932",
+    "name": "KSAOP8725932"
+  },
+  {
+    "id": "7a40587b-d170-42fe-ba60-568cf185f913",
+    "reference": "KSAOP8725233",
+    "name": "KSAOP8725233"
+  },
+  {
+    "id": "ffc85b8c-9b29-4f68-b8b9-54fc80e47f5c",
+    "reference": "KSAOP8725197",
+    "name": "KSAOP8725197"
+  },
+  {
+    "id": "fc6a4bde-8741-42a7-ae81-856f9a2b2d08",
+    "reference": "KSAOP8725122",
+    "name": "KSAOP8725122"
+  },
+  {
+    "id": "34d63a23-9f4b-4be2-809b-5deb3f25f91a",
+    "reference": "1300001",
+    "name": "Chargeur USB-C DELL 65W"
+  },
+  {
+    "id": "7ae457ef-a9ad-4702-ae68-b911b69e51f6",
+    "reference": "1400006",
+    "name": "Chargeur USB"
+  },
+  {
+    "id": "98073930-7386-4300-a487-e3b7449e36ff",
+    "reference": "KSAOPEPI0533",
+    "name": "KSAOPEPI0533"
+  },
+  {
+    "id": "b2d0cbf3-dd25-49fd-8a32-d099b07c3320",
+    "reference": "KSAOPSTR2289",
+    "name": "KSAOPSTR2289"
+  },
+  {
+    "id": "01b51f46-0938-4ec8-a87a-a6752c078890",
+    "reference": "KSAOPSTR2233",
+    "name": "KSAOPSTR2233"
+  },
+  {
+    "id": "f01d0f94-7c78-4e3a-abbb-20e67746e2f3",
+    "reference": "KSAOP988888",
+    "name": "KSAOP988888"
+  },
+  {
+    "id": "4c5ff46a-560a-4cee-af45-15df7979d5f8",
+    "reference": "KSAOP8725085",
+    "name": "KSAOP8725085"
+  },
+  {
+    "id": "270c702a-0536-4746-8b61-b62130932f79",
+    "reference": "KSAOP8725087",
+    "name": "KSAOP8725087"
+  },
+  {
+    "id": "6d95c40b-66b3-4632-ba41-cfdcb4356447",
+    "reference": "KSAOP8725086",
+    "name": "KSAOP8725086"
+  },
+  {
+    "id": "a28723eb-0ab4-4151-8528-8553df6ac177",
+    "reference": "KSAOP8725729",
+    "name": "KSAOP8725729"
+  },
+  {
+    "id": "621e2e3f-3104-4f6e-b332-f2c79db90e03",
+    "reference": "KSAOP8725666",
+    "name": "KSAOP8725666"
+  },
+  {
+    "id": "2de56079-9a94-4247-92c2-8e23810ee34f",
+    "reference": "KSAOPSTR655",
+    "name": "KSAOPSTR655"
+  },
+  {
+    "id": "d7a27d46-9e3f-474e-b44e-144a706d20b7",
+    "reference": "KSAOPEP50514",
+    "name": "KSAOPEP50514"
+  },
+  {
+    "id": "f58ddcce-421b-4f8c-b9f7-1a189b60acee",
+    "reference": "KSAOPEPI0514",
+    "name": "KSAOPEPI0514"
+  },
+  {
+    "id": "5b31f9dc-493f-4a48-86f2-1c9ded65a760",
+    "reference": "KSAOPEPI0514",
+    "name": "KSAOPEPI0514"
+  },
+  {
+    "id": "c9a706c0-790c-474a-93f6-38733cb0da1d",
+    "reference": "KSAOPEPI0509",
+    "name": "KSAOPEPI0509"
+  },
+  {
+    "id": "771fd58b-9617-4827-9a47-9288ea0a6167",
+    "reference": "1300003",
+    "name": "Chargeur HP"
+  },
+  {
+    "id": "e407c9dd-2819-47c5-a918-007ca841e352",
+    "reference": "1400005",
+    "name": "Chargeur D6000 130W (fiche 7.4mm X 5.0mm)"
+  },
+  {
+    "id": "a1cbc6d8-990e-4c5b-aff2-58cb7bae063a",
+    "reference": "1000005",
+    "name": "Clavier SF cherry"
+  },
+  {
+    "id": "c962c451-7826-4415-8ee8-a93c9e9ab6ab",
+    "reference": "1000013",
+    "name": "POINTEUR LASER Kensington"
+  },
+  {
+    "id": "572ede4d-dbfd-4d41-8867-0a3e171dd445",
+    "reference": "1000001",
+    "name": "Souris filaire DELL"
+  },
+  {
+    "id": "2b1074de-194c-48d3-a5c9-706c9dd3ec5b",
+    "reference": "1000002",
+    "name": "Souris SF DELL"
+  },
+  {
+    "id": "c7c4cc8d-3f80-42cd-9b00-42b99c4b34f7",
+    "reference": "1000003",
+    "name": "Souris SF Cherry"
+  },
+  {
+    "id": "1c1b0cb3-8790-497e-8eba-92c4d0570fb1",
+    "reference": "1000004",
+    "name": "Clavier F"
+  },
+  {
+    "id": "baedbc91-4af5-44a7-9c16-af03fef0eb25",
+    "reference": "1200016",
+    "name": "Câble RJ-45 2 mètres blanc"
+  },
+  {
+    "id": "e8cdae78-ab6e-4336-8974-058ff37a12e1",
+    "reference": "1200017",
+    "name": "Câble RJ-45 10 mètres"
+  },
+  {
+    "id": "3a0643c6-6697-4f47-9a3f-22e3722bc1e5",
+    "reference": "1000006",
+    "name": "D6000"
+  },
+  {
+    "id": "3370d2fc-70d8-466a-9cdf-c51e4d1694ae",
+    "reference": "1100010",
+    "name": "Casques non triés"
+  },
+  {
+    "id": "0c29dca3-42d0-4d2e-af2a-89f96f763bd1",
+    "reference": "1000007",
+    "name": "HUB Fiche USB C"
+  },
+  {
+    "id": "80edf92c-10c0-4053-b73c-64ff7bfba1a4",
+    "reference": "1000008",
+    "name": "Filtre de conf 14\""
+  },
+  {
+    "id": "f4c5cde7-bd99-4d37-961d-1dd32fa1d5fb",
+    "reference": "1200049",
+    "name": "RJ45 3 mètre blanc"
+  },
+  {
+    "id": "051c95c7-e1b5-45ba-bf2f-b862682cdf5b",
+    "reference": "1300005",
+    "name": "Chargeur DELL 65W Fiche cylindrique 5410"
+  },
+  {
+    "id": "947e4040-e066-4431-a592-48689df3b64c",
+    "reference": "1000009",
+    "name": "Filtre de conf 15.6\""
+  },
+  {
+    "id": "56dbc14d-6103-43a8-ae57-3cc1b1948d38",
+    "reference": "1000010",
+    "name": "Filtre de conf 16\""
+  },
+  {
+    "id": "bba7a8cf-91d9-437e-8bd1-f8b4bc10f8c5",
+    "reference": "1000011",
+    "name": "Filtre de conf VIP"
+  },
+  {
+    "id": "0848897c-c39e-4c0c-b599-6a34ad659293",
+    "reference": "KSAOP8725409",
+    "name": "KSAOP8725409"
+  },
+  {
+    "id": "f5d7a9a1-02e2-4b53-bec7-04fc38b92cb4",
+    "reference": "KSAOPSTR2266",
+    "name": "KSAOPSTR2266"
+  },
+  {
+    "id": "0ebf19fa-09b5-4fb6-9b7e-48b427ce0ade",
+    "reference": "KSAOP8725536",
+    "name": "KSAOP8725536"
+  },
+  {
+    "id": "e08612f7-3b6e-411c-ad22-36867bb077c2",
+    "reference": "KSAOP8725730",
+    "name": "KSAOP8725730"
+  },
+  {
+    "id": "42717fbf-1f22-4726-b672-f4ea6082a556",
+    "reference": "1300003",
+    "name": "Chargeur HP"
+  }
+]

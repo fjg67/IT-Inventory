@@ -1,4 +1,4 @@
-﻿// ============================================
+// ============================================
 // SCAN MOUVEMENT SCREEN - Premium Design
 // IT-Inventory Application
 // ============================================
@@ -17,6 +17,7 @@ import {
   TouchableWithoutFeedback,
   Linking,
 } from 'react-native';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -163,6 +164,7 @@ export const ScanMouvementScreen: React.FC = () => {
   const { lastBarcode, isScanning, history } = useAppSelector(state => state.scan);
 
   const [article, setArticle] = useState<Article | null>(null);
+  const [scanTrigger, setScanTrigger] = useState<{barcode: string, ts: number} | null>(null);
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [showHistory, setShowHistory] = useState(false);
@@ -204,6 +206,7 @@ export const ScanMouvementScreen: React.FC = () => {
       // Reset l'état Redux
       dispatch(clearScannedArticle());
       dispatch(clearLastBarcode());
+      setScanTrigger(null);
 
       if (hasPermission && device) {
         setCameraReady(true);
@@ -334,6 +337,7 @@ export const ScanMouvementScreen: React.FC = () => {
         console.log('[Scan] Code-barres validé (consensus x3):', value);
         Vibration.vibrate(50);
         dispatch(setBarcode(value));
+        setScanTrigger({ barcode: value, ts: Date.now() });
       } catch (err) {
         console.warn('[Scan] Erreur dans onCodeScanned:', err);
       }
@@ -364,7 +368,7 @@ export const ScanMouvementScreen: React.FC = () => {
         console.log('[Scan] Article trouvé:', result.nom);
         setArticle(result);
         setScanStatus('success');
-        Vibration.vibrate(50);
+        ReactNativeHapticFeedback.trigger('notificationSuccess', { enableVibrateFallback: true, ignoreAndroidSystemSettings: true });
         setTimeout(() => {
           scrollToQuickActions();
         }, 80);
@@ -380,7 +384,7 @@ export const ScanMouvementScreen: React.FC = () => {
         console.log('[Scan] Article non trouvé pour:', barcode);
         setScanStatus('error');
         setErrorMsg(`Article non trouvé (référence/asset) : ${barcode}`);
-        Vibration.vibrate(50);
+        ReactNativeHapticFeedback.trigger('notificationError', { enableVibrateFallback: true, ignoreAndroidSystemSettings: true });
         // Ajouter à l'historique (non trouvé)
         dispatch(addToHistoryAndSave({
           barcode,
@@ -392,7 +396,7 @@ export const ScanMouvementScreen: React.FC = () => {
       console.error('[Scan] Erreur recherche article:', err);
       setScanStatus('error');
       setErrorMsg(`Erreur : ${(err as Error)?.message || 'Problème de connexion'}`);
-      Vibration.vibrate(50);
+      ReactNativeHapticFeedback.trigger('notificationError', { enableVibrateFallback: true, ignoreAndroidSystemSettings: true });
       // Ajouter à l'historique (erreur)
       dispatch(addToHistoryAndSave({
         barcode,
@@ -406,10 +410,10 @@ export const ScanMouvementScreen: React.FC = () => {
   }, [effectiveSiteId, dispatch]);
 
   useEffect(() => {
-    if (lastBarcode && siteActif) {
-      searchArticle(lastBarcode).catch(() => {});
+    if (scanTrigger && siteActif) {
+      searchArticle(scanTrigger.barcode).catch(() => {});
     }
-  }, [lastBarcode, siteActif, searchArticle]);
+  }, [scanTrigger, siteActif, searchArticle]);
 
   // ===== Actions =====
 
@@ -663,7 +667,7 @@ export const ScanMouvementScreen: React.FC = () => {
 
       {/* ===== HEADER ===== */}
       <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
-        <TouchableOpacity style={styles.headerBtn} onPress={() => { Vibration.vibrate(10); navigation.goBack(); }}>
+        <TouchableOpacity style={styles.headerBtn} onPress={() => { ReactNativeHapticFeedback.trigger('impactLight'); navigation.goBack(); }}>
           <View style={styles.headerBtnBg}>
             <Icon name="arrow-left" size={22} color="#FFF" />
           </View>
@@ -671,7 +675,7 @@ export const ScanMouvementScreen: React.FC = () => {
         <Text style={styles.headerTitle}>Scanner</Text>
         <TouchableOpacity
           style={styles.headerBtn}
-          onPress={() => { Vibration.vibrate(10); setShowHistory(true); }}
+          onPress={() => { ReactNativeHapticFeedback.trigger('impactLight'); setShowHistory(true); }}
         >
           <View style={styles.headerBtnBg}>
             <Icon name="history" size={22} color="#FFF" />

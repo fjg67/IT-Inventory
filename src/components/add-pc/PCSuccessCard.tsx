@@ -1,4 +1,5 @@
 // components/add-pc/PCSuccessCard.tsx
+import { CA_THEME } from '@/constants/caTheme';
 import React, { useEffect } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -133,7 +134,7 @@ export const PCSuccessCard: React.FC<PCSuccessCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: CA_THEME.white,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(34,197,94,0.08)',
@@ -163,7 +164,7 @@ const styles = StyleSheet.create({
   hostname: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: CA_THEME.textPrimary,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   model: {
@@ -205,7 +206,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 10,
-    color: '#5A5A55',
+    color: CA_THEME.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
 });

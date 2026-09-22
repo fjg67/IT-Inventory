@@ -3,11 +3,17 @@ import 'react-native-url-polyfill/auto';
  * @format
  */
 
-import { AppRegistry, Platform } from 'react-native';
+import { AppRegistry, Platform, Text, TextInput } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import App from './App';
 import { name as appName } from './app.json';
+
+// Global font override for Crédit Agricole (Montserrat + chiffres alignés)
+if (!Text.defaultProps) Text.defaultProps = {};
+Text.defaultProps.style = [{ fontFamily: 'Montserrat_400Regular', fontVariant: ['tabular-nums'] }];
+if (!TextInput.defaultProps) TextInput.defaultProps = {};
+TextInput.defaultProps.style = [{ fontFamily: 'Montserrat_400Regular', fontVariant: ['tabular-nums'] }];
 
 const STOCK_MOVEMENTS_CHANNEL_ID = 'stock-movements-v2';
 

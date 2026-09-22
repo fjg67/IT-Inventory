@@ -1,3 +1,4 @@
+import { CA_THEME } from '@/constants/caTheme';
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { interpolateColor, SharedValue, useAnimatedStyle } from 'react-native-reanimated';
@@ -35,12 +36,12 @@ export const AddPCFooter: React.FC<AddPCFooterProps> = ({
       ? '#F0F0F0'
       : interpolateColor(colorProgress.value, [0, 1], [fromButtonColor, toButtonColor]),
     borderColor: disabled
-      ? 'rgba(0,125,112,0.2)'
+      ? CA_THEME.borderGray
       : interpolateColor(colorProgress.value, [0, 1], [fromButtonColor, toButtonColor]),
   }));
 
   return (
-    <View style={[styles.footer, { paddingBottom: Math.max(10, insets.bottom + 4) }]}>
+    <View style={styles.footer}>
       <View style={styles.row}>
         <Pressable onPress={onCancel} style={styles.cancelButton}>
           <Text style={styles.cancelText}>Annuler</Text>
@@ -54,7 +55,7 @@ export const AddPCFooter: React.FC<AddPCFooterProps> = ({
             </>
           ) : (
             <>
-              <Icon name="content-save-outline" size={16} color={disabled ? '#888880' : '#FFFFFF'} />
+              <Icon name="content-save-outline" size={16} color={disabled ? CA_THEME.textMuted : CA_THEME.white} />
               <Text style={[styles.submitText, disabled ? styles.submitTextDisabled : null]}>Enregistrer le PC</Text>
             </>
           )}
@@ -71,12 +72,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0,
+    bottom: 86, // Float above CABottomNav
     paddingHorizontal: 16,
     paddingTop: 12,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingBottom: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,125,112,0.16)',
+    borderTopColor: CA_THEME.borderGray,
+    // Glassmorphism shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 4,
   },
   row: {
     flexDirection: 'row',
@@ -87,13 +95,13 @@ const styles = StyleSheet.create({
     minHeight: 50,
     borderRadius: 13,
     borderWidth: 1,
-    borderColor: 'rgba(0,125,112,0.22)',
+    borderColor: CA_THEME.borderGray,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: CA_THEME.white,
   },
   cancelText: {
-    color: '#007D70',
+    color: CA_THEME.green,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -108,12 +116,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   submitText: {
-    color: '#FFFFFF',
+    color: CA_THEME.white,
     fontSize: 14,
     fontWeight: '800',
   },
   submitTextDisabled: {
-    color: '#888880',
+    color: CA_THEME.textMuted,
   },
   edgeLine: {
     marginTop: 10,

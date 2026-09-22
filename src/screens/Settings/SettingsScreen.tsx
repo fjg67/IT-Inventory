@@ -16,6 +16,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { APP_CONFIG } from '@/constants';
 import { SETTINGS_COLORS, getComplianceVisual } from '@/constants/settingsColors';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -72,6 +73,7 @@ export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { toasts, show: toastShow, dismiss: dismissToast } = useToast();
+  const insets = useSafeAreaInsets();
 
   const technicien = useAppSelector((state) => state.auth.currentTechnicien);
   const isSuperviseur = useAppSelector(selectIsSuperviseur);
@@ -97,6 +99,7 @@ export const SettingsScreen: React.FC = () => {
   const [pushLoading, setPushLoading] = useState(false);
 
   const [siteModalVisible, setSiteModalVisible] = useState(false);
+  const [profileMenuVisible, setProfileMenuVisible] = useState(false);
   const [complianceModalVisible, setComplianceModalVisible] = useState(false);
   const [changelogVisible, setChangelogVisible] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
@@ -249,13 +252,8 @@ export const SettingsScreen: React.FC = () => {
   }, [dispatch]);
 
   const handleSiteMenu = useCallback(() => {
-    Alert.alert('Profil', 'Choisissez une action', [
-      { text: 'Modifier le profil', onPress: () => showToast('Edition profil bientot disponible') },
-      { text: 'Changer de site actif', onPress: () => setSiteModalVisible(true) },
-      { text: 'Voir historique', onPress: () => showToast('Historique bientot disponible') },
-      { text: 'Annuler', style: 'cancel' },
-    ]);
-  }, [showToast]);
+    setProfileMenuVisible(true);
+  }, []);
 
   const handleSelectSite = useCallback((siteId: number) => {
     dispatch(selectSite(siteId));
@@ -488,7 +486,7 @@ export const SettingsScreen: React.FC = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: Math.max(12, insets.top + 12) }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -786,7 +784,40 @@ export const SettingsScreen: React.FC = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
-      <Modal visible={siteModalVisible} transparent animationType="slide" onRequestClose={() => setSiteModalVisible(false)}>
+      
+      <Modal visible={profileMenuVisible} transparent animationType="slide" onRequestClose={() => setProfileMenuVisible(false)}>
+        <View style={styles.sheetBackdrop}>
+          <TouchableWithoutFeedback onPress={() => setProfileMenuVisible(false)}>
+            <View style={styles.sheetBackdropTap} />
+          </TouchableWithoutFeedback>
+
+          <View style={styles.sheetCard}>
+            <Text style={styles.sheetTitle}>Profil</Text>
+            
+            <Pressable style={styles.sheetRow} onPress={() => { setProfileMenuVisible(false); showToast('Edition profil bientot disponible'); }}>
+              <Icon name="account-edit-outline" size={20} color={SETTINGS_COLORS.text_muted} />
+              <Text style={styles.sheetRowText}>Modifier le profil</Text>
+            </Pressable>
+            
+            <Pressable style={styles.sheetRow} onPress={() => { setProfileMenuVisible(false); setSiteModalVisible(true); }}>
+              <Icon name="office-building-marker-outline" size={20} color={SETTINGS_COLORS.text_muted} />
+              <Text style={styles.sheetRowText}>Changer de site actif</Text>
+            </Pressable>
+            
+            <Pressable style={styles.sheetRow} onPress={() => { setProfileMenuVisible(false); showToast('Historique bientot disponible'); }}>
+              <Icon name="history" size={20} color={SETTINGS_COLORS.text_muted} />
+              <Text style={styles.sheetRowText}>Voir historique</Text>
+            </Pressable>
+            
+            <Pressable style={[styles.sheetRow, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', marginTop: 8, paddingTop: 16 }]} onPress={() => setProfileMenuVisible(false)}>
+              <Icon name="close" size={20} color={SETTINGS_COLORS.red} />
+              <Text style={[styles.sheetRowText, { color: SETTINGS_COLORS.red }]}>Annuler</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+<Modal visible={siteModalVisible} transparent animationType="slide" onRequestClose={() => setSiteModalVisible(false)}>
         <View style={styles.sheetBackdrop}>
           <TouchableWithoutFeedback onPress={() => setSiteModalVisible(false)}>
             <View style={styles.sheetBackdropTap} />

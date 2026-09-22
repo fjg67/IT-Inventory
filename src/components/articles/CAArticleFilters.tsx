@@ -13,6 +13,39 @@ interface CAArticleFiltersProps {
   onToggleDefective?: () => void;
 }
 
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolate } from 'react-native-reanimated';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+const FilterButton = ({ active, icon, label, onPress, rightIcon }: any) => {
+  const press = useSharedValue(0);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(press.value, [0, 1], [1, 0.95]) }],
+  }));
+
+  const handlePressIn = () => { press.value = withSpring(1); };
+  const handlePressOut = () => { press.value = withSpring(0); };
+  const handlePress = () => {
+    ReactNativeHapticFeedback.trigger('impactLight');
+    if (onPress) onPress();
+  };
+
+  return (
+    <AnimatedPressable
+      style={[styles.dropdown, active && styles.dropdownActive, style]}
+      onPress={handlePress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+    >
+      <Icon name={icon} size={16} color={active ? CA_THEME.green : CA_THEME.textSecondary} />
+      <Text style={[styles.dropdownText, active && styles.dropdownTextActive]} numberOfLines={1}>{label}</Text>
+      {rightIcon && <Icon name={rightIcon} size={16} color={CA_THEME.textMuted} />}
+    </AnimatedPressable>
+  );
+};
+
 export const CAArticleFilters = ({
   sortLabel,
   hasFilters,
@@ -24,24 +57,28 @@ export const CAArticleFilters = ({
 }: CAArticleFiltersProps) => (
   <View style={styles.wrap}>
     <View style={styles.row}>
-      <Pressable style={[styles.dropdown, hasFilters && styles.dropdownActive]} onPress={onSortPress}
-        accessibilityRole="button" accessibilityLabel="Changer le tri">
-        <Icon name="sort" size={16} color={hasFilters ? CA_THEME.green : CA_THEME.textSecondary} />
-        <Text style={[styles.dropdownText, hasFilters && styles.dropdownTextActive]} numberOfLines={1}>{sortLabel}</Text>
-        <Icon name="chevron-down" size={16} color={CA_THEME.textMuted} />
-      </Pressable>
-
-      <Pressable style={[styles.dropdown, hasFilters && styles.dropdownActive]} onPress={onFiltersPress}
-        accessibilityRole="button" accessibilityLabel="Ouvrir les filtres">
-        <Icon name="filter-variant" size={16} color={hasFilters ? CA_THEME.green : CA_THEME.textSecondary} />
-        <Text style={[styles.dropdownText, hasFilters && styles.dropdownTextActive]}>Filtres</Text>
-        <Icon name="chevron-down" size={16} color={CA_THEME.textMuted} />
-      </Pressable>
+      <FilterButton
+        active={hasFilters}
+        icon="sort"
+        label={sortLabel}
+        rightIcon="chevron-down"
+        onPress={onSortPress}
+      />
+      <FilterButton
+        active={hasFilters}
+        icon="filter-variant"
+        label="Filtres"
+        rightIcon="chevron-down"
+        onPress={onFiltersPress}
+      />
     </View>
 
     {onToggleDefective && (
       <Pressable
-        onPress={onToggleDefective}
+        onPress={() => {
+          ReactNativeHapticFeedback.trigger('impactLight');
+          onToggleDefective();
+        }}
         style={[styles.defChip, showDefective && styles.defChipActive]}
         accessibilityRole="button"
         accessibilityState={{ selected: showDefective }}

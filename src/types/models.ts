@@ -199,6 +199,7 @@ export interface ArticleForm {
 export interface ArticleFilters {
   categorieId?: string | number | null;
   stockFaible: boolean;
+  stockOkOnly?: boolean;
   searchQuery: string;
   condition?: ArticleCondition | null;
   codeFamille?: string[] | null;

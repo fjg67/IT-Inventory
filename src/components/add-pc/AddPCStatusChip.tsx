@@ -22,6 +22,8 @@ interface AddPCStatusChipProps {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
+import { CA_THEME } from '@/constants/caTheme';
+
 export const AddPCStatusChip: React.FC<AddPCStatusChipProps> = ({
   statusKey,
   config,
@@ -45,8 +47,8 @@ export const AddPCStatusChip: React.FC<AddPCStatusChipProps> = ({
 
   const chipStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
-    backgroundColor: isActive ? config.subtle : '#FFFFFF',
-    borderColor: isActive ? config.border : 'rgba(0,125,112,0.14)',
+    backgroundColor: isActive ? config.subtle : CA_THEME.white,
+    borderColor: isActive ? config.border : CA_THEME.borderGray,
   }));
 
   const rippleStyle = useAnimatedStyle(() => ({
@@ -58,7 +60,7 @@ export const AddPCStatusChip: React.FC<AddPCStatusChipProps> = ({
     <AnimatedPressable onPress={handlePress} style={[styles.chip, chipStyle]}>
       <Animated.View pointerEvents="none" style={[styles.ripple, rippleStyle]} />
       {isActive ? <Animated.View style={[styles.activeDot, { backgroundColor: config.color }]} /> : null}
-      <Icon name={config.icon} size={18} color={isActive ? config.color : '#93A4A0'} />
+      <Icon name={config.icon} size={18} color={isActive ? config.color : CA_THEME.textSecondary} />
       <Text style={[styles.label, isActive ? { color: config.color } : styles.labelMuted]}>{config.label}</Text>
     </AnimatedPressable>
   );
@@ -96,8 +98,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     textAlign: 'center',
+    fontFamily: CA_THEME.fontFamilyBold,
   },
   labelMuted: {
-    color: '#888880',
+    color: CA_THEME.textSecondary,
+    fontWeight: '500',
+    fontFamily: CA_THEME.fontFamilyMedium,
   },
 });

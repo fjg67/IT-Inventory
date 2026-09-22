@@ -21,13 +21,14 @@ import {
   useCameraPermission,
   useCodeScanner,
 } from 'react-native-vision-camera';
-import Animated, { FadeInDown, SharedValue, interpolateColor, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { FadeInDown, SharedValue, interpolateColor, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useAppSelector } from '@/store';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { ArticlesStackParamList } from '@/navigation/types';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
+import { CA_THEME } from '@/constants/caTheme';
 import { PC_DEFAULT_UI } from '@/constants/pcStatusColors';
 import {
   AddPCAssetInput,
@@ -113,6 +114,21 @@ export const AddPCScreen: React.FC = () => {
     type: 'format_invalid',
     message: '',
   });
+
+  const laserY = useSharedValue(0);
+
+  useEffect(() => {
+    if (scanTarget !== null) {
+      laserY.value = 0;
+      laserY.value = withRepeat(
+        withTiming(1, { duration: 1500 }),
+        -1,
+        true
+      );
+    } else {
+      laserY.value = 0;
+    }
+  }, [scanTarget, laserY]);
 
   useEffect(() => {
     scanTargetRef.current = scanTarget;
@@ -450,6 +466,15 @@ export const AddPCScreen: React.FC = () => {
                 <View style={[styles.cameraCorner, styles.cornerTR, { borderColor: toConfig.color }]} />
                 <View style={[styles.cameraCorner, styles.cornerBL, { borderColor: toConfig.color }]} />
                 <View style={[styles.cameraCorner, styles.cornerBR, { borderColor: toConfig.color }]} />
+                {/* Laser animation */}
+                <Animated.View style={[
+                  { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: 'rgba(255,0,0,0.8)' },
+                  useAnimatedStyle(() => {
+                    return {
+                      transform: [{ translateY: laserY.value * 250 }] // 250 is approx frame height
+                    };
+                  })
+                ]} />
               </View>
             </View>
 
@@ -491,7 +516,7 @@ export const AddPCScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: OBSIDIAN_COLORS.bg_primary,
+    backgroundColor: CA_THEME.lightGray,
   },
   topBar: {
     minHeight: 62,
@@ -506,15 +531,16 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 11,
     borderWidth: 1,
-    borderColor: 'rgba(0,125,112,0.24)',
-    backgroundColor: '#FFFFFF',
+    borderColor: CA_THEME.greenBg2,
+    backgroundColor: CA_THEME.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
   topTitle: {
-    color: '#1A1A1A',
+    color: CA_THEME.textPrimary,
     fontSize: 17,
     fontWeight: '800',
+    fontFamily: CA_THEME.fontFamilyBold,
   },
   topRightDot: {
     width: 8,
@@ -523,21 +549,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,125,112,0.6)',
   },
   content: {
-    paddingBottom: 132,
+    paddingBottom: 220,
   },
   titleWrap: {
     paddingHorizontal: 16,
     gap: 4,
   },
   title: {
-    color: '#1A1A1A',
+    color: CA_THEME.textPrimary,
     fontSize: 22,
     fontWeight: '800',
+    fontFamily: CA_THEME.fontFamilyBold,
   },
   subtitle: {
-    color: '#5A5A55',
+    color: CA_THEME.textSecondary,
     fontSize: 13,
     fontWeight: '500',
+    fontFamily: CA_THEME.fontFamilyMedium,
   },
   formWrap: {
     paddingHorizontal: 16,
@@ -558,19 +586,20 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   sectionTitle: {
-    color: '#1A1A1A',
+    color: CA_THEME.textPrimary,
     fontSize: 13,
     fontWeight: '700',
+    fontFamily: CA_THEME.fontFamilyBold,
   },
   required: {
-    color: '#EF4444',
+    color: CA_THEME.danger,
   },
   noteBox: {
     marginTop: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(0,125,112,0.16)',
-    backgroundColor: '#FFFFFF',
+    borderColor: CA_THEME.greenBg2,
+    backgroundColor: CA_THEME.white,
     minHeight: 40,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -579,7 +608,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   noteText: {
-    color: '#5A5A55',
+    color: CA_THEME.textSecondary,
     fontSize: 12,
     flex: 1,
   },
@@ -604,6 +633,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: CA_THEME.fontFamilyBold,
   },
   cameraFrameWrap: {
     alignItems: 'center',
@@ -654,6 +684,7 @@ const styles = StyleSheet.create({
     color: '#D1D5DB',
     fontSize: 13,
     fontWeight: '500',
+    fontFamily: CA_THEME.fontFamilyMedium,
   },
   cameraCloseWrap: {
     alignItems: 'center',

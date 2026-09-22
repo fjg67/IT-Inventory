@@ -1,3 +1,4 @@
+import { CA_THEME } from '@/constants/caTheme';
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -29,7 +30,7 @@ export const AddPCProgressBar: React.FC<AddPCProgressBarProps> = ({ progress, st
 const styles = StyleSheet.create({
   rail: {
     height: 4,
-    backgroundColor: 'rgba(0,125,112,0.16)',
+    backgroundColor: CA_THEME.borderGray,
   },
   fill: {
     height: '100%',

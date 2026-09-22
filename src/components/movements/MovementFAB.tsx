@@ -14,9 +14,13 @@ interface MovementFABProps {
   onAdjust: () => void;
   onTransfer: () => void;
 }
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export const MovementFAB: React.FC<MovementFABProps> = ({ open, onToggle, onScan, onEntry, onExit, onAdjust, onTransfer }) => (
-  <View style={styles.wrap}>
+export const MovementFAB: React.FC<MovementFABProps> = ({ open, onToggle, onScan, onEntry, onExit, onAdjust, onTransfer }) => {
+  const insets = useSafeAreaInsets();
+  
+  return (
+  <View style={[styles.wrap, { bottom: Math.max(18, insets.bottom + 90) }]}>
     {open ? (
       <Animated.View entering={FadeInUp.duration(220)} style={styles.sheet}>
         {[
@@ -44,7 +48,8 @@ export const MovementFAB: React.FC<MovementFABProps> = ({ open, onToggle, onScan
       </LinearGradient>
     </Pressable>
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   wrap: {

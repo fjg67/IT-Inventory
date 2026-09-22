@@ -705,6 +705,7 @@ export const ArticlesListScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [isGridView, setIsGridView] = useState(false);
 
   // Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -715,6 +716,7 @@ export const ArticlesListScreen: React.FC = () => {
     searchQuery: '',
     categorieId: null,
     stockFaible: route.params?.filter === 'lowStock',
+    stockOkOnly: false,
     condition: null,
     codeFamille: null,
     famille: null,
@@ -839,12 +841,18 @@ export const ArticlesListScreen: React.FC = () => {
   }));
 
   const headerParallaxStyle = useAnimatedStyle(() => {
-    const y = Math.max(0, Math.min(listScrollY.value, 120));
+    // On scroll down, fade out and translate up slightly to create a folding effect
+    const y = Math.max(0, listScrollY.value);
+    const progress = Math.min(y / 150, 1);
+    
     return {
+      opacity: 1 - progress * 1.5,
       transform: [
-        { translateY: -y * 0.06 },
-        { scale: 1 - y * 0.00028 },
+        { translateY: -y * 0.2 },
+        { scale: 1 - progress * 0.05 },
       ],
+      // We don't animate height directly here to avoid FlashList layout thrashing,
+      // the natural scroll will push it out of view. The opacity fade makes it look premium.
     };
   });
 
@@ -1653,6 +1661,18 @@ export const ArticlesListScreen: React.FC = () => {
 
   const displayedArticles = useMemo(() => {
     let filtered = pcStatusFilter === 'Envoyé' ? sentPcArticles : sortedArticles;
+
+    if (!isPCTab && !isTabletTab) {
+      if (filters.stockFaible) {
+        filtered = filtered.filter(a => (a.quantiteActuelle ?? 0) <= a.stockMini);
+      }
+      if (filters.stockOkOnly) {
+        filtered = filtered.filter(a => (a.quantiteActuelle ?? 0) > a.stockMini);
+      }
+      if (filters.condition === 'defectueux') {
+        filtered = filtered.filter(a => (a.defectiveCount ?? 0) > 0 || a.condition === 'defectueux');
+      }
+    }
 
     if (isManagedInventoryTab && searchQuery.trim().length > 0) {
       const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -2518,19 +2538,7 @@ export const ArticlesListScreen: React.FC = () => {
     ({ item, index }: { item: Article; index: number }) => {
       const isSearching = searchQuery.trim().length > 0;
       return (
-      <Animated.View
-        entering={
-          isSearching 
-            ? undefined 
-            : (isPCTab && pcDensity === 'compact'
-              ? FadeInUp.delay(Math.min(index, 12) * 20).duration(220)
-              : FadeInUp.delay(Math.min(index, 10) * 40).duration(320))
-        }
-        layout={
-          isPCTab
-            ? LinearTransition.springify().damping(pcDensity === 'compact' ? 19 : 15).stiffness(pcDensity === 'compact' ? 260 : 210)
-            : undefined
-        }
+      <View
         style={[
           styles.cardWrapper,
           isTablet && styles.cardWrapperTablet,
@@ -2566,10 +2574,11 @@ export const ArticlesListScreen: React.FC = () => {
             article={item}
             index={index}
             query={searchQuery}
+            variant={isGridView ? 'grid' : 'list'}
             onPress={handleArticlePress}
           />
         )}
-      </Animated.View>
+      </View>
       );
     },
     [handleArticlePress, handleSentArticlePress, pcStatusFilter, isTabletTab, handleDecommissionTablet, isPCTab, handleMarkPCSent, handleMarkPCAvailable, handleMarkPCHot, handleMarkPCProcessing, handleDeletePC, isTablet, pcDensity, searchQuery],
@@ -2666,6 +2675,8 @@ export const ArticlesListScreen: React.FC = () => {
             <CAArticlesHeader
               totalCount={normalizedTotalArticles}
               lastSyncedAt={undefined}
+              isGridView={isGridView}
+              onToggleView={() => setIsGridView((prev) => !prev)}
             />
             <CAArticlesStatGrid
               stats={{
@@ -2674,12 +2685,12 @@ export const ArticlesListScreen: React.FC = () => {
                 alertes: normalizedAlertes,
                 defectueux: defectiveArticlesCount,
               }}
-              activeFilter={filters.condition === 'defectueux' ? 'defectueux' : (filters.stockFaible ? 'alertes' : null)}
+              activeFilter={filters.condition === 'defectueux' ? 'defectueux' : (filters.stockFaible ? 'alertes' : (filters.stockOkOnly ? 'stockOk' : null))}
               onFilterChange={(key) => {
                 if (key === null) resetFilters();
-                else if (key === 'alertes') setFilters((prev) => ({ ...prev, stockFaible: true, condition: null }));
-                else if (key === 'defectueux') setFilters((prev) => ({ ...prev, condition: 'defectueux', stockFaible: false }));
-                else if (key === 'stockOk') setFilters((prev) => ({ ...prev, stockFaible: false, condition: null }));
+                else if (key === 'alertes') setFilters((prev) => ({ ...prev, stockFaible: true, stockOkOnly: false, condition: null }));
+                else if (key === 'defectueux') setFilters((prev) => ({ ...prev, condition: 'defectueux', stockFaible: false, stockOkOnly: false }));
+                else if (key === 'stockOk') setFilters((prev) => ({ ...prev, stockFaible: false, stockOkOnly: true, condition: null }));
               }}
             />
             <CAAvailabilityBar
@@ -2688,8 +2699,8 @@ export const ArticlesListScreen: React.FC = () => {
               totalCount={normalizedTotalArticles}
               activeFilter={filters.stockFaible ? 'alertes' : null}
               onFilterChange={(key) => {
-                if (key === 'alertes') setFilters((prev) => ({ ...prev, stockFaible: true }));
-                else setFilters((prev) => ({ ...prev, stockFaible: false }));
+                if (key === 'alertes') setFilters((prev) => ({ ...prev, stockFaible: true, stockOkOnly: false }));
+                else setFilters((prev) => ({ ...prev, stockFaible: false, stockOkOnly: false }));
               }}
             />
           </Animated.View>
@@ -2926,6 +2937,7 @@ export const ArticlesListScreen: React.FC = () => {
     filters.condition,
     contentMaxWidth,
     searchQuery,
+    localSearchQuery,
     handleSearchChange,
     handleClearSearch,
     pcActiveFilterTags,
@@ -2989,14 +3001,16 @@ export const ArticlesListScreen: React.FC = () => {
           extraData={`${pcDensity}|${pcStatusFilter ?? 'all'}|${filters.condition ?? 'all'}|${filters.sousType?.join(',') ?? ''}|${filters.marque?.join(',') ?? ''}|${filters.modele?.join(',') ?? ''}|${filters.emplacement?.join(',') ?? ''}|${searchQuery}|${sortBy}`}
           keyExtractor={item => item.id.toString()}
           renderItem={renderArticle}
-          numColumns={numColumns}
-          estimatedItemSize={140}
+          estimatedItemSize={isPCTab && pcDensity === 'compact' ? 65 : 120}
+          numColumns={isGridView && !isPCTab ? 2 : 1}
+          key={isGridView ? 'grid' : 'list'}
           initialNumToRender={10}
           maxToRenderPerBatch={5}
           windowSize={10}
           removeClippedSubviews={Platform.OS === 'android'}
           contentContainerStyle={[
             styles.listContent,
+            { paddingBottom: 100 },
             isTabletTab && styles.listContentTablet,
             contentMaxWidth && !isPCTab ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const } : {},
           ] as any}

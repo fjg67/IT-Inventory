@@ -31,6 +31,7 @@ interface ArticleDetailHeroProps {
   isCritical: boolean;
   photoOpacity: AnimatedStyleProp<object>;
   compactTitleOpacity: AnimatedStyleProp<object>;
+  parallaxBg: AnimatedStyleProp<object>;
   onBack: () => void;
   onEdit: () => void;
   showEdit: boolean;
@@ -42,6 +43,7 @@ export const ArticleDetailHero: React.FC<ArticleDetailHeroProps> = ({
   isCritical,
   photoOpacity,
   compactTitleOpacity,
+  parallaxBg,
   onBack,
   onEdit,
   showEdit,
@@ -50,21 +52,31 @@ export const ArticleDetailHero: React.FC<ArticleDetailHeroProps> = ({
 
   const statusColor = isCritical ? ADC.danger : isLowStock ? ADC.warning : ADC.green_primary;
   const statusIcon = isCritical ? 'close' : isLowStock ? 'alert' : 'check';
+  
+  // Dynamic Background colors based on stock state
+  const bgColors = isCritical 
+    ? ['rgba(239,68,68,0.25)', 'rgba(239,68,68,0.05)', 'rgba(255,255,255,0)']
+    : isLowStock 
+      ? ['rgba(245,158,11,0.25)', 'rgba(245,158,11,0.05)', 'rgba(255,255,255,0)']
+      : ['rgba(139,92,246,0.20)', 'rgba(27,138,62,0.10)', 'rgba(255,255,255,0)'];
+      
+  const orb1Color = isCritical ? 'rgba(239,68,68,0.15)' : isLowStock ? 'rgba(245,158,11,0.15)' : 'rgba(139,92,246,0.12)';
+  const orb2Color = isCritical ? 'rgba(239,68,68,0.1)' : isLowStock ? 'rgba(245,158,11,0.1)' : 'rgba(34,197,94,0.08)';
 
   return (
     <View style={styles.hero}>
-      {/* Background */}
-      <View style={StyleSheet.absoluteFill}>
+      {/* Background with Parallax */}
+      <Animated.View style={[StyleSheet.absoluteFill, parallaxBg]}>
         <LinearGradient
-          colors={['rgba(139,92,246,0.20)', 'rgba(27,138,62,0.10)', 'rgba(255,255,255,0)']}
+          colors={bgColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
         {/* Orbs lumineux */}
-        <View style={styles.orbViolet} />
-        <View style={styles.orbGreen} />
-      </View>
+        <View style={[styles.orbViolet, { backgroundColor: orb1Color }]} />
+        <View style={[styles.orbGreen, { backgroundColor: orb2Color }]} />
+      </Animated.View>
 
       {/* Boutons nav */}
       <View style={styles.navRow}>

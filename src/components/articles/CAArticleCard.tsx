@@ -11,6 +11,7 @@ interface CAArticleCardProps {
   article: Article;
   index: number;
   query?: string;
+  variant?: 'list' | 'grid';
   onPress: (articleId: number) => void;
 }
 
@@ -50,97 +51,155 @@ const renderNameWithHighlight = (name: string, query?: string) => {
   );
 };
 
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+
 const CAArticleCardComponent = ({
   article,
   index,
   query,
+  variant = 'list',
   onPress,
 }: CAArticleCardProps) => {
   const press = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(press.value, [0, 1], [1, 0.98]) }],
+    transform: [{ scale: interpolate(press.value, [0, 1], [1, 0.96]) }],
   }));
 
-  return (
-    <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 40).duration(280)}>
-      <Animated.View style={animatedStyle}>
-        <Pressable
-          onPress={() => onPress(article.id)}
-          onPressIn={() => { press.value = withSpring(1); }}
-          onPressOut={() => { press.value = withSpring(0); }}
-          style={[styles.card, { borderLeftColor: getArticleBorderColor(article) }]}
-          accessibilityRole="button"
-          accessibilityLabel={`${article.nom}, ${article.quantiteActuelle} unités`}
-        >
-          <View style={styles.inner}>
+  const renderLeftActions = () => {
+    return (
+      <View style={[styles.swipeAction, { backgroundColor: CA_THEME.green }]}>
+        <Icon name="plus" size={24} color="#FFF" />
+        <Text style={styles.swipeText}>Entrée</Text>
+      </View>
+    );
+  };
 
-            {/* Image ou icône article */}
-            <View style={styles.imageWrap} aria-hidden>
-              {article.photoUrl ? (
-                <Image
-                  source={{ uri: article.photoUrl }}
-                  style={styles.image}
-                  resizeMode="cover"
-                  accessibilityIgnoresInvertColors
-                />
-              ) : (
-                <Icon name="cube-outline" size={26} color={CA_THEME.textMuted} />
-              )}
-            </View>
+  const renderRightActions = () => {
+    return (
+      <View style={[styles.swipeAction, { backgroundColor: CA_THEME.danger, alignItems: 'flex-end' }]}>
+        <Icon name="minus" size={24} color="#FFF" />
+        <Text style={styles.swipeText}>Sortie</Text>
+      </View>
+    );
+  };
 
-            {/* Infos */}
-            <View style={styles.info}>
-              {/* Nom */}
-              {renderNameWithHighlight(article.nom, query)}
-              
-              {/* Sous-catégorie */}
-              <Text style={styles.subcat} numberOfLines={1}>
-                {article.famille ?? article.marque ?? 'Sans catégorie'}
-              </Text>
+  const handleSwipeWillOpen = () => {
+    ReactNativeHapticFeedback.trigger('impactHeavy');
+  };
 
-              {/* Tags : référence + type + catégorie */}
-              <View style={styles.tagsRow}>
-                {article.reference ? (
-                  <View style={styles.tagRef}>
-                    <Icon name="barcode" size={10} color={CA_THEME.textMuted} />
-                    <Text style={styles.tagRefText}>{article.reference}</Text>
-                  </View>
-                ) : null}
-                {article.typeArticle ? (
-                  <View style={styles.tagType}>
-                    <Text style={styles.tagTypeText}>{article.typeArticle}</Text>
-                  </View>
-                ) : null}
-              </View>
+  const isGrid = variant === 'grid';
+  const isDefective = article.condition === 'defectueux' || article.condition === 'broken';
 
-              {/* Condition */}
-              <CAConditionBadge
-                condition={article.condition ?? 'bon_etat'}
-                defectiveCount={article.defectiveCount}
+  const cardContent = (
+    <Pressable
+      onPress={() => onPress(article.id)}
+      onPressIn={() => { press.value = withSpring(1); }}
+      onPressOut={() => { press.value = withSpring(0); }}
+      style={[
+        styles.card, 
+        isGrid ? styles.cardGrid : styles.cardList,
+        { [isGrid ? 'borderTopColor' : 'borderLeftColor']: getArticleBorderColor(article) }
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel={`${article.nom}, ${article.quantiteActuelle} unités`}
+    >
+      <View style={isGrid ? styles.innerGrid : styles.inner}>
+
+        {/* Image ou icône article */}
+        <View style={[styles.imageWrapContainer, isGrid && styles.imageWrapContainerGrid]}>
+          <View style={[styles.imageWrap, isGrid && styles.imageWrapGrid]} aria-hidden>
+            {article.photoUrl ? (
+              <Image
+                source={{ uri: article.photoUrl }}
+                style={styles.image}
+                resizeMode="cover"
+                accessibilityIgnoresInvertColors
               />
-
-              {/* Date modification */}
-              <View style={styles.dateRow}>
-                <Icon name="clock-outline" size={10} color={CA_THEME.textMuted} />
-                <Text style={styles.dateText}>
-                  Modifié le {formatDate(article.dateModification)}
-                </Text>
-              </View>
-            </View>
-
-            {/* Stock badge + chevron */}
-            <View style={styles.rightCol}>
-              <CAStockBadge
-                stock={article.quantiteActuelle ?? 0}
-                seuil={article.stockMini}
-              />
-              <Icon name="chevron-right" size={16} color={CA_THEME.textMuted} style={styles.chev} />
-            </View>
-
+            ) : (
+              <Icon name="cube-outline" size={isGrid ? 40 : 26} color={CA_THEME.textMuted} />
+            )}
           </View>
-        </Pressable>
-      </Animated.View>
+          {/* Badge 3D Condition (Chevauchant) */}
+          <View style={[
+            styles.badge3D,
+            isGrid ? styles.badge3DGrid : styles.badge3DList,
+            { backgroundColor: isDefective ? CA_THEME.danger : CA_THEME.green }
+          ]}>
+            <Icon
+              name={isDefective ? 'alert' : 'check'}
+              size={12}
+              color="#FFF"
+            />
+          </View>
+        </View>
+
+        {/* Infos */}
+        <View style={styles.info}>
+          {/* Nom */}
+          {renderNameWithHighlight(article.nom, query)}
+          
+          {/* Sous-catégorie */}
+          {!isGrid && (
+            <Text style={styles.subcat} numberOfLines={1}>
+              {article.famille ?? article.marque ?? 'Sans catégorie'}
+            </Text>
+          )}
+
+          {/* Tags : référence + type + catégorie */}
+          <View style={styles.tagsRow}>
+            {article.reference ? (
+              <View style={styles.tagRef}>
+                <Icon name="barcode" size={10} color={CA_THEME.textMuted} />
+                <Text style={styles.tagRefText}>{article.reference}</Text>
+              </View>
+            ) : null}
+            {!isGrid && article.typeArticle ? (
+              <View style={styles.tagType}>
+                <Text style={styles.tagTypeText}>{article.typeArticle}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Date modification */}
+          {!isGrid && (
+            <View style={styles.dateRow}>
+              <Icon name="clock-outline" size={10} color={CA_THEME.textMuted} />
+              <Text style={styles.dateText}>
+                Modifié le {formatDate(article.dateModification)}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Stock badge + chevron */}
+        <View style={[styles.rightCol, isGrid && styles.rightColGrid]}>
+          <CAStockBadge
+            stock={article.quantiteActuelle ?? 0}
+            seuil={article.stockMini}
+          />
+          {!isGrid && <Icon name="chevron-right" size={16} color={CA_THEME.textMuted} style={styles.chev} />}
+        </View>
+
+      </View>
+    </Pressable>
+  );
+
+  return (
+    <Animated.View style={[animatedStyle, isGrid && { flex: 1, marginHorizontal: 6 }]}>
+      {isGrid ? cardContent : (
+        <Swipeable
+          renderLeftActions={renderLeftActions}
+          renderRightActions={renderRightActions}
+          onSwipeableWillOpen={handleSwipeWillOpen}
+          friction={2}
+          leftThreshold={40}
+          rightThreshold={40}
+        >
+          {cardContent}
+        </Swipeable>
+      )}
     </Animated.View>
   );
 };
@@ -161,20 +220,53 @@ const areEqual = (prev: CAArticleCardProps, next: CAArticleCardProps) => {
 export const CAArticleCard = React.memo(CAArticleCardComponent, areEqual);
 
 const styles = StyleSheet.create({
+  swipeAction: {
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    borderRadius: 10,
+    width: 100,
+  },
+  swipeText: {
+    color: '#FFF',
+    fontFamily: CA_THEME.fontFamilyBold,
+    fontSize: 12,
+    marginTop: 4,
+  },
   card: {
     backgroundColor: CA_THEME.white,
     borderRadius:    10,
     borderWidth:     1,
     borderColor:     CA_THEME.borderGray,
-    borderLeftWidth: 4,
     overflow:        'hidden',
     marginBottom:    12,
+  },
+  cardGrid: {
+    borderLeftWidth: 1,
+    borderTopWidth: 4,
+  },
+  cardList: {
+    borderLeftWidth: 4,
   },
   inner: {
     flexDirection: 'row',
     alignItems:    'flex-start',
     padding:       12,
     gap:           10,
+  },
+  innerGrid: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: 12,
+    gap: 8,
+  },
+  imageWrapContainer: {
+    position: 'relative',
+  },
+  imageWrapContainerGrid: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   imageWrap: {
     width:           54,
@@ -188,8 +280,36 @@ const styles = StyleSheet.create({
     flexShrink:      0,
     overflow:        'hidden',
   },
+  imageWrapGrid: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  badge3D: {
+    position: 'absolute',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: CA_THEME.white,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+  },
+  badge3DList: {
+    bottom: -4,
+    right: -4,
+  },
+  badge3DGrid: {
+    bottom: 0,
+    right: '25%',
+  },
   image:    { width: '100%', height: '100%' },
-  info:     { flex: 1, minWidth: 0 },
+  info:     { flex: 1, minWidth: 0, alignItems: 'flex-start' },
   name: {
     fontSize:   14,
     fontFamily: CA_THEME.fontFamilyBold,
@@ -224,5 +344,10 @@ const styles = StyleSheet.create({
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   dateText: { fontSize: 10, fontFamily: CA_THEME.fontFamilyMedium, color: CA_THEME.textMuted },
   rightCol: { flexShrink: 0, alignItems: 'flex-end', gap: 6 },
+  rightColGrid: {
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 4,
+  },
   chev:     { marginTop: 6 },
 });

@@ -1,60 +1,100 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, TextInput, StyleSheet, Pressable } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { CA_THEME, MOVEMENT_TYPE_CA } from '@/constants/caTheme';
-import type { MovementType } from './CAMouvementTypeGrid';
+import { CA_THEME } from '@/constants/caTheme';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 interface CAMouvementQtyStepperProps {
   value:       number;
   onChange:    (newValue: number) => void;
   min?:        number;
   max?:        number;
-  movementType: MovementType;
+  themeColor?: string;
 }
 
 export const CAMouvementQtyStepper = ({
-  value, onChange, min = 1, max = 9999, movementType,
+  value, onChange, min = 1, max = 9999, themeColor = CA_THEME.green,
 }: CAMouvementQtyStepperProps) => {
-  const typeConf = MOVEMENT_TYPE_CA[movementType];
 
-  const decrement = () => onChange(Math.max(min, value - 1));
-  const increment = () => onChange(Math.min(max, value + 1));
+  const [textValue, setTextValue] = useState(String(value));
+
+  useEffect(() => {
+    setTextValue(String(value));
+  }, [value]);
+
+  const handleTextChange = (text: string) => {
+    // Garder uniquement les chiffres
+    const numericText = text.replace(/[^0-9]/g, '');
+    setTextValue(numericText);
+    
+    const num = parseInt(numericText, 10);
+    if (!isNaN(num)) {
+      if (num > max) {
+        onChange(max);
+      } else {
+        onChange(num);
+      }
+    }
+  };
+
+  const handleBlur = () => {
+    const num = parseInt(textValue, 10);
+    if (isNaN(num) || num < min) {
+      onChange(min);
+      setTextValue(String(min));
+    }
+  };
+
+  const decrement = () => {
+    ReactNativeHapticFeedback.trigger('impactLight');
+    onChange(Math.max(min, value - 1));
+  };
+  const increment = () => {
+    ReactNativeHapticFeedback.trigger('impactLight');
+    onChange(Math.min(max, value + 1));
+  };
 
   return (
-    <View style={styles.row} role="group" aria-label="Quantité">
+    <View style={styles.pillContainer} role="group" aria-label="Quantité">
 
       {/* Bouton − */}
       <Pressable
         onPress={decrement}
         disabled={value <= min}
-        style={[styles.btnMinus, value <= min && styles.btnDisabled]}
+        style={({ pressed }) => [styles.btn, pressed && styles.btnPressed, value <= min && styles.btnDisabled]}
         accessibilityRole="button"
         accessibilityLabel="Diminuer la quantité"
         accessibilityState={{ disabled: value <= min }}
-        hitSlop={4}
+        hitSlop={8}
       >
-        <Icon name="minus" size={20}
-          color={value <= min ? CA_THEME.textMuted : CA_THEME.danger} />
+        <Icon name="minus" size={28}
+          color={value <= min ? CA_THEME.textMuted : CA_THEME.greenDark} />
       </Pressable>
 
-      {/* Affichage quantité */}
-      <View style={styles.display}
-        accessibilityLabel={`Quantité : ${value}`}
-        accessibilityLiveRegion="polite">
-        <Text style={styles.displayNum}>{value}</Text>
+      {/* Affichage quantité modifiable */}
+      <View style={styles.display} accessibilityLabel="Quantité">
+        <TextInput
+          style={styles.displayNum}
+          value={textValue}
+          onChangeText={handleTextChange}
+          onBlur={handleBlur}
+          keyboardType="number-pad"
+          selectTextOnFocus
+          maxLength={4}
+        />
       </View>
 
       {/* Bouton + */}
       <Pressable
         onPress={increment}
         disabled={value >= max}
-        style={[styles.btnPlus, { backgroundColor: typeConf.color }, value >= max && styles.btnDisabled]}
+        style={({ pressed }) => [styles.btn, pressed && styles.btnPressed, value >= max && styles.btnDisabled]}
         accessibilityRole="button"
         accessibilityLabel="Augmenter la quantité"
         accessibilityState={{ disabled: value >= max }}
-        hitSlop={4}
+        hitSlop={8}
       >
-        <Icon name="plus" size={20} color={CA_THEME.white} />
+        <Icon name="plus" size={28} color={themeColor} />
       </Pressable>
 
     </View>
@@ -62,23 +102,47 @@ export const CAMouvementQtyStepper = ({
 };
 
 const styles = StyleSheet.create({
-  row:        { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  btnMinus: {
-    width: 46, height: 46, borderRadius: 11,
-    backgroundColor: CA_THEME.dangerBg,
-    borderWidth: 1.5, borderColor: 'rgba(211,47,47,0.25)',
+  pillContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    backgroundColor: '#F7FBF8',
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: CA_THEME.greenBg2,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+  },
+  btn: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: CA_THEME.greenBg,
+    borderWidth: 1,
+    borderColor: CA_THEME.greenBg2,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
-  btnPlus: {
-    width: 46, height: 46, borderRadius: 11,
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
-  btnDisabled: { opacity: 0.4 },
+  btnPressed: { backgroundColor: CA_THEME.greenBg2, transform: [{ scale: 0.94 }] },
+  btnDisabled: { opacity: 0.55 },
   display: {
-    flex: 1,
+    width: 76,
+    height: 58,
+    borderRadius: 15,
     backgroundColor: CA_THEME.white,
-    borderRadius: 11, borderWidth: 1, borderColor: CA_THEME.borderGray,
-    paddingVertical: 10, alignItems: 'center',
+    borderWidth: 1,
+    borderColor: CA_THEME.greenBg2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  displayNum: { fontSize: 26, fontWeight: '800', color: CA_THEME.textPrimary },
+  displayNum: { 
+    fontSize: 32, 
+    fontWeight: '800', 
+    color: CA_THEME.greenDark,
+    textAlign: 'center',
+    padding: 0,
+    fontVariant: ['tabular-nums'],
+  },
 });

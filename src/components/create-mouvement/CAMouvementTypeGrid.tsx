@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { CA_THEME, MOVEMENT_TYPE_CA } from '@/constants/caTheme';
-
-export type MovementType = 'entree' | 'sortie' | 'ajustement' | 'transfert';
+import { CA_THEME } from '@/constants/caTheme';
+import { MOVEMENT_IDENTITIES } from '../movement/movementTheme';
+import type { MovementType } from '../movement/movementTheme';
 
 export const CAMouvementTypeGrid = ({
   selected,
@@ -13,7 +13,7 @@ export const CAMouvementTypeGrid = ({
   onSelect:  (type: MovementType) => void;
 }) => (
   <View style={styles.grid}>
-    {(Object.entries(MOVEMENT_TYPE_CA) as [MovementType, typeof MOVEMENT_TYPE_CA.entree][]).map(
+    {(Object.entries(MOVEMENT_IDENTITIES) as [MovementType, typeof MOVEMENT_IDENTITIES.entree][]).map(
       ([key, conf]) => {
         const isSelected = selected === key;
         return (
@@ -22,23 +22,23 @@ export const CAMouvementTypeGrid = ({
             onPress={() => onSelect(key)}
             style={[
               styles.btn,
-              {
-                backgroundColor: conf.subtle,
-                borderColor:     isSelected ? conf.color : conf.border,
-                borderWidth:     isSelected ? 2 : 1.5,
-              },
+              isSelected && styles.btnSelected,
             ]}
             accessibilityRole="radio"
             accessibilityState={{ checked: isSelected }}
             accessibilityLabel={conf.label}
           >
             {isSelected && (
-              <View style={[styles.checkDot, { backgroundColor: conf.color }]}>
-                <Icon name="check" size={10} color={CA_THEME.white} />
+              <View style={styles.checkDot}>
+                <Icon name="check" size={14} color={CA_THEME.white} />
               </View>
             )}
-            <Icon name={conf.icon} size={28} color={conf.color} />
-            <Text style={[styles.btnLabel, { color: conf.textDark }]}>{conf.label}</Text>
+            <View style={[styles.iconWrap, { backgroundColor: conf.subtle }]}>
+              <Icon name={conf.icon} size={28} color={conf.colorDark} />
+            </View>
+            <Text style={[styles.btnLabel, isSelected && { color: CA_THEME.green, fontWeight: '800' }]}>
+              {conf.label}
+            </Text>
           </Pressable>
         );
       }
@@ -48,20 +48,44 @@ export const CAMouvementTypeGrid = ({
 
 const styles = StyleSheet.create({
   grid: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 8,
+    flexDirection: 'row', flexWrap: 'wrap', gap: 12,
   },
   btn: {
-    width:          '48%',
-    alignItems:     'center',
-    paddingVertical: 16,
-    borderRadius:   12,
-    gap:            8,
-    position:       'relative',
+    flexBasis: '48%',
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    backgroundColor: CA_THEME.white,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    gap: 12,
+    position: 'relative',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
   },
-  checkDot: {
-    position: 'absolute', top: 6, right: 6,
-    width: 16, height: 16, borderRadius: 8,
+  btnSelected: {
+    borderColor: CA_THEME.green,
+    backgroundColor: CA_THEME.greenBg,
+    elevation: 4,
+    shadowColor: CA_THEME.green,
+    shadowOpacity: 0.15,
+  },
+  iconWrap: {
+    width: 52, height: 52, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
   },
-  btnLabel: { fontSize: 13, fontWeight: '700' },
+  btnLabel: {
+    fontSize: 14, fontWeight: '600', color: CA_THEME.textPrimary,
+  },
+  checkDot: {
+    position: 'absolute', top: 12, right: 12,
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: CA_THEME.green,
+    alignItems: 'center', justifyContent: 'center',
+  },
 });

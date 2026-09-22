@@ -1,3 +1,4 @@
+import { CA_THEME } from '@/constants/caTheme';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -66,7 +67,7 @@ export const PanneDetailsPanel: React.FC<PanneDetailsPanelProps> = ({
 const styles = StyleSheet.create({
   panel: {
     marginTop: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: CA_THEME.white,
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: 'rgba(239,68,68,0.22)',

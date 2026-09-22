@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Article } from '@/types';
 import { usePCFilters } from '@/hooks/usePCFilters';
@@ -18,6 +19,7 @@ import { CAParcPCHeader } from '@/components/parcpc/CAParcPCHeader';
 import { CAParcPCSearchBar } from '@/components/parcpc/CAParcPCSearchBar';
 import { CAParcPCStatGrid } from '@/components/parcpc/CAParcPCStatGrid';
 import { CAParcPCHeroCard } from '@/components/parcpc/CAParcPCHeroCard';
+import { PCParcFAB } from '@/components/parcpc/PCParcFAB';
 import { CA_THEME } from '@/constants/caTheme';
 
 type ControlItem = { type: 'controls'; id: string };
@@ -72,6 +74,7 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
   weeklyTrendDelta,
   onScroll,
 }) => {
+  const navigation = useNavigation<any>();
   const listRef = useRef<FlashList<ParcPCListItem> | null>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
   const stats = usePCStats(articles, sentArticles, weeklyTrendDelta);
@@ -246,6 +249,12 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
           onSuccess={handleRenameSuccess}
         />
       ) : null}
+
+      <PCParcFAB 
+        onAddPC={() => navigation.navigate('Articles', { screen: 'AddPC' })}
+        onBulkScan={() => console.log('Bulk Scan non implemente')}
+        onExport={onExportSentCsv}
+      />
     </View>
   );
 };
@@ -267,7 +276,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 10,
     gap: 12,
-    backgroundColor: CA_THEME.lightGray,
+    backgroundColor: 'rgba(247, 248, 250, 0.93)',
   },
   exportButton: {
     minHeight: 44,

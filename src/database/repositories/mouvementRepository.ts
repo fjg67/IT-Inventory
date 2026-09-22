@@ -13,7 +13,7 @@ import {
   PaginatedResult,
 } from '@/types';
 import { APP_CONFIG, ERROR_MESSAGES } from '@/constants';
-import { stockRepository } from './stockRepository';
+import { stockRepository, STOCK_CONFLICT_ERROR } from './stockRepository';
 import { getEffectiveSiteIds } from './siteRepository';
 import { movementPushDispatchService } from '@/services/movementPushDispatchService';
 
@@ -495,18 +495,23 @@ export const mouvementRepository = {
   },
 
   async create(data: MouvementStockForm, technicienId: string | number): Promise<string> {
-    let stockActuel = await stockRepository.getQuantite(data.articleId, data.siteId);
-    if (stockActuel === null) {
-      await stockRepository.createOrUpdate(data.articleId, data.siteId, 0);
-      stockActuel = 0;
-    }
     const quantiteSignee = data.type === 'sortie' ? -data.quantite : data.quantite;
-    const nouveauStock =
-      data.type === 'ajustement' ? data.quantite : stockActuel + quantiteSignee;
-    if (data.type === 'sortie' && nouveauStock < 0) {
-      throw new Error(ERROR_MESSAGES.STOCK_INSUFFICIENT);
-    }
 
+    // Compute the new stock atomically using optimistic locking (CAS with retry).
+    // This prevents race conditions when 2 users make a movement simultaneously.
+    const computeNewQuantity = (currentQty: number): number => {
+      if (data.type === 'ajustement') return data.quantite;
+      return currentQty + quantiteSignee;
+    };
+
+    const validateStock = (currentQty: number, newQty: number): void => {
+      if (data.type === 'sortie' && newQty < 0) {
+        throw new Error(ERROR_MESSAGES.STOCK_INSUFFICIENT);
+      }
+    };
+
+    // Insert the movement row first (idempotent — worst case we have an orphan row
+    // that points to a stock state that was never committed, which is acceptable).
     const supabase = getSupabaseClient();
     const newId = generateId();
     const { data: inserted, error: errInsert } = await supabase
@@ -524,7 +529,20 @@ export const mouvementRepository = {
       .single();
     if (errInsert) throw new Error(errInsert.message);
 
-    await stockRepository.updateQuantite(data.articleId, data.siteId, nouveauStock);
+    try {
+      // Atomically update stock with optimistic locking
+      await stockRepository.atomicUpdateQuantite(
+        data.articleId,
+        data.siteId,
+        computeNewQuantity,
+        validateStock,
+      );
+    } catch (error) {
+      // If the stock update fails (conflict or validation), remove the orphan movement
+      await supabase.from(tables.mouvements).delete().eq('id', inserted?.id ?? newId).catch(() => {});
+      throw error;
+    }
+
     movementPushDispatchService.dispatchMovementCreated({
       movementId: inserted?.id ?? newId,
       senderUserId: String(technicienId),
@@ -535,22 +553,12 @@ export const mouvementRepository = {
   },
 
   async createTransfert(data: TransfertForm, technicienId: string | number): Promise<void> {
-    const stockDepart = await stockRepository.getQuantite(data.articleId, data.siteDepartId);
-    let stockArrivee = await stockRepository.getQuantite(data.articleId, data.siteArriveeId);
-    if (stockDepart === null || stockDepart < data.quantite) {
-      throw new Error(ERROR_MESSAGES.STOCK_INSUFFICIENT);
-    }
-    if (stockArrivee === null) {
-      await stockRepository.createOrUpdate(data.articleId, data.siteArriveeId, 0);
-      stockArrivee = 0;
-    }
-    const nouveauStockDepart = stockDepart - data.quantite;
-    const nouveauStockArrivee = stockArrivee + data.quantite;
-
     const supabase = getSupabaseClient();
     const transferOutId = generateId();
     const transferInId = generateId();
-    await supabase.from(tables.mouvements).insert([
+
+    // Insert both movement rows first
+    const { error: errInsert } = await supabase.from(tables.mouvements).insert([
       {
         id: transferOutId,
         articleId: data.articleId,
@@ -571,8 +579,47 @@ export const mouvementRepository = {
         reason: data.commentaire ?? null,
       },
     ]);
-    await stockRepository.updateQuantite(data.articleId, data.siteDepartId, nouveauStockDepart);
-    await stockRepository.updateQuantite(data.articleId, data.siteArriveeId, nouveauStockArrivee);
+    if (errInsert) throw new Error(errInsert.message);
+
+    try {
+      // Atomically decrement departure site stock
+      await stockRepository.atomicUpdateQuantite(
+        data.articleId,
+        data.siteDepartId,
+        (currentQty) => currentQty - data.quantite,
+        (currentQty, newQty) => {
+          if (newQty < 0) {
+            throw new Error(ERROR_MESSAGES.STOCK_INSUFFICIENT);
+          }
+        },
+      );
+    } catch (error) {
+      // Clean up orphan movement rows
+      await supabase.from(tables.mouvements).delete().in('id', [transferOutId, transferInId]).catch(() => {});
+      throw error;
+    }
+
+    try {
+      // Atomically increment arrival site stock
+      await stockRepository.atomicUpdateQuantite(
+        data.articleId,
+        data.siteArriveeId,
+        (currentQty) => currentQty + data.quantite,
+      );
+    } catch (error) {
+      // Departure was already decremented — try to rollback
+      await stockRepository.atomicUpdateQuantite(
+        data.articleId,
+        data.siteDepartId,
+        (currentQty) => currentQty + data.quantite,
+      ).catch((rollbackErr) => {
+        console.error('[mouvementRepository] CRITICAL: rollback departure stock failed:', rollbackErr);
+      });
+      // Clean up orphan movement rows
+      await supabase.from(tables.mouvements).delete().in('id', [transferOutId, transferInId]).catch(() => {});
+      throw error;
+    }
+
     movementPushDispatchService.dispatchMovementCreated({
       movementId: transferOutId,
       senderUserId: String(technicienId),

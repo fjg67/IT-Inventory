@@ -1,3 +1,4 @@
+import { CA_THEME } from '@/constants/caTheme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -50,8 +51,8 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(0,125,112,0.2)',
-    backgroundColor: '#FFFFFF',
+    borderColor: CA_THEME.borderGray,
+    backgroundColor: CA_THEME.white,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -71,7 +72,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 1.5,
-    borderColor: 'rgba(0,125,112,0.4)',
+    borderColor: CA_THEME.borderGray,
     alignItems: 'center',
     justifyContent: 'center',
   },

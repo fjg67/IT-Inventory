@@ -1,3 +1,4 @@
+import { CA_THEME } from '@/constants/caTheme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -21,7 +22,7 @@ export const AddPCAssetInput: React.FC<AddPCAssetInputProps> = ({
 }) => {
   return (
     <View style={styles.wrap}>
-      <View style={[styles.inputWrap, { borderColor: error ? '#EF4444' : 'rgba(0,125,112,0.25)' }]}>
+      <View style={[styles.inputWrap, { borderColor: error ? '#EF4444' : CA_THEME.borderGray }]}>
         <Icon name="tag-outline" size={17} color={accentColor} />
         <TextInput
           value={value}
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 13,
     borderWidth: 1.5,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: CA_THEME.white,
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#1A1A1A',
+    color: CA_THEME.textPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -69,7 +70,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,125,112,0.1)',
+    backgroundColor: CA_THEME.borderGray,
   },
   error: {
     color: '#DC2626',

@@ -111,7 +111,7 @@ export const ArticleDetailScreen: React.FC = () => {
   const { colors, isDark, theme } = useTheme();
 
   // Hero collapsible
-  const { scrollHandler, heroHeight, photoOpacity, compactTitleOpacity } = useScrollHero();
+  const { scrollHandler, heroHeight, photoOpacity, compactTitleOpacity, parallaxBg } = useScrollHero();
 
   const [article, setArticle] = useState<Article | null>(null);
   const [historique, setHistorique] = useState<Mouvement[]>([]);
@@ -560,6 +560,7 @@ export const ArticleDetailScreen: React.FC = () => {
           isCritical={isCritical}
           photoOpacity={photoOpacity}
           compactTitleOpacity={compactTitleOpacity}
+          parallaxBg={parallaxBg}
           onBack={handleBack}
           onEdit={handleEdit}
           showEdit={!isSuperviseur}

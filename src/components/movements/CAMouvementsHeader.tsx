@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, Pressable, StatusBar } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CA_THEME } from '@/constants/caTheme';
 
 interface CAMouvementsHeaderProps {
@@ -12,8 +13,11 @@ interface CAMouvementsHeaderProps {
 
 export const CAMouvementsHeader = ({
   totalCount, todayCount, onOpenChart, onOpenSearch
-}: CAMouvementsHeaderProps) => (
-  <View style={styles.header}>
+}: CAMouvementsHeaderProps) => {
+  const insets = useSafeAreaInsets();
+  
+  return (
+  <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
 
     {/* Ligne principale */}
     <View style={styles.titleRow}>
@@ -51,12 +55,12 @@ export const CAMouvementsHeader = ({
     </View>
 
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   header: {
     backgroundColor:  CA_THEME.green,
-    paddingTop:       (StatusBar.currentHeight ?? 0) + 12,
     paddingHorizontal: 16,
     paddingBottom:    14,
     position:         'relative',

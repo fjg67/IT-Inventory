@@ -1,4 +1,5 @@
 // components/add-pc/PCSuccessActions.tsx
+import { CA_THEME } from '@/constants/caTheme';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import Animated, {
@@ -90,14 +91,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 11,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: CA_THEME.white,
     borderWidth: 1,
     borderColor: 'rgba(34,197,94,0.18)',
   },
   btnSecondaryText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#5A5A55',
+    color: CA_THEME.textSecondary,
   },
   btnPrimary: {
     flexDirection: 'row',

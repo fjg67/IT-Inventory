@@ -59,13 +59,12 @@ import { MovementPeriod, MovementTypeKey, getMovementTypeKey } from '@/constants
 import { MovementStatsChart } from '@/components/movements/MovementStatsChart';
 import { CA_THEME } from '@/constants/caTheme';
 
-// ==================== HELPERS ====================
 const TYPE_CONFIG: Record<string, { icon: string; color: string; gradient: [string, string]; label: string; prefix: string }> = {
-  entree: { icon: 'arrow-up-bold', color: '#10B981', gradient: ['#10B981', '#059669'], label: 'Entrée', prefix: '+' },
-  sortie: { icon: 'arrow-down-bold', color: '#EF4444', gradient: ['#EF4444', '#DC2626'], label: 'Sortie', prefix: '-' },
-  ajustement: { icon: 'swap-vertical', color: '#F59E0B', gradient: ['#F59E0B', '#D97706'], label: 'Ajustement', prefix: '' },
-  transfert_depart: { icon: 'arrow-right-bold', color: '#8B5CF6', gradient: ['#8B5CF6', '#6D28D9'], label: 'Transfert ↗', prefix: '-' },
-  transfert_arrivee: { icon: 'arrow-left-bold', color: '#8B5CF6', gradient: ['#8B5CF6', '#6D28D9'], label: 'Transfert ↙', prefix: '+' },
+  entree: { icon: 'arrow-up-bold', color: CA_THEME.green, gradient: [CA_THEME.greenLight, CA_THEME.greenDark], label: 'Entrée', prefix: '+' },
+  sortie: { icon: 'arrow-down-bold', color: CA_THEME.danger, gradient: [CA_THEME.danger, '#B91C1C'], label: 'Sortie', prefix: '-' },
+  ajustement: { icon: 'swap-vertical', color: CA_THEME.warning, gradient: [CA_THEME.warning, '#B45309'], label: 'Ajustement', prefix: '' },
+  transfert_depart: { icon: 'arrow-right-bold', color: CA_THEME.purple, gradient: [CA_THEME.purple, '#581C87'], label: 'Transfert ↗', prefix: '-' },
+  transfert_arrivee: { icon: 'arrow-left-bold', color: CA_THEME.purple, gradient: [CA_THEME.purple, '#581C87'], label: 'Transfert ↙', prefix: '+' },
 };
 
 const getTypeConfig = (type: string) => TYPE_CONFIG[type] || TYPE_CONFIG.entree;
@@ -466,11 +465,25 @@ export const MouvementsListScreen: React.FC = () => {
     setShowChart((prev) => !prev);
   }, []);
 
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(scrollY.value, [0, 100], [1, 0.5], 'clamp'),
+      transform: [
+        { scale: interpolate(scrollY.value, [0, 100], [1, 0.95], 'clamp') },
+        { translateY: interpolate(scrollY.value, [0, 100], [0, -20], 'clamp') }
+      ]
+    };
+  });
+
+  const AnimatedSectionList = Animated.createAnimatedComponent(SectionList);
+
   return (
     <View style={[styles.container, { backgroundColor: CA_THEME.lightGray }]}>
       <StatusBar barStyle="light-content" backgroundColor={CA_THEME.green} />
 
-      <SectionList
+      <AnimatedSectionList
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         sections={movementSections}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item, index }) => (
@@ -484,7 +497,7 @@ export const MouvementsListScreen: React.FC = () => {
         )}
         renderSectionHeader={({ section }) => <CADateSeparator label={section.title} />}
         ListHeaderComponent={
-          <View style={{ gap: 14, paddingTop: 0, paddingBottom: 10 }}>
+          <Animated.View style={[{ gap: 14, paddingTop: 0, paddingBottom: 10 }, headerAnimatedStyle]}>
             <CAMouvementsHeader
               totalCount={stats.total}
               todayCount={todayMouvementsCount}
@@ -504,29 +517,20 @@ export const MouvementsListScreen: React.FC = () => {
             ) : null}
 
             <MovementSearchBar
-              visible={showSearch}
-              value={searchQuery}
+              searchQuery={searchQuery}
               onChangeText={setSearchQuery}
-              onCancel={() => {
-                setSearchQuery('');
+              showSearch={showSearch}
+              onClose={() => {
+                Vibration.vibrate(10);
                 setShowSearch(false);
+                setSearchQuery('');
               }}
-              resultsCount={displayStats.total}
             />
 
-            <View style={{ gap: 10 }}>
-              <CAMouvementsStatRow
-                stats={{
-                  entree: movementTypeCounts.entree || 0,
-                  sortie: movementTypeCounts.sortie || 0,
-                  ajustement: movementTypeCounts.ajustement || 0,
-                  transfert: movementTypeCounts.transfert || 0,
-                }}
-                activeType={typeFilter === 'all' ? null : typeFilter}
-                onTypeChange={(type) => {
-                  setTypeFilter(type === null ? 'all' : type as any);
-                }}
-              />
+            <View style={{ gap: 14 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: CA_THEME.textPrimary, paddingHorizontal: 4, letterSpacing: 0.3 }}>
+                Filtrer par période
+              </Text>
 
               <CAPeriodToggle
                 selected={movementPeriodValue as any}
@@ -550,7 +554,7 @@ export const MouvementsListScreen: React.FC = () => {
                 setTypeFilter(type === 'all' ? 'all' : type as any);
               }}
             />
-          </View>
+          </Animated.View>
         }
         ListFooterComponent={<View style={{ height: 120 }} />}
         refreshControl={

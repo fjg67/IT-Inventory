@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { useTheme } from '@/theme';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -53,6 +54,16 @@ const Toast: React.FC<ToastProps> = ({
   const dismiss = useCallback(() => onDismiss(id), [id, onDismiss]);
 
   useEffect(() => {
+    // Haptic feedback
+    const hapticOptions = { enableVibrateFallback: true, ignoreAndroidSystemSettings: false };
+    if (type === 'error' || type === 'warning') {
+      ReactNativeHapticFeedback.trigger('notificationError', hapticOptions);
+    } else if (type === 'success') {
+      ReactNativeHapticFeedback.trigger('notificationSuccess', hapticOptions);
+    } else {
+      ReactNativeHapticFeedback.trigger('impactLight', hapticOptions);
+    }
+
     // Animate progress bar
     progress.value = withTiming(0, {
       duration,
@@ -75,12 +86,20 @@ const Toast: React.FC<ToastProps> = ({
       style={[
         styles.wrapper,
         {
-          backgroundColor: isDark ? colors.surface : '#FFFFFF',
-          borderColor: isDark ? cfg.border + '30' : cfg.border + '25',
+          backgroundColor: 'transparent',
+          borderColor: isDark ? cfg.border + '40' : cfg.border + '30',
           shadowColor: cfg.gradient[0],
         },
       ]}
     >
+      {/* Semi-transparent background instead of BlurView to fix Android compilation */}
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: isDark ? 'rgba(30,30,30,0.85)' : 'rgba(255,255,255,0.85)' }
+        ]}
+      />
+
       {/* Left accent */}
       <LinearGradient
         colors={cfg.gradient}

@@ -4,14 +4,17 @@
 
 import React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   StyleSheet,
   ActivityIndicator,
   ViewStyle,
   TextStyle,
   useWindowDimensions,
+  View,
 } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { colors, spacing, typography, borderRadius, shadows, deviceSizes } from '@/constants/theme';
 import { isTablet as checkIsTablet } from '../../utils/responsive';
 
@@ -95,15 +98,45 @@ export const Button: React.FC<ButtonProps> = ({
     );
   };
 
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    if (!disabled && !loading) {
+      scale.value = withSpring(0.95, { damping: 15, stiffness: 200 });
+    }
+  };
+
+  const handlePressOut = () => {
+    if (!disabled && !loading) {
+      scale.value = withSpring(1, { damping: 15, stiffness: 200 });
+    }
+  };
+
+  const handlePress = () => {
+    if (!disabled && !loading) {
+      ReactNativeHapticFeedback.trigger('impactLight');
+      onPress();
+    }
+  };
+
   return (
-    <TouchableOpacity
-      style={buttonStyles}
-      onPress={onPress}
-      disabled={disabled || loading}
-      activeOpacity={0.7}
-    >
-      {renderContent()}
-    </TouchableOpacity>
+    <Animated.View style={[buttonStyles, animatedStyle]}>
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={handlePress}
+        disabled={disabled || loading}
+      />
+      {/* We use pointerEvents none on the content so Pressable catches everything */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm }} pointerEvents="none">
+        {renderContent()}
+      </View>
+    </Animated.View>
   );
 };
 

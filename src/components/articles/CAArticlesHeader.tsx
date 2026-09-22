@@ -1,11 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, View, Pressable, StatusBar } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CA_THEME } from '@/constants/caTheme';
 
 interface CAArticlesHeaderProps {
   totalCount: number;
   lastSyncedAt?: string;
+  isGridView?: boolean;
+  onToggleView?: () => void;
   onBack?: () => void;
 }
 
@@ -15,9 +18,12 @@ const formatRelativeTime = (isoString?: string) => {
 };
 
 export const CAArticlesHeader = ({
-  totalCount, lastSyncedAt, onBack
-}: CAArticlesHeaderProps) => (
-  <View style={styles.header}>
+  totalCount, lastSyncedAt, isGridView, onToggleView, onBack
+}: CAArticlesHeaderProps) => {
+  const insets = useSafeAreaInsets();
+  
+  return (
+  <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
 
     {/* Ligne titre + badge */}
     <View style={styles.titleRow}>
@@ -35,6 +41,14 @@ export const CAArticlesHeader = ({
         </View>
         <Text style={styles.title}>Articles</Text>
       </View>
+
+      {/* Bouton Vue Grille / Liste */}
+      {onToggleView && (
+        <Pressable onPress={onToggleView} style={styles.viewToggleBtn}
+          accessibilityRole="button" accessibilityLabel="Changer de vue">
+          <Icon name={isGridView ? "view-list" : "view-grid"} size={18} color={CA_THEME.white} />
+        </Pressable>
+      )}
 
       {/* Badge compteur total */}
       <View style={styles.countBadge} accessibilityLabel={`${totalCount} articles`}>
@@ -58,12 +72,12 @@ export const CAArticlesHeader = ({
     </View>
 
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   header: {
     backgroundColor:  CA_THEME.green,
-    paddingTop:       StatusBar.currentHeight ?? 12,
     paddingHorizontal: 16,
     paddingBottom:    14,
     position:         'relative',
@@ -97,6 +111,13 @@ const styles = StyleSheet.create({
     backgroundColor:   'rgba(255,255,255,0.18)',
     borderWidth:       1,
     borderColor:       'rgba(255,255,255,0.38)',
+  },
+  viewToggleBtn: {
+    width: 32, height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center', justifyContent: 'center',
+    marginLeft: 'auto',
   },
   countText: { fontSize: 11, fontWeight: '600', color: CA_THEME.white },
   syncRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

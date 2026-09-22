@@ -1,9 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CA_THEME } from '@/constants/caTheme';
 
-export const CAParametresHeader = () => (
-  <View style={styles.header}>
+export const CAParametresHeader = () => {
+  const insets = useSafeAreaInsets();
+  
+  return (
+  <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
     <View style={styles.titleRow}>
       <View style={styles.logoGroup}>
         <View style={styles.caSquare} aria-hidden>
@@ -19,12 +23,12 @@ export const CAParametresHeader = () => (
       <View style={[styles.stripe, { backgroundColor: CA_THEME.greenDark }]} />
     </View>
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   header: {
     backgroundColor:   CA_THEME.green,
-    paddingTop:        StatusBar.currentHeight ?? 12,
     paddingHorizontal: 16,
     paddingBottom:     14,
     position:          'relative',

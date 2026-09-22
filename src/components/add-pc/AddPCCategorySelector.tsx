@@ -4,6 +4,8 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { PCCategory } from '@/hooks/useAddPCForm';
 
+import { CA_THEME } from '@/constants/caTheme';
+
 interface AddPCCategorySelectorProps {
   selected: PCCategory | null;
   onSelect: (value: PCCategory) => void;
@@ -34,11 +36,11 @@ export const AddPCCategorySelector: React.FC<AddPCCategorySelectorProps> = ({
             style={[
               styles.chip,
               active
-                ? { borderColor: activeColor, backgroundColor: 'rgba(0,125,112,0.08)' }
+                ? { borderColor: activeColor, backgroundColor: CA_THEME.greenBg }
                 : null,
             ]}
           >
-            <Icon name={option.icon} size={18} color={active ? activeColor : '#5A5A55'} />
+            <Icon name={option.icon} size={18} color={active ? activeColor : CA_THEME.textSecondary} />
             <Text style={[styles.label, active ? { color: activeColor } : null]}>{option.label}</Text>
           </Pressable>
         );
@@ -57,15 +59,16 @@ const styles = StyleSheet.create({
     minHeight: 58,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: 'rgba(0,125,112,0.2)',
-    backgroundColor: '#FFFFFF',
+    borderColor: CA_THEME.borderGray,
+    backgroundColor: CA_THEME.white,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   },
   label: {
-    color: '#1A1A1A',
+    color: CA_THEME.textPrimary,
     fontSize: 12,
     fontWeight: '700',
+    fontFamily: CA_THEME.fontFamilyBold,
   },
 });

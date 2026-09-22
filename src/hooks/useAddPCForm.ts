@@ -130,10 +130,19 @@ export const useAddPCForm = () => {
     if (key === 'category') {
       const nextCategory = value as PCCategory | null;
       const nextModels = getModelsForCategory(nextCategory);
+      
+      let nextHostname = form.hostname;
+      if (nextCategory === 'portable_siege' && (!nextHostname || nextHostname === 'KSAOP872')) {
+        nextHostname = 'KSAOPSTR';
+      } else if (nextCategory === 'portable_agence' && (!nextHostname || nextHostname === 'KSAOPSTR' || nextHostname === 'KSAOPEPI')) {
+        nextHostname = 'KSAOP872';
+      }
+
       setForm((prev) => ({
         ...prev,
         category: nextCategory,
         model: nextModels.includes(String(prev.model ?? '')) ? prev.model : null,
+        hostname: nextHostname,
       }));
       return;
     }

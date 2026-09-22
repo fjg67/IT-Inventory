@@ -13,13 +13,21 @@ create table if not exists public."AppConfig" (
 -- 2) Upsert minimum required app version
 -- Any app with APP_CONFIG.version < this value will be blocked by ForceUpdateScreen.
 insert into public."AppConfig" ("key", "value")
-values ('min_app_version', '2.33')
+values ('min_app_version', '2.47')
 on conflict ("key")
 do update set
   "value" = excluded."value",
   "updatedAt" = now();
 
--- 3) Optional: Play Store URL used by the update screen
+-- 3) Version currently published in the store, shown on the blocking screen
+insert into public."AppConfig" ("key", "value")
+values ('latest_app_version', '2.47')
+on conflict ("key")
+do update set
+  "value" = excluded."value",
+  "updatedAt" = now();
+
+-- 4) Optional: Play Store URL used by the update screen
 insert into public."AppConfig" ("key", "value")
 values ('update_url', 'https://play.google.com/store/apps/details?id=com.itinventory')
 on conflict ("key")
@@ -27,7 +35,7 @@ do update set
   "value" = excluded."value",
   "updatedAt" = now();
 
--- 4) Optional: release notes shown on ForceUpdateScreen (one item per line)
+-- 5) Optional: release notes shown on ForceUpdateScreen (one item per line)
 insert into public."AppConfig" ("key", "value")
 values (
   'release_notes',
@@ -38,7 +46,7 @@ do update set
   "value" = excluded."value",
   "updatedAt" = now();
 
--- 5) Optional check
+-- 6) Optional check
 select "key", "value", "updatedAt"
 from public."AppConfig"
-where "key" in ('min_app_version', 'update_url', 'release_notes');
+where "key" in ('min_app_version', 'latest_app_version', 'update_url', 'release_notes');

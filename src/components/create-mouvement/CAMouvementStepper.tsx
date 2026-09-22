@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import Animated from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CA_THEME } from '@/constants/caTheme';
 
@@ -19,10 +20,12 @@ interface Step {
 
 interface CAMouvementStepperProps {
   steps: Step[];
+  themeColor?: string;
+  themeSubtle?: string;
 }
 
-export const CAMouvementStepper = ({ steps }: CAMouvementStepperProps) => (
-  <View style={styles.wrapper}
+export const CAMouvementStepper = ({ steps, themeColor = CA_THEME.green, themeSubtle = CA_THEME.greenLight }: CAMouvementStepperProps) => (
+  <Animated.View style={styles.wrapper}
     accessibilityRole="progressbar"
     accessibilityLabel={`${steps.find(s => s.status === 'active')?.label ?? ''} — Étape ${steps.findIndex(s => s.status === 'active') + 1} sur ${steps.length}`}
   >
@@ -33,28 +36,28 @@ export const CAMouvementStepper = ({ steps }: CAMouvementStepperProps) => (
           {i > 0 && (
             <View style={[
               styles.line,
-              { backgroundColor: step.status !== 'pending' ? CA_THEME.white : 'rgba(255,255,255,0.30)' }
+              { backgroundColor: step.status === 'pending' ? CA_THEME.borderGray : themeColor }
             ]} />
           )}
           {/* Cercle étape */}
           <View style={styles.stepItem}>
             <View style={[
               styles.circle,
-              step.status === 'done'    && styles.circleDone,
-              step.status === 'active'  && styles.circleActive,
+              step.status === 'done'    && { backgroundColor: themeColor, borderColor: themeColor },
+              step.status === 'active'  && { backgroundColor: themeSubtle, borderColor: themeColor },
               step.status === 'pending' && styles.circlePending,
             ]}>
               {step.status === 'done' ? (
-                <Icon name="check" size={12} color={CA_THEME.green} />
+                <Icon name="check" size={14} color={CA_THEME.white} />
               ) : step.status === 'active' ? (
-                <Icon name={STEP_ICONS[step.key as keyof typeof STEP_ICONS]} size={12} color={CA_THEME.white} />
+                <Icon name={STEP_ICONS[step.key as keyof typeof STEP_ICONS]} size={14} color={themeColor} />
               ) : (
                 <Text style={styles.circleNum}>{i + 1}</Text>
               )}
             </View>
             <Text style={[
               styles.stepLabel,
-              step.status === 'active'  && styles.stepLabelActive,
+              step.status === 'active'  && { color: themeColor, fontWeight: '700' },
               step.status === 'done'    && styles.stepLabelDone,
             ]}>
               {step.label}
@@ -70,48 +73,46 @@ export const CAMouvementStepper = ({ steps }: CAMouvementStepperProps) => (
       <View style={[styles.stripe, { backgroundColor: CA_THEME.greenLight }]} />
       <View style={[styles.stripe, { backgroundColor: CA_THEME.greenDark }]} />
     </View>
-  </View>
+  </Animated.View>
 );
 
 const styles = StyleSheet.create({
   wrapper: {
-    backgroundColor: CA_THEME.green,
-    paddingTop:      12,
-    paddingBottom:   14,
-    paddingHorizontal: 20,
+    backgroundColor: CA_THEME.white,
+    paddingTop:      16,
+    paddingBottom:   16,
+    paddingHorizontal: 24,
     position:        'relative',
+    borderBottomWidth: 1,
+    borderBottomColor: CA_THEME.borderGray,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   stepsRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
   },
-  stepItem: { alignItems: 'center', gap: 5, zIndex: 1 },
-  line:     { flex: 1, height: 2, marginBottom: 16, marginHorizontal: 2 },
+  stepItem: { alignItems: 'center', gap: 6, zIndex: 1 },
+  line:     { flex: 1, height: 2, marginBottom: 18, marginHorizontal: 4, borderRadius: 1 },
 
   // Cercles
   circle: {
-    width: 28, height: 28, borderRadius: 14,
+    width: 32, height: 32, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2,
   },
-  circleDone: {
-    backgroundColor: CA_THEME.white,
-    borderColor:     CA_THEME.white,
-  },
-  circleActive: {
-    backgroundColor: CA_THEME.greenLight,
-    borderColor:     CA_THEME.greenLight,
-  },
   circlePending: {
-    backgroundColor: 'rgba(255,255,255,0.20)',
-    borderColor:     'rgba(255,255,255,0.40)',
+    backgroundColor: CA_THEME.white,
+    borderColor:     CA_THEME.borderGray,
   },
-  circleNum: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
+  circleNum: { fontSize: 12, fontWeight: '600', color: CA_THEME.textMuted },
 
   // Labels
-  stepLabel:       { fontSize: 10, fontWeight: '500', color: 'rgba(255,255,255,0.72)' },
-  stepLabelActive: { color: CA_THEME.white, fontWeight: '700' },
-  stepLabelDone:   { color: 'rgba(255,255,255,0.65)' },
+  stepLabel:       { fontSize: 11, fontWeight: '600', color: CA_THEME.textMuted },
+  stepLabelDone:   { color: CA_THEME.textPrimary },
 
-  triband: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, flexDirection: 'row' },
+  triband: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, flexDirection: 'row' },
   stripe:  { flex: 1 },
 });
