@@ -11,13 +11,12 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  Vibration,
   View,
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Camera, useCameraDevices, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Animated, { FadeIn, FadeInDown, FadeInRight, FadeOut, ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInRight, FadeOut, ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle, withRepeat, withTiming } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -152,7 +151,6 @@ export const AddMovementScreen: React.FC = () => {
     value: flow.state.quantity,
     onChange: (next) => {
       flow.updateField('quantity', next);
-      Vibration.vibrate(8);
     },
   });
 
@@ -208,7 +206,6 @@ export const AddMovementScreen: React.FC = () => {
     if (lastScannedRef.current?.value === value && now - lastScannedRef.current.at < 2500) return;
     lastScannedRef.current = { value, at: now };
 
-    Vibration.vibrate([0, 30, 50, 30]);
     setShowCamera(false);
     barcodeHandlerRef.current(value);
   }, []);
@@ -225,8 +222,8 @@ export const AddMovementScreen: React.FC = () => {
 
   useEffect(() => {
     if (showCamera) {
-      breathingScale.value = Animated.withRepeat(
-        Animated.withTiming(1.05, { duration: 1200 }),
+      breathingScale.value = withRepeat(
+        withTiming(1.05, { duration: 1200 }),
         -1,
         true
       );
@@ -337,7 +334,6 @@ export const AddMovementScreen: React.FC = () => {
       dispatch(clearScannedArticle());
 
       setSubmitSuccess(true);
-      Vibration.vibrate([0, 30, 60, 30]);
 
       setTimeout(() => {
         if (!isMounted.current) return;
@@ -360,7 +356,6 @@ export const AddMovementScreen: React.FC = () => {
       }
       
       Alert.alert('Erreur', displayMessage);
-      Vibration.vibrate(50);
     } finally {
       if (isMounted.current) {
         setIsSubmitting(false);
@@ -392,7 +387,6 @@ export const AddMovementScreen: React.FC = () => {
 
   const cancelMovement = useCallback(() => {
     setShowCancelModal(true);
-    Vibration.vibrate(10);
   }, []);
 
   const steps = [
@@ -471,7 +465,6 @@ export const AddMovementScreen: React.FC = () => {
             value={flow.state.quantity}
             onChange={(next) => {
               flow.updateField('quantity', next);
-              Vibration.vibrate(8);
             }}
             max={maxQty}
             min={minQty}

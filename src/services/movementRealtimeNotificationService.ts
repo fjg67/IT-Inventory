@@ -2,6 +2,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { movementNotificationService } from '@/services/movementNotificationService';
 import { AuthService } from '@/services/authService';
+import type { Technicien } from '@/types';
 
 type MovementRow = {
   id: string;
@@ -40,6 +41,24 @@ function isExcludedForEpinal(value?: string | null): boolean {
   );
 }
 
+// Techniciens qui ne doivent jamais recevoir les notifications de mouvements liés à Epinal
+const EPINAL_EXCLUDED_TECHNICIAN_NAMES = ['florian', 'julien', 'assen', 'christian'];
+
+function isExcludedTechnicianForEpinal(name?: string | null): boolean {
+  if (!name) return false;
+  const normalized = normalizeSiteName(name);
+  return EPINAL_EXCLUDED_TECHNICIAN_NAMES.some((keyword) => normalized.includes(keyword));
+}
+
+// Techniciens qui ne doivent jamais recevoir les notifications de mouvements liés à Stock 1er / Comptoir / Sous sol
+const STOCK1ER_EXCLUDED_TECHNICIAN_NAMES = ['etienne', 'illias', 'ilias'];
+
+function isExcludedTechnicianForStock1er(name?: string | null): boolean {
+  if (!name) return false;
+  const normalized = normalizeSiteName(name);
+  return STOCK1ER_EXCLUDED_TECHNICIAN_NAMES.some((keyword) => normalized.includes(keyword));
+}
+
 function mapDbTypeToNotifyType(type: string): 'entree' | 'sortie' | 'ajustement' | 'transfert' {
   const normalized = (type ?? '').toUpperCase();
   if (normalized === 'ENTRY') return 'entree';
@@ -52,10 +71,11 @@ function mapDbTypeToNotifyType(type: string): 'entree' | 'sortie' | 'ajustement'
 }
 
 let channel: RealtimeChannel | null = null;
+let activeTechnicien: Pick<Technicien, 'id' | 'nom'> | null = null;
 
 async function notifyForMovement(row: MovementRow): Promise<void> {
-  const currentTechnicien = await AuthService.getStoredSession();
-  if (currentTechnicien?.id && String(currentTechnicien.id) === String(row.userId)) {
+  const currentTechnicien = activeTechnicien ?? await AuthService.getStoredSession();
+  if (currentTechnicien?.id != null && String(currentTechnicien.id) === String(row.userId)) {
     return;
   }
 
@@ -85,7 +105,12 @@ async function notifyForMovement(row: MovementRow): Promise<void> {
     : null;
 
   const epinalMovement = isEpinalSite(fromSiteName) || isEpinalSite(toSiteName);
-  if (epinalMovement && isExcludedForEpinal(currentUserSiteName)) {
+  if (epinalMovement && (isExcludedForEpinal(currentUserSiteName) || isExcludedTechnicianForEpinal(currentTechnicien?.nom))) {
+    return;
+  }
+
+  const stock1erMovement = isExcludedForEpinal(fromSiteName) || isExcludedForEpinal(toSiteName);
+  if (stock1erMovement && isExcludedTechnicianForStock1er(currentTechnicien?.nom)) {
     return;
   }
 
@@ -105,7 +130,8 @@ async function notifyForMovement(row: MovementRow): Promise<void> {
 }
 
 export const movementRealtimeNotificationService = {
-  start(): void {
+  start(technicien?: Pick<Technicien, 'id' | 'nom'> | null): void {
+    activeTechnicien = technicien ?? null;
     if (channel) return;
     const supabase = getSupabaseClient();
 
@@ -130,11 +156,13 @@ export const movementRealtimeNotificationService = {
   },
 
   stop(): void {
-    if (!channel) return;
-    const supabase = getSupabaseClient();
-    supabase.removeChannel(channel).catch((error) => {
-      console.warn('[movementRealtimeNotificationService] remove channel error:', error);
-    });
+    activeTechnicien = null;
+    if (channel) {
+      const supabase = getSupabaseClient();
+      supabase.removeChannel(channel).catch((error) => {
+        console.warn('[movementRealtimeNotificationService] remove channel error:', error);
+      });
+    }
     channel = null;
   },
 };

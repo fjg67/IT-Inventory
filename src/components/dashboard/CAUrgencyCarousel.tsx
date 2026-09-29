@@ -16,6 +16,78 @@ const CARD_WIDTH = width * 0.85;
 const SPACING = 16;
 const SNAP_INTERVAL = CARD_WIDTH + SPACING;
 
+interface UrgencyCardProps {
+  alert: PredictiveAlert;
+  index: number;
+  scrollX: Animated.SharedValue<number>;
+  onPress: () => void;
+}
+
+// Composant dédié : un hook `useAnimatedStyle` par instance, jamais dans une boucle .map()
+const UrgencyCard: React.FC<UrgencyCardProps> = ({ alert, index, scrollX, onPress }) => {
+  const animatedStyle = useAnimatedStyle(() => {
+    const inputRange = [
+      (index - 1) * SNAP_INTERVAL,
+      index * SNAP_INTERVAL,
+      (index + 1) * SNAP_INTERVAL,
+    ];
+
+    const scale = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.9, 1, 0.9],
+      Extrapolation.CLAMP
+    );
+
+    return {
+      transform: [{ scale }],
+    };
+  });
+
+  const isRuptureImminente = alert.daysRemaining <= 7;
+
+  return (
+    <Animated.View
+      entering={FadeInRight.delay(index * 100).springify()}
+      style={[styles.cardWrapper, animatedStyle]}
+    >
+      <Pressable onPress={onPress}>
+        <LinearGradient
+          colors={isRuptureImminente ? ['#FEF2F2', '#FEE2E2'] : ['#FFFBEB', '#FEF3C7']}
+          style={styles.card}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          {/* Bordure colorée */}
+          <View style={[styles.cardBorder, { backgroundColor: isRuptureImminente ? CA_THEME.danger : CA_THEME.warning }]} />
+
+          <View style={styles.cardHeader}>
+            <View style={[styles.iconWrap, { backgroundColor: isRuptureImminente ? '#FECACA' : '#FDE68A' }]}>
+              <Icon name="alert-decagram" size={20} color={isRuptureImminente ? CA_THEME.danger : '#D97706'} />
+            </View>
+            <View style={styles.badge}>
+              <Text style={[styles.badgeText, { color: isRuptureImminente ? CA_THEME.danger : '#D97706' }]}>
+                {alert.daysRemaining} jours restants
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.cardBody}>
+            <Text style={styles.articleName} numberOfLines={1}>{alert.articleNom}</Text>
+            <Text style={styles.articleStats}>Stock : {alert.currentStock} • Conso : -{alert.velocity.toFixed(1)}/j</Text>
+          </View>
+
+          <View style={styles.cardFooter}>
+            <Text style={[styles.actionText, { color: isRuptureImminente ? CA_THEME.danger : '#D97706' }]}>
+              Voir l'article <Icon name="arrow-right" size={14} />
+            </Text>
+          </View>
+        </LinearGradient>
+      </Pressable>
+    </Animated.View>
+  );
+};
+
 export const CAUrgencyCarousel: React.FC<CAUrgencyCarouselProps> = ({ alerts, onPressAlert }) => {
   const scrollX = useSharedValue(0);
 
@@ -40,71 +112,15 @@ export const CAUrgencyCarousel: React.FC<CAUrgencyCarouselProps> = ({ alerts, on
         onScroll={scrollHandler}
         scrollEventThrottle={16}
       >
-        {alerts.map((alert, index) => {
-          // Calcul du style de parallaxe et scale
-          const animatedStyle = useAnimatedStyle(() => {
-            const inputRange = [
-              (index - 1) * SNAP_INTERVAL,
-              index * SNAP_INTERVAL,
-              (index + 1) * SNAP_INTERVAL,
-            ];
-            
-            const scale = interpolate(
-              scrollX.value,
-              inputRange,
-              [0.9, 1, 0.9],
-              Extrapolation.CLAMP
-            );
-            
-            return {
-              transform: [{ scale }],
-            };
-          });
-
-          const isRuptureImminente = alert.daysRemaining <= 7;
-          
-          return (
-            <Animated.View 
-              key={alert.articleId} 
-              entering={FadeInRight.delay(index * 100).springify()}
-              style={[styles.cardWrapper, animatedStyle]}
-            >
-              <Pressable onPress={() => onPressAlert(alert.articleId)}>
-                <LinearGradient
-                  colors={isRuptureImminente ? ['#FEF2F2', '#FEE2E2'] : ['#FFFBEB', '#FEF3C7']}
-                  style={styles.card}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  {/* Bordure colorée */}
-                  <View style={[styles.cardBorder, { backgroundColor: isRuptureImminente ? CA_THEME.danger : CA_THEME.warning }]} />
-                  
-                  <View style={styles.cardHeader}>
-                    <View style={[styles.iconWrap, { backgroundColor: isRuptureImminente ? '#FECACA' : '#FDE68A' }]}>
-                      <Icon name="alert-decagram" size={20} color={isRuptureImminente ? CA_THEME.danger : '#D97706'} />
-                    </View>
-                    <View style={styles.badge}>
-                      <Text style={[styles.badgeText, { color: isRuptureImminente ? CA_THEME.danger : '#D97706' }]}>
-                        {alert.daysRemaining} jours restants
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  <View style={styles.cardBody}>
-                    <Text style={styles.articleName} numberOfLines={1}>{alert.articleNom}</Text>
-                    <Text style={styles.articleStats}>Stock : {alert.currentStock} • Conso : -{alert.velocity.toFixed(1)}/j</Text>
-                  </View>
-                  
-                  <View style={styles.cardFooter}>
-                    <Text style={[styles.actionText, { color: isRuptureImminente ? CA_THEME.danger : '#D97706' }]}>
-                      Voir l'article <Icon name="arrow-right" size={14} />
-                    </Text>
-                  </View>
-                </LinearGradient>
-              </Pressable>
-            </Animated.View>
-          );
-        })}
+        {alerts.map((alert, index) => (
+          <UrgencyCard
+            key={alert.articleId}
+            alert={alert}
+            index={index}
+            scrollX={scrollX}
+            onPress={() => onPressAlert(alert.articleId)}
+          />
+        ))}
       </Animated.ScrollView>
     </View>
   );

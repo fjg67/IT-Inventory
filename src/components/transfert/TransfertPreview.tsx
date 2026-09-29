@@ -90,13 +90,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   site: {
-    color: '#C4B5FD',
+    color: '#6D28D9',
     fontSize: 12,
     fontWeight: '600',
   },
   qty: {
     marginTop: 4,
-    color: '#DDD6FE',
+    color: '#5B21B6',
     fontSize: 12,
     fontWeight: '700',
   },

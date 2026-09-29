@@ -25,6 +25,57 @@ interface PCDonutChartProps {
   strokeWidth?: number;
 }
 
+interface DonutSegmentArcProps {
+  seg: DonutSegment;
+  startAngle: number;
+  strokeDashoffset: number;
+  center: number;
+  radius: number;
+  strokeWidth: number;
+  circumference: number;
+  progress: Animated.SharedValue<number>;
+}
+
+// Composant dédié : un hook `useAnimatedProps` par segment, jamais dans une boucle .map()
+const DonutSegmentArc: React.FC<DonutSegmentArcProps> = ({
+  seg,
+  startAngle,
+  strokeDashoffset,
+  center,
+  radius,
+  strokeWidth,
+  circumference,
+  progress,
+}) => {
+  const animatedProps = useAnimatedProps<CircleProps>(() => {
+    const animatedOffset = interpolate(
+      progress.value,
+      [0, 1],
+      [circumference, strokeDashoffset]
+    );
+
+    return {
+      strokeDashoffset: animatedOffset,
+    };
+  });
+
+  return (
+    <AnimatedCircle
+      cx={center}
+      cy={center}
+      r={radius}
+      stroke={seg.color}
+      strokeWidth={strokeWidth}
+      fill="transparent"
+      strokeDasharray={`${circumference} ${circumference}`}
+      animatedProps={animatedProps}
+      strokeLinecap="round"
+      origin={`${center}, ${center}`}
+      rotation={startAngle}
+    />
+  );
+};
+
 export const PCDonutChart = ({
   segments,
   total,
@@ -44,7 +95,7 @@ export const PCDonutChart = ({
       300,
       withTiming(1, { duration: 1200, easing: Easing.out(Easing.cubic) })
     );
-  }, [total]);
+  }, [total, progress]);
 
   let currentAngle = 0; // Starts from 12 o'clock
 
@@ -69,39 +120,22 @@ export const PCDonutChart = ({
 
               const percentage = seg.value / total;
               const strokeDashoffset = circumference - percentage * circumference;
-              
+
               // Angle for the start of this segment
               const startAngle = currentAngle;
               currentAngle += percentage * 360;
 
-              // Use an animated prop to draw the stroke
-              const animatedProps = useAnimatedProps<CircleProps>(() => {
-                // Scale the dashoffset from empty (circumference) to its target
-                const animatedOffset = interpolate(
-                  progress.value,
-                  [0, 1],
-                  [circumference, strokeDashoffset]
-                );
-
-                return {
-                  strokeDashoffset: animatedOffset,
-                };
-              });
-
               return (
-                <AnimatedCircle
+                <DonutSegmentArc
                   key={index}
-                  cx={center}
-                  cy={center}
-                  r={radius}
-                  stroke={seg.color}
+                  seg={seg}
+                  startAngle={startAngle}
+                  strokeDashoffset={strokeDashoffset}
+                  center={center}
+                  radius={radius}
                   strokeWidth={strokeWidth}
-                  fill="transparent"
-                  strokeDasharray={`${circumference} ${circumference}`}
-                  animatedProps={animatedProps}
-                  strokeLinecap="round"
-                  origin={`${center}, ${center}`}
-                  rotation={startAngle}
+                  circumference={circumference}
+                  progress={progress}
                 />
               );
             })}

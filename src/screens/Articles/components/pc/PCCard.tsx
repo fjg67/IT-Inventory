@@ -39,6 +39,11 @@ const Tag: React.FC<TagProps> = ({ icon, label, backgroundColor, color = OBSIDIA
 export const PCCard: React.FC<PCCardProps> = ({ article, index, onPress, onMarkHot, onMarkAvailable, onMarkProcessing, onMarkSent, onMarkBreakdown, onDelete }) => {
   const state = useMemo(() => getPCStateFromArticle(article), [article]);
   const swipe = useSwipeGesture({ maxSwipe: -240, openThreshold: -80 });
+  // Tous les hooks doivent s'exécuter avant tout retour anticipé (Rules of Hooks)
+  const parsedPanneType = useMemo<PanneType | null>(() => {
+    const match = article.description?.match(/type\s*:\s*(materielle|logicielle|batterie|reseau|autre)/i);
+    return (match?.[1]?.toLowerCase() as PanneType) ?? null;
+  }, [article.description]);
 
   if (!isPCArticle(article)) {
     return null;
@@ -49,10 +54,6 @@ export const PCCard: React.FC<PCCardProps> = ({ article, index, onPress, onMarkH
   const allocation = article.sousType || article.typeArticle || article.famille || 'PC';
   const identifier = article.barcode || article.reference || '';
   const lastUpdated = formatPCDate(article.dateModification);
-  const parsedPanneType = useMemo<PanneType | null>(() => {
-    const match = article.description?.match(/type\s*:\s*(materielle|logicielle|batterie|reseau|autre)/i);
-    return (match?.[1]?.toLowerCase() as PanneType) ?? null;
-  }, [article.description]);
   const panneType = article.panneType ?? parsedPanneType;
   const panneLabel = panneType ? PANNE_TYPE_CONFIG[panneType]?.label : 'Non renseignée';
 

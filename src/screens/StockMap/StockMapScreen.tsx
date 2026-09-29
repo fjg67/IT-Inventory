@@ -5,6 +5,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, w
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CA_THEME } from '@/constants/caTheme';
 import { CAScreenWrapper } from '@/components/dashboard/CAScreenWrapper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppSelector } from '@/store';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { articleRepository } from '@/database';
@@ -144,6 +145,7 @@ const ItemTile = ({ item, qty, isHighlighted, index }: { item: CabinetItem; qty:
 export const StockMapScreen = () => {
   const route = useRoute<any>();
   const highlightBarcode = route.params?.highlightBarcode;
+  const insets = useSafeAreaInsets();
   
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const [stockByRef, setStockByRef] = useState<Record<string, number>>({});
@@ -192,7 +194,7 @@ export const StockMapScreen = () => {
   return (
     <CAScreenWrapper>
       {/* Header Premium CA */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.headerTop}>
           <View style={styles.logoSquare}>
             <Text style={styles.logoCA}>CA</Text>

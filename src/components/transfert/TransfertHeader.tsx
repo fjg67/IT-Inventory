@@ -3,7 +3,6 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MOVEMENT_IDENTITIES } from '@/components/movement/movementTheme';
 import { CA_THEME } from '@/constants/caTheme';
 
 interface Props {
@@ -11,13 +10,12 @@ interface Props {
 }
 
 export const TransfertHeader: React.FC<Props> = ({ onBack }) => {
-  const identity = MOVEMENT_IDENTITIES.transfert;
   const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.header, { paddingTop: (insets.top || 40) + 12 }]}>
       <LinearGradient
-        colors={[CA_THEME.white, '#F5F3FF', '#EDE9FE']}
+        colors={[CA_THEME.white, '#F7F3FF', '#EFE7FF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -29,7 +27,7 @@ export const TransfertHeader: React.FC<Props> = ({ onBack }) => {
 
       {/* Bouton retour */}
       <TouchableOpacity style={styles.backBtn} onPress={onBack}>
-        <Icon name="arrow-left" size={20} color={identity.color} />
+        <Icon name="arrow-left" size={20} color="#6D28D9" />
       </TouchableOpacity>
 
       {/* Titre central */}
@@ -58,7 +56,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     overflow: 'hidden',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(139,92,246,0.12)',
+    borderBottomColor: 'rgba(139,92,246,0.18)',
   },
 
   // Orbes décoratifs
@@ -71,14 +69,14 @@ const styles = StyleSheet.create({
     height: 180,
     right: -50,
     top: -60,
-    backgroundColor: 'rgba(139,92,246,0.08)',
+    backgroundColor: 'rgba(139,92,246,0.09)',
   },
   orbBottomLeft: {
     width: 100,
     height: 100,
     left: -30,
     bottom: -40,
-    backgroundColor: 'rgba(139,92,246,0.05)',
+    backgroundColor: 'rgba(124,58,237,0.06)',
   },
 
   // Bouton retour
@@ -92,7 +90,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,
-    shadowColor: '#8B5CF6',
+    shadowColor: '#6D28D9',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -123,7 +121,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 3,
-    shadowColor: '#8B5CF6',
+    shadowColor: '#6D28D9',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -132,6 +130,7 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
     fontSize: 18,
     fontWeight: '900',
-    letterSpacing: -0.3,
+    letterSpacing: 0,
+    fontFamily: CA_THEME.fontFamilyBold,
   },
 });

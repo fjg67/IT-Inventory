@@ -1,7 +1,7 @@
 import { Alert, Platform, PermissionsAndroid } from 'react-native';
 import notifee, { AndroidImportance, AndroidStyle } from '@notifee/react-native';
 
-const STOCK_MOVEMENTS_CHANNEL_ID = 'stock-movements-v2';
+const STOCK_MOVEMENTS_CHANNEL_ID = 'stock-movements-v3';
 
 interface MovementNotificationPayload {
   movementId?: string;
@@ -14,17 +14,17 @@ interface MovementNotificationPayload {
 }
 
 const movementTypeLabel: Record<MovementNotificationPayload['movementType'], string> = {
-  entree: 'Entree',
+  entree: 'Entrée',
   sortie: 'Sortie',
   ajustement: 'Ajustement',
   transfert: 'Transfert',
 };
 
-const movementTypeEmoji: Record<MovementNotificationPayload['movementType'], string> = {
-  entree: '🟢',
-  sortie: '🔴',
-  ajustement: '🟡',
-  transfert: '🔄',
+const movementTypeColor: Record<MovementNotificationPayload['movementType'], string> = {
+  entree: '#18865B',
+  sortie: '#D92D55',
+  ajustement: '#C77900',
+  transfert: '#4267B2',
 };
 
 function formatQuantity(type: MovementNotificationPayload['movementType'], quantity: number): string {
@@ -33,24 +33,20 @@ function formatQuantity(type: MovementNotificationPayload['movementType'], quant
   return `+${Math.abs(quantity)}`;
 }
 
-function buildMessage(payload: MovementNotificationPayload): string {
+function buildTitle(payload: MovementNotificationPayload): string {
   const typeLabel = movementTypeLabel[payload.movementType];
-  const typeEmoji = movementTypeEmoji[payload.movementType];
+  return `${typeLabel} de stock`;
+}
+
+function buildLines(payload: MovementNotificationPayload): string[] {
   const qty = formatQuantity(payload.movementType, payload.quantity);
 
   return [
-    `📦 Article: ${payload.articleName}`,
-    `📍 Stock: ${payload.stockLocation}`,
-    `🔢 Quantite: ${qty}`,
-    `${typeEmoji} Type: ${typeLabel}`,
-    `👷 Technicien: ${payload.technicianInitials}`,
-  ].join('\n');
-}
-
-function buildTitle(payload: MovementNotificationPayload): string {
-  const typeLabel = movementTypeLabel[payload.movementType];
-  const typeEmoji = movementTypeEmoji[payload.movementType];
-  return `${typeEmoji} ${typeLabel} de stock`;
+    `Article  ·  ${payload.articleName}`,
+    `Stock    ·  ${payload.stockLocation}`,
+    `Quantité ·  ${qty}`,
+    `Technicien ·  ${payload.technicianInitials}`,
+  ];
 }
 
 function getTechnicianInitials(prenom?: string, nom?: string): string {
@@ -95,7 +91,8 @@ export const movementNotificationService = {
   async notify(payload: MovementNotificationPayload): Promise<void> {
     if (!shouldNotify(payload.movementId)) return;
 
-    const message = buildMessage(payload);
+    const lines = buildLines(payload);
+    const message = lines.join('\n');
     const title = buildTitle(payload);
 
     if (Platform.OS === 'android') {
@@ -134,14 +131,17 @@ export const movementNotificationService = {
         android: {
           channelId,
           sound: 'default',
+          color: movementTypeColor[payload.movementType],
+          smallIcon: 'ic_launcher',
           pressAction: {
             id: 'default',
           },
           timestamp: (payload.happenedAt ?? new Date()).getTime(),
           showTimestamp: true,
           style: {
-            type: AndroidStyle.BIGTEXT,
-            text: message,
+            type: AndroidStyle.INBOX,
+            lines,
+            summary: `IT-Inventory · ${payload.stockLocation}`,
           },
         },
       });

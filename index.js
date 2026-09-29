@@ -3,11 +3,15 @@ import 'react-native-url-polyfill/auto';
  * @format
  */
 
-import { AppRegistry, Platform, Text, TextInput } from 'react-native';
+import { AppRegistry, Platform, Text, TextInput, Vibration } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
+import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import App from './App';
 import { name as appName } from './app.json';
+
+Vibration.vibrate = () => {};
+ReactNativeHapticFeedback.setEnabled(false);
 
 // Global font override for Crédit Agricole (Montserrat + chiffres alignés)
 if (!Text.defaultProps) Text.defaultProps = {};
@@ -29,16 +33,16 @@ async function ensureNotificationChannel() {
   }
 }
 
-// Gestion des messages FCM quand l'app est en background ou fermée
-messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-  // On s'assure que le canal existe avant que Android affiche la notification
-  await ensureNotificationChannel();
+if (Platform.OS === 'android') {
+  // Gestion des messages FCM quand l'app est en background ou fermée
+  messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+    // On s'assure que le canal existe avant que Android affiche la notification
+    await ensureNotificationChannel();
 
-  // Si le message est data-only (pas de champ notification), on affiche manuellement
-  if (!remoteMessage.notification && remoteMessage.data?.notifTitle) {
-    const title = String(remoteMessage.data.notifTitle ?? '');
-    const body = String(remoteMessage.data.notifBody ?? '');
-    if (Platform.OS === 'android') {
+    // Si le message est data-only (pas de champ notification), on affiche manuellement
+    if (!remoteMessage.notification && remoteMessage.data?.notifTitle) {
+      const title = String(remoteMessage.data.notifTitle ?? '');
+      const body = String(remoteMessage.data.notifBody ?? '');
       await notifee.displayNotification({
         title,
         body,
@@ -54,8 +58,8 @@ messaging().setBackgroundMessageHandler(async (remoteMessage) => {
         },
       });
     }
-  }
-});
+  });
+}
 
 // Gestion des interactions sur les notifications Notifee en background
 notifee.onBackgroundEvent(async ({ type }) => {

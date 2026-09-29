@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   Vibration,
   View,
+  Image,
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Camera, useCameraDevices, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
@@ -24,9 +25,11 @@ import { articleRepository, mouvementRepository, stockRepository } from '@/datab
 import { showAlert } from '@/store/slices/uiSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '@/constants';
+import { CA_THEME } from '@/constants/caTheme';
 import { Article, StockSite, TransfertForm } from '@/types';
 import { validateTransfertForm } from '@/utils';
 import { useArticleSearch } from '@/hooks/useArticleSearch';
+import { isPCArticle } from '@/constants/pcStates';
 import { MOVEMENT_COLORS, MOVEMENT_IDENTITIES } from '@/components/movement';
 import { MovementSubmitButton } from '@/components/movement/MovementSubmitButton';
 import { TransfertHeader, TransfertPreview, TransfertSiteConnector } from '@/components/transfert';
@@ -78,7 +81,8 @@ export const TransfertScreen: React.FC = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const search = useArticleSearch(siteDepartId, 200);
+  const search = useArticleSearch(siteDepartId, 200, { excludePC: true });
+  const resetSearch = search.reset;
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const devices = useCameraDevices();
@@ -120,19 +124,20 @@ export const TransfertScreen: React.FC = () => {
     if (!siteDepartId) return;
     try {
       const result = await articleRepository.findByReferenceOrBarcode(barcode, siteDepartId);
-      if (result) {
+      if (result && !isPCArticle(result)) {
         setArticle(result);
-        search.reset();
+        resetSearch();
         setErrors({});
       } else {
         const broader = await articleRepository.search(siteDepartId, { searchQuery: barcode, stockFaible: false }, 0, 8);
-        if (broader.data.length === 1) {
-          setArticle(broader.data[0]);
-          search.reset();
+        const nonPCResults = broader.data.filter((candidate) => !isPCArticle(candidate));
+        if (nonPCResults.length === 1) {
+          setArticle(nonPCResults[0]);
+          resetSearch();
           setErrors({});
-        } else if (broader.data.length > 1) {
+        } else if (nonPCResults.length > 1) {
           search.setQuery(barcode);
-          search.setResults(broader.data);
+          search.setResults(nonPCResults);
           setErrors({});
         } else {
           setErrors({ article: `Article non trouve : ${barcode}` });
@@ -141,7 +146,7 @@ export const TransfertScreen: React.FC = () => {
     } catch {
       setErrors({ article: 'Erreur lors de la recherche' });
     }
-  }, [search, siteDepartId]);
+  }, [resetSearch, search, siteDepartId]);
 
   useEffect(() => {
     showCameraRef.current = showCamera;
@@ -257,9 +262,9 @@ export const TransfertScreen: React.FC = () => {
         setQuantite(1);
         setCommentaire('');
         setErrors({});
-        search.reset();
+        resetSearch();
       }
-    }, [effectiveSiteId, initialArticleId, search.reset]),
+    }, [effectiveSiteId, initialArticleId, resetSearch]),
   );
 
   const currentDepartSiteName = useMemo(() => {
@@ -276,7 +281,7 @@ export const TransfertScreen: React.FC = () => {
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: 120 }]}
+          contentContainerStyle={[styles.content, { paddingBottom: Math.max(245, insets.bottom + 215) }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -306,8 +311,14 @@ export const TransfertScreen: React.FC = () => {
           {search.results.length > 0 ? (
             <View style={styles.resultsWrap}>
               {search.results.map((a) => (
-                <TouchableOpacity key={String(a.id)} style={styles.resultRow} onPress={() => { setArticle(a); setErrors({}); search.reset(); }}>
-                  <View style={styles.resultIcon}><Icon name="package-variant-closed" size={16} color={identity.color} /></View>
+                <TouchableOpacity key={String(a.id)} style={styles.resultRow} onPress={() => { setArticle(a); setErrors({}); resetSearch(); }}>
+                  <View style={styles.resultIcon}>
+                    {a.photoUrl ? (
+                      <Image source={{ uri: a.photoUrl }} style={styles.resultImage} resizeMode="cover" accessibilityIgnoresInvertColors />
+                    ) : (
+                      <Icon name="package-variant-closed" size={18} color={identity.color} />
+                    )}
+                  </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.resultRef}>{a.reference}</Text>
                     <Text style={styles.resultName} numberOfLines={1}>{a.nom}</Text>
@@ -409,7 +420,7 @@ export const TransfertScreen: React.FC = () => {
         loading={isSubmitting}
         label="Valider le transfert"
         onPress={submit}
-        bottomInset={insets.bottom}
+        bottomInset={insets.bottom + 76}
       />
 
       <Modal visible={showCamera} animationType="slide" onRequestClose={() => setShowCamera(false)}>
@@ -449,105 +460,130 @@ export default TransfertScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: MOVEMENT_COLORS.bg_primary,
+    backgroundColor: '#F4F5F2',
   },
   flex: { flex: 1 },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    backgroundColor: '#F5F6F3',
   },
   sectionTitleRow: {
-    marginTop: 14,
-    marginBottom: 7,
+    marginTop: 18,
+    marginBottom: 9,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 9,
   },
   accent: {
-    width: 3,
-    height: 16,
-    borderRadius: 2,
+    width: 5,
+    height: 22,
+    borderRadius: 3,
   },
   sectionTitle: {
     color: MOVEMENT_COLORS.text_primary,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: CA_THEME.fontFamilyBold,
   },
   searchBox: {
-    minHeight: 52,
-    borderRadius: 14,
+    minHeight: 58,
+    borderRadius: 17,
     borderWidth: 1.5,
     borderColor: 'rgba(139,92,246,0.45)',
-    backgroundColor: MOVEMENT_COLORS.bg_card,
-    paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    shadowColor: '#6D28D9',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   searchInput: {
     flex: 1,
     color: MOVEMENT_COLORS.text_primary,
     fontSize: 14,
+    fontFamily: CA_THEME.fontFamilyMedium,
   },
   scanBtn: {
-    marginTop: 10,
-    minHeight: 50,
-    borderRadius: 14,
+    marginTop: 12,
+    minHeight: 56,
+    borderRadius: 17,
     backgroundColor: '#8B5CF6',
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
-    shadowColor: '#8B5CF6',
+    shadowColor: '#6D28D9',
     shadowOpacity: 0.3,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 7,
+    borderWidth: 1,
+    borderColor: '#A78BFA',
   },
   scanBtnText: {
     color: '#FFF',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 15,
+    fontFamily: CA_THEME.fontFamilyBold,
   },
   searchHint: {
-    marginTop: 7,
+    marginTop: 8,
+    marginLeft: 4,
     color: MOVEMENT_COLORS.text_dim,
     fontSize: 11,
   },
   resultsWrap: {
-    marginTop: 8,
-    borderRadius: 12,
+    marginTop: 10,
+    borderRadius: 17,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(139,92,246,0.28)',
+    borderColor: 'rgba(139,92,246,0.25)',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#6D28D9',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
   },
   resultRow: {
-    minHeight: 50,
-    paddingHorizontal: 12,
+    minHeight: 68,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     borderBottomWidth: 1,
     borderBottomColor: MOVEMENT_COLORS.border_subtle,
-    backgroundColor: MOVEMENT_COLORS.bg_card,
+    backgroundColor: '#FFFFFF',
   },
   resultIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: MOVEMENT_COLORS.bg_card_elevated,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#F5F0FF',
+    borderWidth: 1,
+    borderColor: 'rgba(139,92,246,0.20)',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
+  resultImage: { width: '100%', height: '100%' },
   resultRef: {
-    color: '#C4B5FD',
+    color: '#6D28D9',
     fontSize: 11,
     fontWeight: '700',
+    fontFamily: CA_THEME.fontFamilyMedium,
   },
   resultName: {
     color: MOVEMENT_COLORS.text_primary,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
+    fontFamily: CA_THEME.fontFamilyBold,
   },
   errorText: {
     marginTop: 6,
@@ -556,44 +592,54 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   articleSelectedCard: {
-    marginTop: 12,
-    borderRadius: 14,
+    marginTop: 14,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: 'rgba(139,92,246,0.35)',
     backgroundColor: 'rgba(139,92,246,0.10)',
-    padding: 12,
+    padding: 16,
+    shadowColor: '#6D28D9',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   articleTitle: {
     color: MOVEMENT_COLORS.text_primary,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
+    fontFamily: CA_THEME.fontFamilyBold,
   },
   articleSub: {
     marginTop: 4,
-    color: '#C4B5FD',
-    fontSize: 12,
+    color: '#6D28D9',
+    fontSize: 13,
     fontWeight: '600',
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -4,
+    gap: 9,
   },
   siteChip: {
-    width: '50%',
-    minHeight: 46,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    borderRadius: 12,
+    width: '100%',
+    minHeight: 58,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: MOVEMENT_COLORS.border_subtle,
     backgroundColor: MOVEMENT_COLORS.bg_card,
-    marginBottom: 8,
-    marginHorizontal: 4,
+    marginBottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 6,
+    shadowColor: '#1A1A1A',
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   siteChipSelected: {
     borderColor: 'rgba(139,92,246,0.45)',
@@ -605,24 +651,35 @@ const styles = StyleSheet.create({
   siteChipText: {
     flex: 1,
     color: MOVEMENT_COLORS.text_muted,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: CA_THEME.fontFamilySemiBold,
   },
   siteChipTextSelected: {
-    color: '#A78BFA',
+    color: '#7C3AED',
   },
   qtyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 9,
+    padding: 6,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D9E2DC',
+    shadowColor: '#1A1A1A',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   qtyBtn: {
     width: 52,
     height: 52,
-    borderRadius: 14,
+    borderRadius: 17,
     borderWidth: 1,
-    borderColor: MOVEMENT_COLORS.border_subtle,
-    backgroundColor: MOVEMENT_COLORS.bg_card,
+    borderColor: '#D9E2DC',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -633,30 +690,38 @@ const styles = StyleSheet.create({
   qtyValueWrap: {
     flex: 1,
     minHeight: 52,
-    borderRadius: 14,
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: MOVEMENT_COLORS.border_subtle,
-    backgroundColor: MOVEMENT_COLORS.bg_card,
+    borderColor: '#D9E2DC',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   qtyValue: {
     color: MOVEMENT_COLORS.text_primary,
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '800',
+    fontFamily: CA_THEME.fontFamilyBold,
   },
   commentBox: {
-    borderRadius: 14,
+    borderRadius: 17,
     borderWidth: 1.5,
-    borderColor: MOVEMENT_COLORS.border_subtle,
-    backgroundColor: MOVEMENT_COLORS.bg_card,
-    minHeight: 90,
-    padding: 12,
+    borderColor: '#D9E2DC',
+    backgroundColor: '#FFFFFF',
+    minHeight: 106,
+    padding: 15,
+    shadowColor: '#1A1A1A',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   commentInput: {
     color: MOVEMENT_COLORS.text_primary,
     fontSize: 14,
-    minHeight: 58,
+    minHeight: 72,
+    textAlignVertical: 'top',
+    fontFamily: CA_THEME.fontFamilyRegular,
   },
   cameraContainer: {
     flex: 1,

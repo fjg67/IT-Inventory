@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   centerLabel: {
     fontSize: 10,
-    fontFamily: CA_THEME.fontFamily,
+    fontFamily: CA_THEME.fontFamilyMedium,
     color: CA_THEME.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,

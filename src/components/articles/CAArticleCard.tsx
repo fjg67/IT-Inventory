@@ -13,6 +13,7 @@ interface CAArticleCardProps {
   query?: string;
   variant?: 'list' | 'grid';
   onPress: (articleId: number) => void;
+  onMovement?: (articleId: number, type: 'entree' | 'sortie') => void;
 }
 
 const getArticleBorderColor = (article: Article): string => {
@@ -60,6 +61,7 @@ const CAArticleCardComponent = ({
   query,
   variant = 'list',
   onPress,
+  onMovement,
 }: CAArticleCardProps) => {
   const press = useSharedValue(0);
 
@@ -69,19 +71,29 @@ const CAArticleCardComponent = ({
 
   const renderLeftActions = () => {
     return (
-      <View style={[styles.swipeAction, { backgroundColor: CA_THEME.green }]}>
+      <Pressable
+        style={[styles.swipeAction, { backgroundColor: CA_THEME.green }]}
+        onPress={() => onMovement?.(article.id, 'entree')}
+        accessibilityRole="button"
+        accessibilityLabel={`Créer une entrée pour ${article.nom}`}
+      >
         <Icon name="plus" size={24} color="#FFF" />
         <Text style={styles.swipeText}>Entrée</Text>
-      </View>
+      </Pressable>
     );
   };
 
   const renderRightActions = () => {
     return (
-      <View style={[styles.swipeAction, { backgroundColor: CA_THEME.danger, alignItems: 'flex-end' }]}>
+      <Pressable
+        style={[styles.swipeAction, { backgroundColor: CA_THEME.danger, alignItems: 'flex-end' }]}
+        onPress={() => onMovement?.(article.id, 'sortie')}
+        accessibilityRole="button"
+        accessibilityLabel={`Créer une sortie pour ${article.nom}`}
+      >
         <Icon name="minus" size={24} color="#FFF" />
         <Text style={styles.swipeText}>Sortie</Text>
-      </View>
+      </Pressable>
     );
   };
 

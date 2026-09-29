@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, Easing } from 'react-native-reanimated';
 import { CA_THEME } from '@/constants/caTheme';
+import { formatTimeParis } from '@/utils/dateUtils';
 
 export const CAMovementItem = ({ movement }: { movement: any }) => {
   const typeConfig: Record<string, any> = {
@@ -49,7 +50,12 @@ export const CAMovementItem = ({ movement }: { movement: any }) => {
 
   const formatRelativeDate = (dateString: string | Date) => {
     const d = new Date(dateString);
-    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const dateLabel = d.toLocaleDateString('fr-FR', {
+      timeZone: 'Europe/Paris',
+      day: 'numeric',
+      month: 'short',
+    });
+    return `${dateLabel}, ${formatTimeParis(d)}`;
   };
 
   return (

@@ -23,10 +23,13 @@ interface PCCardCompactProps {
 }
 
 export const PCCardCompact: React.FC<PCCardCompactProps> = ({ article, index, onPress, onMarkHot, onMarkAvailable, onMarkProcessing, onMarkSent, onMarkBreakdown, onDelete }) => {
+  // Le hook doit s'exécuter avant tout retour anticipé (Rules of Hooks)
+  const swipe = useSwipeGesture({ maxSwipe: -240, openThreshold: -80 });
+
   if (!isPCArticle(article)) return null;
+
   const state = getPCStateFromArticle(article);
   const actionVariant = state.key === 'a_chaud' ? 'available' : state.key === 'a_reusiner' ? 'processing' : 'hot';
-  const swipe = useSwipeGesture({ maxSwipe: -240, openThreshold: -80 });
   const hostname = article.nom || article.reference;
   const allocation = article.sousType || article.typeArticle || article.famille || 'PC';
   const model = article.modele || '';

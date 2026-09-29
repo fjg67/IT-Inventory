@@ -108,8 +108,8 @@ function buildHtmlFromProducts(products: ProductAlert[], siteNom?: string): stri
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alerte Stock IT-Inventory</title>
 </head>
-<body style="margin:0;padding:0;background:#0F172A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0F172A;min-height:100vh;">
+<body style="margin:0;padding:0;background:#F4F5F7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F4F5F7;min-height:100vh;">
   <tr><td align="center" style="padding:32px 16px;">
     <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
 
@@ -122,10 +122,10 @@ function buildHtmlFromProducts(products: ProductAlert[], siteNom?: string): stri
 
       <!-- HEADER -->
       <tr>
-        <td style="background:linear-gradient(160deg,#1E293B 0%,#0F172A 60%,#1a0505 100%);padding:36px 32px 32px;text-align:center;border-left:1px solid #1E293B;border-right:1px solid #1E293B;">
-          <div style="display:inline-block;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:30px;margin-bottom:16px;">📦</div>
+        <td style="background:#145540;padding:36px 32px 32px;text-align:center;border-left:1px solid #145540;border-right:1px solid #145540;">
+          <div style="display:inline-block;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.3);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:30px;margin-bottom:16px;">📦</div>
           <h1 style="color:#F8FAFC;font-size:28px;font-weight:800;margin:0 0 6px 0;letter-spacing:-0.5px;font-family:Georgia,'Times New Roman',serif;">Alerte Stock Critique</h1>
-          <p style="color:#94A3B8;font-size:13px;margin:0;letter-spacing:0.5px;">IT-Inventory &nbsp;·&nbsp; ${date}</p>
+          <p style="color:#E8F5EF;font-size:13px;margin:0;letter-spacing:0.5px;">IT-Inventory &nbsp;·&nbsp; ${date}</p>
           ${siteNom ? `<div style="margin-top:14px;"><span style="display:inline-block;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);padding:6px 18px;border-radius:20px;color:#CBD5E1;font-size:13px;font-weight:600;">📍 ${siteNom}</span></div>` : ''}
         </td>
       </tr>
@@ -145,8 +145,8 @@ function buildHtmlFromProducts(products: ProductAlert[], siteNom?: string): stri
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
               <td width="33%" style="padding:0 6px 0 0;">
-                <div style="background:#F8FAFC;border-radius:12px;padding:18px 14px;text-align:center;border-top:3px solid #6366F1;">
-                  <div style="font-size:36px;font-weight:800;color:#6366F1;line-height:1;font-family:Georgia,serif;">${products.length}</div>
+                <div style="background:#E8F5EF;border-radius:12px;padding:18px 14px;text-align:center;border-top:3px solid #1E6B52;">
+                  <div style="font-size:36px;font-weight:800;color:#1E6B52;line-height:1;font-family:Georgia,serif;">${products.length}</div>
                   <div style="color:#64748B;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:6px;">En alerte</div>
                 </div>
               </td>
@@ -172,7 +172,7 @@ function buildHtmlFromProducts(products: ProductAlert[], siteNom?: string): stri
         <td style="background:#FFFFFF;padding:0 24px 0;">
           <div style="border-top:1px solid #E2E8F0;padding-top:20px;padding-bottom:12px;">
             <span style="font-size:13px;font-weight:700;color:#0F172A;letter-spacing:1.5px;text-transform:uppercase;">📋&nbsp; Détail des articles</span>
-            <span style="display:inline-block;margin-left:10px;background:#EFF6FF;color:#3B82F6;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;">${products.length}</span>
+            <span style="display:inline-block;margin-left:10px;background:#E8F5EF;color:#145540;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;">${products.length}</span>
           </div>
         </td>
       </tr>
@@ -197,8 +197,8 @@ function buildHtmlFromProducts(products: ProductAlert[], siteNom?: string): stri
       <!-- CTA -->
       <tr>
         <td style="background:#FFFFFF;padding:24px 24px 4px;text-align:center;">
-          <a href="${MOBILE_APP_DEEP_LINK}" style="display:inline-block;background:linear-gradient(135deg,#3B82F6,#6366F1);color:#FFFFFF;font-size:14px;font-weight:700;text-decoration:none;padding:13px 28px;border-radius:10px;letter-spacing:0.3px;">Ouvrir IT-Inventory →</a>
-          <p style="color:#94A3B8;font-size:11px;margin:10px 0 0 0;">Si l'app ne s'ouvre pas : <a href="${MOBILE_APP_FALLBACK_URL}" style="color:#6366F1;text-decoration:none;">Play Store</a></p>
+          <a href="${MOBILE_APP_DEEP_LINK}" style="display:inline-block;background:#1E6B52;color:#FFFFFF;font-size:14px;font-weight:700;text-decoration:none;padding:13px 28px;border-radius:10px;letter-spacing:0.3px;">Ouvrir IT-Inventory →</a>
+          <p style="color:#5A5A55;font-size:11px;margin:10px 0 0 0;">Si l'app ne s'ouvre pas : <a href="${MOBILE_APP_FALLBACK_URL}" style="color:#145540;text-decoration:none;">Play Store</a></p>
         </td>
       </tr>
 
@@ -213,8 +213,8 @@ function buildHtmlFromProducts(products: ProductAlert[], siteNom?: string): stri
 
       <!-- BOTTOM BAR -->
       <tr>
-        <td style="background:linear-gradient(90deg,#0F172A,#1E1B4B);border-radius:0 0 12px 12px;padding:16px 24px;text-align:center;">
-          <span style="color:#475569;font-size:11px;letter-spacing:0.5px;">© 2026 IT-Inventory &nbsp;·&nbsp; Tous droits réservés</span>
+        <td style="background:#145540;border-radius:0 0 12px 12px;padding:16px 24px;text-align:center;">
+          <span style="color:#E8F5EF;font-size:11px;letter-spacing:0.5px;">© 2026 IT-Inventory &nbsp;·&nbsp; Crédit Agricole Alsace Vosges</span>
         </td>
       </tr>
 

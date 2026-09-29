@@ -172,7 +172,6 @@ export const articleRepository = {
     if (filters.codeFamille && filters.codeFamille.length > 0) query = query.in('codeFamille', filters.codeFamille);
     if (filters.famille && filters.famille.length > 0) query = query.in('category', filters.famille);
     if (filters.typeArticle && filters.typeArticle.length > 0) query = query.in('articleType', filters.typeArticle);
-    if (filters.excludeTypeArticle && filters.excludeTypeArticle.length > 0) query = query.not('articleType', 'in', `(${filters.excludeTypeArticle.map(t => `"${t}"`).join(',')})`);
     if (filters.sousType && filters.sousType.length > 0) query = query.in('sousType', filters.sousType);
     if (filters.marque && filters.marque.length > 0) query = query.in('brand', filters.marque);
     if (filters.emplacement && filters.emplacement.length > 0) query = query.in('emplacement', filters.emplacement);
@@ -185,6 +184,12 @@ export const articleRepository = {
       ...a,
       quantite_actuelle: stockMap.get(a.id) ?? 0,
     }));
+
+    if (filters.excludeTypeArticle && filters.excludeTypeArticle.length > 0) {
+      const excludedTypes = new Set(filters.excludeTypeArticle);
+      const includedCategories = new Set(filters.includeExcludedCategories ?? []);
+      withQty = withQty.filter((a) => !excludedTypes.has(a.articleType ?? '') || includedCategories.has(a.category ?? ''));
+    }
 
     if (filters.stockFaible) {
       withQty = withQty.filter(a => (a.quantite_actuelle ?? 0) < (a.minStock ?? 0));

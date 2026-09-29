@@ -15,8 +15,7 @@ const updateConfig = (key, value) => {
 };
 
 Promise.all([
-  updateConfig('min_app_version', '2.47'),
-  updateConfig('latest_app_version', '2.47')
+  updateConfig('latest_app_version', '2.48')
 ])
 .then(data => {
   console.log('AppConfig updated:', data);

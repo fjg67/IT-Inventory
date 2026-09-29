@@ -1,6 +1,6 @@
 {
   "name": "StockProApp",
-  "version": "2.47",
+  "version": "2.48",
   "private": true,
   "scripts": {
     "android": "react-native run-android",

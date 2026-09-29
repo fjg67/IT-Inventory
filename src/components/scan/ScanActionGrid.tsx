@@ -57,7 +57,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   item: {
-    width: '48%',
+    flexBasis: '48%',
+    flexGrow: 1,
+    flexShrink: 1,
     borderRadius: 20,
     overflow: 'hidden',
   },

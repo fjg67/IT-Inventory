@@ -424,7 +424,7 @@ export const AppNavigator: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      movementRealtimeNotificationService.start();
+      movementRealtimeNotificationService.start(currentTechnicien);
     } else {
       movementRealtimeNotificationService.stop();
     }
@@ -432,7 +432,7 @@ export const AppNavigator: React.FC = () => {
     return () => {
       movementRealtimeNotificationService.stop();
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, currentTechnicien]);
 
   useEffect(() => {
     if (!isAuthenticated) {

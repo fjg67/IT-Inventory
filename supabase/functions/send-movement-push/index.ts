@@ -63,6 +63,24 @@ function isExcludedForEpinal(value?: string | null): boolean {
   );
 }
 
+// Techniciens qui ne doivent jamais recevoir les notifications de mouvements liés à Epinal
+const EPINAL_EXCLUDED_TECHNICIAN_NAMES = ['florian', 'julien', 'assen', 'christian'];
+
+function isExcludedTechnicianForEpinal(name?: string | null): boolean {
+  if (!name) return false;
+  const normalized = normalizeSiteName(name);
+  return EPINAL_EXCLUDED_TECHNICIAN_NAMES.some((keyword) => normalized.includes(keyword));
+}
+
+// Techniciens qui ne doivent jamais recevoir les notifications de mouvements liés à Stock 1er / Comptoir / Sous sol
+const STOCK1ER_EXCLUDED_TECHNICIAN_NAMES = ['etienne', 'illias', 'ilias'];
+
+function isExcludedTechnicianForStock1er(name?: string | null): boolean {
+  if (!name) return false;
+  const normalized = normalizeSiteName(name);
+  return STOCK1ER_EXCLUDED_TECHNICIAN_NAMES.some((keyword) => normalized.includes(keyword));
+}
+
 function toMovementLabel(type: string): { label: string; emoji: string } {
   const t = (type ?? '').toUpperCase();
   if (t === 'ENTRY') return { label: 'Entree', emoji: '🟢' };
@@ -236,10 +254,12 @@ serve(async (req) => {
     }
 
     const epinalMovement = isEpinalSite(fromSiteName) || isEpinalSite(toSiteName);
+    const stock1erMovement = isExcludedForEpinal(fromSiteName) || isExcludedForEpinal(toSiteName);
 
     const tokenRowsWithSite = tokenRows ?? [];
     let recipientSiteByUserId = new Map<string, string>();
-    if (epinalMovement) {
+    let recipientNameByUserId = new Map<string, string>();
+    if (epinalMovement || stock1erMovement) {
       const userIds = Array.from(
         new Set(
           tokenRowsWithSite
@@ -252,7 +272,7 @@ serve(async (req) => {
       if (userIds.length > 0) {
         const { data: users, error: usersError } = await supabase
           .from('User')
-          .select('id, siteId')
+          .select('id, siteId, name')
           .in('id', userIds);
         if (usersError) {
           throw new Error(usersError.message);
@@ -285,6 +305,7 @@ serve(async (req) => {
           const userId = String((user as any).id);
           const siteId = String((user as any).siteId ?? '');
           recipientSiteByUserId.set(userId, siteNameById.get(siteId) ?? '');
+          recipientNameByUserId.set(userId, String((user as any).name ?? ''));
         }
       }
     }
@@ -294,10 +315,17 @@ serve(async (req) => {
       .filter((r: any) => !body.senderDeviceId || String(r.id) !== String(body.senderDeviceId))
       .filter((r: any) => !r.userId || !actorUserId || String(r.userId) !== actorUserId)
       .filter((r: any) => {
-        if (!epinalMovement) return true;
+        if (!epinalMovement && !stock1erMovement) return true;
         if (!r.userId) return false;
         const recipientSiteName = recipientSiteByUserId.get(String(r.userId));
-        return !isExcludedForEpinal(recipientSiteName);
+        const recipientName = recipientNameByUserId.get(String(r.userId));
+        if (epinalMovement && (isExcludedForEpinal(recipientSiteName) || isExcludedTechnicianForEpinal(recipientName))) {
+          return false;
+        }
+        if (stock1erMovement && isExcludedTechnicianForStock1er(recipientName)) {
+          return false;
+        }
+        return true;
       })
       .map((r: any) => r.token)
       .filter(Boolean);

@@ -3,6 +3,7 @@ import { FlatList, ListRenderItemInfo, StyleSheet, Text, TouchableOpacity, View 
 import { OBSIDIAN_COLORS } from '@/constants/colors';
 import { SectionHeader } from './SectionHeader';
 import { MovementCard, MovementKind } from './MovementCard';
+import { formatTimeParis } from '@/utils/dateUtils';
 
 export interface MovementItem {
   id: string;
@@ -30,11 +31,7 @@ const formatDayPill = (dateIso: string): string => {
 };
 
 const formatTime = (dateIso: string): string => {
-  const date = new Date(dateIso);
-  return date.toLocaleTimeString('fr-FR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatTimeParis(dateIso);
 };
 
 type MovementListItem =

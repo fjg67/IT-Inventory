@@ -72,7 +72,8 @@ export const ScanResultCard: React.FC<ScanResultCardProps> = ({ article, siteNam
 const styles = StyleSheet.create({
   shell: {
     marginTop: 22,
-    paddingHorizontal: 16,
+    alignSelf: 'stretch',
+    marginHorizontal: 16,
   },
   card: {
     borderTopLeftRadius: 28,

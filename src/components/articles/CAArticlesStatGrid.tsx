@@ -64,6 +64,76 @@ const STAT_CONFIG = [
   },
 ] as const;
 
+interface StatCardProps {
+  conf: (typeof STAT_CONFIG)[number];
+  value: number;
+  isActive: boolean;
+  onPress: () => void;
+}
+
+// Composant dédié : un hook `useCountUp` par instance, jamais dans une boucle .map()
+const StatCard: React.FC<StatCardProps> = ({ conf, value, isActive, onPress }) => {
+  const displayValue = useCountUp(value, 500);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.card,
+        { borderTopColor: VARIANT_COLORS[conf.variant].topBar },
+        isActive && styles.cardActive,
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel={`${conf.label} : ${value}`}
+      accessibilityState={{ selected: isActive }}
+    >
+      {/* Icône */}
+      <View style={[
+        styles.iconWrap,
+        { backgroundColor: VARIANT_COLORS[conf.variant].iconBg }
+      ]}>
+        <Icon
+          name={conf.icon}
+          size={14}
+          color={VARIANT_COLORS[conf.variant].iconColor}
+        />
+      </View>
+
+      {/* Nombre */}
+      <Text style={[
+        styles.number,
+        conf.variant !== 'success' && {
+          color: VARIANT_COLORS[conf.variant].numberColor,
+        },
+      ]}>
+        {displayValue}
+      </Text>
+
+      {/* Label */}
+      <Text style={styles.label}>{conf.label}</Text>
+
+      {/* Tag filtrage */}
+      <View style={[
+        styles.tag,
+        { backgroundColor: VARIANT_COLORS[conf.variant].tagBg }
+      ]}>
+        <Text style={[
+          styles.tagText,
+          { color: VARIANT_COLORS[conf.variant].tagColor }
+        ]}>
+          {conf.tag}
+        </Text>
+      </View>
+
+      {/* Barre mini */}
+      <View style={[
+        styles.miniBar,
+        { backgroundColor: VARIANT_COLORS[conf.variant].topBar },
+      ]} />
+    </Pressable>
+  );
+};
+
 export const CAArticlesStatGrid = ({
   stats,
   activeFilter,
@@ -79,62 +149,13 @@ export const CAArticlesStatGrid = ({
       const isActive = activeFilter === conf.key;
 
       return (
-        <Pressable
+        <StatCard
           key={conf.key}
+          conf={conf}
+          value={value}
+          isActive={isActive}
           onPress={() => onFilterChange(isActive ? null : conf.key)}
-          style={[
-            styles.card,
-            { borderTopColor: VARIANT_COLORS[conf.variant].topBar },
-            isActive && styles.cardActive,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={`${conf.label} : ${value}`}
-          accessibilityState={{ selected: isActive }}
-        >
-          {/* Icône */}
-          <View style={[
-            styles.iconWrap,
-            { backgroundColor: VARIANT_COLORS[conf.variant].iconBg }
-          ]}>
-            <Icon
-              name={conf.icon}
-              size={14}
-              color={VARIANT_COLORS[conf.variant].iconColor}
-            />
-          </View>
-
-          {/* Nombre */}
-          <Text style={[
-            styles.number,
-            conf.variant !== 'success' && {
-              color: VARIANT_COLORS[conf.variant].numberColor,
-            },
-          ]}>
-            {useCountUp(value, 500)}
-          </Text>
-
-          {/* Label */}
-          <Text style={styles.label}>{conf.label}</Text>
-
-          {/* Tag filtrage */}
-          <View style={[
-            styles.tag,
-            { backgroundColor: VARIANT_COLORS[conf.variant].tagBg }
-          ]}>
-            <Text style={[
-              styles.tagText,
-              { color: VARIANT_COLORS[conf.variant].tagColor }
-            ]}>
-              {conf.tag}
-            </Text>
-          </View>
-
-          {/* Barre mini */}
-          <View style={[
-            styles.miniBar,
-            { backgroundColor: VARIANT_COLORS[conf.variant].topBar },
-          ]} />
-        </Pressable>
+        />
       );
     })}
   </View>

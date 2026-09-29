@@ -54,8 +54,8 @@ interface Comparison {
 const FONT = "'Helvetica Neue',Helvetica,Arial,sans-serif";
 const C = {
   // Brand
-  ink:          '#0A0F1E',
-  inkSoft:      '#1E2A3D',
+  ink:          '#145540',
+  inkSoft:      '#1E6B52',
   // Accents
   red:          '#E53E3E',
   redBright:    '#FF4757',
@@ -65,11 +65,11 @@ const C = {
   amberBright:  '#F6AD55',
   amberBg:      '#FFFAF0',
   amberBgDeep:  '#FEEBC8',
-  indigo:       '#5A67D8',
-  indigoBright: '#7F9CF5',
-  indigoBg:     '#EBF4FF',
-  green:        '#2F855A',
-  greenBg:      '#F0FFF4',
+  indigo:       '#1E6B52',
+  indigoBright: '#E8F5EF',
+  indigoBg:     '#E8F5EF',
+  green:        '#1E6B52',
+  greenBg:      '#E8F5EF',
   // Neutrals
   white:        '#FFFFFF',
   snow:         '#F7FAFC',
@@ -287,8 +287,8 @@ function buildEmailHtml(alertsBySite: SiteAlerts[], comparison: Comparison): str
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rapport Stock — IT-Inventory</title>
 </head>
-<body style="margin:0;padding:0;background:${C.night};font-family:${FONT};">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.night};">
+<body style="margin:0;padding:0;background:#F4F5F7;font-family:${FONT};">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F4F5F7;">
 <tr><td align="center" style="padding:28px 12px 36px;">
 
   <table width="620" cellpadding="0" cellspacing="0" border="0" style="max-width:620px;width:100%;">
@@ -304,10 +304,10 @@ function buildEmailHtml(alertsBySite: SiteAlerts[], comparison: Comparison): str
 
     <!-- ═══ HEADER ═══ -->
     <tr>
-      <td style="background:${C.ink};padding:40px 32px 36px;text-align:center;border-left:1px solid #1a2540;border-right:1px solid #1a2540;">
+      <td style="background:${C.ink};padding:40px 32px 36px;text-align:center;border-left:1px solid ${C.ink};border-right:1px solid ${C.ink};">
         <div style="font-size:11px;font-weight:700;color:${C.indigoBright};letter-spacing:3px;text-transform:uppercase;font-family:${FONT};margin-bottom:14px;">RAPPORT STOCK QUOTIDIEN</div>
         <div style="font-size:38px;font-weight:800;color:#FFFFFF;line-height:1;font-family:${FONT};letter-spacing:-1px;">IT-Inventory</div>
-        <div style="margin-top:12px;color:#718096;font-size:13px;font-family:${FONT};">${dateStr} &nbsp;&bull;&nbsp; ${timeStr}</div>
+        <div style="margin-top:12px;color:#E8F5EF;font-size:13px;font-family:${FONT};">${dateStr} &nbsp;&bull;&nbsp; ${timeStr}</div>
       </td>
     </tr>
 
@@ -397,8 +397,8 @@ function buildEmailHtml(alertsBySite: SiteAlerts[], comparison: Comparison): str
 
     <!-- ═══ BOTTOM BAR ═══ -->
     <tr>
-      <td style="background:linear-gradient(90deg,${C.ink},${C.inkSoft});border-radius:0 0 12px 12px;padding:15px 24px;text-align:center;">
-        <span style="color:#4A5568;font-size:11px;letter-spacing:0.5px;font-family:${FONT};">&copy; 2026 IT-Inventory &mdash; Cr&eacute;dit Agricole Alsace Vosges</span>
+      <td style="background:${C.ink};border-radius:0 0 12px 12px;padding:15px 24px;text-align:center;">
+        <span style="color:#E8F5EF;font-size:11px;letter-spacing:0.5px;font-family:${FONT};">&copy; 2026 IT-Inventory &mdash; Cr&eacute;dit Agricole Alsace Vosges</span>
       </td>
     </tr>
 

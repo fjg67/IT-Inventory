@@ -206,6 +206,7 @@ export interface ArticleFilters {
   famille?: string[] | null;
   typeArticle?: string[] | null;
   excludeTypeArticle?: string[] | null;
+  includeExcludedCategories?: string[] | null;
   sousType?: string[] | null;
   marque?: string[] | null;
   modele?: string[] | null;

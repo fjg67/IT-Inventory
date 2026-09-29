@@ -15,7 +15,7 @@ export const SUPABASE_CONFIG: SupabaseConfig = {
 export const APP_CONFIG = {
   // Nom de l'application
   appName: 'IT-Inventory',
-  version: '2.47',
+  version: '2.48',
   buildNumber: '20260922-2',
   playStoreUrl: 'https://play.google.com/store/apps/details?id=com.itinventory',
   

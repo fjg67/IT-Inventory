@@ -100,15 +100,14 @@ export const NoConnectionScreen: React.FC = () => {
     transform: [{ translateY: interpolate(iconFloat.value, [0, 1], [0, -12]) }],
   }));
 
-  const makePulseStyle = (val: SharedValue<number>) =>
-    useAnimatedStyle(() => ({
-      transform: [{ scale: interpolate(val.value, [0, 1], [0.5, 2.5]) }],
-      opacity: interpolate(val.value, [0, 0.3, 1], [0.5, 0.25, 0]),
-    }));
+  const pulseStyle = (val: SharedValue<number>) => ({
+    transform: [{ scale: interpolate(val.value, [0, 1], [0.5, 2.5]) }],
+    opacity: interpolate(val.value, [0, 0.3, 1], [0.5, 0.25, 0]),
+  });
 
-  const pulse1Style = makePulseStyle(pulse1);
-  const pulse2Style = makePulseStyle(pulse2);
-  const pulse3Style = makePulseStyle(pulse3);
+  const pulse1Style = useAnimatedStyle(() => pulseStyle(pulse1));
+  const pulse2Style = useAnimatedStyle(() => pulseStyle(pulse2));
+  const pulse3Style = useAnimatedStyle(() => pulseStyle(pulse3));
 
   const glowStyle = useAnimatedStyle(() => ({
     opacity: glowOpacity.value,

@@ -743,6 +743,10 @@ export const ArticlesListScreen: React.FC = () => {
   const [exportingSentCsv, setExportingSentCsv] = useState(false);
   const [pcDensity, setPcDensity] = useState<'comfort' | 'compact'>('comfort');
   const [tabletStatusFilter, setTabletStatusFilter] = useState<'all' | 'active' | 'decommissioned'>('all');
+  const nonPCTypeExclusion = useMemo(
+    () => ({ excludeTypeArticle: ['PC'], includeExcludedCategories: ['Incident PC'] }),
+    [],
+  );
 
   // Modals
     const [sortModalVisible, setSortModalVisible] = useState(false);
@@ -1082,8 +1086,6 @@ export const ArticlesListScreen: React.FC = () => {
   const loadStats = useCallback(async () => {
     if (!effectiveSiteId) return;
 
-    const EXCLUDED_ARTICLE_TYPES = ['PC'];
-
     const baseTypeFilter = lockPresetTypeArticle && presetTypeArticle
       ? { typeArticle: [presetTypeArticle] }
       : {};
@@ -1109,7 +1111,7 @@ export const ArticlesListScreen: React.FC = () => {
       codeFamille: null,
       famille: null,
       typeArticle: null,
-      excludeTypeArticle: EXCLUDED_ARTICLE_TYPES,
+      ...nonPCTypeExclusion,
       sousType: null,
       marque: null,
       emplacement: null,
@@ -1282,10 +1284,9 @@ export const ArticlesListScreen: React.FC = () => {
       try {
         let result: PaginatedResult<Article>;
         const f = filtersRef.current;
-        const EXCLUDED_ARTICLE_TYPES = ['PC'];
         const serverFilters = isManagedInventoryTab
           ? { ...f, searchQuery: '' }
-          : { ...f, excludeTypeArticle: EXCLUDED_ARTICLE_TYPES };
+          : { ...f, ...nonPCTypeExclusion };
 
         const hasFilter =
           !isManagedInventoryTab ||
@@ -1356,7 +1357,7 @@ export const ArticlesListScreen: React.FC = () => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [effectiveSiteId, isManagedInventoryTab, isPCTab],
+    [effectiveSiteId, isManagedInventoryTab, isPCTab, nonPCTypeExclusion],
   );
 
   // Reload when filters change
@@ -1937,6 +1938,16 @@ export const ArticlesListScreen: React.FC = () => {
       });
     },
     [navigation, isPCTab],
+  );
+
+  const handleArticleMovement = useCallback(
+    (articleId: number, type: 'entree' | 'sortie') => {
+      navigation.navigate('Mouvements', {
+        screen: 'MouvementForm',
+        params: { articleId, type, source: 'Articles' },
+      });
+    },
+    [navigation],
   );
 
   const handleSentArticlePress = useCallback((_articleId: number) => {
@@ -2576,12 +2587,13 @@ export const ArticlesListScreen: React.FC = () => {
             query={searchQuery}
             variant={isGridView ? 'grid' : 'list'}
             onPress={handleArticlePress}
+            onMovement={handleArticleMovement}
           />
         )}
       </View>
       );
     },
-    [handleArticlePress, handleSentArticlePress, pcStatusFilter, isTabletTab, handleDecommissionTablet, isPCTab, handleMarkPCSent, handleMarkPCAvailable, handleMarkPCHot, handleMarkPCProcessing, handleDeletePC, isTablet, pcDensity, searchQuery],
+    [handleArticlePress, handleArticleMovement, handleSentArticlePress, pcStatusFilter, isTabletTab, handleDecommissionTablet, isPCTab, handleMarkPCSent, handleMarkPCAvailable, handleMarkPCHot, handleMarkPCProcessing, handleDeletePC, isTablet, pcDensity, searchQuery],
   );
 
   const normalizedTotalArticles = useMemo(

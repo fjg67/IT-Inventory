@@ -780,6 +780,7 @@ export const ScanMouvementScreen: React.FC = () => {
       {/* ===== ARTICLE RESULT CARD - PREMIUM ===== */}
       {article && scanStatus === 'success' && (
         <View
+          style={styles.resultCardContainer}
           onLayout={(event) => {
             quickActionsYRef.current = event.nativeEvent.layout.y;
           }}
@@ -899,6 +900,10 @@ const styles = StyleSheet.create({
   darkOverlayContent: {
     paddingBottom: 100,
     flexGrow: 1,
+    width: '100%',
+  },
+  resultCardContainer: {
+    width: '100%',
   },
   cameraWrapper: {
     ...StyleSheet.absoluteFillObject,
