@@ -1,5 +1,5 @@
 import { Gesture } from 'react-native-gesture-handler';
-import Animated, {
+import {
   Extrapolation,
   interpolate,
   runOnJS,

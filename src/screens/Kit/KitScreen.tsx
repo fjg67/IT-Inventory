@@ -1101,7 +1101,6 @@ const styles = StyleSheet.create({
     marginBottom: 22,
     gap: 12,
     borderWidth: 1,
-    borderWidth: 1,
     shadowColor: '#007A39',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,

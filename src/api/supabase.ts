@@ -74,6 +74,10 @@ export const tables = {
   inventoryRecount: 'InventoryRecount',
   pcSentHistory: 'PCSentHistory',
   pcPannes: 'PCPannes',
+  pcLifecycleAssets: 'PCAssetProfile',
+  pcLifecycleEvents: 'PCLifecycleEvent',
+  reportSubscriptions: 'ReportSubscription',
+  appBackups: 'AppBackup',
 } as const;
 
 // Export du client

@@ -90,7 +90,7 @@ export const TransfertScreen: React.FC = () => {
   const showCameraRef = useRef(false);
   const lastScannedRef = useRef<{ value: string; at: number } | null>(null);
 
-  const loadStockDepart = useCallback(async (articleId: number, siteId: number) => {
+  const loadStockDepart = useCallback(async (articleId: string | number, siteId: string | number) => {
     try {
       const stock = await stockRepository.findByArticleAndSite(articleId, siteId);
       setStockDepart(stock);
@@ -101,7 +101,7 @@ export const TransfertScreen: React.FC = () => {
 
   useEffect(() => {
     if (article && siteDepartId) {
-      loadStockDepart(article.id as number, siteDepartId);
+      loadStockDepart(article.id, siteDepartId);
     }
   }, [article, loadStockDepart, siteDepartId]);
 

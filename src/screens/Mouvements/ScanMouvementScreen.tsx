@@ -9,13 +9,16 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
   StatusBar,
   Vibration,
   Dimensions,
+  FlatList,
   Modal,
   ScrollView,
   TouchableWithoutFeedback,
   Linking,
+  Platform,
 } from 'react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import Animated, {
@@ -29,7 +32,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import {
   Camera,
   useCameraDevices,
@@ -42,13 +45,15 @@ import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { notifyPCStatusChange } from '@/services/pcStatusNotificationService';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { clearScannedArticle, clearLastBarcode, setBarcode, setScanning, addToHistoryAndSave, loadScanHistory, persistScanHistory, ScanHistoryItem } from '@/store/slices/scanSlice';
-import { useBarcodeScanner } from '@/modules/DataWedgeModule';
+import { dataWedgeService, useBarcodeScanner } from '@/modules/DataWedgeModule';
 import { articleRepository } from '@/database';
+import { AssetScanRecord, isTrackedWorkstation, workstationAssetService } from '@/services/workstationAssetService';
 import { formatTimeParis } from '@/utils/dateUtils';
 import { Article } from '@/types';
 import { useResponsive } from '@/utils/responsive';
 import { useScanAnimations } from '@/hooks/useScanAnimations';
 import { ScanCheckCircle, ScanErrorState, ScanFrame, ScanResultCard, ScanSuccessBadge } from '@/components/scan';
+import { CA_THEME } from '@/constants/caTheme';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const FRAME_SIZE = 260;
@@ -149,6 +154,9 @@ const BARCODE_TYPES: CodeType[] = [
 
 export const ScanMouvementScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const scanRequestRef = useRef(route.params);
+  scanRequestRef.current = route.params;
   const dispatch = useAppDispatch();
   const { startScanning, stopScanning } = useBarcodeScanner();
   const { isTablet } = useResponsive();
@@ -156,18 +164,38 @@ export const ScanMouvementScreen: React.FC = () => {
   const { hasPermission, requestPermission } = useCameraPermission();
   const devices = useCameraDevices();
   const device = devices.find(d => d.position === 'back') ?? devices.find(d => d.position === 'front') ?? devices[0];
+  const cameraAvailabilityRef = useRef({ hasPermission, device });
+  cameraAvailabilityRef.current = { hasPermission, device };
 
   const siteActif = useAppSelector(state => state.site.siteActif);
+  const childSites = useAppSelector(state => state.site.childSites);
+  const selectedSubSiteId = useAppSelector(state => state.site.selectedSubSiteId);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
+  const selectedSiteIdRef = useRef(effectiveSiteId);
+  selectedSiteIdRef.current = effectiveSiteId;
+  const effectiveSiteName = childSites.find(site => site.id === selectedSubSiteId)?.nom ?? siteActif?.nom;
   const isSuperviseur = useAppSelector(selectIsSuperviseur);
   const currentTechnicien = useAppSelector((state) => state.auth.currentTechnicien);
   const { lastBarcode, isScanning, history } = useAppSelector(state => state.scan);
 
   const [article, setArticle] = useState<Article | null>(null);
+  const [scanMode, setScanMode] = useState<'recherche' | 'entree' | 'sortie'>('recherche');
+  const scanModeRef = useRef(scanMode);
+  scanModeRef.current = scanMode;
+  const [assetMode, setAssetMode] = useState<'entree' | 'sortie' | null>(null);
+  const [assetResult, setAssetResult] = useState('');
+  const [assetCount, setAssetCount] = useState(0);
+  const [assetStock, setAssetStock] = useState<number | null>(null);
+  const [recentAssets, setRecentAssets] = useState<string[]>([]);
+  const [assetHistory, setAssetHistory] = useState<AssetScanRecord[]>([]);
+  const [showAssetHistory, setShowAssetHistory] = useState(false);
+  const [assetHistoryLoading, setAssetHistoryLoading] = useState(false);
+  const [assetHistoryError, setAssetHistoryError] = useState('');
   const [scanTrigger, setScanTrigger] = useState<{barcode: string, ts: number} | null>(null);
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [quickMode, setQuickMode] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraPreviewReady, setCameraPreviewReady] = useState(false);
   const [cameraInstanceKey, setCameraInstanceKey] = useState(0);
@@ -183,6 +211,8 @@ export const ScanMouvementScreen: React.FC = () => {
   const cameraRestartAttemptsRef = useRef(0);
   const lastScannedRef = useRef<{ value: string; at: number } | null>(null);
   const isProcessingRef = useRef(false);
+  const assetHistoryOpenRef = useRef(false);
+  assetHistoryOpenRef.current = showAssetHistory;
   const { checkStyle, ringStyle, frameCornersStyle, scanLineStyle, flashStyle } = useScanAnimations(scanStatus);
 
   // Charger l'historique des scans depuis AsyncStorage au montage
@@ -193,8 +223,18 @@ export const ScanMouvementScreen: React.FC = () => {
   // Réinitialiser l'état du scan quand l'écran reçoit le focus
   useFocusEffect(
     useCallback(() => {
+      let cancelled = false;
+      const scanRequest = scanRequestRef.current as { articleId?: string | number; assetDirection?: 'entree' | 'sortie' } | undefined;
       // Reset tout l'état local
       setArticle(null);
+      setAssetMode(null);
+      setAssetResult('');
+      setAssetCount(0);
+      setAssetStock(null);
+      setRecentAssets([]);
+      setAssetHistory([]);
+      setShowAssetHistory(false);
+      setAssetHistoryError('');
       setScanStatus('idle');
       setErrorMsg('');
       setCameraPreviewReady(false);
@@ -208,7 +248,42 @@ export const ScanMouvementScreen: React.FC = () => {
       dispatch(clearLastBarcode());
       setScanTrigger(null);
 
-      if (hasPermission && device) {
+      if (scanRequest?.articleId != null && scanRequest.assetDirection) {
+        isProcessingRef.current = true;
+        setScanMode(scanRequest.assetDirection);
+        scanModeRef.current = scanRequest.assetDirection;
+        setScanStatus('scanning');
+        navigation.setParams({ articleId: undefined, assetDirection: undefined });
+        if (selectedSiteIdRef.current) {
+          articleRepository.findById(scanRequest.articleId, selectedSiteIdRef.current)
+            .then((selectedArticle) => {
+              if (cancelled) return;
+              if (!selectedArticle || !isTrackedWorkstation(selectedArticle)) {
+                setErrorMsg('Article introuvable sur le site sélectionné.');
+                setScanStatus('error');
+                return;
+              }
+              setArticle(selectedArticle);
+              setAssetMode(scanRequest.assetDirection!);
+              setAssetStock(selectedArticle.quantiteActuelle ?? 0);
+              setScanStatus('idle');
+            })
+            .catch((error) => {
+              if (cancelled) return;
+              setErrorMsg((error as Error).message);
+              setScanStatus('error');
+            })
+            .finally(() => {
+              if (!cancelled) isProcessingRef.current = false;
+            });
+        } else {
+          setErrorMsg('Aucun site sélectionné.');
+          setScanStatus('error');
+          isProcessingRef.current = false;
+        }
+      }
+
+      if (cameraAvailabilityRef.current.hasPermission && cameraAvailabilityRef.current.device) {
         setCameraReady(true);
         cameraReadyRef.current = true;
         dispatch(setScanning(true));
@@ -216,12 +291,13 @@ export const ScanMouvementScreen: React.FC = () => {
       }
 
       return () => {
+        cancelled = true;
         cameraReadyRef.current = false;
         setCameraPreviewReady(false);
         dispatch(setScanning(false));
         stopScanning();
       };
-    }, [dispatch, hasPermission, device, startScanning, stopScanning])
+    }, [dispatch, startScanning, stopScanning, navigation])
   );
 
   // Persister l'historique à chaque changement
@@ -271,7 +347,7 @@ export const ScanMouvementScreen: React.FC = () => {
 
   // Si la preview ne démarre pas, forcer un remount de la caméra (cas écran noir sporadique)
   useEffect(() => {
-    if (!hasPermission || !device || !cameraReady || !!article || cameraPreviewReady) return;
+    if (!hasPermission || !device || !cameraReady || (!!article && !assetMode) || cameraPreviewReady) return;
 
     const timeout = setTimeout(() => {
       if (cameraRestartAttemptsRef.current >= 2) return;
@@ -281,7 +357,7 @@ export const ScanMouvementScreen: React.FC = () => {
     }, 2200);
 
     return () => clearTimeout(timeout);
-  }, [hasPermission, device, cameraReady, article, cameraPreviewReady, handleRestartCamera]);
+  }, [hasPermission, device, cameraReady, article, assetMode, cameraPreviewReady, handleRestartCamera]);
 
   const actionTransitionOpacity = useSharedValue(0);
   const actionTransitionScale = useSharedValue(0.92);
@@ -311,7 +387,7 @@ export const ScanMouvementScreen: React.FC = () => {
     (codes: { value?: string }[]) => {
       try {
         // Utiliser la ref pour éviter la closure obsolète
-        if (!cameraReadyRef.current || isProcessingRef.current) return;
+        if (!cameraReadyRef.current || isProcessingRef.current || assetHistoryOpenRef.current) return;
         if (codes.length === 0 || !codes[0]?.value) return;
         const value = codes[0].value.trim();
         if (!value) return;
@@ -345,6 +421,20 @@ export const ScanMouvementScreen: React.FC = () => {
     [dispatch],
   );
 
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    return dataWedgeService.addListener(({ barcode }) => {
+      if (!cameraReadyRef.current || isProcessingRef.current || assetHistoryOpenRef.current) return;
+      const value = barcode.trim();
+      if (!value) return;
+      const now = Date.now();
+      if (lastScannedRef.current?.value === value && now - lastScannedRef.current.at < 2500) return;
+      lastScannedRef.current = { value, at: now };
+      isProcessingRef.current = true;
+      setScanTrigger({ barcode: value, ts: now });
+    });
+  }, []);
+
   const codeScanner = useCodeScanner({
     codeTypes: BARCODE_TYPES,
     onCodeScanned,
@@ -367,6 +457,17 @@ export const ScanMouvementScreen: React.FC = () => {
       if (result) {
         console.log('[Scan] Article trouvé:', result.nom);
         setArticle(result);
+        if (isTrackedWorkstation(result) && scanModeRef.current !== 'recherche' && !isSuperviseur) {
+          setAssetMode(scanModeRef.current);
+          setAssetStock(result.quantiteActuelle ?? 0);
+          setAssetCount(0);
+          setAssetResult('');
+          setRecentAssets([]);
+          setScanTrigger(null);
+          setScanStatus('idle');
+          overlayScrollRef.current?.scrollTo({ y: 0, animated: true });
+          return;
+        }
         setScanStatus('success');
         ReactNativeHapticFeedback.trigger('notificationSuccess', { enableVibrateFallback: true, ignoreAndroidSystemSettings: true });
         setTimeout(() => {
@@ -407,18 +508,93 @@ export const ScanMouvementScreen: React.FC = () => {
       // Toujours débloquer le traitement pour permettre un nouveau scan
       isProcessingRef.current = false;
     }
-  }, [effectiveSiteId, dispatch]);
+  }, [effectiveSiteId, dispatch, isSuperviseur, scrollToQuickActions]);
+
+  const recordAsset = useCallback(async (barcode: string) => {
+    if (!article || !assetMode || !effectiveSiteId || !currentTechnicien?.id) {
+      setAssetResult('Article, site ou technicien indisponible.');
+      isProcessingRef.current = false;
+      return;
+    }
+    if (barcode.toUpperCase() === article.reference.toUpperCase() || barcode.toUpperCase() === article.barcode?.toUpperCase()) {
+      isProcessingRef.current = false;
+      return;
+    }
+    setScanStatus('scanning');
+    try {
+      const result = await workstationAssetService.record(
+        article.id, effectiveSiteId, barcode, assetMode, currentTechnicien.id,
+      );
+      setAssetStock(result.quantity);
+      setAssetCount(count => count + 1);
+      setRecentAssets(previous => [result.assetCode, ...previous].slice(0, 3));
+      setAssetHistory(previous => [{
+        id: result.movementId,
+        code: result.assetCode,
+        direction: assetMode,
+        createdAt: new Date().toISOString(),
+      }, ...previous]);
+      setAssetResult(`${result.assetCode} : ${assetMode === 'entree' ? 'entré' : 'sorti'} · stock ${result.quantity}`);
+      setScanStatus('success');
+    } catch (error) {
+      setAssetResult((error as Error).message);
+      setScanStatus('error');
+    } finally {
+      isProcessingRef.current = false;
+    }
+  }, [article, assetMode, effectiveSiteId, currentTechnicien?.id]);
+
+  const openAssetHistory = useCallback(async () => {
+    if (!article || !effectiveSiteId) return;
+    assetHistoryOpenRef.current = true;
+    setShowAssetHistory(true);
+    setAssetHistoryLoading(true);
+    setAssetHistoryError('');
+    try {
+      setAssetHistory(await workstationAssetService.listHistory(article.id, effectiveSiteId));
+    } catch (error) {
+      setAssetHistoryError((error as Error).message);
+    } finally {
+      setAssetHistoryLoading(false);
+    }
+  }, [article, effectiveSiteId]);
+
+  const closeAssetHistory = useCallback(() => {
+    assetHistoryOpenRef.current = false;
+    setShowAssetHistory(false);
+  }, []);
 
   useEffect(() => {
-    if (scanTrigger && siteActif) {
+    if (scanTrigger && siteActif && !assetMode) {
       searchArticle(scanTrigger.barcode).catch(() => {});
     }
-  }, [scanTrigger, siteActif, searchArticle]);
+  }, [scanTrigger, siteActif, assetMode, searchArticle]);
+
+  useEffect(() => {
+    if (scanTrigger && assetMode) {
+      recordAsset(scanTrigger.barcode).catch(() => {});
+    }
+  }, [scanTrigger, assetMode, recordAsset]);
 
   // ===== Actions =====
 
   const handleMouvement = (type: 'entree' | 'sortie' | 'ajustement') => {
     if (!article) return;
+    if (isTrackedWorkstation(article)) {
+      if (type === 'ajustement') return;
+      setAssetMode(type);
+      setAssetStock(article.quantiteActuelle ?? 0);
+      setAssetCount(0);
+      setAssetResult('');
+      setRecentAssets([]);
+      setAssetHistory([]);
+      setScanTrigger(null);
+      scanConsensusRef.current = { value: '', count: 0 };
+      lastScannedRef.current = null;
+      setScanStatus('idle');
+      overlayScrollRef.current?.scrollTo({ y: 0, animated: true });
+      return;
+    }
     Vibration.vibrate(10);
     navigation.navigate('Mouvements', {
       screen: 'MouvementForm',
@@ -445,6 +621,14 @@ export const ScanMouvementScreen: React.FC = () => {
 
   const handleReset = useCallback(() => {
     setArticle(null);
+    setAssetMode(null);
+    setAssetResult('');
+    setAssetCount(0);
+    setAssetStock(null);
+    setRecentAssets([]);
+    setAssetHistory([]);
+    closeAssetHistory();
+    setScanTrigger(null);
     setScanStatus('idle');
     setErrorMsg('');
     // Réinitialiser le buffer de consensus pour permettre un nouveau scan
@@ -454,7 +638,13 @@ export const ScanMouvementScreen: React.FC = () => {
     dispatch(clearScannedArticle());
     dispatch(clearLastBarcode());
     overlayScrollRef.current?.scrollTo({ y: 0, animated: true });
-  }, [dispatch]);
+  }, [dispatch, closeAssetHistory]);
+
+  useEffect(() => {
+    if (!quickMode || !article || assetMode || isTrackedWorkstation(article) || scanStatus !== 'success') return;
+    const timer = setTimeout(() => handleReset(), 700);
+    return () => clearTimeout(timer);
+  }, [article, assetMode, handleReset, quickMode, scanStatus]);
 
   // Réessayer la recherche avec le dernier code scanné
   const handleRetry = useCallback(() => {
@@ -490,8 +680,78 @@ export const ScanMouvementScreen: React.FC = () => {
 
   const scannedPCStatus = useMemo(() => getPCStatus(article?.description), [article?.description, getPCStatus]);
 
+  const handleSetPCStatus = useCallback(async (
+    nextStatus: 'À chaud' | 'À reusiner' | 'Disponible',
+    options?: { openDetailsAfter?: boolean },
+  ) => {
+    if (!article) return;
+
+    try {
+      setIsStatusUpdating(true);
+      const nextFamily = nextStatus === 'Disponible' ? 'PC disponible' : 'PC portable';
+      await articleRepository.update(article.id, {
+        description: `Statut: ${nextStatus}`,
+        famille: nextFamily,
+      });
+
+      setArticle((prev) => prev ? {
+        ...prev,
+        description: `Statut: ${nextStatus}`,
+        famille: nextFamily,
+        dateModification: new Date(),
+      } : prev);
+
+      Vibration.vibrate(16);
+
+      const techName = currentTechnicien
+        ? `${currentTechnicien.prenom} ${currentTechnicien.nom}`.trim()
+        : 'Technicien inconnu';
+      notifyPCStatusChange({
+        article: { ...article, description: `Statut: ${nextStatus}`, famille: nextFamily },
+        nextStatus,
+        technicienName: techName,
+      });
+
+      if (options?.openDetailsAfter) {
+        const transitionConfig =
+          nextStatus === 'Disponible'
+            ? { icon: 'check-circle-outline', label: 'Disponible', gradient: ['#3B82F6', '#2563EB'] as [string, string] }
+            : nextStatus === 'À chaud'
+              ? { icon: 'flash-outline', label: 'À chaud', gradient: ['#10B981', '#059669'] as [string, string] }
+              : { icon: 'wrench-outline', label: 'À reusiner', gradient: ['#F59E0B', '#D97706'] as [string, string] };
+
+        setPcActionTransition(transitionConfig);
+        actionTransitionOpacity.value = 0;
+        actionTransitionScale.value = 0.92;
+        actionTransitionOpacity.value = withTiming(1, { duration: 180 });
+        actionTransitionScale.value = withTiming(1, { duration: 240, easing: Easing.out(Easing.cubic) });
+
+        await new Promise((resolve) => setTimeout(resolve, 520));
+        navigateToPCDetails();
+        actionTransitionOpacity.value = withTiming(0, { duration: 140 });
+        setPcActionTransition(null);
+      }
+    } catch (error) {
+      console.warn('[Scan] Erreur MAJ statut PC:', error);
+      setErrorMsg(`Impossible de passer le PC en ${nextStatus}`);
+      setScanStatus('error');
+    } finally {
+      setIsStatusUpdating(false);
+    }
+  }, [actionTransitionOpacity, actionTransitionScale, article, navigateToPCDetails]);
+
   const quickActionItems = useMemo(() => {
     if (!article) return [];
+
+    if (isTrackedWorkstation(article)) {
+      return [
+        ...(!isSuperviseur ? [
+          { key: 'entree', tone: 'entree' as const, label: 'Entrée', onPress: () => handleMouvement('entree') },
+          { key: 'sortie', tone: 'sortie' as const, label: 'Sortie', onPress: () => handleMouvement('sortie') },
+        ] : []),
+        { key: 'details', tone: 'details' as const, label: 'Détails', onPress: handleViewDetails },
+      ];
+    }
 
     if (isScannedPC) {
       const items = [] as Array<{
@@ -555,73 +815,15 @@ export const ScanMouvementScreen: React.FC = () => {
       items.push(
         { key: 'entree', tone: 'entree', label: 'Entree', onPress: () => handleMouvement('entree') },
         { key: 'sortie', tone: 'sortie', label: 'Sortie', onPress: () => handleMouvement('sortie') },
-        { key: 'ajustement', tone: 'ajustement', label: 'Ajustement', onPress: () => handleMouvement('ajustement') },
       );
+      if (!isTrackedWorkstation(article)) {
+        items.push({ key: 'ajustement', tone: 'ajustement', label: 'Ajustement', onPress: () => handleMouvement('ajustement') });
+      }
     }
 
     items.push({ key: 'details', tone: 'details', label: 'Details', onPress: handleViewDetails });
     return items;
   }, [article, handleMouvement, handleSetPCStatus, handleViewDetails, isScannedPC, isStatusUpdating, isSuperviseur, scannedPCStatus]);
-
-  const handleSetPCStatus = useCallback(async (
-    nextStatus: 'À chaud' | 'À reusiner' | 'Disponible',
-    options?: { openDetailsAfter?: boolean },
-  ) => {
-    if (!article) return;
-
-    try {
-      setIsStatusUpdating(true);
-      const nextFamily = nextStatus === 'Disponible' ? 'PC disponible' : 'PC portable';
-      await articleRepository.update(article.id, {
-        description: `Statut: ${nextStatus}`,
-        famille: nextFamily,
-      });
-
-      setArticle((prev) => prev ? {
-        ...prev,
-        description: `Statut: ${nextStatus}`,
-        famille: nextFamily,
-        dateModification: new Date(),
-      } : prev);
-
-      Vibration.vibrate(16);
-
-      const techName = currentTechnicien
-        ? `${currentTechnicien.prenom} ${currentTechnicien.nom}`.trim()
-        : 'Technicien inconnu';
-      notifyPCStatusChange({
-        article: { ...article, description: `Statut: ${nextStatus}`, famille: nextFamily },
-        nextStatus,
-        technicienName: techName,
-      });
-
-      if (options?.openDetailsAfter) {
-        const transitionConfig =
-          nextStatus === 'Disponible'
-            ? { icon: 'check-circle-outline', label: 'Disponible', gradient: ['#3B82F6', '#2563EB'] as [string, string] }
-            : nextStatus === 'À chaud'
-              ? { icon: 'flash-outline', label: 'À chaud', gradient: ['#10B981', '#059669'] as [string, string] }
-              : { icon: 'wrench-outline', label: 'À reusiner', gradient: ['#F59E0B', '#D97706'] as [string, string] };
-
-        setPcActionTransition(transitionConfig);
-        actionTransitionOpacity.value = 0;
-        actionTransitionScale.value = 0.92;
-        actionTransitionOpacity.value = withTiming(1, { duration: 180 });
-        actionTransitionScale.value = withTiming(1, { duration: 240, easing: Easing.out(Easing.cubic) });
-
-        await new Promise((resolve) => setTimeout(resolve, 520));
-        navigateToPCDetails();
-        actionTransitionOpacity.value = withTiming(0, { duration: 140 });
-        setPcActionTransition(null);
-      }
-    } catch (error) {
-      console.warn('[Scan] Erreur MAJ statut PC:', error);
-      setErrorMsg(`Impossible de passer le PC en ${nextStatus}`);
-      setScanStatus('error');
-    } finally {
-      setIsStatusUpdating(false);
-    }
-  }, [actionTransitionOpacity, actionTransitionScale, article, navigateToPCDetails]);
 
   // ==================== RENDER ====================
   return (
@@ -634,8 +836,8 @@ export const ScanMouvementScreen: React.FC = () => {
           key={`scan-camera-${cameraInstanceKey}`}
           style={StyleSheet.absoluteFill}
           device={device}
-          isActive={cameraReady && !article}
-          {...(!article ? { codeScanner } : {})}
+          isActive={cameraReady && (!article || !!assetMode) && !showAssetHistory}
+          {...(!article || assetMode ? { codeScanner } : {})}
           photo={false}
           video={false}
           audio={false}
@@ -688,6 +890,39 @@ export const ScanMouvementScreen: React.FC = () => {
         </TouchableOpacity>
       </Animated.View>
 
+      {!article && !isSuperviseur && (
+        <View style={styles.scanModeBar} accessibilityRole="radiogroup">
+          {([
+            { mode: 'recherche', label: 'Recherche', icon: 'magnify' },
+            { mode: 'entree', label: 'Entrée', icon: 'plus' },
+            { mode: 'sortie', label: 'Sortie', icon: 'minus' },
+          ] as const).map(({ mode, label, icon }) => {
+            const selected = scanMode === mode;
+            const activeColor = mode === 'sortie' ? CA_THEME.danger : CA_THEME.green;
+            return (
+              <Pressable
+                key={mode}
+                onPress={() => {
+                  setScanMode(mode);
+                  setScanTrigger(null);
+                  setScanStatus('idle');
+                  setErrorMsg('');
+                  scanConsensusRef.current = { value: '', count: 0 };
+                  lastScannedRef.current = null;
+                }}
+                style={[styles.scanModeItem, selected && { backgroundColor: activeColor }]}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected }}
+                accessibilityLabel={label}
+              >
+                <Icon name={icon} size={18} color={selected ? CA_THEME.white : CA_THEME.textSecondary} />
+                <Text style={[styles.scanModeLabel, selected && styles.scanModeLabelActive]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
       {/* ===== SCAN FRAME ===== */}
       <View style={[styles.frameWrapper, isTablet && { alignSelf: 'center' }]}>
         <Animated.View pointerEvents="none" style={[styles.frameFlash, flashStyle]} />
@@ -697,7 +932,7 @@ export const ScanMouvementScreen: React.FC = () => {
           frameStyle={frameCornersStyle}
           scanLineStyle={scanLineStyle}
         />
-        {(scanStatus === 'success' || scanStatus === 'error') && (
+        {!assetMode && (scanStatus === 'success' || scanStatus === 'error') && (
           <View style={styles.centerIcon}>
             <ScanCheckCircle
               variant={scanStatus === 'error' ? 'error' : 'success'}
@@ -710,6 +945,53 @@ export const ScanMouvementScreen: React.FC = () => {
 
       {/* ===== INSTRUCTION / STATUS ===== */}
       <View style={styles.statusArea}>
+        {assetMode ? (
+          <View style={[styles.assetPanel, { borderTopColor: assetMode === 'entree' ? CA_THEME.green : CA_THEME.danger }]}>
+            <View style={styles.assetPanelHeader}>
+              <View style={[styles.assetModeIcon, { backgroundColor: assetMode === 'entree' ? CA_THEME.greenBg : CA_THEME.dangerBg }]}>
+                <Icon name={assetMode === 'entree' ? 'arrow-down-bold' : 'arrow-up-bold'} size={20} color={assetMode === 'entree' ? CA_THEME.green : CA_THEME.danger} />
+              </View>
+              <View style={styles.assetPanelHeading}>
+                <Text style={[styles.assetEyebrow, { color: assetMode === 'entree' ? CA_THEME.green : CA_THEME.danger }]}>SCAN D’ASSETS · {assetMode === 'entree' ? 'ENTRÉE' : 'SORTIE'}</Text>
+                <Text style={styles.assetPanelTitle} numberOfLines={2}>{article?.nom}</Text>
+              </View>
+              <TouchableOpacity onPress={handleReset} style={styles.assetDone} accessibilityRole="button">
+                <Icon name="close" size={20} color={CA_THEME.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.assetLocation}>
+              <Icon name="map-marker-outline" size={14} color={CA_THEME.green} />
+              <Text style={styles.assetPanelSite} numberOfLines={1}>{effectiveSiteName}</Text>
+              <Text style={styles.assetReference}>{article?.reference}</Text>
+            </View>
+            <View style={styles.assetCounts}>
+              <View>
+                <Text style={styles.assetCountLabel}>EN STOCK</Text>
+                <Text style={styles.assetCountValue}>{assetStock ?? 0}</Text>
+              </View>
+              <View style={styles.assetCountDivider} />
+              <View>
+                <Text style={styles.assetCountLabel}>{assetMode === 'entree' ? 'ENTRÉES' : 'SORTIES'} · SESSION</Text>
+                <Text style={[styles.assetCountValue, { color: assetMode === 'entree' ? CA_THEME.green : CA_THEME.danger }]}>{assetCount}</Text>
+              </View>
+            </View>
+            <View style={[styles.assetFeedbackRow, scanStatus === 'error' && styles.assetFeedbackRowError]}>
+              <Icon name={scanStatus === 'error' ? 'alert-circle-outline' : scanStatus === 'success' ? 'check-circle-outline' : 'barcode-scan'} size={17} color={scanStatus === 'error' ? CA_THEME.danger : CA_THEME.green} />
+              <Text style={[styles.assetFeedback, scanStatus === 'error' && styles.assetFeedbackError]} accessibilityLiveRegion="polite">
+                {assetResult || 'En attente du prochain asset'}
+              </Text>
+            </View>
+            {recentAssets.length > 0 && (
+              <Text style={styles.assetRecent} numberOfLines={1}>Derniers : {recentAssets.join(' · ')}</Text>
+            )}
+            <TouchableOpacity style={styles.assetHistoryButton} onPress={openAssetHistory} accessibilityRole="button">
+              <Icon name="format-list-bulleted" size={18} color={CA_THEME.green} />
+              <Text style={styles.assetHistoryButtonText}>Tous les assets scannés</Text>
+              <Icon name="chevron-right" size={18} color={CA_THEME.green} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+        <>
         {scanStatus === 'idle' && !isScanning && (
           <Animated.View entering={FadeIn.duration(300)} style={styles.statusPanel}>
             <Text style={styles.statusTitle}>Alignez le code-barres</Text>
@@ -750,6 +1032,8 @@ export const ScanMouvementScreen: React.FC = () => {
             <Text style={styles.statusSubtitle}>{errorMsg}</Text>
           </Animated.View>
         )}
+        </>
+        )}
       </View>
 
       {/* ===== Permission hint si pas de caméra ===== */}
@@ -778,7 +1062,7 @@ export const ScanMouvementScreen: React.FC = () => {
       )}
 
       {/* ===== ARTICLE RESULT CARD - PREMIUM ===== */}
-      {article && scanStatus === 'success' && (
+      {article && !assetMode && scanStatus === 'success' && (
         <View
           style={styles.resultCardContainer}
           onLayout={(event) => {
@@ -795,8 +1079,19 @@ export const ScanMouvementScreen: React.FC = () => {
         </View>
       )}
 
+      {!assetMode && <Pressable
+        onPress={() => setQuickMode((value) => !value)}
+        style={[styles.quickModeToggle, quickMode && styles.quickModeToggleActive]}
+        accessibilityRole="switch"
+        accessibilityState={{ checked: quickMode }}
+      >
+        <Icon name="barcode-scan" size={16} color={quickMode ? '#FFFFFF' : '#8FA3B4'} />
+        <Text style={[styles.quickModeText, quickMode && styles.quickModeTextActive]}>Scan rapide</Text>
+        <Text style={[styles.quickModeHint, quickMode && styles.quickModeTextActive]}>{quickMode ? 'ON' : 'OFF'}</Text>
+      </Pressable>}
+
       {/* Error retry */}
-      {scanStatus === 'error' && (
+      {!assetMode && scanStatus === 'error' && (
         <Animated.View entering={FadeInUp.duration(300)}>
           <ScanErrorState message={errorMsg} onRetry={handleRetry} onReset={handleReset} />
         </Animated.View>
@@ -828,6 +1123,46 @@ export const ScanMouvementScreen: React.FC = () => {
       ) : null}
 
       {/* ===== HISTORY MODAL ===== */}
+      <Modal visible={showAssetHistory} transparent animationType="slide" onRequestClose={closeAssetHistory}>
+        <View style={styles.assetSheetOverlay}>
+          <View style={styles.assetSheet}>
+            <View style={styles.assetSheetHeader}>
+              <View style={styles.assetSheetTitleBlock}>
+                <Text style={styles.assetSheetTitle}>Assets scannés</Text>
+                <Text style={styles.assetSheetSubtitle} numberOfLines={1}>{article?.nom} · {effectiveSiteName}</Text>
+              </View>
+              <TouchableOpacity onPress={closeAssetHistory} style={styles.assetSheetClose} accessibilityRole="button" accessibilityLabel="Fermer l’historique">
+                <Icon name="close" size={20} color={CA_THEME.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            {assetHistoryLoading ? (
+              <View style={styles.assetSheetEmpty}><Text style={styles.assetSheetEmptyText}>Chargement des scans...</Text></View>
+            ) : assetHistoryError ? (
+              <View style={styles.assetSheetEmpty}><Text style={styles.assetFeedbackError}>{assetHistoryError}</Text></View>
+            ) : (
+              <FlatList
+                data={assetHistory}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.assetSheetList}
+                ListEmptyComponent={<Text style={styles.assetSheetEmptyText}>Aucun asset scanné pour cet article sur ce site.</Text>}
+                renderItem={({ item }) => (
+                  <View style={styles.assetSheetRow}>
+                    <View style={[styles.assetSheetRowIcon, { backgroundColor: item.direction === 'entree' ? CA_THEME.greenBg : CA_THEME.dangerBg }]}>
+                      <Icon name={item.direction === 'entree' ? 'arrow-down-bold' : 'arrow-up-bold'} size={16} color={item.direction === 'entree' ? CA_THEME.green : CA_THEME.danger} />
+                    </View>
+                    <View style={styles.assetSheetRowBody}>
+                      <Text style={styles.assetSheetCode} numberOfLines={1}>{item.code}</Text>
+                      <Text style={styles.assetSheetDate}>{new Date(item.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</Text>
+                    </View>
+                    <Text style={[styles.assetSheetDirection, { color: item.direction === 'entree' ? CA_THEME.green : CA_THEME.danger }]}>{item.direction === 'entree' ? 'Entrée' : 'Sortie'}</Text>
+                  </View>
+                )}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
       <Modal visible={showHistory} transparent animationType="slide" onRequestClose={() => setShowHistory(false)}>
         <TouchableWithoutFeedback onPress={() => setShowHistory(false)}>
           <View style={styles.historyOverlay}>
@@ -902,9 +1237,105 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     width: '100%',
   },
+  scanModeBar: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    marginTop: 12,
+    width: '92%',
+    maxWidth: 440,
+    padding: 4,
+    gap: 4,
+    borderRadius: 8,
+    backgroundColor: CA_THEME.white,
+  },
+  scanModeItem: {
+    flex: 1,
+    height: 44,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  scanModeLabel: {
+    color: CA_THEME.textSecondary,
+    fontFamily: CA_THEME.fontFamilySemiBold,
+    fontSize: 11,
+  },
+  scanModeLabelActive: { color: CA_THEME.white },
+  assetPanel: {
+    width: '100%',
+    maxWidth: 440,
+    backgroundColor: CA_THEME.white,
+    borderRadius: 8,
+    borderTopWidth: 4,
+    padding: 18,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  assetPanelHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  assetModeIcon: { width: 42, height: 42, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  assetPanelHeading: { flex: 1, minWidth: 0 },
+  assetEyebrow: { fontFamily: CA_THEME.fontFamilyBold, fontSize: 10, marginBottom: 4 },
+  assetPanelTitle: { color: CA_THEME.textPrimary, fontFamily: CA_THEME.fontFamilyBold, fontSize: 15 },
+  assetLocation: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 14 },
+  assetPanelSite: { color: CA_THEME.textSecondary, fontFamily: CA_THEME.fontFamilyMedium, fontSize: 12, flex: 1 },
+  assetReference: { color: CA_THEME.greenText, fontFamily: CA_THEME.fontFamilyBold, fontSize: 11 },
+  assetDone: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  assetCounts: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 16, paddingVertical: 14, borderTopWidth: 1, borderBottomWidth: 1, borderColor: CA_THEME.borderGray },
+  assetCountDivider: { width: 1, height: 36, backgroundColor: CA_THEME.borderGray },
+  assetCountValue: { color: CA_THEME.textPrimary, fontFamily: CA_THEME.fontFamilyBold, fontSize: 27, marginTop: 2 },
+  assetCountLabel: { color: CA_THEME.textMuted, fontFamily: CA_THEME.fontFamilySemiBold, fontSize: 10 },
+  assetFeedbackRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, padding: 10, borderRadius: 6, backgroundColor: CA_THEME.greenBg },
+  assetFeedbackRowError: { backgroundColor: CA_THEME.dangerBg },
+  assetFeedback: { flex: 1, color: CA_THEME.greenText, fontFamily: CA_THEME.fontFamilySemiBold, fontSize: 12 },
+  assetFeedbackError: { color: CA_THEME.dangerText },
+  assetRecent: { color: CA_THEME.textSecondary, fontFamily: CA_THEME.fontFamilyMedium, fontSize: 11, marginTop: 10 },
+  assetHistoryButton: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderColor: CA_THEME.borderGray },
+  assetHistoryButtonText: { flex: 1, color: CA_THEME.green, fontFamily: CA_THEME.fontFamilyBold, fontSize: 12 },
+  assetSheetOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  assetSheet: { maxHeight: '78%', minHeight: 260, backgroundColor: CA_THEME.white, borderTopLeftRadius: 8, borderTopRightRadius: 8, paddingBottom: 24 },
+  assetSheetHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 18, borderBottomWidth: 1, borderColor: CA_THEME.borderGray },
+  assetSheetTitleBlock: { flex: 1, minWidth: 0 },
+  assetSheetTitle: { color: CA_THEME.textPrimary, fontFamily: CA_THEME.fontFamilyBold, fontSize: 18 },
+  assetSheetSubtitle: { color: CA_THEME.textSecondary, fontFamily: CA_THEME.fontFamilyMedium, fontSize: 12, marginTop: 3 },
+  assetSheetClose: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  assetSheetList: { paddingHorizontal: 20, paddingBottom: 20, flexGrow: 1 },
+  assetSheetEmpty: { padding: 24 },
+  assetSheetEmptyText: { color: CA_THEME.textSecondary, fontFamily: CA_THEME.fontFamilyMedium, fontSize: 13, textAlign: 'center', paddingVertical: 24 },
+  assetSheetRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 66, borderBottomWidth: 1, borderColor: CA_THEME.borderGray },
+  assetSheetRowIcon: { width: 32, height: 32, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  assetSheetRowBody: { flex: 1, minWidth: 0 },
+  assetSheetCode: { color: CA_THEME.textPrimary, fontFamily: CA_THEME.fontFamilyBold, fontSize: 13 },
+  assetSheetDate: { color: CA_THEME.textMuted, fontFamily: CA_THEME.fontFamilyMedium, fontSize: 11, marginTop: 3 },
+  assetSheetDirection: { fontFamily: CA_THEME.fontFamilyBold, fontSize: 11 },
   resultCardContainer: {
     width: '100%',
   },
+  quickModeToggle: {
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(143,163,180,0.35)',
+    backgroundColor: 'rgba(13,22,41,0.75)',
+  },
+  quickModeToggleActive: {
+    borderColor: '#22C55E',
+    backgroundColor: '#1B8A3E',
+  },
+  quickModeText: { color: '#D6E0EA', fontSize: 12, fontWeight: '700' },
+  quickModeTextActive: { color: '#FFFFFF' },
+  quickModeHint: { color: '#8FA3B4', fontSize: 10, fontWeight: '800' },
   cameraWrapper: {
     ...StyleSheet.absoluteFillObject,
     width: SCREEN_W,
@@ -990,6 +1421,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: SCREEN_H * 0.06,
+  },
+  frameFlash: {
+    position: 'absolute',
+    width: FRAME_SIZE,
+    height: FRAME_SIZE,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.8)',
   },
   frameGlow: {
     position: 'absolute',

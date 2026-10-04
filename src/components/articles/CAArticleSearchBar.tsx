@@ -36,7 +36,7 @@ export const CAArticleSearchBar = ({
 );
 
 const styles = StyleSheet.create({
-  wrap: { paddingHorizontal: 12, marginBottom: 8 },
+  wrap: { paddingHorizontal: 12, marginBottom: 10 },
   inputRow: {
     flexDirection:   'row',
     alignItems:      'center',
@@ -44,9 +44,14 @@ const styles = StyleSheet.create({
     backgroundColor: CA_THEME.white,
     borderWidth:     1,
     borderColor:     CA_THEME.borderGray,
-    borderRadius:    8,
-    paddingHorizontal: 12,
-    paddingVertical:   9,
+    borderRadius:    12,
+    paddingHorizontal: 14,
+    paddingVertical:   12,
+    shadowColor: CA_THEME.greenDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
   input: {
     flex:       1,

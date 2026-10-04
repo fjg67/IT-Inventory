@@ -4,7 +4,7 @@
 // ============================================
 import React, { useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, Image, StyleSheet, Alert,
+  View, Text, TouchableOpacity, Image, StyleSheet,
 } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSequence, withSpring,

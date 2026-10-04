@@ -74,7 +74,7 @@ export const CAAvailabilityBar = ({
 };
 
 const styles = StyleSheet.create({
-  container:   { paddingHorizontal: 12, paddingBottom: 10, backgroundColor: CA_THEME.lightGray },
+  container:   { marginHorizontal: 12, marginBottom: 10, padding: 12, borderRadius: 12, backgroundColor: CA_THEME.white, borderWidth: 1, borderColor: CA_THEME.borderGray },
   headerRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
   label: {
     fontSize: 10, fontFamily: CA_THEME.fontFamilyBold, fontWeight: '700',

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, cancelAnimation } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -8,6 +9,7 @@ interface VoiceCommandButtonProps {
 }
 
 export const VoiceCommandButton = ({ onPress }: VoiceCommandButtonProps) => {
+  const insets = useSafeAreaInsets();
   const pulseAnim = useSharedValue(1);
 
   useEffect(() => {
@@ -19,14 +21,14 @@ export const VoiceCommandButton = ({ onPress }: VoiceCommandButtonProps) => {
       ), -1, true
     );
     return () => cancelAnimation(pulseAnim);
-  }, []);
+  }, [pulseAnim]);
 
   const btnStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseAnim.value }],
   }));
 
   return (
-    <Animated.View style={[styles.container, btnStyle]}>
+    <Animated.View style={[styles.container, { bottom: Math.max(insets.bottom, 16) + 80 }, btnStyle]}>
       <Pressable
         onPress={onPress}
         style={styles.btn}
@@ -43,7 +45,6 @@ export const VoiceCommandButton = ({ onPress }: VoiceCommandButtonProps) => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 24,
     right: 24,
     zIndex: 1000,
   },

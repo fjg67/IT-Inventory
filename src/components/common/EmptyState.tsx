@@ -5,7 +5,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { colors, spacing, typography } from '@/constants/theme';
+import { spacing, typography } from '@/constants/theme';
 import { isTablet as checkIsTablet } from '../../utils/responsive';
 import { Button } from './Button';
 

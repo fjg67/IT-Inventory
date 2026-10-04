@@ -515,7 +515,6 @@ const PremiumArticleHeader: React.FC<PremiumArticleHeaderProps> = ({
   tabletDecommissionedNames = [],
   activeTabletFilter = 'all',
   isSyncing = false,
-  onAdd,
   onBack,
   onTotalPress,
   onStockOKPress,

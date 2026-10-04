@@ -22,8 +22,6 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   premiumSpacing,
-  premiumBorderRadius,
-  premiumShadows,
 } from '../../../constants/premiumTheme';
 import { useTheme } from '@/theme';
 
@@ -42,7 +40,7 @@ interface FABMultiActionProps {
 }
 
 const FABMultiAction: React.FC<FABMultiActionProps> = ({ onScan, onAdd, onKit }) => {
-  const { colors, isDark, theme: { gradients } } = useTheme();
+  const { colors, isDark } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const rotation = useSharedValue(0);
   const ringScale = useSharedValue(1);

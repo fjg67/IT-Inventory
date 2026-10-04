@@ -8,7 +8,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { PCStatus } from '@/hooks/useAddPCForm';
+import { PCStatus } from '@/types/pc.types';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
 
 interface StatusChipProps {

@@ -10,6 +10,7 @@ export const darkColors: ThemeColors = {
   // Backgrounds
   background: '#F5F5F0',
   backgroundBase: '#F5F5F0',
+  backgroundSubtle: '#EEEFEA',
   surface: '#FFFFFF',
   surfaceElevated: '#FFFFFF',
   surfaceGlass: 'rgba(255,255,255,0.7)',
@@ -82,6 +83,7 @@ export const lightColors: ThemeColors = {
   // Backgrounds
   background: '#F5F5F0',
   backgroundBase: '#F5F5F0',
+  backgroundSubtle: '#EEEFEA',
   surface: '#FFFFFF',
   surfaceElevated: '#FFFFFF',
   surfaceGlass: 'rgba(255,255,255,0.7)',

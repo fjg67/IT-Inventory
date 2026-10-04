@@ -28,6 +28,8 @@ const StockStepper: React.FC<StockStepperProps> = ({
   minusColor = CAC.danger,
 }) => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const valueRef = useRef(value);
+  valueRef.current = value;
   const scaleP = useSharedValue(1);
   const scaleM = useSharedValue(1);
   const styleP = useAnimatedStyle(() => ({ transform: [{ scale: scaleP.value }] }));
@@ -37,12 +39,16 @@ const StockStepper: React.FC<StockStepperProps> = ({
     scaleRef.value = withSpring(0.85, { damping: 15, stiffness: 300 }, () => {
       scaleRef.value = withSpring(1, { damping: 15, stiffness: 300 });
     });
-    onChange(Math.min(max, Math.max(min, value + delta)));
+    const nextValue = Math.min(max, Math.max(min, value + delta));
+    valueRef.current = nextValue;
+    onChange(nextValue);
   };
 
   const startLongPress = (delta: number) => {
     intervalRef.current = setInterval(() => {
-      onChange(prev => Math.min(max, Math.max(min, (prev as unknown as number) + delta)));
+      const nextValue = Math.min(max, Math.max(min, valueRef.current + delta));
+      valueRef.current = nextValue;
+      onChange(nextValue);
     }, 150);
   };
   const stopLongPress = () => {

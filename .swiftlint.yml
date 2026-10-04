@@ -1,0 +1,10 @@
+included:
+  - ios/StockProApp
+
+excluded:
+  - node_modules
+  - ios/Pods
+  - ios/build
+  - .simulator-dashboard
+  - .simulator-derived
+  - .simulator-derived-arm64

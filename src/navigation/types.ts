@@ -3,6 +3,7 @@
 // ============================================
 
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { ArticleFilters } from '@/types';
 
 // Root Stack
 export type RootStackParamList = {
@@ -13,6 +14,15 @@ export type RootStackParamList = {
   Auth: { rememberMe?: boolean; siteId?: string | number; parentSiteId?: string | number };
   Main: NavigatorScreenParams<MainTabParamList>;
   Settings: NavigatorScreenParams<SettingsStackParamList>;
+  Inventory: undefined;
+  AdvancedDashboard: undefined;
+  Reports: undefined;
+  GlobalSearch: undefined;
+  Trash: undefined;
+  Backup: undefined;
+  SavedFilters: undefined;
+  AuditHistory: undefined;
+  Anomalies: undefined;
 };
 
 // Main Tab Navigator
@@ -21,7 +31,7 @@ export type MainTabParamList = {
   Articles: NavigatorScreenParams<ArticlesStackParamList>;
   PC: NavigatorScreenParams<ArticlesStackParamList>;
   Mouvements: NavigatorScreenParams<MouvementsStackParamList>;
-  Scan: undefined;
+  Scan: { articleId: string | number; assetDirection: 'entree' | 'sortie' } | undefined;
   StockMap: { highlightBarcode?: string } | undefined;
 };
 
@@ -41,10 +51,12 @@ export type ArticlesStackParamList = {
         lockPresetTypeArticle?: boolean;
         pcAddSuccessAt?: number;
         pcAddHostname?: string;
+        savedFilter?: ArticleFilters;
       }
     | undefined;
   ArticleDetail: { articleId: number; sourceTab?: 'Articles' | 'PC' };
   ArticleEdit: { articleId?: number; famille?: string } | undefined;
+  BulkActions: undefined;
   AddPC: undefined;
   Kit: undefined;
 };

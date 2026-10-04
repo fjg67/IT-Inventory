@@ -9,6 +9,7 @@ import { formatPCDate, getPCStateFromArticle, isPCArticle } from '@/constants/pc
 import { PANNE_TYPE_CONFIG, PanneType } from '@/types/pc.types';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { PCSwipeActions } from './PCSwipeActions';
+import { CA_THEME } from '@/constants/caTheme';
 
 interface PCCardProps {
   article: Article;
@@ -109,7 +110,7 @@ export const PCCard: React.FC<PCCardProps> = ({ article, index, onPress, onMarkH
                   <Tag
                     icon="laptop"
                     label={allocation}
-                    backgroundColor={OBSIDIAN_COLORS.blue_dark}
+                    backgroundColor={CA_THEME.info}
                     color="#ffffff"
                   />
                 </View>

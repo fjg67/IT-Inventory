@@ -11,7 +11,6 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-  FadeInDown,
   FadeInUp,
   ZoomIn,
 } from 'react-native-reanimated';

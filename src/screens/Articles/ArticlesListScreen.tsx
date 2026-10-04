@@ -34,11 +34,9 @@ import Animated, {
   withTiming,
   withSequence,
   Easing,
-  FadeInUp,
-  LinearTransition,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { debounce } from 'lodash';
 import { useAppSelector } from '@/store';
@@ -48,10 +46,7 @@ import { notifyPCStatusChange } from '@/services/pcStatusNotificationService';
 import { pcSentService, SentPCRecord } from '@/services/pcSentService';
 import { articleRepository, stockRepository } from '@/database';
 import { Article, ArticleFilters, PaginatedResult, SyncStatus } from '@/types';
-import { APP_CONFIG } from '@/constants';
 import { getNomAgenceParEDS } from '@/constants/agences';
-import { tabConfig } from '@/constants/tabConfig';
-import { premiumTheme } from '@/constants/premiumTheme';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
 import { premiumSpacing } from '@/constants/premiumTheme';
 import { useResponsive } from '@/utils/responsive';
@@ -64,7 +59,6 @@ import SearchFilterWrapper from './components/SearchFilterWrapper';
 import FiltersPanel, { SortOption, SORT_LABELS } from './components/FiltersPanel';
 import SkeletonArticleList from './components/SkeletonArticleList';
 import ArticleEmptyState from './components/ArticleEmptyState';
-import FABMultiAction from './components/FABMultiAction';
 import { ParcPCScreen } from '@/screens/ParcPCScreen';
 import {
   CAArticleCard,
@@ -100,6 +94,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import type { SendPCFormState } from '@/hooks/useSendPCForm';
 import type { PanneType, PannePriorite } from '@/types/pc.types';
+import savedFiltersService from '@/services/savedFiltersService';
 
 const PC_CATEGORY_OPTIONS = [
   {
@@ -115,7 +110,6 @@ const PC_CATEGORY_OPTIONS = [
 ] as const;
 
 const PC_STATUS_OPTIONS = ['À chaud', 'À reusiner', 'En usinage', 'Disponible'] as const;
-const PC_STATUS_FILTER_OPTIONS = ['À chaud', 'À reusiner', 'En usinage', 'Disponible', 'Envoyé'] as const;
 const PC_DENSITY_STORAGE_KEY = 'pcDensityPreference';
 const TABLET_SORT_LABELS: Partial<Record<SortOption, string>> = {
   nom: 'Hostname A-Z',
@@ -179,7 +173,7 @@ interface DeleteModalContentProps {
   colors: any;
   isDark: boolean;
   isDeleting: boolean;
-  scaleAnim: Animated.Shared<number>;
+  scaleAnim: SharedValue<number>;
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -271,7 +265,7 @@ const DeleteModalContent: React.FC<DeleteModalContentProps> = ({
 interface PCActionModalContentProps {
   colors: any;
   isDark: boolean;
-  scaleAnim: Animated.Shared<number>;
+  scaleAnim: SharedValue<number>;
   isSubmitting: boolean;
   actionType: 'sent' | 'available' | 'hot' | 'processing';
   articleLabel?: string;
@@ -533,7 +527,7 @@ interface DeletePCModalContentProps {
   colors: any;
   isDark: boolean;
   isDeleting: boolean;
-  scaleAnim: Animated.Shared<number>;
+  scaleAnim: SharedValue<number>;
   articleLabel: string;
   onCancel: () => void;
   onConfirm: () => void;
@@ -694,16 +688,15 @@ export const ArticlesListScreen: React.FC = () => {
     : (siteActif?.nom ?? null);
   const isSuperviseur = useAppSelector(selectIsSuperviseur);
   const currentTechnicien = useAppSelector((state) => state.auth.currentTechnicien);
-  const { isTablet, contentMaxWidth, rv } = useResponsive();
+  const { isTablet, contentMaxWidth } = useResponsive();
   const { colors, isDark } = useTheme();
-  const numColumns = rv({ phone: 1, tablet: 2 });
 
   // ===== STATE =====
   const [articles, setArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [page, setPage] = useState(0);
+  const [, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isGridView, setIsGridView] = useState(false);
 
@@ -725,6 +718,7 @@ export const ArticlesListScreen: React.FC = () => {
     marque: null,
     modele: null,
     emplacement: null,
+    ...(route.params?.savedFilter ?? {}),
   });
   const [sortBy, setSortBy] = useState<SortOption>('nom');
 
@@ -783,13 +777,13 @@ export const ArticlesListScreen: React.FC = () => {
 
   // Delete modal state (article decommission)
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [deleteArticleId, setDeleteArticleId] = useState<number | null>(null);
+  const [deleteArticleId, setDeleteArticleId] = useState<string | number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const scaleAnim = useSharedValue(0);
 
   // Delete PC modal state
   const [deletePCModalVisible, setDeletePCModalVisible] = useState(false);
-  const [deletePCArticleId, setDeletePCArticleId] = useState<number | null>(null);
+  const [deletePCArticleId, setDeletePCArticleId] = useState<string | number | null>(null);
   const [isDeletingPC, setIsDeletingPC] = useState(false);
   const deletePCScaleAnim = useSharedValue(0);
   const [pcActionModal, setPCActionModal] = useState<{
@@ -802,10 +796,6 @@ export const ArticlesListScreen: React.FC = () => {
     articleId: null,
   });
   const [isPCActionSubmitting, setIsPCActionSubmitting] = useState(false);
-  const [destinationAgencyEds, setDestinationAgencyEds] = useState('');
-  const [destinationAgencyEdsError, setDestinationAgencyEdsError] = useState<string | null>(null);
-  const [recipientName, setRecipientName] = useState('');
-  const [recipientNameError, setRecipientNameError] = useState<string | null>(null);
   const pcActionScaleAnim = useSharedValue(0);
   const quickModalIntro = useSharedValue(0);
   const quickFeedbackAnim = useSharedValue(0);
@@ -895,7 +885,7 @@ export const ArticlesListScreen: React.FC = () => {
     return shouldShow;
   }, [isSuperviseur, isTabletTab]);
 
-  const quickPCModelOptions = useMemo(() => {
+  const quickPCModelOptions = useMemo<readonly string[]>(() => {
     return PC_CATEGORY_OPTIONS.find((option) => option.value === quickPCCategory)?.models ?? PC_CATEGORY_OPTIONS[0].models;
   }, [quickPCCategory]);
 
@@ -1037,35 +1027,6 @@ export const ArticlesListScreen: React.FC = () => {
     },
     [],
   );
-
-  useEffect(() => {
-    if (!pcAddSuccessAt) return;
-
-    showQuickFeedback(
-      'success',
-      'PC enregistré',
-      `${pcAddHostname ?? 'Le PC'} a été ajouté et synchronisé avec succès.`,
-    );
-
-    setPage(0);
-    setHasMore(true);
-    Promise.all([loadArticles(true, true), loadStats(), loadSentHistory()]).catch((error) => {
-      console.warn('[ArticlesListScreen] refresh after AddPC failed:', error);
-    });
-
-    navigation.setParams({
-      pcAddSuccessAt: undefined,
-      pcAddHostname: undefined,
-    });
-  }, [
-    loadArticles,
-    loadSentHistory,
-    loadStats,
-    navigation,
-    pcAddHostname,
-    pcAddSuccessAt,
-    showQuickFeedback,
-  ]);
 
   const loadSentHistory = useCallback(async () => {
     if (!effectiveSiteId || !isPCTab) {
@@ -1359,6 +1320,35 @@ export const ArticlesListScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [effectiveSiteId, isManagedInventoryTab, isPCTab, nonPCTypeExclusion],
   );
+
+  useEffect(() => {
+    if (!pcAddSuccessAt) return;
+
+    showQuickFeedback(
+      'success',
+      'PC enregistré',
+      `${pcAddHostname ?? 'Le PC'} a été ajouté et synchronisé avec succès.`,
+    );
+
+    setPage(0);
+    setHasMore(true);
+    Promise.all([loadArticles(true, true), loadStats(), loadSentHistory()]).catch((error) => {
+      console.warn('[ArticlesListScreen] refresh after AddPC failed:', error);
+    });
+
+    navigation.setParams({
+      pcAddSuccessAt: undefined,
+      pcAddHostname: undefined,
+    });
+  }, [
+    loadArticles,
+    loadSentHistory,
+    loadStats,
+    navigation,
+    pcAddHostname,
+    pcAddSuccessAt,
+    showQuickFeedback,
+  ]);
 
   // Reload when filters change
   useEffect(() => {
@@ -1759,16 +1749,6 @@ export const ArticlesListScreen: React.FC = () => {
     });
   }, [sortedArticles, sentPcArticles, isManagedInventoryTab, searchQuery, isPCTab, isTabletTab, pcStatusFilter, tabletStatusFilter, filters.sousType, filters.marque, filters.modele, filters.emplacement]);
 
-  const tabletDecommissionedStats = useMemo(() => {
-    if (!isTabletTab) {
-      return { count: 0, names: [] as string[] };
-    }
-
-    const decommissioned = sortedArticles.filter((article) => isTabletDecommissionedArticle(article));
-    const names = decommissioned.map((article) => article.nom).slice(0, 3);
-    return { count: decommissioned.length, names };
-  }, [isTabletTab, sortedArticles]);
-
   const pcCategoryStats = useMemo(() => {
     if (!isPCTab || pcStatusFilter === null) return null;
 
@@ -1882,13 +1862,19 @@ export const ArticlesListScreen: React.FC = () => {
     return counts.filter((item) => item.count > 0);
   }, [articles, isPCTab]);
 
+  const pcBreakdownCount = useMemo(
+    () => articles.filter((article) => Boolean(article.panneType)).length,
+    [articles],
+  );
+
   const pcHeaderCounts = useMemo<Record<PCStateKey, number>>(() => ({
     a_chaud: pcHotCount,
     a_reusiner: pcReconditioningCount,
     en_usinage: pcProcessingCount,
     disponible: pcAvailableCount,
     envoye: pcSentCount,
-  }), [pcAvailableCount, pcHotCount, pcProcessingCount, pcReconditioningCount, pcSentCount]);
+    en_panne: pcBreakdownCount,
+  }), [pcAvailableCount, pcBreakdownCount, pcHotCount, pcProcessingCount, pcReconditioningCount, pcSentCount]);
 
   // ===== NAVIGATION =====
   const handleMarkBreakdown = useCallback((articleId: number | string) => {
@@ -1931,7 +1917,7 @@ export const ArticlesListScreen: React.FC = () => {
   }, [selectedPCId, articles, loadArticles, loadStats, showQuickFeedback]);
 
   const handleArticlePress = useCallback(
-    (articleId: number) => {
+    (articleId: string | number) => {
       navigation.navigate('ArticleDetail', {
         articleId,
         sourceTab: isPCTab ? 'PC' : 'Articles',
@@ -1941,7 +1927,7 @@ export const ArticlesListScreen: React.FC = () => {
   );
 
   const handleArticleMovement = useCallback(
-    (articleId: number, type: 'entree' | 'sortie') => {
+    (articleId: string | number, type: 'entree' | 'sortie') => {
       navigation.navigate('Mouvements', {
         screen: 'MouvementForm',
         params: { articleId, type, source: 'Articles' },
@@ -1974,7 +1960,7 @@ export const ArticlesListScreen: React.FC = () => {
   }, [pcSentHistory, showQuickFeedback]);
 
   const handleDecommissionTablet = useCallback(
-    (articleId: number) => {
+    (articleId: string | number) => {
       setDeleteArticleId(articleId);
       setDeleteModalVisible(true);
       scaleAnim.value = withTiming(1, {
@@ -1986,7 +1972,7 @@ export const ArticlesListScreen: React.FC = () => {
   );
 
   const handleDeletePC = useCallback(
-    (articleId: number) => {
+    (articleId: string | number) => {
       setDeletePCArticleId(articleId);
       setDeletePCModalVisible(true);
       deletePCScaleAnim.value = withTiming(1, { duration: 380, easing: Easing.elastic(1.2) });
@@ -2103,8 +2089,6 @@ export const ArticlesListScreen: React.FC = () => {
   const handleQuickAddTablet = useCallback(async () => {
     const hostname = quickHostname.trim();
     const asset = quickAsset.trim();
-    const isPC = true;
-
     if (!hostname) {
       showQuickFeedback('error', 'Champ requis', 'Le hostname du PC est obligatoire.');
       return;
@@ -2461,10 +2445,6 @@ export const ArticlesListScreen: React.FC = () => {
     openPCActionModal('processing', articleId);
   }, [openPCActionModal]);
 
-  const handleScan = useCallback(() => {
-    navigation.navigate('Scan');
-  }, [navigation]);
-
   const handleLoadMore = useCallback(() => {
     if (isManagedInventoryTab) return;
     if (!isLoadingMore && hasMore) {
@@ -2547,7 +2527,6 @@ export const ArticlesListScreen: React.FC = () => {
   // ===== RENDER =====
   const renderArticle = useCallback(
     ({ item, index }: { item: Article; index: number }) => {
-      const isSearching = searchQuery.trim().length > 0;
       return (
       <View
         style={[
@@ -2726,7 +2705,7 @@ export const ArticlesListScreen: React.FC = () => {
 
             <ArticleFiltersBar
               sortLabel={currentSortLabel}
-              hasFilters={hasActiveFilters}
+                hasFilters={!!hasActiveFilters}
               onSortPress={() => setSortModalVisible(true)}
               onFiltersPress={() => setFiltersSheetVisible(true)}
               defectiveCount={defectiveArticlesCount}
@@ -2768,6 +2747,27 @@ export const ArticlesListScreen: React.FC = () => {
                 </Text>
               </TouchableOpacity>
             </View>
+            {!isSuperviseur && (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('BulkActions')}
+                style={styles.bulkActionsButton}
+              >
+                <Icon name="playlist-edit" size={16} color={CA_THEME.green} />
+                <Text style={styles.bulkActionsButtonText}>Actions groupées</Text>
+                <Icon name="chevron-right" size={17} color={CA_THEME.green} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => {
+                savedFiltersService.save(`Filtre ${new Date().toLocaleDateString('fr-FR')}`, filters).catch(() => {});
+              }}
+              style={styles.saveFilterButton}
+            >
+              <Icon name="content-save-outline" size={15} color={OBSIDIAN_COLORS.text_muted} />
+              <Text style={styles.saveFilterButtonText}>Enregistrer le filtre actuel</Text>
+            </TouchableOpacity>
           </View>
         </>
       );
@@ -2778,7 +2778,7 @@ export const ArticlesListScreen: React.FC = () => {
         {isPCTab ? (
           <Animated.View style={headerParallaxStyle}>
             <PCHeader
-              total={pcHotCount + pcReconditioningCount + pcProcessingCount + pcAvailableCount + pcSentCount}
+              total={pcHotCount + pcReconditioningCount + pcProcessingCount + pcAvailableCount + pcBreakdownCount + pcSentCount}
               activeLabel={pcStatusFilter ?? 'Tous les états'}
               trendLabel={pcHeaderTrendLabel}
               counts={pcHeaderCounts}
@@ -2920,7 +2920,7 @@ export const ArticlesListScreen: React.FC = () => {
           showStockFaible={filters.stockFaible}
           showStockFaibleChip={!isManagedInventoryTab}
           filtersLabel="Filtres PC"
-          hasActiveFilters={hasActiveFilters}
+            hasActiveFilters={!!hasActiveFilters}
           activeFiltersCount={activeFiltersCount}
           onSortPress={() => setSortModalVisible(true)}
           onFiltersPress={() => setFiltersSheetVisible(true)}
@@ -2931,6 +2931,8 @@ export const ArticlesListScreen: React.FC = () => {
     );
   }, [
     isPCTab,
+    navigation,
+    isSuperviseur,
     totalArticles,
     stockOK,
     alertes,
@@ -2941,6 +2943,7 @@ export const ArticlesListScreen: React.FC = () => {
     pcProcessingCount,
     pcAvailableCount,
     pcSentCount,
+    pcBreakdownCount,
     handleAdd,
     quickHeaderStat,
     pcWeeklyTrendDelta,
@@ -2971,8 +2974,10 @@ export const ArticlesListScreen: React.FC = () => {
     isDark,
   ]);
 
+  const ScreenContainer = View;
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: CA_THEME.lightGray }]}>
+    <ScreenContainer style={[styles.container, { backgroundColor: CA_THEME.lightGray }]}>
       <StatusBar
         barStyle="dark-content"
         backgroundColor="transparent"
@@ -2989,14 +2994,8 @@ export const ArticlesListScreen: React.FC = () => {
           onRefresh={handleRefresh}
           onEndReached={handleLoadMore}
           onArticlePress={handleArticlePress}
-          onSentArticlePress={() => handleSentArticlePress(0)}
-          onMarkSent={handleMarkPCSent}
-          onMarkHot={handleMarkPCHot}
-          onMarkAvailable={handleMarkPCAvailable}
-          onMarkProcessing={handleMarkPCProcessing}
           onMarkBreakdown={handleMarkBreakdown}
           onResolveBreakdown={handleMarkPCAvailable}
-          onDelete={handleDeletePC}
           onExportSentCsv={handleExportSentCsv}
           exportingSentCsv={exportingSentCsv}
           weeklyTrendDelta={pcWeeklyTrendDelta}
@@ -3013,13 +3012,8 @@ export const ArticlesListScreen: React.FC = () => {
           extraData={`${pcDensity}|${pcStatusFilter ?? 'all'}|${filters.condition ?? 'all'}|${filters.sousType?.join(',') ?? ''}|${filters.marque?.join(',') ?? ''}|${filters.modele?.join(',') ?? ''}|${filters.emplacement?.join(',') ?? ''}|${searchQuery}|${sortBy}`}
           keyExtractor={item => item.id.toString()}
           renderItem={renderArticle}
-          estimatedItemSize={isPCTab && pcDensity === 'compact' ? 65 : 120}
           numColumns={isGridView && !isPCTab ? 2 : 1}
           key={isGridView ? 'grid' : 'list'}
-          initialNumToRender={10}
-          maxToRenderPerBatch={5}
-          windowSize={10}
-          removeClippedSubviews={Platform.OS === 'android'}
           contentContainerStyle={[
             styles.listContent,
             { paddingBottom: 100 },
@@ -3581,7 +3575,7 @@ export const ArticlesListScreen: React.FC = () => {
         visible={pcActionModal.visible && pcActionModal.type !== 'sent'}
         transparent
         animationType="fade"
-        onRequestClose={closePCActionModal}
+          onRequestClose={() => closePCActionModal()}
       >
         <View style={[styles.pcActionModalBackdrop, { backgroundColor: isDark ? 'rgba(3,7,18,0.82)' : 'rgba(15,23,42,0.42)' }]}>
           <PCActionModalContent
@@ -3648,7 +3642,7 @@ export const ArticlesListScreen: React.FC = () => {
         }}
         onSubmit={handleCreatePanne}
       />
-    </SafeAreaView>
+    </ScreenContainer>
   );
 };
 
@@ -3678,6 +3672,41 @@ const styles = StyleSheet.create({
   quickFilterRow: {
     marginTop: 10,
     flexDirection: 'row',
+  },
+  bulkActionsButton: {
+    marginTop: 10,
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#B9D9C6',
+    backgroundColor: '#F0FAF4',
+  },
+  bulkActionsButtonText: {
+    flex: 1,
+    color: CA_THEME.green,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  saveFilterButton: {
+    marginTop: 8,
+    minHeight: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: OBSIDIAN_COLORS.border_subtle,
+  },
+  saveFilterButtonText: {
+    color: OBSIDIAN_COLORS.text_muted,
+    fontSize: 11,
+    fontWeight: '700',
   },
   quickFilterChip: {
     flexDirection: 'row',

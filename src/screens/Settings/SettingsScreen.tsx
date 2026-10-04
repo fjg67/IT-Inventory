@@ -255,7 +255,7 @@ export const SettingsScreen: React.FC = () => {
     setProfileMenuVisible(true);
   }, []);
 
-  const handleSelectSite = useCallback((siteId: number) => {
+  const handleSelectSite = useCallback((siteId: string | number) => {
     dispatch(selectSite(siteId));
     setSiteModalVisible(false);
     showToast('Site actif mis a jour');
@@ -305,7 +305,7 @@ export const SettingsScreen: React.FC = () => {
   const handleEnableBiometric = useCallback(async () => {
     const availability = await BiometricAuthService.isBiometricAvailable();
     if (!availability.available) {
-      Alert.alert('Biometrie indisponible', "Activez d'abord une empreinte ou le visage dans Android.");
+      Alert.alert('Biométrie indisponible', 'Activez Face ID ou Touch ID dans les réglages de votre iPhone, puis réessayez.');
       return;
     }
 
@@ -323,12 +323,14 @@ export const SettingsScreen: React.FC = () => {
     setBiometricLoading(true);
     try {
       const isMasterPassword = biometricPassword === MASTER_PASSWORD;
-      if (!isMasterPassword) {
-        const loginResult = await AuthService.login(DEFAULT_LOGIN_IDENTIFIER, biometricPassword);
-        if (!loginResult.success) {
-          Alert.alert('Echec', 'Mot de passe incorrect.');
-          return;
-        }
+      if (isMasterPassword) {
+        Alert.alert('Mot de passe personnel requis', 'Pour activer Face ID, utilisez le mot de passe de votre compte technicien, pas le mot de passe maître de secours.');
+        return;
+      }
+      const loginResult = await AuthService.login(DEFAULT_LOGIN_IDENTIFIER, biometricPassword);
+      if (!loginResult.success) {
+        Alert.alert('Échec', 'Mot de passe incorrect.');
+        return;
       }
 
       await BiometricAuthService.enableBiometricLogin({
@@ -474,10 +476,6 @@ export const SettingsScreen: React.FC = () => {
   const lastRecountDateLabel = lastRecount ? formatDate(lastRecount.recountDate) : 'Aucun inventaire';
   const complianceVisual = getComplianceVisual(daysSinceRecount);
 
-  let auditLevel: AuditLevel = 'ok';
-  if (daysSinceRecount === null || daysSinceRecount > 30) auditLevel = 'critique';
-  else if (daysSinceRecount > 15) auditLevel = 'warning';
-
 
   return (
     <View style={styles.container}>
@@ -599,12 +597,72 @@ export const SettingsScreen: React.FC = () => {
               icon="playlist-check"
               iconBg={SETTINGS_COLORS.green_subtle}
               iconColor={SETTINGS_COLORS.green_light}
-              title="Enregistrer un inventaire"
-              subtitle="Marquer la date du recomptage complet"
+              title="Démarrer un inventaire guidé"
+              subtitle="Scanner les articles et produire les écarts"
               variant="navigate"
               onPress={() => {
-                recordRecount().catch(console.error);
+                navigation.getParent()?.navigate('Inventory');
               }}
+            />
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(SECTION_DELAYS[6]).duration(300)} style={styles.sectionWrap}>
+          <SectionHeader title="Rapports" />
+          <View style={styles.rowsStack}>
+            <SettingsRow
+              icon="file-chart-outline"
+              iconBg={SETTINGS_COLORS.info_subtle}
+              iconColor={SETTINGS_COLORS.info}
+              title="Rapports et exports"
+              subtitle="CSV, Excel, stock, PC et transferts"
+              variant="navigate"
+              onPress={() => navigation.getParent()?.navigate('Reports')}
+            />
+            <SettingsRow
+              icon="delete-restore"
+              iconBg={SETTINGS_COLORS.warning_subtle}
+              iconColor={SETTINGS_COLORS.warning}
+              title="Corbeille"
+              subtitle="Restaurer les articles archivés"
+              variant="navigate"
+              onPress={() => navigation.getParent()?.navigate('Trash')}
+            />
+            <SettingsRow
+              icon="backup-restore"
+              iconBg={SETTINGS_COLORS.teal_subtle}
+              iconColor={SETTINGS_COLORS.teal}
+              title="Sauvegarde locale"
+              subtitle="Exporter ou restaurer les données locales"
+              variant="navigate"
+              onPress={() => navigation.getParent()?.navigate('Backup')}
+            />
+            <SettingsRow
+              icon="filter-check-outline"
+              iconBg={SETTINGS_COLORS.green_subtle}
+              iconColor={SETTINGS_COLORS.green_light}
+              title="Filtres enregistrés"
+              subtitle="Retrouver rapidement vos recherches"
+              variant="navigate"
+              onPress={() => navigation.getParent()?.navigate('SavedFilters')}
+            />
+            <SettingsRow
+              icon="history"
+              iconBg={SETTINGS_COLORS.teal_subtle}
+              iconColor={SETTINGS_COLORS.teal}
+              title="Historique des modifications"
+              subtitle="Consulter l’audit détaillé"
+              variant="navigate"
+              onPress={() => navigation.getParent()?.navigate('AuditHistory')}
+            />
+            <SettingsRow
+              icon="alert-decagram-outline"
+              iconBg={SETTINGS_COLORS.warning_subtle}
+              iconColor={SETTINGS_COLORS.warning}
+              title="Détection des anomalies"
+              subtitle="Stocks, doublons, mouvements et affectations"
+              variant="navigate"
+              onPress={() => navigation.getParent()?.navigate('Anomalies')}
             />
           </View>
         </Animated.View>
@@ -784,7 +842,7 @@ export const SettingsScreen: React.FC = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
-      
+
       <Modal visible={profileMenuVisible} transparent animationType="slide" onRequestClose={() => setProfileMenuVisible(false)}>
         <View style={styles.sheetBackdrop}>
           <TouchableWithoutFeedback onPress={() => setProfileMenuVisible(false)}>
@@ -793,25 +851,25 @@ export const SettingsScreen: React.FC = () => {
 
           <View style={styles.sheetCard}>
             <Text style={styles.sheetTitle}>Profil</Text>
-            
+
             <Pressable style={styles.sheetRow} onPress={() => { setProfileMenuVisible(false); showToast('Edition profil bientot disponible'); }}>
               <Icon name="account-edit-outline" size={20} color={SETTINGS_COLORS.text_muted} />
               <Text style={styles.sheetRowText}>Modifier le profil</Text>
             </Pressable>
-            
+
             <Pressable style={styles.sheetRow} onPress={() => { setProfileMenuVisible(false); setSiteModalVisible(true); }}>
               <Icon name="office-building-marker-outline" size={20} color={SETTINGS_COLORS.text_muted} />
               <Text style={styles.sheetRowText}>Changer de site actif</Text>
             </Pressable>
-            
+
             <Pressable style={styles.sheetRow} onPress={() => { setProfileMenuVisible(false); showToast('Historique bientot disponible'); }}>
               <Icon name="history" size={20} color={SETTINGS_COLORS.text_muted} />
               <Text style={styles.sheetRowText}>Voir historique</Text>
             </Pressable>
-            
+
             <Pressable style={[styles.sheetRow, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', marginTop: 8, paddingTop: 16 }]} onPress={() => setProfileMenuVisible(false)}>
-              <Icon name="close" size={20} color={SETTINGS_COLORS.red} />
-              <Text style={[styles.sheetRowText, { color: SETTINGS_COLORS.red }]}>Annuler</Text>
+              <Icon name="close" size={20} color={SETTINGS_COLORS.danger} />
+              <Text style={[styles.sheetRowText, { color: SETTINGS_COLORS.danger }]}>Annuler</Text>
             </Pressable>
           </View>
         </View>

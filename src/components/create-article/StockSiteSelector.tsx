@@ -11,14 +11,14 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CAC } from './createArticleColors';
 
 export interface SiteChipItem {
-  id: number;
+  id: string | number;
   nom: string;
 }
 
 interface Props {
   sites: SiteChipItem[];
-  selectedIds: number[];
-  onToggle: (id: number) => void;
+  selectedIds: (string | number)[];
+  onToggle: (id: string | number) => void;
 }
 
 const Chip: React.FC<{

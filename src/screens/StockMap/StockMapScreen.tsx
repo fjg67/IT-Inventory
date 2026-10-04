@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, TouchableOpacity, RefreshControl } from 'react-native';
-import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, FadeInDown, FadeIn } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CA_THEME } from '@/constants/caTheme';
@@ -117,7 +117,7 @@ const ItemTile = ({ item, qty, isHighlighted, index }: { item: CabinetItem; qty:
   }));
 
   // Couleur du type de bac
-  let iconColor = CA_THEME.textPrimary;
+  let iconColor: string = CA_THEME.textPrimary;
   if (item.isBin === 'red') iconColor = CA_THEME.danger;
   else if (item.isBin === 'blue') iconColor = CA_THEME.info;
   else iconColor = CA_THEME.green;
@@ -248,7 +248,7 @@ export const StockMapScreen = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <Animated.View entering={FadeIn.duration(400)} style={styles.cabinetContainer}>
-          {activeCabinet.map((levelObj, i) => (
+          {activeCabinet.map((levelObj) => (
             <View key={levelObj.level} style={styles.shelfLevelWrapper}>
               {/* Le fond du rayonnage */}
               <View style={styles.shelfBackdrop}>
@@ -285,9 +285,7 @@ export const StockMapScreen = () => {
 const styles = StyleSheet.create({
   header: {
     padding: 16,
-    backgroundColor: CA_THEME.white,
-    borderBottomWidth: 1,
-    borderBottomColor: CA_THEME.borderGray,
+    backgroundColor: CA_THEME.green,
   },
   headerTop: {
     flexDirection: 'row',
@@ -303,18 +301,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoCA: {
-    color: CA_THEME.white,
+    color: CA_THEME.green,
     fontFamily: CA_THEME.fontFamilyBold,
     fontSize: 18,
   },
   headerTitle: {
     fontSize: 18,
     fontFamily: CA_THEME.fontFamilyBold,
-    color: CA_THEME.textPrimary,
+    color: CA_THEME.white,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: CA_THEME.textSecondary,
+    color: 'rgba(255,255,255,0.78)',
     marginTop: 2,
   },
   tabContainer: {

@@ -28,7 +28,7 @@ export interface AddPCSubmitContext {
 export interface AddPCSubmitResult {
   success: boolean;
   error?: string;
-  articleId?: number;
+  articleId?: string | number;
 }
 
 interface CategoryOption {

@@ -29,7 +29,7 @@ const SkeletonLine: React.FC<{ delay: number; index: number }> = ({ delay, index
   const shimmerX = useSharedValue(0);
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -46,7 +46,7 @@ const SkeletonLine: React.FC<{ delay: number; index: number }> = ({ delay, index
     transform: [{ translateX: interpolate(shimmerX.value, [0, 1], [-width, width]) }],
   }));
 
-  const shimmerColor = colors.isDark
+  const shimmerColor = isDark
     ? 'rgba(0,125,112,0.08)'
     : 'rgba(0,125,112,0.1)';
 

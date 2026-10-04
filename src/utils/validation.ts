@@ -57,6 +57,11 @@ export function isPositiveInteger(value: unknown): boolean {
   return typeof value === 'number' && !isNaN(value) && value > 0 && Number.isInteger(value);
 }
 
+function isValidRecordId(value: unknown): boolean {
+  if (typeof value === 'number') return Number.isFinite(value) && value > 0;
+  return typeof value === 'string' && value.trim().length > 0 && value.trim() !== '0';
+}
+
 /**
  * Valide une référence article (alphanumérique, tirets, underscores)
  */
@@ -76,12 +81,12 @@ export function validateMouvementForm(
   const errors: Record<string, string> = {};
 
   // Article requis
-  if (!form.articleId || form.articleId <= 0) {
+  if (!isValidRecordId(form.articleId)) {
     errors.articleId = 'Veuillez sélectionner un article';
   }
 
   // Site requis
-  if (!form.siteId || form.siteId <= 0) {
+  if (!isValidRecordId(form.siteId)) {
     errors.siteId = 'Veuillez sélectionner un site';
   }
 
@@ -113,22 +118,22 @@ export function validateTransfertForm(
   const errors: Record<string, string> = {};
 
   // Article requis
-  if (!form.articleId || form.articleId <= 0) {
+  if (!isValidRecordId(form.articleId)) {
     errors.articleId = 'Veuillez sélectionner un article';
   }
 
   // Site départ requis
-  if (!form.siteDepartId || form.siteDepartId <= 0) {
+  if (!isValidRecordId(form.siteDepartId)) {
     errors.siteDepartId = 'Veuillez sélectionner le site de départ';
   }
 
   // Site arrivée requis
-  if (!form.siteArriveeId || form.siteArriveeId <= 0) {
+  if (!isValidRecordId(form.siteArriveeId)) {
     errors.siteArriveeId = 'Veuillez sélectionner le site de destination';
   }
 
   // Sites différents
-  if (form.siteDepartId && form.siteArriveeId && form.siteDepartId === form.siteArriveeId) {
+  if (form.siteDepartId && form.siteArriveeId && String(form.siteDepartId) === String(form.siteArriveeId)) {
     errors.siteArriveeId = 'Le site de destination doit être différent du site de départ';
   }
 

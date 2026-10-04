@@ -9,7 +9,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
   Modal,
   Vibration,
 } from 'react-native';
@@ -27,8 +26,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-
-const { width: SW } = Dimensions.get('window');
 
 // ===== PALETTE — Light =====
 const INDIGO = '#007A39';

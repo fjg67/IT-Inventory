@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import StatusChip from './StatusChip';
-import { PC_STATUS_OPTIONS, PCStatus } from '@/hooks/useAddPCForm';
+import { PC_STATUS_OPTIONS } from '@/hooks/useAddPCForm';
+import { PCStatus } from '@/types/pc.types';
 
 interface StatusSelectorProps {
   value: PCStatus | null;

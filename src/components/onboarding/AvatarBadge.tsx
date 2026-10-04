@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { getAvatarColor } from '@/utils/avatarColors';
+import { CA_THEME } from '@/constants/caTheme';
 
 type AvatarBadgeProps = {
   initials: string;
@@ -8,8 +8,6 @@ type AvatarBadgeProps = {
 };
 
 export const AvatarBadge: React.FC<AvatarBadgeProps> = ({ initials, size = 48 }) => {
-  const color = getAvatarColor(initials);
-
   return (
     <View
       style={[
@@ -18,12 +16,14 @@ export const AvatarBadge: React.FC<AvatarBadgeProps> = ({ initials, size = 48 })
           width: size,
           height: size,
           borderRadius: 14,
-          backgroundColor: color.bg,
-          shadowColor: color.shadow,
+          backgroundColor: CA_THEME.greenBg,
+          borderWidth: 1,
+          borderColor: CA_THEME.greenBg2,
+          shadowColor: CA_THEME.green,
         },
       ]}
     >
-      <Text style={[styles.text, { color: color.text }]}>{initials}</Text>
+      <Text style={[styles.text, { color: CA_THEME.greenText }]}>{initials}</Text>
     </View>
   );
 };
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.12,
     shadowRadius: 4,
     elevation: 2,
   },

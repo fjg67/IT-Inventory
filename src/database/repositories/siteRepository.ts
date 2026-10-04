@@ -29,7 +29,7 @@ function mapRowToSite(row: SiteRow): Site {
     adresse: row.address ?? undefined,
     edsNumber: row.edsNumber ?? undefined,
     actif: Boolean(row.isActive),
-    dateCreation: row.createdAt,
+    dateCreation: new Date(row.createdAt),
     syncStatus: SyncStatus.SYNCED,
   };
 }

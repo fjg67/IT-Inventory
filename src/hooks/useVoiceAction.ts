@@ -3,6 +3,36 @@ import { useDispatch } from 'react-redux';
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { ParsedVoiceCommand } from '@/types/voice.types';
 import { selectSite } from '@/store/slices/siteSlice';
+import { articleRepository, mouvementRepository, panneRepository } from '@/database';
+import { pcLifecycleService } from '@/services/pcLifecycleService';
+
+function resolveDueBackDate(value?: string): string | undefined {
+  if (!value) return undefined;
+  const normalized = value.toLowerCase().trim();
+  const weekdays = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  const target = weekdays.findIndex(day => normalized.includes(day));
+  if (target >= 0) {
+    const date = new Date();
+    const delta = (target - date.getDay() + 7) % 7 || 7;
+    date.setDate(date.getDate() + delta);
+    return date.toISOString().slice(0, 10);
+  }
+  return value;
+}
+
+async function createVoiceMovement(command: ParsedVoiceCommand, type: 'entree' | 'sortie' | 'ajustement'): Promise<{ success: boolean; message: string; newStock?: number }> {
+  if (!command.articleId) throw new Error('Article non trouvé');
+  const quantity = Math.max(0, command.quantity ?? 0);
+  if (type !== 'ajustement' && quantity < 1) throw new Error('La quantité doit être supérieure à zéro');
+  await mouvementRepository.create({
+    articleId: command.articleId,
+    siteId: command.siteId,
+    type,
+    quantite: quantity,
+    commentaire: `Via assistant vocal : "${command.rawText}"`,
+  }, command.executedBy);
+  return { success: true, message: `Mouvement ${type} enregistré pour ${command.articleLabel ?? command.articleName ?? 'l’article'} (${quantity}).`, newStock: undefined };
+}
 
 export const useVoiceAction = () => {
   const dispatch = useDispatch();
@@ -15,7 +45,25 @@ export const useVoiceAction = () => {
     const supabase = getSupabaseClient();
 
     try {
-      switch (command.actionType) {
+      if (command.actionType === 'stock_entree') return await createVoiceMovement(command, 'entree');
+      if (command.actionType === 'stock_sortie') return await createVoiceMovement(command, 'sortie');
+      if (command.actionType === 'stock_ajustement') return await createVoiceMovement(command, 'ajustement');
+
+      switch (command.actionType as any) {
+
+        case 'pc_available_query': {
+          const result = await articleRepository.search(command.siteId, { searchQuery: '', stockFaible: false, typeArticle: ['PC'] }, 0, 1000);
+          const available = result.data.filter(article => (article.description ?? '').toLowerCase().includes('disponible') || (article.famille ?? '').toLowerCase().includes('pc disponible'));
+          return { success: true, message: available.length ? `PC disponibles : ${available.slice(0, 8).map(article => article.nom).join(', ')}${available.length > 8 ? ` et ${available.length - 8} autre(s)` : ''}.` : 'Aucun PC disponible sur ce site.' };
+        }
+
+        case 'pc_loan': {
+          if (!command.pcId) throw new Error('PC non trouvé');
+          if (!command.personName) throw new Error('Personne destinataire non reconnue');
+          const dueBackDate = resolveDueBackDate(command.dueBackDate);
+          await pcLifecycleService.loan(command.pcId, command.personName, dueBackDate, String(command.executedBy));
+          return { success: true, message: `Le PC ${command.pcHostname} est prêté à ${command.personName}${dueBackDate ? ` jusqu’au ${dueBackDate}` : ''}.` };
+        }
 
         // ── ENTRÉE DE STOCK ──────────────────────────────────────────────
         case 'stock_entree': {
@@ -265,21 +313,12 @@ export const useVoiceAction = () => {
         case 'pc_panne': {
           if (!command.pcId) throw new Error('PC non trouvé');
 
-          // Mettre à jour le statut du PC
-          await supabase.from('pc_portables')
-            .update({ status: 'en_panne' })
-            .eq('id', command.pcId);
+          const pc = await articleRepository.findById(command.pcId, command.siteId);
+          if (!pc) throw new Error('PC non trouvé');
+          await articleRepository.update(command.pcId, { description: `Statut: en_panne | Type: ${command.panneType ?? 'autre'}`, famille: 'PC en panne' });
 
           // Créer l'entrée panne
-          await supabase.from(tables.pcPannes).insert({
-            pc_id:             command.pcId,
-            type_panne:        command.panneType ?? 'autre',
-            description:       `Déclaré via commande vocale : "${command.rawText}"`,
-            priorite:          'moyenne',
-            statut_reparation: 'en_attente',
-            declared_at:       new Date().toISOString(),
-            updated_at:        new Date().toISOString(),
-          });
+          await panneRepository.createPanne({ pc_id: String(command.pcId), type_panne: command.panneType ?? 'autre', description: `Déclaré via commande vocale : "${command.rawText}"`, priorite: 'moyenne', statut_reparation: 'en_attente', technicien_id: String(command.executedBy) });
 
           return {
             success: true,
@@ -292,11 +331,8 @@ export const useVoiceAction = () => {
           if (!command.pcId) throw new Error('PC non trouvé');
           if (!command.pcStatus) throw new Error('Statut non reconnu');
 
-          const { error } = await supabase.from('pc_portables')
-            .update({ status: command.pcStatus })
-            .eq('id', command.pcId);
-            
-          if (error) throw error;
+          const nextLabel = command.pcStatus.replace('_', ' ');
+          await articleRepository.update(command.pcId, { description: `Statut: ${nextLabel}`, famille: command.pcStatus === 'disponible' ? 'PC disponible' : 'PC portable' });
 
           return {
             success: true,
@@ -309,11 +345,7 @@ export const useVoiceAction = () => {
           if (!command.pcId) throw new Error('PC non trouvé');
           if (!command.targetSiteId) throw new Error('Site de destination introuvable');
 
-          const { error } = await supabase.from('pc_portables')
-            .update({ site: String(command.targetSiteId) })
-            .eq('id', command.pcId);
-            
-          if (error) throw error;
+          await articleRepository.update(command.pcId, { emplacement: command.targetSiteLabel });
 
           // Note: S'il existe une table historique_affectations, on pourrait l'insérer ici.
           return {

@@ -63,7 +63,7 @@ serve(async (req) => {
         },
         { onConflict: 'id' },
       );
-      error = fallbackNoEnabled.error ?? error;
+      error = fallbackNoEnabled.error;
     }
 
     if (error && body.userId) {
@@ -90,7 +90,7 @@ serve(async (req) => {
           },
           { onConflict: 'id' },
         );
-        error = retryNoEnabled.error ?? retry.error;
+        error = retryNoEnabled.error;
       } else {
         error = null;
       }

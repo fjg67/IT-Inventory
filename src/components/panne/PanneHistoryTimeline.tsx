@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { PCPanne, REPARATION_CONFIG, PANNE_TYPE_CONFIG, PRIORITE_CONFIG } from '@/types/pc.types';
+import { PCPanne, PANNE_TYPE_CONFIG, PRIORITE_CONFIG } from '@/types/pc.types';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
-import { formatDate } from '@/utils/dateUtils';
+import { formatDateParis } from '@/utils/dateUtils';
 
 interface PanneHistoryTimelineProps {
   pannes: PCPanne[];
@@ -24,7 +24,6 @@ const buildTimelineEvents = (pannes: PCPanne[]): TimelineEvent[] => {
   for (const panne of pannes) {
     const typeConfig = PANNE_TYPE_CONFIG[panne.type_panne];
     const prioriteConfig = PRIORITE_CONFIG[panne.priorite];
-    const reparationConfig = REPARATION_CONFIG[panne.statut_reparation];
 
     // Déclaration initiale
     events.push({
@@ -101,7 +100,7 @@ export const PanneHistoryTimeline: React.FC<PanneHistoryTimelineProps> = ({ pann
             <Text style={[styles.eventLabel, { color: event.color }]}>{event.label}</Text>
             {event.description && <Text style={styles.eventDesc}>{event.description}</Text>}
             <Text style={styles.eventMeta}>
-              {formatDate(event.date)} · {event.author}
+              {formatDateParis(event.date)} · {event.author}
             </Text>
           </View>
         </View>

@@ -40,6 +40,7 @@ interface ArticleRow {
   barcode: string | null;
   emplacement: string | null;
   minStock: number;
+  unitPrice?: number | string | null;
   unit: string;
   imageUrl: string | null;
   isArchived: boolean;
@@ -69,6 +70,7 @@ function mapRowToArticle(row: ArticleRow): Article {
     modele: row.model ?? undefined,
     emplacement: row.emplacement ?? undefined,
     stockMini: row.minStock ?? 0,
+    prixUnitaire: Number(row.unitPrice ?? 0),
     unite: row.unit ?? 'unité',
     photoUrl: row.imageUrl ?? undefined,
     actif: !row.isArchived,
@@ -325,6 +327,10 @@ export const articleRepository = {
 
   async create(data: ArticleForm): Promise<string> {
     const supabase = getSupabaseClient();
+    if (data.barcode?.trim()) {
+      const { data: duplicate } = await supabase.from(tables.articles).select('id, reference').eq('barcode', data.barcode.trim()).eq('isArchived', false).maybeSingle();
+      if (duplicate) throw new Error(`Code-barres déjà utilisé par ${duplicate.reference ?? duplicate.id}`);
+    }
     const newId = generateUUID();
     const fullPayload = {
       id: newId,
@@ -340,6 +346,7 @@ export const articleRepository = {
       model: data.modele ?? null,
       emplacement: data.emplacement ?? null,
       minStock: data.stockMini ?? 0,
+      unitPrice: data.prixUnitaire ?? 0,
       unit: data.unite ?? 'unité',
       imageUrl: data.photoUrl ?? null,
       condition: data.condition ?? 'bon_etat',
@@ -362,6 +369,7 @@ export const articleRepository = {
       brand: data.marque ?? null,
       emplacement: data.emplacement ?? null,
       minStock: data.stockMini ?? 0,
+      unitPrice: data.prixUnitaire ?? 0,
       unit: data.unite ?? 'unité',
       imageUrl: data.photoUrl ?? null,
       isArchived: false,
@@ -404,6 +412,10 @@ export const articleRepository = {
 
   async update(id: string | number, data: Partial<ArticleForm>): Promise<void> {
     const supabase = getSupabaseClient();
+    if (data.barcode?.trim()) {
+      const { data: duplicate } = await supabase.from(tables.articles).select('id, reference').eq('barcode', data.barcode.trim()).neq('id', id).eq('isArchived', false).maybeSingle();
+      if (duplicate) throw new Error(`Code-barres déjà utilisé par ${duplicate.reference ?? duplicate.id}`);
+    }
     const payload: Record<string, unknown> = {};
     if (data.reference !== undefined) payload.reference = data.reference;
     if (data.nom !== undefined) payload.name = data.nom;
@@ -418,6 +430,7 @@ export const articleRepository = {
     if (data.modele !== undefined) payload.model = data.modele ?? null;
     if (data.emplacement !== undefined) payload.emplacement = data.emplacement ?? null;
     if (data.stockMini !== undefined) payload.minStock = data.stockMini;
+    if (data.prixUnitaire !== undefined) payload.unitPrice = Math.max(0, data.prixUnitaire);
     if (data.unite !== undefined) payload.unit = data.unite;
     if (data.photoUrl !== undefined) payload.imageUrl = data.photoUrl ?? null;
     if (data.condition !== undefined) payload.condition = data.condition;
@@ -506,6 +519,19 @@ export const articleRepository = {
     const supabase = getSupabaseClient();
     const { error } = await supabase.from(tables.articles).update({ isArchived: true }).eq('id', id);
     if (error) throw new Error(error.message);
+  },
+
+  async restore(id: string | number): Promise<void> {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from(tables.articles).update({ isArchived: false, updatedAt: new Date().toISOString() }).eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+
+  async findArchived(): Promise<Article[]> {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.from(tables.articles).select('*').eq('isArchived', true).order('updatedAt', { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((row: ArticleRow) => mapRowToArticle(row));
   },
 
   async findLowStock(siteId: string | number): Promise<Article[]> {

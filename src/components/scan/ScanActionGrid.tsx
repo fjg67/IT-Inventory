@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { SCAN_ACTION_COLORS, ScanActionTone, SCAN_COLORS } from './tokens';
+import { SCAN_ACTION_COLORS, ScanActionTone } from './tokens';
 
 export type ScanActionItem = {
   key: string;
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    color: SCAN_COLORS.text_primary,
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
     textAlign: 'center',

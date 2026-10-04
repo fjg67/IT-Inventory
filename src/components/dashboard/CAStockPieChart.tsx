@@ -11,7 +11,7 @@ interface CAStockPieChartProps {
 export const CAStockPieChart = ({ totalArticles, articlesAlerte }: CAStockPieChartProps) => {
   const stockNormal = Math.max(0, totalArticles - articlesAlerte);
   
-  const pieData = [
+  const pieData: { value: number; color: string; text: string }[] = [
     {
       value: stockNormal,
       color: CA_THEME.green,

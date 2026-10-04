@@ -4,13 +4,14 @@ import { ParsedVoiceCommand, VoiceActionType } from '@/types/voice.types';
 // ─── Mots-clés d'action ──────────────────────────────────────────────────
 const ENTRY_KEYWORDS  = ['entrée', 'ajouter', 'reçu', 'réceptionner', 'réception', 'reception', 'rentrer', 'rentrée', 'ajoute', 'ajout'];
 const EXIT_KEYWORDS   = ['sortie', 'sortir', 'retirer', 'retire', 'enlever', 'enlève', 'distribuer', 'donner', 'sors', 'utilise', 'utilisé', 'utilisée'];
-const QUERY_KEYWORDS  = ['combien', 'quantité', 'voir', 'reste', 'restant', 'disponible'];
+const QUERY_KEYWORDS  = ['combien', 'quantité', 'voir', 'montre', 'reste', 'restant', 'disponible'];
 const AJUSTEMENT_KEYWORDS = ['ajuster', 'mettre à jour', 'modifier à', 'corriger à'];
 const TRANSFERT_KEYWORDS = ['transférer', 'transfert', 'déplacer', 'envoyer'];
 const PC_KEYWORDS     = ['pc', 'portable', 'ordinateur', 'laptop', 'machine'];
 const PANNE_KEYWORDS  = ['panne', 'cassé', 'défaillant', 'hs', 'défectueux', 'défectueuse', 'problème', 'souci'];
 const SITE_KEYWORDS   = ['changer de site', 'aller sur', 'basculer vers', 'changer vers'];
 const STATUT_KEYWORDS = ['statut', 'passer en', 'mettre en', 'est maintenant', 'devient'];
+const LOAN_KEYWORDS = ['prêter', 'prete', 'prête', 'prêt', 'emprunter', 'emprunte'];
 
 // ─── Stop words (mots à ignorer) ─────────────────────────────────────────
 const STOP_WORDS = [
@@ -63,10 +64,14 @@ export const parseVoiceCommand = (text: string): Partial<ParsedVoiceCommand> => 
   const isPCStatus = PC_KEYWORDS.some(k => t.includes(k)) && (STATUT_KEYWORDS.some(k => t.includes(k)) || Object.keys(PC_STATUS_MAP).some(k => t.includes(` ${k}`) || t.startsWith(k)));
   const isSite    = SITE_KEYWORDS.some(k => t.includes(k));
   const isPC      = PC_KEYWORDS.some(k => t.includes(k));
+  const isPCLoan = isPC && LOAN_KEYWORDS.some(k => t.includes(k));
+  const isPCAvailableQuery = isPC && (t.includes('disponible') || t.includes('disponibles')) && isQuery;
 
   // ── Détermination de l'action principale ──
   let actionType: VoiceActionType = 'unknown';
   if (isSite) actionType = 'site_change';
+  else if (isPCLoan) actionType = 'pc_loan';
+  else if (isPCAvailableQuery) actionType = 'pc_available_query';
   else if (isTransfert && isPC) actionType = 'pc_transfert';
   else if (isTransfert) actionType = 'stock_transfert';
   else if (isPCPanne) actionType = 'pc_panne';
@@ -109,6 +114,17 @@ export const parseVoiceCommand = (text: string): Partial<ParsedVoiceCommand> => 
     }
   }
 
+  let personName: string | undefined;
+  let dueBackDate: string | undefined;
+  if (actionType === 'pc_loan') {
+    const personMatch = t.match(/(?:à|a|pour)\s+(.+?)(?:\s+(?:jusqu['’]au|jusqu['’]à|retour)\s+(.+))?$/i);
+    if (personMatch) {
+      personName = personMatch[1].trim();
+      dueBackDate = personMatch[2]?.trim();
+      t = t.replace(personMatch[0], ' ');
+    }
+  }
+
   // ── Nettoyage pour extraire l'Article / Hostname ──
   let remainingText = t;
 
@@ -121,6 +137,7 @@ export const parseVoiceCommand = (text: string): Partial<ParsedVoiceCommand> => 
     ...(['pc_panne', 'pc_status', 'pc_transfert'].includes(actionType) ? PC_KEYWORDS : []),
     ...(actionType === 'pc_panne' ? PANNE_KEYWORDS : []),
     ...(actionType === 'pc_status' ? STATUT_KEYWORDS : []),
+    ...(actionType === 'pc_loan' ? LOAN_KEYWORDS : []),
     ...(actionType === 'site_change' ? SITE_KEYWORDS : []),
   ];
   allKeywords.sort((a, b) => b.length - a.length);
@@ -165,7 +182,7 @@ export const parseVoiceCommand = (text: string): Partial<ParsedVoiceCommand> => 
   let articleName: string | undefined = undefined;
   let pcHostname: string | undefined = undefined;
 
-  if (['pc_panne', 'pc_status', 'pc_transfert'].includes(actionType)) {
+  if (['pc_panne', 'pc_status', 'pc_transfert', 'pc_loan'].includes(actionType)) {
     const pcMatch = originalText.match(/\b([a-z]+[0-9]+[a-z0-9]*)\b/i);
     if (pcMatch) {
       pcHostname = pcMatch[1].toUpperCase();
@@ -197,6 +214,8 @@ export const parseVoiceCommand = (text: string): Partial<ParsedVoiceCommand> => 
     pcHostname,
     panneType,
     pcStatus,
+    personName,
+    dueBackDate,
     targetSiteRaw
   };
 };

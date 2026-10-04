@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import Animated, {
+import {
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,

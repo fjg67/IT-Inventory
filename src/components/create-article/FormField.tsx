@@ -2,7 +2,7 @@
 // FormField — Animated text input — Obsidian Grid
 // IT-Inventory Application
 // ============================================
-import React, { useRef } from 'react';
+import React from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, TextInputProps,

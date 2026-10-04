@@ -12,7 +12,17 @@ import Animated, {
 import { GridBackground } from '@/components/onboarding/GridBackground';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
 
-const circleSpecs = [
+type CircleSpec = {
+  size: number;
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+  baseOpacity: number;
+  delay: number;
+};
+
+const circleSpecs: CircleSpec[] = [
   { size: 380, top: -120, right: -100, baseOpacity: 0.07, delay: 0 },
   { size: 250, bottom: -80, left: -80, baseOpacity: 0.05, delay: 700 },
   { size: 140, top: 80, left: -30, baseOpacity: 0.04, delay: 1200 },

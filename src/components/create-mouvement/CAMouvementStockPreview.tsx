@@ -3,19 +3,18 @@ import { View, Text, StyleSheet } from 'react-native';
 import Animated, { FadeIn, useAnimatedStyle, withSpring, withRepeat, withTiming } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CA_THEME, MOVEMENT_TYPE_CA } from '@/constants/caTheme';
-import type { MovementType } from './CAMouvementTypeGrid';
+import type { MovementType } from '@/components/movement/movementTheme';
 import LinearGradient from 'react-native-linear-gradient';
 
 interface CAMouvementStockPreviewProps {
   stockBefore:  number;
   stockAfter:   number;
   movementType: MovementType;
-  quantity:     number;
   threshold?:   number;
 }
 
 export const CAMouvementStockPreview = ({
-  stockBefore, stockAfter, movementType, quantity, threshold,
+  stockBefore, stockAfter, movementType, threshold,
 }: CAMouvementStockPreviewProps) => {
   const typeConf  = MOVEMENT_TYPE_CA[movementType];
   const isBelow   = threshold !== undefined && stockAfter <= threshold;

@@ -1,4 +1,4 @@
-import RNHTMLtoPDF from 'react-native-html-to-pdf';
+import { generatePDF } from 'react-native-html-to-pdf';
 import Share from 'react-native-share';
 import { articleRepository, mouvementRepository } from '@/database';
 import { predictiveService } from './predictiveService';
@@ -160,16 +160,16 @@ export const pdfReportService = {
       // 3. Générer le PDF
       const options = {
         html: htmlContent,
-        fileName: \`bilan_stock_\${format(new Date(), 'yyyy_MM_dd')}\`,
+        fileName: `bilan_stock_${format(new Date(), 'yyyy_MM_dd')}`,
         directory: 'Documents',
       };
 
-      const file = await RNHTMLtoPDF.convert(options);
+      const file = await generatePDF(options);
 
       // 4. Partager / Enregistrer
       if (file.filePath) {
         await Share.open({
-          url: \`file://\${file.filePath}\`,
+          url: `file://${file.filePath}`,
           title: 'Bilan Mensuel des Stocks',
           message: 'Voici le bilan mensuel des stocks généré par GestStock IT.',
           type: 'application/pdf',

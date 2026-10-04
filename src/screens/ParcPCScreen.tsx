@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import { RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
@@ -7,7 +7,6 @@ import { Article } from '@/types';
 import { usePCFilters } from '@/hooks/usePCFilters';
 import { useRenamePC } from '@/hooks/useRenamePC';
 import { usePCStats } from '@/hooks/usePCStats';
-import { PCStateKey } from '@/constants/pcStates';
 import ArticleEmptyState from '@/screens/Articles/components/ArticleEmptyState';
 import SkeletonArticleList from '@/screens/Articles/components/SkeletonArticleList';
 import {
@@ -33,15 +32,9 @@ interface ParcPCScreenProps {
   refreshing: boolean;
   onRefresh: () => void;
   onEndReached: () => void;
-  onArticlePress: (articleId: number) => void;
-  onSentArticlePress: () => void;
-  onMarkSent: (articleId: number | string) => void;
-  onMarkHot: (articleId: number | string) => void;
-  onMarkAvailable: (articleId: number | string) => void;
-  onMarkProcessing: (articleId: number | string) => void;
+  onArticlePress: (articleId: string | number) => void;
   onMarkBreakdown?: (articleId: number | string) => void;
   onResolveBreakdown?: (articleId: number | string) => void;
-  onDelete: (articleId: number | string) => void;
   onExportSentCsv: () => void;
   exportingSentCsv: boolean;
   weeklyTrendDelta: number;
@@ -61,22 +54,14 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
   onRefresh,
   onEndReached,
   onArticlePress,
-  onSentArticlePress,
-  onMarkSent,
-  onMarkHot,
-  onMarkAvailable,
-  onMarkProcessing,
   onMarkBreakdown,
   onResolveBreakdown,
-  onDelete,
   onExportSentCsv,
   exportingSentCsv,
   weeklyTrendDelta,
   onScroll,
 }) => {
   const navigation = useNavigation<any>();
-  const listRef = useRef<FlashList<ParcPCListItem> | null>(null);
-  const [headerHeight, setHeaderHeight] = useState(0);
   const stats = usePCStats(articles, sentArticles, weeklyTrendDelta);
   const filters = usePCFilters(stats.allPCs);
   const { pcToRename, openRenameModal, closeRenameModal, handleRenameSuccess } = useRenamePC(() => {
@@ -91,38 +76,11 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
     return [CONTROL_ITEM, ...items];
   }, [filters.filtered]);
 
-  const modelStatsForSelection = useMemo(() => {
-    const modelCounts = new Map<string, number>();
-
-    for (const article of filters.filtered) {
-      const model = (article.modele ?? '').trim() || 'Sans modèle';
-      modelCounts.set(model, (modelCounts.get(model) ?? 0) + 1);
-    }
-
-    return [...modelCounts.entries()]
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr'))
-      .map(([label, count]) => ({ label, count }));
-  }, [filters.filtered]);
-
-  const handleStateCardPress = useCallback((state: PCStateKey) => {
-    filters.setOnlyState(state);
-    const targetOffset = Math.max(0, headerHeight - 110);
-    requestAnimationFrame(() => {
-      listRef.current?.scrollToOffset({ offset: targetOffset, animated: true });
-    });
-  }, [filters, headerHeight]);
-
   const renderHeader = () => (
-    <View
-      style={styles.headerStack}
-      onLayout={(event) => {
-        const nextHeight = Math.round(event.nativeEvent.layout.height);
-        if (nextHeight > 0 && nextHeight !== headerHeight) {
-          setHeaderHeight(nextHeight);
-        }
-      }}
-    >
-      <CAParcPCHeader activeCount={stats.activeCount} vsLastWeek={weeklyTrendDelta} />
+    <View style={styles.headerStack}>
+      <View style={styles.edgeHeader}>
+        <CAParcPCHeader activeCount={stats.activeCount} vsLastWeek={weeklyTrendDelta} />
+      </View>
       <View style={{ paddingTop: 12 }}>
         <CAParcPCHeroCard totalCount={stats.total} counts={filters.countByState as any} />
       </View>
@@ -137,7 +95,7 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
     </View>
   );
 
-  const renderItem = ({ item, index }: { item: ParcPCListItem; index: number }) => {
+  const renderItem = ({ item }: { item: ParcPCListItem }) => {
     if (isMarker(item)) {
       if (item.type === 'controls') {
         return (
@@ -213,15 +171,9 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
         </View>
       ) : (
         <FlashList<ParcPCListItem>
-          ref={listRef}
           data={listData}
           keyExtractor={(item) => (isMarker(item) ? item.id : String(item.id))}
           renderItem={renderItem}
-          estimatedItemSize={116}
-          initialNumToRender={10}
-          maxToRenderPerBatch={6}
-          windowSize={8}
-          removeClippedSubviews
           ListHeaderComponent={renderHeader}
           ListHeaderComponentStyle={styles.headerWrap}
           contentContainerStyle={styles.content}
@@ -250,7 +202,7 @@ export const ParcPCScreen: React.FC<ParcPCScreenProps> = ({
         />
       ) : null}
 
-      <PCParcFAB 
+      <PCParcFAB
         onAddPC={() => navigation.navigate('Articles', { screen: 'AddPC' })}
         onBulkScan={() => console.log('Bulk Scan non implemente')}
         onExport={onExportSentCsv}
@@ -270,6 +222,9 @@ const styles = StyleSheet.create({
   },
   headerStack: {
     gap: 16,
+  },
+  edgeHeader: {
+    marginHorizontal: -16,
   },
   stickyControls: {
     marginBottom: 12,

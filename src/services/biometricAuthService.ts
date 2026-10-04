@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import EncryptedStorage from 'react-native-encrypted-storage';
-import ReactNativeBiometrics, { BiometryTypes } from 'react-native-biometrics';
+import ReactNativeBiometrics, { BiometryTypes, type BiometryType } from 'react-native-biometrics';
 
 const BIOMETRIC_SETTINGS_KEY = '@it-inventory/biometric-settings';
 const BIOMETRIC_CREDENTIALS_KEY = '@it-inventory/biometric-credentials';
@@ -23,12 +23,12 @@ interface BiometricAuthResult {
   credentials?: StoredCredentials;
 }
 
-const getBiometricLabel = (biometryType: BiometryTypes | null): string => {
+const getBiometricLabel = (biometryType: BiometryType | null): string => {
   switch (biometryType) {
     case BiometryTypes.FaceID:
-      return 'Reconnaissance faciale';
+      return 'Face ID';
     case BiometryTypes.TouchID:
-      return 'Empreinte digitale';
+      return 'Touch ID';
     case BiometryTypes.Biometrics:
       return 'Biométrie';
     default:
@@ -40,7 +40,7 @@ export const BiometricAuthService = {
   async isBiometricAvailable(): Promise<{ available: boolean; label: string }> {
     try {
       const { available, biometryType } = await rnBiometrics.isSensorAvailable();
-      return { available, label: getBiometricLabel(biometryType) };
+      return { available, label: getBiometricLabel(biometryType ?? null) };
     } catch {
       return { available: false, label: 'Biométrie' };
     }

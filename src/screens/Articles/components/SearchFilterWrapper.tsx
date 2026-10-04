@@ -19,7 +19,7 @@ const SearchFilterWrapper: React.FC<SearchFilterWrapperProps> = ({
 }) => {
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
 
   return (
     <View
@@ -31,11 +31,11 @@ const SearchFilterWrapper: React.FC<SearchFilterWrapperProps> = ({
           paddingVertical: premiumSpacing.md,
         },
         tablet && styles.tablet,
-        maxWidth && {
+        maxWidth != null ? {
           maxWidth,
           alignSelf: 'center',
           width: '100%',
-        },
+        } : null,
       ]}
     >
       <View style={styles.innerContainer}>
@@ -50,7 +50,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginHorizontal: premiumSpacing.md,
     marginVertical: premiumSpacing.sm,
-    backdropFilter: 'blur(10px)',
   },
   tablet: {
     marginHorizontal: premiumSpacing.lg,

@@ -8,7 +8,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   StatusBar,
   Vibration,
@@ -18,30 +17,20 @@ import {
 } from 'react-native';
 import Animated, {
   FadeInDown,
-  FadeIn,
-  useSharedValue,
-  useAnimatedStyle,
-  useAnimatedScrollHandler,
-  interpolate,
-  Extrapolation,
 } from 'react-native-reanimated';
-import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useAppSelector } from '@/store';
 import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { notifyPCStatusChange } from '@/services/pcStatusNotificationService';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
-import { articleRepository, mouvementRepository, stockRepository, panneRepository } from '@/database';
-import { formatTimeParis, formatRelativeDateParis } from '@/utils/dateUtils';
+import { articleRepository, mouvementRepository, panneRepository } from '@/database';
 import {
   exportArticleDetail,
   exportArticleDetailAnalytics,
   exportArticleDetailAccounting,
 } from '@/utils/csv';
-import { Article, Mouvement, StockSite } from '@/types';
-import { useResponsive } from '@/utils/responsive';
-import { useTheme } from '@/theme';
+import { Article, Mouvement } from '@/types';
 import { ADC } from '@/components/article-detail/articleDetailColors';
 import { ArticleDetailHero } from '@/components/article-detail/ArticleDetailHero';
 import { ArticleStatsRow } from '@/components/article-detail/ArticleStatsRow';
@@ -50,34 +39,25 @@ import { ArticleInfoSection } from '@/components/article-detail/ArticleInfoSecti
 import { ExportCSVRow } from '@/components/article-detail/ExportCSVRow';
 import { QuickActionsSection } from '@/components/article-detail/QuickActionsSection';
 import { ArticleHistory } from '@/components/article-detail/ArticleHistory';
-import { useScrollHero, HERO_MAX_HEIGHT, HERO_MIN_HEIGHT } from '@/hooks/useScrollHero';
+import { ArticleAssetsSection } from '@/components/article-detail/ArticleAssetsSection';
+import { useScrollHero, HERO_MAX_HEIGHT } from '@/hooks/useScrollHero';
 import { ArticleConditionSelector } from '@/components/articles';
 import { useArticleCondition } from '@/hooks/useArticleCondition';
 import { PanneBanner, PanneHistoryTimeline, PanneResolutionSheet } from '@/components/panne';
+import { PCLifecycleSection } from '@/components/pc/PCLifecycleSection';
+import { isTrackedWorkstation } from '@/services/workstationAssetService';
+import { PCPanne, PCStatus } from '@/types/pc.types';
+
+type PCStatusLabel = 'À chaud' | 'À reusiner' | 'En usinage' | 'Disponible' | 'Envoyé';
+const PC_STATUS_LABELS: Partial<Record<PCStatus, PCStatusLabel>> = {
+  a_chaud: 'À chaud',
+  a_reusiner: 'À reusiner',
+  en_usinage: 'En usinage',
+  disponible: 'Disponible',
+  envoye: 'Envoyé',
+};
 
 // ==================== HELPERS ====================
-const AVATAR_GRADIENTS = [
-  ['#3B82F6', '#2563EB'],
-  ['#8B5CF6', '#007A39'],
-  ['#EC4899', '#F472B6'],
-  ['#10B981', '#34D399'],
-  ['#F59E0B', '#FBBF24'],
-  ['#06B6D4', '#22D3EE'],
-  ['#EF4444', '#F87171'],
-];
-
-const getGradient = (name: string) => {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) { hash = name.charCodeAt(i) + ((hash << 5) - hash); }
-  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
-};
-
-const getInitials = (name: string) => {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return name.substring(0, 2).toUpperCase();
-};
-
 const getInventoryStatus = (description?: string) => {
   const normalized = (description ?? '').toLowerCase();
   if (normalized.includes('disponible')) return 'Disponible';
@@ -85,17 +65,6 @@ const getInventoryStatus = (description?: string) => {
   if (normalized.includes('reusin') || normalized.includes('recondition')) return 'À reusiner';
   if (normalized.includes('a chaud') || normalized.includes('à chaud')) return 'À chaud';
   return null;
-};
-
-const formatTime = (date: Date) => formatTimeParis(date);
-const formatRelDate = (date: Date) => formatRelativeDateParis(date);
-
-const TYPE_CFG: Record<string, { icon: string; color: string; label: string; prefix: string }> = {
-  entree: { icon: 'arrow-up-bold', color: '#10B981', label: 'Entrée', prefix: '+' },
-  sortie: { icon: 'arrow-down-bold', color: '#EF4444', label: 'Sortie', prefix: '-' },
-  ajustement: { icon: 'swap-vertical', color: '#F59E0B', label: 'Ajustement', prefix: '' },
-  transfert_depart: { icon: 'arrow-right-bold', color: '#8B5CF6', label: 'Transfert ↗', prefix: '-' },
-  transfert_arrivee: { icon: 'arrow-left-bold', color: '#8B5CF6', label: 'Transfert ↙', prefix: '+' },
 };
 
 // ==================== MAIN ====================
@@ -107,9 +76,6 @@ export const ArticleDetailScreen: React.FC = () => {
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const isSuperviseur = useAppSelector(selectIsSuperviseur);
   const currentTechnicien = useAppSelector((state) => state.auth.currentTechnicien);
-  const { isTablet, contentMaxWidth } = useResponsive();
-  const { colors, isDark, theme } = useTheme();
-
   // Hero collapsible
   const { scrollHandler, heroHeight, photoOpacity, compactTitleOpacity, parallaxBg } = useScrollHero();
 
@@ -118,7 +84,7 @@ export const ArticleDetailScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [isUpdatingPCStatus, setIsUpdatingPCStatus] = useState(false);
-  const [pannes, setPannes] = useState<any[]>([]);
+  const [pannes, setPannes] = useState<PCPanne[]>([]);
   const [showResolutionSheet, setShowResolutionSheet] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -169,10 +135,10 @@ export const ArticleDetailScreen: React.FC = () => {
 
   // Computed
   const stockActuel = article?.quantiteActuelle ?? 0;
+  const assetSiteId = effectiveSiteId ?? siteActif?.id;
   const isLowStock = article ? stockActuel < article.stockMini : false;
   const isCritical = article ? stockActuel === 0 && article.stockMini > 0 : false;
   const inventoryStatus = getInventoryStatus(article?.description);
-  const gradient = useMemo(() => getGradient(article?.nom ?? 'A'), [article?.nom]);
   const isPCArticle = useMemo(() => {
     if (!article) return false;
 
@@ -191,10 +157,10 @@ export const ArticleDetailScreen: React.FC = () => {
   }, [article]);
 
   // Active breakdown for PC
-  const activePanne = useMemo(() => {
-    if (article?.status !== 'en_panne') return null;
-    return pannes.find(p => !['resolu', 'irreparable'].includes(p.statut_reparation)) ?? null;
-  }, [article?.status, pannes]);
+  const activePanne = useMemo(
+    () => pannes.find(panne => !['resolu', 'irreparable'].includes(panne.statut_reparation)) ?? null,
+    [pannes],
+  );
 
   const {
     condition,
@@ -227,11 +193,6 @@ export const ArticleDetailScreen: React.FC = () => {
       year: 'numeric',
     })}`;
   }, [article?.dateModification]);
-  const headerGradient = useMemo(() => {
-    if (isTabletArticle) return ['#0F3D35', '#0F766E', '#0EA5A8'];
-    if (isPCArticle) return ['#0F172A', '#1E293B'];
-    return gradient;
-  }, [gradient, isPCArticle, isTabletArticle]);
   const isPCAvailable = isPCArticle && inventoryStatus === 'Disponible';
   const isPCProcessing = isPCArticle && inventoryStatus === 'En usinage';
   const isPCReconditioning = isPCArticle && inventoryStatus === 'À reusiner';
@@ -278,6 +239,10 @@ export const ArticleDetailScreen: React.FC = () => {
 
   // Navigation
   const handleMouvement = (type: 'entree' | 'sortie' | 'ajustement') => {
+    if (article && isTrackedWorkstation(article) && type !== 'ajustement') {
+      navigation.navigate('Scan', { articleId: article.id, assetDirection: type });
+      return;
+    }
     Vibration.vibrate(10);
     navigation.navigate('Mouvements', { screen: 'MouvementForm', params: { articleId, type } });
   };
@@ -285,7 +250,7 @@ export const ArticleDetailScreen: React.FC = () => {
     Vibration.vibrate(10);
     navigation.navigate('Mouvements', { screen: 'TransfertForm', params: { articleId } });
   };
-  const handleUpdatePCStatus = useCallback(async (nextStatus: 'À chaud' | 'À reusiner' | 'Disponible') => {
+  const handleUpdatePCStatus = useCallback(async (nextStatus: PCStatusLabel) => {
     if (!article) return;
 
     try {
@@ -318,36 +283,6 @@ export const ArticleDetailScreen: React.FC = () => {
       setIsUpdatingPCStatus(false);
     }
   }, [article, currentTechnicien]);
-
-  const handleResolveBreakdown = useCallback(async (resolution: 'resolu' | 'irreparable', note?: string) => {
-    if (!activePanne || !article) return;
-
-    try {
-      await panneRepository.updatePanne(activePanne.id, {
-        statut_reparation: resolution,
-        note_resolution: note,
-      });
-
-      // Update article status back to available
-      const nextFamily = 'PC disponible';
-      await articleRepository.update(article.id, {
-        description: 'Statut: Disponible',
-        famille: nextFamily,
-        status: 'disponible',
-      });
-
-      // Refresh data
-      await loadData();
-      const updatedPannes = await panneRepository.getPannesForPC(String(article.id));
-      setPannes(updatedPannes);
-
-      setShowResolutionSheet(false);
-      Alert.alert('Succès', 'La panne a été résolue.');
-    } catch (error) {
-      Alert.alert('Erreur', 'Impossible de résoudre la panne.');
-      console.error('Erreur résolution panne:', error);
-    }
-  }, [activePanne, article, loadData]);
 
   const handleEdit = () => {
     Vibration.vibrate(10);
@@ -392,6 +327,12 @@ export const ArticleDetailScreen: React.FC = () => {
   }, [article, isTabletDecommissioned]);
 
   const quickActions = useMemo(() => {
+    if (article && isTrackedWorkstation(article)) {
+      return [
+        { icon: 'arrow-up-bold', label: 'Entrée', gradient: ['#1E6B52', '#145540'] as [string, string], onPress: () => handleMouvement('entree'), disabled: false },
+        { icon: 'arrow-down-bold', label: 'Sortie', gradient: ['#E52454', '#A0193B'] as [string, string], onPress: () => handleMouvement('sortie'), disabled: stockActuel === 0 },
+      ];
+    }
     if (isPCArticle) {
       return [
         {
@@ -450,10 +391,12 @@ export const ArticleDetailScreen: React.FC = () => {
       { icon: 'map-search-outline', label: 'Localiser', gradient: ['#00A391', '#007D70'] as [string, string], onPress: () => navigation.navigate('StockMap', { highlightBarcode: article?.emplacement || article?.reference }), disabled: false },
       { icon: 'arrow-up-bold', label: 'Entrée', gradient: ['#10B981', '#059669'] as [string, string], onPress: () => handleMouvement('entree'), disabled: false },
       { icon: 'arrow-down-bold', label: 'Sortie', gradient: ['#EF4444', '#DC2626'] as [string, string], onPress: () => handleMouvement('sortie'), disabled: stockActuel === 0 },
-      { icon: 'tune-vertical', label: 'Ajustement', gradient: ['#F59E0B', '#D97706'] as [string, string], onPress: () => handleMouvement('ajustement'), disabled: false },
-      { icon: 'swap-horizontal', label: 'Transfert', gradient: ['#8B5CF6', '#6D28D9'] as [string, string], onPress: handleTransfert, disabled: false },
+      ...(!article || !isTrackedWorkstation(article) ? [
+        { icon: 'tune-vertical', label: 'Ajustement', gradient: ['#F59E0B', '#D97706'] as [string, string], onPress: () => handleMouvement('ajustement'), disabled: false },
+        { icon: 'swap-horizontal', label: 'Transfert', gradient: ['#8B5CF6', '#6D28D9'] as [string, string], onPress: handleTransfert, disabled: false },
+      ] : []),
     ];
-  }, [handleMouvement, handleTransfert, handleUpdatePCStatus, isPCArticle, isTabletArticle, isTabletDecommissioned, handleDecommissionTablet, isPCAvailable, isPCHot, isPCReconditioning, isUpdatingPCStatus, stockActuel]);
+  }, [article, navigation, handleMouvement, handleTransfert, handleUpdatePCStatus, isPCArticle, isTabletArticle, isTabletDecommissioned, handleDecommissionTablet, isPCAvailable, isPCHot, isPCReconditioning, isUpdatingPCStatus, stockActuel]);
 
   const handleBack = useCallback(() => {
     Vibration.vibrate(10);
@@ -619,16 +562,27 @@ export const ArticleDetailScreen: React.FC = () => {
         )}
 
         {/* === Panne Banner (PC breakdown status) === */}
-        {isPCArticle && article?.status === 'en_panne' && activePanne && (
+        {isPCArticle && activePanne && (
           <PanneBanner
-            panne={activePanne}
+            activePanne={activePanne}
             onResolvePress={() => setShowResolutionSheet(true)}
+          />
+        )}
+
+        {isPCArticle && (
+          <PCLifecycleSection
+            articleId={article.id}
+            technicianId={currentTechnicien?.id}
           />
         )}
 
         {/* === Indicateur stock === */}
         {!isTabletArticle && !isPCArticle && (
           <StockIndicatorBar current={stockActuel} min={article.stockMini} />
+        )}
+
+        {isTrackedWorkstation(article) && assetSiteId != null && (
+          <ArticleAssetsSection articleId={article.id} siteId={assetSiteId} />
         )}
 
         {!isPCArticle && (
@@ -676,7 +630,7 @@ export const ArticleDetailScreen: React.FC = () => {
         {/* === Actions rapides === */}
         {!isSuperviseur && (!isTabletArticle || !isTabletDecommissioned) && (
           <QuickActionsSection
-            title={isPCArticle ? 'Actions PC' : 'Actions rapides'}
+            title={article && isTrackedWorkstation(article) ? 'Mouvements des assets' : isPCArticle ? 'Actions PC' : 'Actions rapides'}
             actions={quickActions.map((a) => ({
               icon: a.icon,
               label: a.label,
@@ -719,10 +673,21 @@ export const ArticleDetailScreen: React.FC = () => {
       {/* === Panne Resolution Sheet === */}
       {showResolutionSheet && activePanne && (
         <PanneResolutionSheet
-          visible={showResolutionSheet}
           panne={activePanne}
           onClose={() => setShowResolutionSheet(false)}
-          onSubmit={handleResolveBreakdown}
+          onSuccess={() => {
+            setShowResolutionSheet(false);
+            void loadData();
+            void panneRepository.getPannesForPC(String(article.id)).then(setPannes);
+          }}
+          onUpdatePanne={async (panneId, updates) => {
+            await panneRepository.updatePanne(panneId, updates);
+          }}
+          onUpdatePCStatus={async (pcId, nextStatus) => {
+            if (String(article.id) !== pcId) return;
+            const statusLabel = PC_STATUS_LABELS[nextStatus];
+            if (statusLabel) await handleUpdatePCStatus(statusLabel);
+          }}
         />
       )}
     </View>

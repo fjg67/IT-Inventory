@@ -133,7 +133,7 @@ async function saveTokenForUser(userId: string | null, token: string): Promise<v
         },
         { onConflict: 'id' },
       );
-      error = fallbackNoEnabled.error ?? error;
+      error = fallbackNoEnabled.error;
     }
 
     if (error) {
@@ -150,7 +150,17 @@ async function saveTokenForUser(userId: string | null, token: string): Promise<v
         { onConflict: 'id' },
       );
       if (retry.error) {
-        throw new Error(retry.error.message);
+        const retryNoEnabled = await supabase.from(tables.pushDeviceTokens).upsert(
+          {
+            id: deviceId,
+            userId: null,
+            token,
+            platform: Platform.OS,
+            updatedAt: new Date().toISOString(),
+          },
+          { onConflict: 'id' },
+        );
+        if (retryNoEnabled.error) throw new Error(retryNoEnabled.error.message);
       }
     }
   }
@@ -267,6 +277,17 @@ export const pushNotificationsService = {
         console.warn('[pushNotificationsService] messaging permission denied');
         promptToEnableNotifications();
         return;
+      }
+
+      if (Platform.OS === 'ios') {
+        let apnsToken: string | null = null;
+        for (let attempt = 0; attempt < 5 && !apnsToken; attempt += 1) {
+          apnsToken = await messaging().getAPNSToken();
+          if (!apnsToken) await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+        }
+        if (!apnsToken) {
+          throw new Error('Jeton APNs indisponible. Vérifiez la capacité Push Notifications et la signature iOS.');
+        }
       }
 
       const token = await messaging().getToken();

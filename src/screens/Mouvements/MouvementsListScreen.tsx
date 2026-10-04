@@ -8,8 +8,10 @@ import {
   View,
   Text,
   StyleSheet,
+  Dimensions,
   TouchableOpacity,
   SectionList,
+  SectionListProps,
   RefreshControl,
   StatusBar,
   Vibration,
@@ -34,6 +36,7 @@ import Animated, {
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppSelector } from '@/store';
 import { selectIsSuperviseur } from '@/store/slices/authSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
@@ -51,7 +54,6 @@ import { CAMovementCard } from '@/components/movements/CAMovementCard';
 import { CADateSeparator } from '@/components/movements/CADateSeparator';
 import { CAMouvementsHeader } from '@/components/movements/CAMouvementsHeader';
 import { MovementSearchBar } from '@/components/movements/MovementSearchBar';
-import { CAMouvementsStatRow } from '@/components/movements/CAMouvementsStatRow';
 import { CAMouvementsFilters } from '@/components/movements/CAMouvementsFilters';
 import { CAPeriodToggle } from '@/components/movements/CAPeriodToggle';
 import { MovementFAB } from '@/components/movements/MovementFAB';
@@ -89,6 +91,7 @@ const groupMouvementsByDate = (mouvements: Mouvement[]): { label: string; date: 
 // ==================== TYPES FILTER ====================
 type QuickTypeFilter = 'all' | 'entree' | 'sortie' | 'ajustement' | 'transfert';
 type PeriodFilter = 'today' | '7d' | '30d';
+type MovementSection = { title: string; isToday: boolean; data: Mouvement[] };
 
 type CachedMouvementsState = {
   mouvements: Mouvement[];
@@ -140,6 +143,7 @@ function computeStatsFromMouvements(items: Mouvement[], total?: number): Mouveme
 // ==================== MAIN SCREEN ====================
 export const MouvementsListScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const isSuperviseur = useAppSelector(selectIsSuperviseur);
   const { colors, isDark } = useTheme();
@@ -342,7 +346,7 @@ export const MouvementsListScreen: React.FC = () => {
     [filteredMouvements],
   );
 
-  const movementSections = useMemo(
+  const movementSections = useMemo<MovementSection[]>(
     () => groupedMouvements.map((group) => ({
       title: group.label.toUpperCase(),
       isToday: group.label.toLowerCase().includes('aujourd'),
@@ -350,8 +354,6 @@ export const MouvementsListScreen: React.FC = () => {
     })),
     [groupedMouvements],
   );
-
-  const displayStats = useMemo(() => computeStatsFromMouvements(filteredMouvements, filteredMouvements.length), [filteredMouvements]);
 
   const movementTypeCounts = useMemo<Record<MovementTypeKey, number>>(() => ({
     tous: filteredMouvements.length,
@@ -475,7 +477,7 @@ export const MouvementsListScreen: React.FC = () => {
     };
   });
 
-  const AnimatedSectionList = Animated.createAnimatedComponent(SectionList);
+  const AnimatedSectionList = Animated.createAnimatedComponent(SectionList) as React.ComponentType<SectionListProps<Mouvement, MovementSection>>;
 
   return (
     <View style={[styles.container, { backgroundColor: CA_THEME.lightGray }]}>
@@ -486,7 +488,7 @@ export const MouvementsListScreen: React.FC = () => {
         scrollEventThrottle={16}
         sections={movementSections}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({ item, index }) => (
+        renderItem={({ item }) => (
           <CAMovementCard
             movement={item}
             onPress={() => {
@@ -498,15 +500,17 @@ export const MouvementsListScreen: React.FC = () => {
         renderSectionHeader={({ section }) => <CADateSeparator label={section.title} />}
         ListHeaderComponent={
           <Animated.View style={[{ gap: 14, paddingTop: 0, paddingBottom: 10 }, headerAnimatedStyle]}>
-            <CAMouvementsHeader
-              totalCount={stats.total}
-              todayCount={todayMouvementsCount}
-              onOpenChart={toggleChart}
-              onOpenSearch={() => {
-                Vibration.vibrate(10);
-                setShowSearch((prev) => !prev);
-              }}
-            />
+            <View style={styles.edgeHeader}>
+              <CAMouvementsHeader
+                totalCount={stats.total}
+                todayCount={todayMouvementsCount}
+                onOpenChart={toggleChart}
+                onOpenSearch={() => {
+                  Vibration.vibrate(10);
+                  setShowSearch((prev) => !prev);
+                }}
+              />
+            </View>
 
             {showChart ? (
               <MovementStatsChart
@@ -517,10 +521,11 @@ export const MouvementsListScreen: React.FC = () => {
             ) : null}
 
             <MovementSearchBar
-              searchQuery={searchQuery}
+              value={searchQuery}
               onChangeText={setSearchQuery}
-              showSearch={showSearch}
-              onClose={() => {
+              visible={showSearch}
+              resultsCount={filteredMouvements.length}
+              onCancel={() => {
                 Vibration.vibrate(10);
                 setShowSearch(false);
                 setSearchQuery('');
@@ -625,25 +630,35 @@ export const MouvementsListScreen: React.FC = () => {
                       <LinearGradient colors={cfg.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.detailHero}>
                         <Text style={styles.detailHeroType}>{cfg.label}</Text>
                         <Text style={styles.detailHeroQty}>{qtyDisplay} unités</Text>
-                        <Text style={styles.detailHeroArticleName} numberOfLines={1}>{movement.article?.nom || 'Article inconnu'}</Text>
+                        <View style={styles.detailHeroArticle}>
+                          <Text style={styles.detailHeroArticleName} numberOfLines={2}>{movement.article?.nom || 'Article inconnu'}</Text>
+                        </View>
                         <View style={styles.detailHeroRefBadge}>
                           <Text style={styles.detailHeroRefText}>{movement.article?.reference || '—'}</Text>
                         </View>
                       </LinearGradient>
 
                       <View style={[styles.detailInfoCard, { backgroundColor: OBSIDIAN_COLORS.bg_card_elevated, borderColor: OBSIDIAN_COLORS.border_subtle }]}>
-                        <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Technicien</Text>
-                        <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]}>
-                          {movement.technicien ? toAbbreviation(`${movement.technicien.prenom || ''} ${movement.technicien.nom || ''}`, 3, 'N/A') : 'N/A'}
-                        </Text>
-                        <Text style={[styles.detailInfoLabel, { color: colors.textMuted, marginTop: 8 }]}>Date</Text>
-                        <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]}>{formatDateTimeParis(movement.dateMouvement)}</Text>
+                        <View style={styles.detailInfoRow}>
+                          <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Technicien</Text>
+                          <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={1}>
+                            {movement.technicien ? toAbbreviation(`${movement.technicien.prenom || ''} ${movement.technicien.nom || ''}`, 3, 'N/A') : 'N/A'}
+                          </Text>
+                        </View>
+                        <View style={styles.detailInfoSep} />
+                        <View style={styles.detailInfoRow}>
+                          <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Date</Text>
+                          <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={2}>{formatDateTimeParis(movement.dateMouvement)}</Text>
+                        </View>
                         {(movement.type === 'transfert_depart' || movement.type === 'transfert_arrivee') && (
                           <>
-                            <Text style={[styles.detailInfoLabel, { color: colors.textMuted, marginTop: 8 }]}>Transfert</Text>
-                            <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={2}>
-                              {movement.site?.nom ?? '?'} → {movement.transfertVersSite?.nom ?? '?'}
-                            </Text>
+                            <View style={styles.detailInfoSep} />
+                            <View style={styles.detailInfoRow}>
+                              <Text style={[styles.detailInfoLabel, { color: colors.textMuted }]}>Transfert</Text>
+                              <Text style={[styles.detailInfoValue, { color: colors.textPrimary }]} numberOfLines={2}>
+                                {movement.site?.nom ?? '?'} → {movement.transfertVersSite?.nom ?? '?'}
+                              </Text>
+                            </View>
                           </>
                         )}
                       </View>
@@ -669,7 +684,7 @@ export const MouvementsListScreen: React.FC = () => {
   // ==================== RENDER ====================
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+      <StatusBar translucent barStyle="light-content" backgroundColor="transparent" />
 
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
@@ -690,7 +705,7 @@ export const MouvementsListScreen: React.FC = () => {
       >
         {/* ===== HEADER ===== */}
         <Animated.View style={[styles.headerWrap, headerParallaxStyle]}>
-          <View style={[styles.header, { backgroundColor: colors.surface, borderColor: isDark ? colors.borderSubtle : colors.borderMedium }]}>
+          <View style={[styles.header, { backgroundColor: CA_THEME.green, borderColor: 'transparent', paddingTop: insets.top + 16 }]}>
             {/* Accent bar */}
             <LinearGradient
               colors={['#005C2B', '#007A39']}
@@ -714,11 +729,11 @@ export const MouvementsListScreen: React.FC = () => {
                   </LinearGradient>
                 </View>
                 <View>
-                  <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Mouvements</Text>
-                  <Text style={[styles.headerSummary, { color: colors.textMuted }]}>
+                  <Text style={[styles.headerTitle, { color: CA_THEME.white }]}>Mouvements</Text>
+                  <Text style={[styles.headerSummary, { color: 'rgba(255,255,255,0.78)' }]}>
                     {stats.total} mouvement{stats.total !== 1 ? 's' : ''} enregistré{stats.total !== 1 ? 's' : ''}
                   </Text>
-                  <Text style={[styles.headerQuickStat, { color: colors.primary }]}> 
+                  <Text style={[styles.headerQuickStat, { color: '#CBE4D8' }]}>
                     {todayMouvementsCount} mouvement{todayMouvementsCount !== 1 ? 's' : ''} aujourd'hui
                   </Text>
                 </View>
@@ -729,18 +744,18 @@ export const MouvementsListScreen: React.FC = () => {
                     Vibration.vibrate(10);
                     navigation.navigate('MouvementsStats');
                   }}
-                  style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(16,185,129,0.16)' : 'rgba(0,122,57,0.10)' }]}
+                  style={[styles.headerBtn, { backgroundColor: 'rgba(255,255,255,0.16)', borderColor: 'rgba(255,255,255,0.28)' }]}
                 >
-                  <Icon name="chart-bar" size={18} color={colors.primary} />
+                  <Icon name="chart-bar" size={18} color={CA_THEME.white} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => {
                     Vibration.vibrate(10);
                     setShowSearch(!showSearch);
                   }}
-                  style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(0,122,57,0.08)' }]}
+                  style={[styles.headerBtn, { backgroundColor: 'rgba(255,255,255,0.16)', borderColor: 'rgba(255,255,255,0.28)' }]}
                 >
-                  <Icon name={showSearch ? 'close' : 'magnify'} size={20} color={colors.primary} />
+                  <Icon name={showSearch ? 'close' : 'magnify'} size={20} color={CA_THEME.white} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1400,15 +1415,16 @@ const styles = StyleSheet.create({
 
   // ===== HEADER =====
   headerWrap: {
+    width: Dimensions.get('window').width,
+    alignSelf: 'center',
     paddingHorizontal: 0,
-    paddingTop: premiumSpacing.xl + 24,
+    paddingTop: 0,
+  },
+  edgeHeader: {
+    marginHorizontal: -16,
   },
   header: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    borderWidth: 1,
+    borderWidth: 0,
     padding: premiumSpacing.lg,
     paddingLeft: premiumSpacing.lg + 6,
     overflow: 'hidden',
@@ -1476,6 +1492,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   headerActions: {
     flexDirection: 'row',

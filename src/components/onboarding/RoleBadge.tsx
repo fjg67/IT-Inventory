@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { ONBOARDING_COLORS } from './tokens';
+import { CA_THEME } from '@/constants/caTheme';
 
 type RoleKind = 'technicien' | 'admin' | 'viewer';
 
@@ -22,21 +22,21 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({ role }) => {
   const ui =
     resolved === 'admin'
       ? {
-          bg: ONBOARDING_COLORS.warning_subtle,
-          color: ONBOARDING_COLORS.warning,
+          bg: CA_THEME.warningBg,
+          color: CA_THEME.warningText,
           icon: 'shield-crown-outline',
           label: 'Admin',
         }
       : resolved === 'viewer'
         ? {
-            bg: ONBOARDING_COLORS.info_subtle,
-            color: ONBOARDING_COLORS.info,
+            bg: CA_THEME.infoBg,
+            color: CA_THEME.infoText,
             icon: 'eye-outline',
             label: 'Viewer',
           }
         : {
-            bg: ONBOARDING_COLORS.green_subtle,
-            color: ONBOARDING_COLORS.green_light,
+            bg: CA_THEME.greenBg,
+            color: CA_THEME.greenText,
             icon: 'wrench-outline',
             label: 'Technicien',
           };

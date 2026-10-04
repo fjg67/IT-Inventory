@@ -1,15 +1,15 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { PANNE_TYPE_CONFIG, PRIORITE_CONFIG } from '@/types/pc.types';
 import { PCPanne } from '@/types/pc.types';
-import { OBSIDIAN_COLORS } from '@/constants/colors';
 
 interface PanneBannerProps {
   activePanne: PCPanne;
+  onResolvePress?: () => void;
 }
 
-export const PanneBanner: React.FC<PanneBannerProps> = ({ activePanne }) => {
+export const PanneBanner: React.FC<PanneBannerProps> = ({ activePanne, onResolvePress }) => {
   const typeConfig = PANNE_TYPE_CONFIG[activePanne.type_panne];
   const priorityConfig = PRIORITE_CONFIG[activePanne.priorite];
   const isCritical = activePanne.priorite === 'critique';
@@ -30,6 +30,11 @@ export const PanneBanner: React.FC<PanneBannerProps> = ({ activePanne }) => {
           {priorityConfig.label}
         </Text>
       </View>
+      {onResolvePress ? (
+        <Pressable onPress={onResolvePress} accessibilityRole="button">
+          <Text style={styles.resolveText}>Résoudre</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 };
@@ -79,5 +84,10 @@ const styles = StyleSheet.create({
   priorityBadgeText: {
     fontSize: 10,
     fontWeight: '700',
+  },
+  resolveText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

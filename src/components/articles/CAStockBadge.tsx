@@ -15,8 +15,6 @@ export const CAStockBadge = ({
 }: CAStockBadgeProps) => {
   const isCritical = stock <= seuilCrit;
   const isAlert    = !isCritical && stock <= seuil;
-  const isOk       = !isCritical && !isAlert;
-
   const bg =
     isCritical ? CA_THEME.danger :
     isAlert    ? CA_THEME.warning :
@@ -33,9 +31,9 @@ export const CAStockBadge = ({
 
 const styles = StyleSheet.create({
   badge: {
-    width:           46,
-    height:          46,
-    borderRadius:    8,
+    width:           52,
+    height:          52,
+    borderRadius:    12,
     alignItems:      'center',
     justifyContent:  'center',
   },

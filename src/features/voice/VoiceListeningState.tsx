@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, cancelAnimation } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -54,7 +54,7 @@ const ListeningRing = ({ size, delay }: { size: number, delay: number }) => {
   );
 };
 
-export const VoiceListeningState = ({ transcript }: { transcript: string }) => (
+export const VoiceListeningState = ({ transcript, onStop }: { transcript: string; onStop: () => void }) => (
   <View style={styles.container}>
     <View style={styles.ringsContainer}>
       <ListeningRing size={120} delay={0} />
@@ -77,6 +77,11 @@ export const VoiceListeningState = ({ transcript }: { transcript: string }) => (
         {transcript || 'En attente de votre commande...'}
       </Text>
     </View>
+
+    <Pressable onPress={onStop} style={styles.stopButton} accessibilityRole="button">
+      <Icon name="check" size={18} color="white" />
+      <Text style={styles.stopButtonText}>Terminer et analyser</Text>
+    </Pressable>
   </View>
 );
 
@@ -141,5 +146,21 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  stopButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#16835D',
+  },
+  stopButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { OBSIDIAN_COLORS } from '@/constants/colors';

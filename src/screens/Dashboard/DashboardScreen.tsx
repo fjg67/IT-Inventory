@@ -3,7 +3,6 @@ import {
   Alert,
   Modal,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,7 +13,6 @@ import {
 } from 'react-native';
 import Animated, {
   Easing,
-  interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -36,17 +34,18 @@ import { CA_THEME } from '@/constants/caTheme';
 import { CAScreenWrapper } from '@/components/dashboard/CAScreenWrapper';
 import { CAHeader } from '@/components/dashboard/CAHeader';
 import { CAScanCard } from '@/components/dashboard/CAScanCard';
-import { CAStatCard } from '@/components/dashboard/CAStatCard';
 import { CAChartCard } from '@/components/dashboard/CAChartCard';
 
 import { CAQuickActions } from '@/components/dashboard/CAQuickActions';
 import { CAMovementItem } from '@/components/dashboard/CAMovementItem';
-import { CABottomNav } from '@/components/dashboard/CABottomNav';
 import { CAUrgencyCarousel } from '@/components/dashboard/CAUrgencyCarousel';
 import { CAHealthRings } from '@/components/dashboard/CAHealthRings';
 
 import { predictiveService, PredictiveAlert } from '@/services/predictiveService';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useVoiceCommand } from '@/hooks/useVoiceCommand';
+import { VoiceCommandButton } from '@/features/voice/VoiceCommandButton';
+import { VoiceCommandModal } from '@/features/voice/VoiceCommandModal';
 
 interface SiteLike {
   id: number | string;
@@ -72,6 +71,7 @@ const getMouvementType = (type: MouvementType): 'entree' | 'sortie' | 'ajustemen
 export const DashboardScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
+  const voice = useVoiceCommand();
 
   const isSuperviseur = useAppSelector(selectIsSuperviseur);
   const technicien = useAppSelector((state) => state.auth.currentTechnicien);
@@ -321,6 +321,12 @@ export const DashboardScreen: React.FC = () => {
         {/* Actions rapides */}
         <CAQuickActions onAction={handleQuickAction} />
 
+        <Pressable style={styles.advancedButton} onPress={() => navigation.navigate('AdvancedDashboard')}>
+          <Icon name="chart-box-outline" size={19} color={CA_THEME.green} />
+          <Text style={styles.advancedButtonText}>Ouvrir le dashboard avancé</Text>
+          <Icon name="chevron-right" size={18} color={CA_THEME.green} />
+        </Pressable>
+
         {/* Derniers mouvements */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -349,6 +355,9 @@ export const DashboardScreen: React.FC = () => {
 
         <View style={{ height: 80 }} />
       </ScrollView>
+
+      <VoiceCommandButton onPress={voice.open} />
+      <VoiceCommandModal voice={voice} />
 
       {/* Navigation CA gérée par AppNavigator */}
 
@@ -384,6 +393,24 @@ const styles = StyleSheet.create({
   },
   statsGrid: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   section: { marginBottom: 16 },
+  advancedButton: {
+    minHeight: 48,
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: '#B9D9C6',
+    backgroundColor: '#F0FAF4',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  advancedButtonText: {
+    flex: 1,
+    color: CA_THEME.green,
+    fontSize: 13,
+    fontWeight: '800',
+  },
   sectionHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10,
   },

@@ -3,7 +3,6 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-nativ
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import { REPARATION_CONFIG } from '@/types/pc.types';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
 import { PCPanne, PCStatus } from '@/types/pc.types';
 

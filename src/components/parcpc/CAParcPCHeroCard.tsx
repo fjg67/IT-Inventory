@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, Dimensions } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CA_THEME, PC_STATUS_CA } from '@/constants/caTheme';
 import { PCDonutChart } from './PCDonutChart';

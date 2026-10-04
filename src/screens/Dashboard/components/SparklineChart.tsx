@@ -101,9 +101,6 @@ const SparklineChart: React.FC<SparklineChartProps> = ({
   const gradientId = `sparkGrad_${color.replace('#', '')}_${width}`;
   // Dernier point pour le dot animé
   const lastPoint = points[points.length - 1];
-  // Point max pour le mettre en évidence
-  const maxValue = Math.max(...data);
-
   return (
     <View style={{ width, height }}>
       <Svg width={width} height={chartHeight}>

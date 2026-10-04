@@ -94,15 +94,19 @@ async function notifyForMovement(row: MovementRow): Promise<void> {
   const fromSiteName = (fromSiteRes.data as any)?.name ?? 'Stock inconnu';
   const toSiteName = (toSiteRes.data as any)?.name;
 
-  const currentUserSiteName = currentTechnicien?.id
-    ? await supabase
+  let currentUserSiteName: string | null = null;
+  if (currentTechnicien?.id) {
+    try {
+      const { data } = await supabase
         .from(tables.techniciens)
         .select('Site:siteId(name)')
         .eq('id', currentTechnicien.id)
-        .maybeSingle()
-        .then((res) => ((res.data as any)?.Site?.name as string | undefined) ?? null)
-        .catch(() => null)
-    : null;
+        .maybeSingle();
+      currentUserSiteName = (data as any)?.Site?.name ?? null;
+    } catch {
+      currentUserSiteName = null;
+    }
+  }
 
   const epinalMovement = isEpinalSite(fromSiteName) || isEpinalSite(toSiteName);
   if (epinalMovement && (isExcludedForEpinal(currentUserSiteName) || isExcludedTechnicianForEpinal(currentTechnicien?.nom))) {

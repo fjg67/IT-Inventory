@@ -15,7 +15,6 @@ import Animated, {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   premiumSpacing,
-  premiumBorderRadius,
 } from '../../../constants/premiumTheme';
 import { useTheme } from '@/theme';
 

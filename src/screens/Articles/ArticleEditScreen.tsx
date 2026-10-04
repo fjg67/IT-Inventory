@@ -10,33 +10,22 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
   Vibration,
   ActivityIndicator,
   Modal,
-  TouchableWithoutFeedback,
-  Image,
   Alert,
 } from 'react-native';
 import Animated, {
-  FadeInUp,
   FadeInDown,
-  FadeOutUp,
-  FadeIn,
-  ZoomIn,
-  SlideInRight,
 } from 'react-native-reanimated';
-import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { articleRepository, siteRepository, stockRepository, refOptionsRepository } from '@/database';
-import { syncService } from '@/api/sync.service';
 import { supabase, tables } from '@/api/supabase';
-import { showAlert } from '@/store/slices/uiSlice';
 import { clearScannedArticle } from '@/store/slices/scanSlice';
 import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { ArticleForm, Site } from '@/types';
@@ -45,9 +34,7 @@ import debounce from 'lodash/debounce';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { Camera, useCameraDevices, useCodeScanner, useCameraPermission } from 'react-native-vision-camera';
 import { uploadArticleImage, isRemoteUrl } from '@/services/imageUploadService';
-import { useResponsive } from '@/utils/responsive';
-import { useTheme } from '@/theme';
-import { CAC, SECTION_ACCENTS } from '@/components/create-article/createArticleColors';
+import { SECTION_ACCENTS } from '@/components/create-article/createArticleColors';
 import { CreateArticleHero } from '@/components/create-article/CreateArticleHero';
 import { FormProgressBar } from '@/components/create-article/FormProgressBar';
 import { SectionHeader } from '@/components/create-article/SectionHeader';
@@ -67,34 +54,11 @@ const REF_SCAN_CODE_TYPES = [
   'qr', 'data-matrix', 'itf', 'pdf-417', 'aztec',
 ] as const;
 
-type HeaderConsumableIcon = {
-  icon: string;
-  top: number;
-  left?: number;
-  right?: number;
-  rotate: string;
-  size: number;
-  opacity: number;
-};
-
-const HEADER_CONSUMABLE_ICONS: HeaderConsumableIcon[] = [
-  { icon: 'mouse', top: 26, left: 30, rotate: '-10deg', size: 14, opacity: 0.24 },
-  { icon: 'keyboard-outline', top: 18, right: 34, rotate: '8deg', size: 14, opacity: 0.23 },
-  { icon: 'usb-port', top: 168, left: 42, rotate: '-8deg', size: 13, opacity: 0.22 },
-  { icon: 'cable-data', top: 160, right: 32, rotate: '10deg', size: 14, opacity: 0.22 },
-  { icon: 'headset', top: 98, right: 20, rotate: '-9deg', size: 14, opacity: 0.2 },
-  { icon: 'battery-charging', top: 98, left: 18, rotate: '9deg', size: 13, opacity: 0.19 },
-];
-
 // ==================== MAIN SCREEN ====================
 export const ArticleEditScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const dispatch = useAppDispatch();
-  const { isTablet, contentMaxWidth } = useResponsive();
-  const { colors, isDark, theme } = useTheme();
-  const { gradients } = theme;
-
   const { articleId, famille: familleParam } = route.params || {};
   const isEditing = !!articleId;
   const { lastBarcode } = useAppSelector(state => state.scan);
@@ -113,8 +77,6 @@ export const ArticleEditScreen: React.FC = () => {
     if (selectedSubSiteId) return selectedSubSiteId; // Sous-site déjà choisi dans le Dashboard
     return localTargetSiteId ?? effectiveSiteId;
   }, [hasChildSites, selectedSubSiteId, localTargetSiteId, effectiveSiteId]);
-  const isArticleCreateMode = !isEditing && !isPCEditMode;
-
   // ===== Data =====
   const [sites, setSites] = useState<Site[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -130,17 +92,17 @@ export const ArticleEditScreen: React.FC = () => {
   const [emplacement, setEmplacement] = useState<string | null>(null);
   const [stockActuel, setStockActuel] = useState('0');
   const [stockMini, setStockMini] = useState('5');
+  const [prixUnitaire, setPrixUnitaire] = useState('0');
   const [condition, setCondition] = useState<ArticleCondition>('bon_etat');
   const [defectiveCount, setDefectiveCount] = useState(0);
   const [conditionNote, setConditionNote] = useState('');
   const [description, setDescription] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [selectedSiteIds, setSelectedSiteIds] = useState<number[]>([]);
+  const [selectedSiteIds, setSelectedSiteIds] = useState<(string | number)[]>([]);
 
   // ===== UI state =====
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [refStatus, setRefStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   // Modals
   const [showScanRefModal, setShowScanRefModal] = useState(false);
@@ -188,20 +150,11 @@ export const ArticleEditScreen: React.FC = () => {
   const [showSousTypeModal, setShowSousTypeModal] = useState(false);
   const [showMarqueModal, setShowMarqueModal] = useState(false);
   const [showEmplacementModal, setShowEmplacementModal] = useState(false);
-  const [typeSearch, setTypeSearch] = useState('');
-  const [sousTypeSearch, setSousTypeSearch] = useState('');
-  const [emplacementSearch, setEmplacementSearch] = useState('');
 
   // Options chargées depuis la base (ajouts utilisateur)
   const [codeFamillesFromDb, setCodeFamillesFromDb] = useState<string[]>([]);
   const [famillesFromDb, setFamillesFromDb] = useState<{ value: string; label: string; icon: string; color: string; bgColor: string }[]>([]);
   const [typesFromDb, setTypesFromDb] = useState<{ value: string; label: string; icon: string; color: string }[]>([]);
-  const [showAddCodeFamilleModal, setShowAddCodeFamilleModal] = useState(false);
-  const [addCodeFamilleInput, setAddCodeFamilleInput] = useState('');
-  const [showAddFamilleModal, setShowAddFamilleModal] = useState(false);
-  const [addFamilleInput, setAddFamilleInput] = useState('');
-  const [showAddTypeModal, setShowAddTypeModal] = useState(false);
-
   const isPCEditMode = useMemo(() => {
     if (!isEditing) return false;
     const candidates = [familleParam, famille, typeArticle, sousType, nom]
@@ -213,8 +166,6 @@ export const ArticleEditScreen: React.FC = () => {
       value.includes('laptop')
     );
   }, [isEditing, familleParam, famille, typeArticle, sousType, nom]);
-  const [addTypeInput, setAddTypeInput] = useState('');
-  const [addingRefOption, setAddingRefOption] = useState(false);
 
   const CODE_FAMILLE_STATIC = ['10', '11', '12', '13', '14', '15', '16', '17', '50'];
   const CODE_FAMILLE_OPTIONS = useMemo(() => {
@@ -312,24 +263,6 @@ export const ArticleEditScreen: React.FC = () => {
     { value: 'Kit complet', label: 'Kit complet', icon: 'package-variant', color: '#15803D' },
   ];
 
-  const filteredTypes = useMemo(() => {
-    const sortedTypes = [...TYPE_OPTIONS].sort((a, b) =>
-      a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' }),
-    );
-    if (!typeSearch.trim()) return sortedTypes;
-    const s = typeSearch.toLowerCase();
-    return sortedTypes.filter(t => t.label.toLowerCase().includes(s));
-  }, [TYPE_OPTIONS, typeSearch]);
-
-  const filteredSousTypes = useMemo(() => {
-    const sortedSousTypes = [...SOUS_TYPE_OPTIONS].sort((a, b) =>
-      a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' }),
-    );
-    if (!sousTypeSearch.trim()) return sortedSousTypes;
-    const s = sousTypeSearch.toLowerCase();
-    return sortedSousTypes.filter(t => t.label.toLowerCase().includes(s));
-  }, [sousTypeSearch]);
-
   const EMPLACEMENT_OPTIONS: { value: string; label: string; icon: string; color: string; bgColor: string; emoji: string; etage: string; zone: string }[] = [
     { value: 'Stock 1er - R2E3', label: 'Stock 1er - R2E3', icon: 'archive-outline', color: '#3B82F6', bgColor: '#3B82F612', emoji: '📦', etage: '1', zone: 'Rangée 2, Étagère 3' },
     { value: 'Stock 1er - R2E4', label: 'Stock 1er - R2E4', icon: 'archive-outline', color: '#2563EB', bgColor: '#2563EB12', emoji: '📦', etage: '1', zone: 'Rangée 2, Étagère 4' },
@@ -371,13 +304,8 @@ export const ArticleEditScreen: React.FC = () => {
     }
 
     // Filtrer par recherche
-    if (emplacementSearch.trim()) {
-      const s = emplacementSearch.toLowerCase();
-      options = options.filter(e => e.label.toLowerCase().includes(s) || e.zone.toLowerCase().includes(s));
-    }
-
     return options;
-  }, [emplacementSearch, selectedSiteIds, sites, isEditing, siteActif]);
+  }, [selectedSiteIds, sites, isEditing, siteActif]);
 
   const MARQUE_OPTIONS: { value: string; label: string; icon: string; color: string; initials: string }[] = [
     { value: 'DELL', label: 'DELL', icon: 'laptop', color: '#0076CE', initials: 'DE' },
@@ -475,7 +403,7 @@ export const ArticleEditScreen: React.FC = () => {
       }
 
       if (isEditing && articleId) {
-        const article = await articleRepository.findById(articleId, writeSiteId);
+        const article = await articleRepository.findById(articleId, writeSiteId ?? undefined);
         if (article) {
           setReference(article.reference);
           setNom(article.nom);
@@ -487,6 +415,7 @@ export const ArticleEditScreen: React.FC = () => {
           setEmplacement(article.emplacement || null);
           setStockActuel((article.quantiteActuelle ?? 0).toString());
           setStockMini(article.stockMini.toString());
+          setPrixUnitaire(String(article.prixUnitaire ?? 0));
           setCondition(article.condition ?? 'bon_etat');
           setDefectiveCount(article.defectiveCount ?? 0);
           setConditionNote(article.conditionNote ?? '');
@@ -541,15 +470,6 @@ export const ArticleEditScreen: React.FC = () => {
     const upper = text.toUpperCase();
     setReference(upper);
     checkReference(upper);
-  };
-
-  const generateReference = () => {
-    Vibration.vibrate(10);
-    const prefix = 'ART';
-    const num = Date.now().toString().slice(-5);
-    const ref = `${prefix}-${num}`;
-    setReference(ref);
-    setRefStatus('available');
   };
 
   // ===== Photo =====
@@ -638,6 +558,7 @@ export const ArticleEditScreen: React.FC = () => {
         marque: marque || undefined,
         emplacement: emplacement || undefined,
         stockMini: parseFloat(stockMini),
+        prixUnitaire: Math.max(0, parseFloat(prixUnitaire) || 0),
         unite: 'Pcs',
         description: description.trim() || undefined,
         photoUrl: finalPhotoUrl,
@@ -945,9 +866,11 @@ export const ArticleEditScreen: React.FC = () => {
                   selectedIds={selectedSiteIds}
                   onToggle={(id) => {
                     Vibration.vibrate(10);
-                    setSelectedSiteIds(prev =>
-                      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-                    );
+                    const nextIds = selectedSiteIds.includes(id)
+                      ? selectedSiteIds.filter(siteId => siteId !== id)
+                      : [...selectedSiteIds, id];
+                    setSelectedSiteIds(nextIds);
+                    setLocalTargetSiteId(nextIds.length > 0 ? String(nextIds[nextIds.length - 1]) : null);
                   }}
                 />
               )}
@@ -987,6 +910,14 @@ export const ArticleEditScreen: React.FC = () => {
                   Une alerte sera affichée si le stock descend sous le seuil
                 </Text>
               </View>
+              <FormField
+                label="Prix unitaire"
+                leftIcon="currency-eur"
+                value={prixUnitaire}
+                onChangeText={setPrixUnitaire}
+                placeholder="0.00"
+                keyboardType="decimal-pad"
+              />
             </SectionCard>
           </Animated.View>
 

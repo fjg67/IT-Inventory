@@ -13,7 +13,7 @@ import {
   PaginatedResult,
 } from '@/types';
 import { APP_CONFIG, ERROR_MESSAGES } from '@/constants';
-import { stockRepository, STOCK_CONFLICT_ERROR } from './stockRepository';
+import { stockRepository } from './stockRepository';
 import { getEffectiveSiteIds } from './siteRepository';
 import { movementPushDispatchService } from '@/services/movementPushDispatchService';
 
@@ -136,22 +136,22 @@ function mapRowToMouvement(row: MouvementRow, stockAvant = 0, stockApres = 0): M
     site: effectiveSite
       ? {
           id: effectiveSiteId as any,
+          code: '',
           nom: effectiveSite.name,
           adresse: '',
           actif: true,
           dateCreation: new Date(),
-          dateModification: new Date(),
           syncStatus: SyncStatus.SYNCED,
         }
       : undefined,
     transfertVersSite: row.ToSite
       ? {
           id: (row.toSiteId ?? '') as any,
+          code: '',
           nom: row.ToSite.name,
           adresse: '',
           actif: true,
           dateCreation: new Date(),
-          dateModification: new Date(),
           syncStatus: SyncStatus.SYNCED,
         }
       : undefined,
@@ -504,7 +504,7 @@ export const mouvementRepository = {
       return currentQty + quantiteSignee;
     };
 
-    const validateStock = (currentQty: number, newQty: number): void => {
+    const validateStock = (_currentQty: number, newQty: number): void => {
       if (data.type === 'sortie' && newQty < 0) {
         throw new Error(ERROR_MESSAGES.STOCK_INSUFFICIENT);
       }
@@ -539,7 +539,11 @@ export const mouvementRepository = {
       );
     } catch (error) {
       // If the stock update fails (conflict or validation), remove the orphan movement
-      await supabase.from(tables.mouvements).delete().eq('id', inserted?.id ?? newId).catch(() => {});
+      try {
+        await supabase.from(tables.mouvements).delete().eq('id', inserted?.id ?? newId);
+      } catch {
+        // Preserve the stock update error when cleanup also fails.
+      }
       throw error;
     }
 
@@ -587,7 +591,7 @@ export const mouvementRepository = {
         data.articleId,
         data.siteDepartId,
         (currentQty) => currentQty - data.quantite,
-        (currentQty, newQty) => {
+        (_currentQty, newQty) => {
           if (newQty < 0) {
             throw new Error(ERROR_MESSAGES.STOCK_INSUFFICIENT);
           }
@@ -595,7 +599,11 @@ export const mouvementRepository = {
       );
     } catch (error) {
       // Clean up orphan movement rows
-      await supabase.from(tables.mouvements).delete().in('id', [transferOutId, transferInId]).catch(() => {});
+      try {
+        await supabase.from(tables.mouvements).delete().in('id', [transferOutId, transferInId]);
+      } catch {
+        // Preserve the stock update error when cleanup also fails.
+      }
       throw error;
     }
 
@@ -616,7 +624,11 @@ export const mouvementRepository = {
         console.error('[mouvementRepository] CRITICAL: rollback departure stock failed:', rollbackErr);
       });
       // Clean up orphan movement rows
-      await supabase.from(tables.mouvements).delete().in('id', [transferOutId, transferInId]).catch(() => {});
+      try {
+        await supabase.from(tables.mouvements).delete().in('id', [transferOutId, transferInId]);
+      } catch {
+        // Preserve the rollback error when cleanup also fails.
+      }
       throw error;
     }
 
@@ -642,6 +654,7 @@ export const mouvementRepository = {
     limit = APP_CONFIG.pagination.defaultLimit,
   ): Promise<PaginatedResult<Mouvement>> {
     const supabase = getSupabaseClient();
+    const effectiveSiteIds = await getEffectiveSiteIds(siteId);
     const from = page * limit;
     const to = from + limit - 1;
     const { data, error, count } = await supabase
@@ -649,6 +662,7 @@ export const mouvementRepository = {
       .select('*', { count: 'exact' })
       .gte('createdAt', dateDebut.toISOString())
       .lte('createdAt', dateFin.toISOString())
+      .in('fromSiteId', effectiveSiteIds)
       .order('createdAt', { ascending: false })
       .range(from, to);
     if (error) throw new Error(error.message);

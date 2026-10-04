@@ -10,7 +10,6 @@ import { getSupabaseClient, tables } from '@/api/supabase';
 import { LoginAttempts } from '@/utils/loginAttempts';
 import { Platform } from 'react-native';
 
-const SESSION_KEY = '@it-inventory/auth';
 const USER_SESSION_KEY = '@it-inventory/user_session';
 
 // Identifiants de test (à utiliser uniquement en dev)

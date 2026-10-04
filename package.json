@@ -1,6 +1,6 @@
 {
   "name": "StockProApp",
-  "version": "2.48",
+  "version": "2.50",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -34,6 +34,7 @@
     "@shopify/flash-list": "^2.2.2",
     "@supabase/supabase-js": "^2.103.0",
     "bcryptjs": "^2.4.3",
+    "date-fns": "^4.4.0",
     "dotenv": "^17.4.2",
     "lodash": "^4.17.23",
     "nodemailer": "^8.0.5",
@@ -41,6 +42,7 @@
     "react-native": "0.83.1",
     "react-native-biometrics": "latest",
     "react-native-confetti-cannon": "^1.5.2",
+    "react-native-document-picker": "^9.3.1",
     "react-native-encrypted-storage": "^4.0.3",
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.30.0",
@@ -55,6 +57,7 @@
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "^4.23.0",
     "react-native-share": "^12.2.5",
+    "react-native-sound": "^0.13.0",
     "react-native-sqlite-storage": "^6.0.1",
     "react-native-svg": "^15.15.2",
     "react-native-swiper": "^1.6.0",
@@ -65,7 +68,8 @@
     "react-redux": "^9.2.0",
     "text-encoding": "^0.7.0",
     "uuid": "^13.0.0",
-    "whatwg-url-without-unicode": "^8.0.0-3"
+    "whatwg-url-without-unicode": "^8.0.0-3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

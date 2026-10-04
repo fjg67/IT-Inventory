@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, StatusBar } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CA_THEME } from '@/constants/caTheme';
 
@@ -10,7 +10,7 @@ interface CAParcPCHeaderProps {
 
 export const CAParcPCHeader = ({ activeCount, vsLastWeek }: CAParcPCHeaderProps) => {
   const insets = useSafeAreaInsets();
-  
+
   return (
   <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
 

@@ -101,18 +101,24 @@ export const CAArticleFilters = ({
 
 const styles = StyleSheet.create({
   wrap:  { paddingHorizontal: 12, marginBottom: 10 },
-  row:   { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  row:   { flexDirection: 'row', gap: 10, marginBottom: 8 },
   dropdown: {
     flex:            1,
     flexDirection:   'row',
     alignItems:      'center',
     gap:             5,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    minHeight: 44,
+    paddingVertical: 9,
+    paddingHorizontal: 13,
     backgroundColor: CA_THEME.white,
     borderWidth:     1,
     borderColor:     CA_THEME.borderGray,
-    borderRadius:    8,
+    borderRadius:    12,
+    shadowColor: CA_THEME.greenDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 1,
   },
   dropdownActive: {
     borderColor: CA_THEME.green,
@@ -123,7 +129,7 @@ const styles = StyleSheet.create({
   defChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 11, paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 10,
     backgroundColor: CA_THEME.dangerBg,
     borderWidth: 1, borderColor: 'rgba(211,47,47,0.22)',
     alignSelf: 'flex-start',

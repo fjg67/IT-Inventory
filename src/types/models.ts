@@ -82,6 +82,7 @@ export interface Article {
   modele?: string;
   emplacement?: string;
   stockMini: number;
+  prixUnitaire?: number;
   unite: string;
   photoUrl?: string;
   actif: boolean;
@@ -189,6 +190,7 @@ export interface ArticleForm {
   modele?: string;
   emplacement?: string;
   stockMini: number;
+  prixUnitaire?: number;
   unite: string;
   photoUrl?: string;
   condition?: ArticleCondition;

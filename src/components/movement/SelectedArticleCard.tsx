@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Animated, { withSequence, withSpring } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { Article } from '@/types';
 import { MovementIdentity, MOVEMENT_COLORS } from './movementTheme';
 

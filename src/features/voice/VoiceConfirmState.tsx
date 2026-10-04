@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ParsedVoiceCommand } from '@/types/voice.types';
 
@@ -11,23 +10,6 @@ interface VoiceConfirmStateProps {
 }
 
 export const VoiceConfirmState = ({ parsed, onConfirm, onCancel }: VoiceConfirmStateProps) => {
-  const [countdown, setCountdown] = useState(5);
-  const progressAnim = useSharedValue(1);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCountdown(c => {
-        if (c <= 1) { 
-          clearInterval(interval); 
-          onConfirm(); 
-        }
-        return c - 1;
-      });
-    }, 1000);
-    progressAnim.value = withTiming(0, { duration: 5000 });
-    return () => clearInterval(interval);
-  }, []);
-
   const ACTION_CONFIG: Record<string, any> = {
     stock_entree:  { color: '#10B981', icon: 'arrow-down-circle', label: 'Entrée de stock' },
     stock_sortie:  { color: '#EF4444', icon: 'arrow-up-circle',   label: 'Sortie de stock' },
@@ -36,6 +18,7 @@ export const VoiceConfirmState = ({ parsed, onConfirm, onCancel }: VoiceConfirmS
     pc_panne:      { color: '#EF4444', icon: 'laptop-off',        label: 'PC en panne'      },
     pc_status:     { color: '#8B5CF6', icon: 'laptop',            label: 'Statut du PC'     },
     pc_transfert:  { color: '#3B82F6', icon: 'swap-horizontal',   label: 'Transfert de PC'  },
+    pc_loan:       { color: '#0EA5E9', icon: 'briefcase-upload-outline', label: 'Prêt de PC' },
     site_change:   { color: '#3B82F6', icon: 'domain',            label: 'Changement de site'},
     stock_consultation: { color: '#8B5CF6', icon: 'magnify',      label: 'Consultation' },
   };
@@ -78,6 +61,8 @@ export const VoiceConfirmState = ({ parsed, onConfirm, onCancel }: VoiceConfirmS
           {parsed.pcHostname && (
             <DetailRow label="PC" value={parsed.pcHostname} />
           )}
+          {parsed.personName && <DetailRow label="Personne" value={parsed.personName} />}
+          {parsed.dueBackDate && <DetailRow label="Retour prévu" value={parsed.dueBackDate} />}
           {parsed.panneType && parsed.actionType === 'pc_panne' && (
             <DetailRow label="Type panne" value={parsed.panneType} />
           )}
@@ -86,15 +71,7 @@ export const VoiceConfirmState = ({ parsed, onConfirm, onCancel }: VoiceConfirmS
           )}
         </View>
 
-        {/* Countdown bar */}
-        <View style={styles.countdownBar}>
-          <Animated.View style={[
-            styles.countdownFill, 
-            { backgroundColor: conf.color }, 
-            useAnimatedStyle(() => ({ width: `${progressAnim.value * 100}%` }))
-          ]} />
-        </View>
-        <Text style={styles.countdownText}>Exécution automatique dans {countdown}s</Text>
+        <Text style={styles.confirmationHint}>Aucune action ne sera exécutée sans votre confirmation.</Text>
 
         {/* Boutons */}
         <View style={styles.btns}>
@@ -197,6 +174,12 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textAlign: 'center',
     marginBottom: 24,
+  },
+  confirmationHint: {
+    color: '#6B7280',
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 14,
   },
   btns: {
     flexDirection: 'row',

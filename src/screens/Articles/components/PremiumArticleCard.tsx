@@ -98,13 +98,13 @@ const getPcStatus = (description?: string) => {
 interface PremiumArticleCardProps {
   article: Article;
   pcDensity?: 'comfort' | 'compact';
-  onPress: (articleId: number) => void;
+  onPress: (articleId: string | number) => void;
   onEdit?: () => void;
-  onDecommission?: (articleId: number) => void;
-  onMarkSent?: (articleId: number) => void;
-  onMarkAvailable?: (articleId: number) => void;
-  onMarkHot?: (articleId: number) => void;
-  onDelete?: (articleId: number) => void;
+  onDecommission?: (articleId: string | number) => void;
+  onMarkSent?: (articleId: string | number) => void;
+  onMarkAvailable?: (articleId: string | number) => void;
+  onMarkHot?: (articleId: string | number) => void;
+  onDelete?: (articleId: string | number) => void;
 }
 
 /**
@@ -970,7 +970,7 @@ const PremiumArticleCard: React.FC<PremiumArticleCardProps> = React.memo(({
                 </View>
                 <AnimatedCounter
                   value={article.quantiteActuelle ?? 0}
-                  style={[styles.stockValue, tablet ? { fontSize: 18 } : undefined]}
+                  style={tablet ? { ...styles.stockValue, fontSize: 18 } : styles.stockValue}
                 />
               </LinearGradient>
               </Animated.View>

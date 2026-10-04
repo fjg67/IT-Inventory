@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import { Modal, View, Text, StyleSheet, Pressable, ActivityIndicator, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { VoiceListeningState } from './VoiceListeningState';
@@ -24,7 +24,7 @@ export const VoiceCommandModal = ({ voice }: { voice: ReturnType<typeof useVoice
         );
 
       case 'listening':
-        return <VoiceListeningState transcript={voice.transcript} />;
+        return <VoiceListeningState transcript={voice.transcript} onStop={voice.stopListening} />;
 
       case 'processing':
         return (
@@ -109,9 +109,14 @@ export const VoiceCommandModal = ({ voice }: { voice: ReturnType<typeof useVoice
           </View>
 
           {/* Dynamic Content */}
-          <View style={styles.body}>
+          <ScrollView
+            style={styles.body}
+            contentContainerStyle={styles.bodyContent}
+            showsVerticalScrollIndicator
+            keyboardShouldPersistTaps="handled"
+          >
             {renderContent()}
-          </View>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -129,6 +134,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 24,
     overflow: 'hidden',
+    maxHeight: '90%',
     elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
@@ -158,6 +164,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   body: {
+    flexShrink: 1,
+  },
+  bodyContent: {
     padding: 24,
     minHeight: 300,
     justifyContent: 'center',

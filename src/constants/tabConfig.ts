@@ -65,11 +65,4 @@ export const TAB_CONFIG: readonly TabConfigItem[] = [
     iconActive: 'swap-horizontal',
     badgeKey: 'newMovements',
   },
-  {
-    routeName: 'Settings',
-    label: 'Reglages',
-    icon: 'cog-outline',
-    iconActive: 'cog',
-    badgeKey: null,
-  },
 ] as const;

@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string>IT-Inventory</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -46,6 +46,12 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>StockPro a besoin de la caméra pour scanner les codes-barres des articles.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>IT-Inventory utilise Face ID pour vous connecter rapidement et en toute sécurité.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>IT-Inventory utilise le micro pour écouter vos commandes vocales.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>IT-Inventory utilise la reconnaissance vocale pour comprendre vos commandes et gérer le stock.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
 	<key>UIAppFonts</key>

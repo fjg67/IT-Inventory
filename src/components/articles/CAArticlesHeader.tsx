@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, Pressable, StatusBar } from 'react-native';
+import { StyleSheet, Text, View, Pressable } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CA_THEME } from '@/constants/caTheme';
@@ -21,7 +21,7 @@ export const CAArticlesHeader = ({
   totalCount, lastSyncedAt, isGridView, onToggleView, onBack
 }: CAArticlesHeaderProps) => {
   const insets = useSafeAreaInsets();
-  
+
   return (
   <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
 

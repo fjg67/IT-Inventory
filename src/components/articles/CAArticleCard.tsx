@@ -1,24 +1,23 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Animated, { FadeInDown, interpolate, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { CA_THEME } from '@/constants/caTheme';
 import { Article } from '@/types';
 import { CAStockBadge } from './CAStockBadge';
-import { CAConditionBadge } from './CAConditionBadge';
 
 interface CAArticleCardProps {
   article: Article;
   index: number;
   query?: string;
   variant?: 'list' | 'grid';
-  onPress: (articleId: number) => void;
-  onMovement?: (articleId: number, type: 'entree' | 'sortie') => void;
+  onPress: (articleId: string | number) => void;
+  onMovement?: (articleId: string | number, type: 'entree' | 'sortie') => void;
 }
 
 const getArticleBorderColor = (article: Article): string => {
   const quantity = article.quantiteActuelle ?? 0;
-  if (article.condition === 'defectueux' || article.condition === 'broken') return CA_THEME.danger;
+  if (article.condition === 'defectueux') return CA_THEME.danger;
   if (quantity <= 0) return CA_THEME.danger;
   if (quantity <= article.stockMini) return CA_THEME.warning;
   return CA_THEME.green;
@@ -57,7 +56,7 @@ import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 
 const CAArticleCardComponent = ({
   article,
-  index,
+  index: _index,
   query,
   variant = 'list',
   onPress,
@@ -102,7 +101,7 @@ const CAArticleCardComponent = ({
   };
 
   const isGrid = variant === 'grid';
-  const isDefective = article.condition === 'defectueux' || article.condition === 'broken';
+  const isDefective = article.condition === 'defectueux';
 
   const cardContent = (
     <Pressable
@@ -247,11 +246,16 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: CA_THEME.white,
-    borderRadius:    10,
+    borderRadius:    14,
     borderWidth:     1,
     borderColor:     CA_THEME.borderGray,
     overflow:        'hidden',
-    marginBottom:    12,
+    marginBottom:    10,
+    shadowColor:     CA_THEME.greenDark,
+    shadowOffset:    { width: 0, height: 4 },
+    shadowOpacity:   0.07,
+    shadowRadius:    9,
+    elevation:       2,
   },
   cardGrid: {
     borderLeftWidth: 1,
@@ -264,7 +268,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems:    'flex-start',
     padding:       12,
-    gap:           10,
+    gap:           12,
   },
   innerGrid: {
     flexDirection: 'column',
@@ -281,12 +285,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   imageWrap: {
-    width:           54,
-    height:          54,
-    borderRadius:    8,
+    width:           58,
+    height:          58,
+    borderRadius:    12,
     backgroundColor: CA_THEME.lightGray,
     borderWidth:     1,
-    borderColor:     CA_THEME.borderGray,
+    borderColor:     CA_THEME.greenBg2,
     alignItems:      'center',
     justifyContent:  'center',
     flexShrink:      0,
@@ -323,7 +327,7 @@ const styles = StyleSheet.create({
   image:    { width: '100%', height: '100%' },
   info:     { flex: 1, minWidth: 0, alignItems: 'flex-start' },
   name: {
-    fontSize:   14,
+    fontSize:   15,
     fontFamily: CA_THEME.fontFamilyBold,
     fontWeight: '700',
     color:      CA_THEME.textPrimary,

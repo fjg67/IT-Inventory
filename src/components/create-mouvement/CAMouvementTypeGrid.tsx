@@ -8,12 +8,15 @@ import type { MovementType } from '../movement/movementTheme';
 export const CAMouvementTypeGrid = ({
   selected,
   onSelect,
+  allowedTypes,
 }: {
   selected:  MovementType | null;
   onSelect:  (type: MovementType) => void;
+  allowedTypes?: MovementType[];
 }) => (
   <View style={styles.grid}>
-    {(Object.entries(MOVEMENT_IDENTITIES) as [MovementType, typeof MOVEMENT_IDENTITIES.entree][]).map(
+    {(Object.entries(MOVEMENT_IDENTITIES) as [MovementType, typeof MOVEMENT_IDENTITIES.entree][])
+      .filter(([key]) => !allowedTypes || allowedTypes.includes(key)).map(
       ([key, conf]) => {
         const isSelected = selected === key;
         return (

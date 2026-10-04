@@ -3,7 +3,7 @@
 // IT-Inventory - Interface Premium
 // ============================================
 
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
@@ -23,6 +23,7 @@ import {
   Vibration,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeInUp,
   FadeInDown,
@@ -40,13 +41,11 @@ import { useResponsive } from '@/utils/responsive';
 import { toAbbreviation } from '@/utils/abbreviation';
 import { useTheme } from '@/theme';
 import { SUPABASE_CONFIG } from '@/constants/config';
+import { CA_THEME } from '@/constants/caTheme';
 import { getSupabaseClient, tables } from '@/api/supabase';
 import { protectedProfileMfaConfigs, ProtectedProfileMfaConfig } from '@/constants/mfa';
 import { buildGoogleAuthenticatorUri, verifyGoogleAuthenticatorCode } from '@/services/googleAuthenticatorService';
 import {
-  OnboardingFooter,
-  OnboardingLayout,
-  OnboardingLogo,
   ONBOARDING_COLORS,
   ProfileCard,
 } from '@/components/onboarding';
@@ -100,6 +99,7 @@ export const AuthScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute();
   const { isTablet } = useResponsive();
+  const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
   const params = (route.params ?? {}) as { rememberMe?: boolean; siteId?: string | number; parentSiteId?: string | number };
   const rememberMe = params.rememberMe ?? true;
@@ -568,10 +568,10 @@ export const AuthScreen: React.FC = () => {
       const initials = getInitials(item);
 
       return (
-        <View style={{ marginBottom: 10 }}>
+        <View style={styles.caProfileWrap}>
           <ProfileCard
             initials={initials}
-            role={item.role}
+            role={item.role ?? 'technicien'}
             delay={450 + index * 50}
             onPress={() => handleSelectTechnicien(item)}
             onLongPress={() => handleDeleteTechnicien(item)}
@@ -582,8 +582,8 @@ export const AuthScreen: React.FC = () => {
                 <ActivityIndicator size="small" color={ONBOARDING_COLORS.green_light} />
               ) : (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  {protectedMfa ? <Icon name="shield-key-outline" size={14} color={ONBOARDING_COLORS.warning} /> : null}
-                  <Icon name="chevron-right" size={16} color={ONBOARDING_COLORS.text_dim} />
+                  {protectedMfa ? <Icon name="shield-key-outline" size={15} color={CA_THEME.warning} /> : null}
+                  <Icon name="chevron-right" size={18} color={CA_THEME.green} />
                 </View>
               )
             }
@@ -596,37 +596,25 @@ export const AuthScreen: React.FC = () => {
 
   const renderEmpty = useCallback(
     () => (
-      <Animated.View entering={FadeIn.delay(1000).duration(600)} style={styles.emptyContainer}>
-        <View style={[styles.emptyIconCircle, { backgroundColor: isDark ? colors.primaryGlow : '#E8F5E9', borderColor: isDark ? colors.primaryGlowStrong : '#C8E6C9' }]}>
-          <Icon name="account-plus-outline" size={48} color={colors.primaryDark} />
+      <Animated.View entering={FadeIn.delay(260).duration(420)} style={styles.caEmptyContainer}>
+        <View style={styles.caEmptyIcon}>
+          <Icon name="account-search-outline" size={34} color={CA_THEME.green} />
         </View>
-        <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Aucun profil trouvé</Text>
-        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+        <Text style={styles.caEmptyTitle}>Aucun profil trouvé</Text>
+        <Text style={styles.caEmptySubtitle}>
           Créez votre premier profil{'\n'}technicien pour commencer
         </Text>
         <TouchableOpacity
-          style={[styles.emptyCta, { shadowColor: isDark ? '#000' : '#007A39' }]}
+          style={styles.caEmptyCta}
           onPress={() => {
             Vibration.vibrate(15);
             setIsModalVisible(true);
           }}
           activeOpacity={0.8}
         >
-          <LinearGradient
-            colors={['#007A39', '#007A39', '#005C2B']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.emptyCtaGradient}
-          >
-            <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="account-plus" size={20} color="#FFF" />
-            </View>
-            <View>
-              <Text style={styles.emptyCtaText}>Créer un profil</Text>
-              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '500' }}>Commencez maintenant</Text>
-            </View>
-            <Icon name="arrow-right" size={20} color="rgba(255,255,255,0.8)" style={{ marginLeft: 8 }} />
-          </LinearGradient>
+          <Icon name="account-plus-outline" size={19} color={CA_THEME.white} />
+          <Text style={styles.caEmptyCtaText}>Créer un profil</Text>
+          <Icon name="arrow-right" size={18} color={CA_THEME.white} />
         </TouchableOpacity>
       </Animated.View>
     ),
@@ -639,22 +627,25 @@ export const AuthScreen: React.FC = () => {
         {visibleTechniciens.length > 0 ? (
           <Animated.View entering={FadeInUp.delay(650).duration(240)}>
             <TouchableOpacity
-              style={[styles.addButton, { borderColor: ONBOARDING_COLORS.border_accent, backgroundColor: ONBOARDING_COLORS.bg_card_elevated }]}
+              style={styles.caAddButton}
               onPress={() => {
                 Vibration.vibrate(10);
                 setIsModalVisible(true);
               }}
               activeOpacity={0.8}
             >
-              <View style={[styles.addIconCircle, { backgroundColor: ONBOARDING_COLORS.green_subtle }]}>
-                <Icon name="plus" size={20} color={ONBOARDING_COLORS.green_light} />
+              <View style={styles.caAddIconCircle}>
+                <Icon name="plus" size={20} color={CA_THEME.green} />
               </View>
-              <Text style={[styles.addButtonText, { color: ONBOARDING_COLORS.text_primary }]}>Ajouter un profil</Text>
+              <Text style={styles.caAddButtonText}>Ajouter un profil</Text>
             </TouchableOpacity>
           </Animated.View>
         ) : null}
 
-        <OnboardingFooter />
+        <View style={styles.caSecureFooter}>
+          <Icon name="shield-check-outline" size={14} color={CA_THEME.green} />
+          <Text style={styles.caSecureText}>Accès sécurisé · Profil protégé</Text>
+        </View>
       </View>
     ),
     [visibleTechniciens.length],
@@ -672,29 +663,32 @@ export const AuthScreen: React.FC = () => {
   }
 
   return (
-    <OnboardingLayout step={3} totalSteps={3}>
-      <StatusBar barStyle="light-content" backgroundColor={ONBOARDING_COLORS.bg_primary} />
+    <SafeAreaView style={styles.caScreen}>
+      <StatusBar barStyle="dark-content" backgroundColor={CA_THEME.lightGray} />
+      <View style={[styles.caPage, { paddingTop: Math.max(12, insets.top ? 8 : 16) }]}>
+        <Animated.View entering={FadeInDown.duration(240)} style={styles.caBrandRow}>
+          <View style={styles.caBrandMark}><Icon name="leaf" size={22} color="#FFFFFF" /></View>
+          <View style={styles.caBrandTextWrap}>
+            <Text style={styles.caBrandTitle}>IT-Inventory</Text>
+            <Text style={styles.caBrandCaption}>GESTION DES ÉQUIPEMENTS</Text>
+          </View>
+          {siteActif ? (
+            <View style={styles.caSitePill}>
+              <Icon name="map-marker-outline" size={14} color={CA_THEME.green} />
+              <Text style={styles.caSitePillText} numberOfLines={1}>{siteActif.nom}</Text>
+            </View>
+          ) : null}
+        </Animated.View>
 
-      <OnboardingLogo />
-
-      {siteActif ? (
-        <Animated.View entering={FadeInDown.delay(160).duration(220)} style={styles.siteBadgeWrap}>
-          <View style={styles.siteBadgeOnboarding}>
-            <Icon name="map-marker" size={13} color={ONBOARDING_COLORS.green_light} />
-            <Text style={styles.siteBadgeOnboardingText}>{siteActif.nom}</Text>
+        <Animated.View entering={FadeInDown.delay(100).duration(250)} style={styles.caIntro}>
+          <Text style={styles.caEyebrow}>ACCÈS ÉQUIPE</Text>
+          <Text style={styles.caTitle}>Qui utilise l’application ?</Text>
+          <Text style={styles.caSubtitle}>Sélectionnez votre profil pour ouvrir votre espace de travail.</Text>
+          <View style={styles.caCountRow}>
+            <Icon name="account-multiple-outline" size={16} color={CA_THEME.green} />
+            <Text style={styles.caCountText}>{visibleTechniciens.length} profil{visibleTechniciens.length > 1 ? 's' : ''} disponible{visibleTechniciens.length > 1 ? 's' : ''}</Text>
           </View>
         </Animated.View>
-      ) : null}
-
-      <Animated.View entering={FadeInDown.delay(230).duration(220)} style={styles.instructionWrapOnboarding}>
-        <Text style={styles.instructionDotOnboarding}>·</Text>
-        <Text style={styles.instructionOnboarding}>
-          {visibleTechniciens.length > 0
-            ? 'Selectionnez votre profil pour continuer'
-            : 'Bienvenue sur IT-Inventory'}
-        </Text>
-        <Text style={styles.instructionDotOnboarding}>·</Text>
-      </Animated.View>
 
       {/* Erreur */}
       {error ? (
@@ -709,18 +703,14 @@ export const AuthScreen: React.FC = () => {
         data={visibleTechniciens}
         keyExtractor={item => item.id.toString()}
         renderItem={renderTechnicien}
-        contentContainerStyle={[styles.list, isTablet && { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16, maxWidth: 640, alignSelf: 'center' }]}
+        contentContainerStyle={[styles.caTechnicianList, isTablet && styles.caTechnicianListTablet]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         {...(isTablet ? { numColumns: 2, columnWrapperStyle: { gap: 16 } } : {})}
       />
 
-      <LinearGradient
-        colors={['rgba(255,255,255,0)', ONBOARDING_COLORS.bg_primary]}
-        style={styles.listBottomFade}
-        pointerEvents="none"
-      />
+      <View style={styles.caBrandStripes}><View style={styles.caGoldStripe} /><View style={styles.caLightStripe} /><View style={styles.caDarkStripe} /></View>
 
       {mfaModalVisible ? (
         <View style={styles.inlineModalHost} pointerEvents="box-none">
@@ -812,7 +802,7 @@ export const AuthScreen: React.FC = () => {
                     <Pressable
                       style={styles.mfaSetupToggle}
                       onPress={async () => {
-                        if (!currentMfaConfig || showMfaSetupKey === 'hidden') {
+                        if (!currentMfaConfig) {
                           return;
                         }
 
@@ -1180,12 +1170,194 @@ export const AuthScreen: React.FC = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    </OnboardingLayout>
+    </View>
+    </SafeAreaView>
   );
 };
 
 // ==================== STYLES ====================
 const styles = StyleSheet.create({
+  caScreen: {
+    flex: 1,
+    backgroundColor: CA_THEME.lightGray,
+  },
+  caPage: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  caBrandRow: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 28,
+  },
+  caBrandMark: {
+    width: 40,
+    height: 40,
+    borderRadius: 11,
+    backgroundColor: CA_THEME.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  caBrandTextWrap: {
+    flex: 1,
+  },
+  caBrandTitle: {
+    color: CA_THEME.textPrimary,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  caBrandCaption: {
+    color: CA_THEME.textMuted,
+    fontSize: 9,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  caSitePill: {
+    maxWidth: '43%',
+    minHeight: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 9,
+    borderRadius: 9,
+    backgroundColor: CA_THEME.greenBg,
+  },
+  caSitePillText: {
+    flexShrink: 1,
+    color: CA_THEME.greenText,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  caIntro: {
+    gap: 7,
+    marginBottom: 18,
+  },
+  caEyebrow: {
+    color: CA_THEME.green,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  caTitle: {
+    color: CA_THEME.textPrimary,
+    fontSize: 25,
+    lineHeight: 31,
+    fontWeight: '800',
+  },
+  caSubtitle: {
+    color: CA_THEME.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  caCountRow: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 5,
+  },
+  caCountText: {
+    color: CA_THEME.greenText,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  caTechnicianList: {
+    flexGrow: 1,
+    paddingTop: 2,
+    paddingBottom: 14,
+    gap: 9,
+  },
+  caTechnicianListTablet: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12,
+    maxWidth: 760,
+    alignSelf: 'center',
+  },
+  caProfileWrap: {
+    marginBottom: 0,
+    flexGrow: 1,
+    flexBasis: 320,
+  },
+  caAddButton: {
+    minHeight: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    marginTop: 5,
+    marginBottom: 14,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: CA_THEME.greenBg2,
+    backgroundColor: CA_THEME.white,
+  },
+  caAddIconCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    backgroundColor: CA_THEME.greenBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  caAddButtonText: {
+    color: CA_THEME.green,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  caSecureFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+  },
+  caSecureText: {
+    color: CA_THEME.textMuted,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  caBrandStripes: {
+    height: 3,
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  caGoldStripe: { flex: 1, backgroundColor: '#FFD700' },
+  caLightStripe: { flex: 1, backgroundColor: CA_THEME.greenLight },
+  caDarkStripe: { flex: 1, backgroundColor: CA_THEME.greenDark },
+  caEmptyContainer: {
+    alignItems: 'center',
+    padding: 22,
+    marginTop: 16,
+    borderRadius: 12,
+    backgroundColor: CA_THEME.white,
+    borderWidth: 1,
+    borderColor: CA_THEME.borderGray,
+  },
+  caEmptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 15,
+    backgroundColor: CA_THEME.greenBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  caEmptyTitle: { color: CA_THEME.textPrimary, fontSize: 16, fontWeight: '800' },
+  caEmptySubtitle: { color: CA_THEME.textSecondary, fontSize: 12, textAlign: 'center', lineHeight: 18, marginTop: 5, marginBottom: 15 },
+  caEmptyCta: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    backgroundColor: CA_THEME.green,
+  },
+  caEmptyCtaText: { color: CA_THEME.white, fontSize: 12, fontWeight: '800' },
   container: {
     flex: 1,
   },

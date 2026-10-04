@@ -6,6 +6,7 @@ export const useVoiceRecognition = () => {
   const [transcript, setTranscript]   = useState('');
   const [isListening, setIsListening] = useState(false);
   const [permission, setPermission]   = useState<'granted'|'denied'|'unknown'>('unknown');
+  const [recognitionError, setRecognitionError] = useState<string | null>(null);
 
   useEffect(() => {
     Voice.onSpeechStart     = () => setIsListening(true);
@@ -20,6 +21,7 @@ export const useVoiceRecognition = () => {
     };
     Voice.onSpeechError = (e) => {
       console.warn('Voice error:', e.error);
+      setRecognitionError(e.error?.message ?? 'La reconnaissance vocale a échoué.');
       setIsListening(false);
     };
 
@@ -55,19 +57,23 @@ export const useVoiceRecognition = () => {
   const startListening = async () => {
     try {
       setTranscript('');
-      await Voice.start('fr-FR'); // Langue : français
+      setRecognitionError(null);
       setIsListening(true);
+      await Voice.start('fr-FR'); // Langue : français
     } catch (e) {
       console.error("Erreur démarrage écoute:", e);
+      setRecognitionError(e instanceof Error ? e.message : 'Impossible de démarrer le micro.');
+      setIsListening(false);
     }
   };
 
   const stopListening = async () => {
     try {
       await Voice.stop();
-      setIsListening(false);
     } catch (e) {
       console.error("Erreur arrêt écoute:", e);
+    } finally {
+      setIsListening(false);
     }
   };
 
@@ -76,6 +82,7 @@ export const useVoiceRecognition = () => {
       await Voice.cancel();
       setIsListening(false);
       setTranscript('');
+      setRecognitionError(null);
     } catch (e) {
       console.error("Erreur annulation écoute:", e);
     }
@@ -85,6 +92,7 @@ export const useVoiceRecognition = () => {
     transcript, 
     isListening, 
     permission,
+    recognitionError,
     requestPermission, 
     startListening, 
     stopListening, 

@@ -4,7 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AvatarBadge } from './AvatarBadge';
 import { RoleBadge } from './RoleBadge';
-import { ONBOARDING_COLORS } from './tokens';
+import { CA_THEME } from '@/constants/caTheme';
 
 type ProfileCardProps = {
   initials: string;
@@ -34,7 +34,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         onLongPress={onLongPress}
         delayLongPress={delayLongPress}
         disabled={disabled}
-        android_ripple={{ color: ONBOARDING_COLORS.green_subtle }}
+        android_ripple={{ color: CA_THEME.greenBg }}
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       >
         <AvatarBadge initials={initials} />
@@ -45,7 +45,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         </View>
 
         <View style={styles.chevronWrap}>
-          {rightNode ?? <Icon name="chevron-right" size={16} color={ONBOARDING_COLORS.text_dim} />}
+          {rightNode ?? <Icon name="chevron-right" size={18} color={CA_THEME.green} />}
         </View>
       </Pressable>
     </Animated.View>
@@ -54,11 +54,11 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: 72,
-    borderRadius: 16,
+    minHeight: 76,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: ONBOARDING_COLORS.border_subtle,
-    backgroundColor: ONBOARDING_COLORS.bg_card,
+    borderColor: CA_THEME.borderGray,
+    backgroundColor: CA_THEME.white,
     paddingHorizontal: 14,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -67,17 +67,17 @@ const styles = StyleSheet.create({
   },
   cardPressed: {
     transform: [{ scale: 0.98 }],
-    backgroundColor: ONBOARDING_COLORS.bg_card_elevated,
-    borderColor: ONBOARDING_COLORS.border_accent,
+    backgroundColor: '#F3FAF6',
+    borderColor: CA_THEME.greenBg2,
   },
   main: {
     flex: 1,
     gap: 6,
   },
   name: {
-    color: ONBOARDING_COLORS.text_primary,
+    color: CA_THEME.textPrimary,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   chevronWrap: {
     width: 24,

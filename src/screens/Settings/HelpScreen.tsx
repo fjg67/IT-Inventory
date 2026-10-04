@@ -21,9 +21,7 @@ import {
 import { isTablet as checkIsTablet, getContentMaxWidth } from '@/utils/responsive';
 import Animated, {
   FadeInUp,
-  FadeInDown,
   FadeIn,
-  ZoomIn,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
@@ -38,7 +36,6 @@ import {
   FAQ_CATEGORIES,
   FAQ_ITEMS,
   FAQItem,
-  FAQCategory,
   searchFAQ,
   getFAQByCategory,
   getPopularFAQ,
@@ -116,7 +113,7 @@ const FAQAccordion: React.FC<FAQAccordionProps> = React.memo(
 export const HelpScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { isConnected, supabaseReachable } = useAppSelector(state => state.network);
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const { width } = useWindowDimensions();
   const tablet = checkIsTablet(width);
@@ -374,7 +371,7 @@ export const HelpScreen: React.FC = () => {
         {/* ===== CATEGORIES ===== */}
         <Animated.View entering={FadeInUp.delay(200).duration(400)}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Questions par catégorie</Text>
-          {FAQ_CATEGORIES.map((cat, idx) => {
+          {FAQ_CATEGORIES.map((cat) => {
             const count = FAQ_ITEMS.filter(i => i.category === cat.id).length;
             const isSelected = selectedCategory === cat.id;
             return (

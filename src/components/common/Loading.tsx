@@ -101,7 +101,7 @@ export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({
         <SplashLogo />
         <SplashTexts />
         <SplashSecurePill offline={isError} />
-        <SplashProgressBar progressValue={progressValue} isError={isError} />
+        <SplashProgressBar progressValue={progressValue} label={activeMessage} isError={isError} />
         <SplashStatusRow isError={isError} />
         <SplashStatusText statusText={isError ? 'Impossible de se connecter' : statusText} isError={isError} />
 

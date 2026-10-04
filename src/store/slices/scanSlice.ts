@@ -21,7 +21,7 @@ interface ScanState {
 export interface ScanHistoryItem {
   barcode: string;
   timestamp: number;
-  articleId?: number;
+  articleId?: string | number;
   articleNom?: string;
   found: boolean;
 }

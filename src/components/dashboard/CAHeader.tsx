@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, StatusBar, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { CA_THEME } from '@/constants/caTheme';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -33,7 +33,7 @@ const getInitials = (firstName: string, lastName?: string): string => {
   return `${a}${b}`.toUpperCase();
 };
 
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const CAHeader = ({ firstName, lastName, siteName, subtitle, onPressSite, onPressSettings }: CAHeaderProps) => {

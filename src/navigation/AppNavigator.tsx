@@ -6,7 +6,7 @@ import React, { useEffect } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet, AppState, AppStateStatus, Linking, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, AppState, AppStateStatus, Linking, Modal, Pressable, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 
@@ -20,8 +20,9 @@ import { preferencesService } from '@/services/preferencesService';
 import { movementRealtimeNotificationService } from '@/services/movementRealtimeNotificationService';
 import { pushNotificationsService } from '@/services/pushNotificationsService';
 import { pcAvailabilityAlertService } from '@/services/pcAvailabilityAlertService';
+import { stockRuptureNotificationService } from '@/services/stockRuptureNotificationService';
 
-import { NoConnectionScreen } from '@/components';
+import { NoConnectionScreen } from '@/components/common/NoConnectionScreenCA';
 import SplashScreen from '@/screens/SplashScreen';
 import { AuthScreen } from '@/screens/Auth/AuthScreen';
 import { BranchSelectionScreen } from '@/screens/Auth/BranchSelectionScreen';
@@ -32,6 +33,7 @@ import { DashboardScreen } from '@/screens/Dashboard/DashboardScreen';
 import { ArticlesListScreen } from '@/screens/Articles/ArticlesListScreen';
 import { ArticleDetailScreen } from '@/screens/Articles/ArticleDetailScreen';
 import { ArticleEditScreen } from '@/screens/Articles/ArticleEditScreen';
+import BulkArticleActionsScreen from '@/screens/Articles/BulkArticleActionsScreen';
 import { AddPCScreen } from '@/screens/AddPCScreen';
 import { MouvementsListScreen } from '@/screens/Mouvements/MouvementsListScreen';
 import { MouvementsStatsScreen } from '@/screens/Mouvements/MouvementsStatsScreen';
@@ -47,10 +49,18 @@ import { KitScreen } from '@/screens/Kit/KitScreen';
 import { colors, typography } from '@/constants/theme';
 import { useTheme } from '@/theme';
 import { checkAppVersion, VersionCheckResult } from '@/services/versionService';
-import PremiumTabBar from '@/components/navigation/PremiumTabBar';
 import { CABottomNav } from '@/components/dashboard/CABottomNav';
 import { type InitStep } from '@/hooks/useSplashSequence';
 import { ForceUpdateScreen } from '@/screens/ForceUpdateScreen';
+import InventoryCampaignScreen from '@/screens/Inventory/InventoryCampaignScreen';
+import AdvancedDashboardScreen from '@/screens/Dashboard/AdvancedDashboardScreen';
+import ReportsScreen from '@/screens/Reports/ReportsScreen';
+import GlobalSearchScreen from '@/screens/GlobalSearch/GlobalSearchScreen';
+import TrashScreen from '@/screens/Articles/TrashScreen';
+import BackupScreen from '@/screens/Settings/BackupScreen';
+import SavedFiltersScreen from '@/screens/Articles/SavedFiltersScreen';
+import AuditHistoryScreen from '@/screens/Settings/AuditHistoryScreen';
+import AnomaliesScreen from '@/screens/Settings/AnomaliesScreen';
 
 import {
   RootStackParamList,
@@ -93,6 +103,7 @@ const ArticlesNavigator: React.FC = () => (
     <ArticlesStack.Screen name="ArticlesList" component={ArticlesListScreen} />
     <ArticlesStack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
     <ArticlesStack.Screen name="ArticleEdit" component={ArticleEditScreen} />
+    <ArticlesStack.Screen name="BulkActions" component={BulkArticleActionsScreen} />
     <ArticlesStack.Screen name="AddPC" component={AddPCScreen} />
     <ArticlesStack.Screen name="Kit" component={KitScreen} />
   </ArticlesStack.Navigator>
@@ -111,6 +122,7 @@ const PCNavigator: React.FC = () => (
     />
     <ArticlesStack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
     <ArticlesStack.Screen name="ArticleEdit" component={ArticleEditScreen} />
+    <ArticlesStack.Screen name="BulkActions" component={BulkArticleActionsScreen} />
     <ArticlesStack.Screen name="AddPC" component={AddPCScreen} />
     <ArticlesStack.Screen name="Kit" component={KitScreen} />
   </ArticlesStack.Navigator>
@@ -234,14 +246,6 @@ export const AppNavigator: React.FC = () => {
   const { isConnected, isInternetReachable } = useAppSelector((state) => state.network);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
 
-  const MyTheme = {
-    ...DefaultTheme,
-    colors: {
-      ...DefaultTheme.colors,
-      background: '#F5F5F0',
-    },
-  };
-
   const [isInitializing, setIsInitializing] = React.useState(true);
   const [initStep, setInitStep] = React.useState<InitStep>('connecting');
   const [initErrorMessage, setInitErrorMessage] = React.useState<string | null>(null);
@@ -276,11 +280,11 @@ export const AppNavigator: React.FC = () => {
       if (!nav?.getRootState || !nav?.resetRoot) return;
 
       const currentRoute = getActiveRouteName(nav.getRootState());
-      if (currentRoute === 'Auth' || currentRoute === 'Login' || currentRoute === 'SiteSelection' || currentRoute === 'BranchSelection' || currentRoute === 'Onboarding') {
-        console.log('[AppNavigator] Forcing post-login route to Main from', currentRoute);
+      if (currentRoute === 'Auth' || currentRoute === 'Login' || currentRoute === 'BranchSelection' || currentRoute === 'Onboarding') {
+        console.log('[AppNavigator] Forcing post-login route to site selection from', currentRoute);
         nav.resetRoot({
           index: 0,
-          routes: [{ name: 'Main' }],
+          routes: [{ name: 'SiteSelection', params: { startupMode: true } }],
         });
       }
     }, 0);
@@ -289,7 +293,7 @@ export const AppNavigator: React.FC = () => {
   const runVersionCheck = React.useCallback(async () => {
     try {
       const versionResult = await checkAppVersion();
-      setForceUpdate(versionResult.updateRequired ? versionResult : null);
+      setForceUpdate(Platform.OS === 'android' && versionResult.updateRequired ? versionResult : null);
       if (!versionResult.updateRequired && versionResult.updateAvailable) {
          const dismissKey = `${OPTIONAL_UPDATE_DISMISS_KEY}:${versionResult.latestVersion || versionResult.minVersion || 'unknown'}`;
          const dismissed = await AsyncStorage.getItem(dismissKey);
@@ -468,6 +472,18 @@ export const AppNavigator: React.FC = () => {
     };
   }, [isAuthenticated, effectiveSiteId]);
 
+  useEffect(() => {
+    if (!isAuthenticated || !effectiveSiteId) return;
+    const runCheck = () => {
+      stockRuptureNotificationService.checkAndNotify(effectiveSiteId).catch((error) => {
+        console.warn('[AppNavigator] stockRuptureNotificationService error:', error);
+      });
+    };
+    runCheck();
+    const interval = setInterval(runCheck, 6 * 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, effectiveSiteId]);
+
   // Réinitialiser le flag "après déconnexion" une fois l'écran Auth affiché (pour que le prochain lancement affiche Login)
   useEffect(() => {
     if (!isAuthenticated && redirectToTechnicianChoiceAfterLogout) {
@@ -476,6 +492,7 @@ export const AppNavigator: React.FC = () => {
       }, 500);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [isAuthenticated, redirectToTechnicianChoiceAfterLogout, dispatch]);
 
   console.log(`[AppNavigator] Render: isInitializing=${isInitializing}, authLoading=${authLoading}`);
@@ -536,7 +553,7 @@ export const AppNavigator: React.FC = () => {
           animation: 'slide_from_right',
           contentStyle: { backgroundColor: '#F5F5F0' },
         }}
-        initialRouteName={isAuthenticated ? 'Main' : redirectToTechnicianChoiceAfterLogout ? 'Auth' : onboardingSeen ? 'Login' : 'Onboarding'}
+        initialRouteName={isAuthenticated ? 'SiteSelection' : redirectToTechnicianChoiceAfterLogout ? 'Auth' : onboardingSeen ? 'Login' : 'Onboarding'}
       >
         {isAuthenticated ? (
           <>
@@ -548,6 +565,15 @@ export const AppNavigator: React.FC = () => {
             <RootStack.Screen name="Auth" component={AuthScreen} />
             <RootStack.Screen name="Main" component={MainNavigator} />
             <RootStack.Screen name="Settings" component={SettingsNavigator} />
+            <RootStack.Screen name="Inventory" component={InventoryCampaignScreen} />
+            <RootStack.Screen name="AdvancedDashboard" component={AdvancedDashboardScreen} />
+            <RootStack.Screen name="Reports" component={ReportsScreen} />
+            <RootStack.Screen name="GlobalSearch" component={GlobalSearchScreen} />
+            <RootStack.Screen name="Trash" component={TrashScreen} />
+            <RootStack.Screen name="Backup" component={BackupScreen} />
+            <RootStack.Screen name="SavedFilters" component={SavedFiltersScreen} />
+            <RootStack.Screen name="AuditHistory" component={AuditHistoryScreen} />
+            <RootStack.Screen name="Anomalies" component={AnomaliesScreen} />
           </>
         ) : onboardingSeen ? (
           // Onboarding déjà vu → connexion → branche → site → technicien

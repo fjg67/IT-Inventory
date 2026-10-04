@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getSupabaseClient, tables } from '@/api/supabase';
+import { getSupabaseClient } from '@/api/supabase';
 import { PCPanne } from '@/types/pc.types';
 
 interface PanneCount {

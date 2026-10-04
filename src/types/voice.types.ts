@@ -1,14 +1,18 @@
 import { PanneType, PCStatus } from './pc.types';
-import { Site } from './models';
 
 // Les types d'actions vocales supportées
 export type VoiceActionType =
+  | 'stock_entree'
+  | 'stock_sortie'
+  | 'stock_ajustement'
   | 'stock_entree'        // "entrée de X [article]"
   | 'stock_sortie'        // "sortie de X [article]"
   | 'stock_ajustement'    // "ajuster le stock de X à Y"
   | 'stock_transfert'     // "transférer X [article] vers [site]"
   | 'stock_consultation'  // "combien de [article]"
   | 'pc_panne'            // "PC [hostname] en panne [type]"
+  | 'pc_available_query'  // "montre-moi les PC disponibles"
+  | 'pc_loan'             // "prête le PC X à Y"
   | 'pc_status'           // "PC [hostname] est disponible"
   | 'pc_transfert'        // "transférer PC [hostname] vers [site]"
   | 'site_change'         // "changer de site [nom]"
@@ -30,6 +34,8 @@ export interface ParsedVoiceCommand {
   pcId?:        string;
   panneType?:   PanneType;
   pcStatus?:    PCStatus;         // statut cible du PC
+  personName?:  string;
+  dueBackDate?: string;
 
   // Pour transferts et changements de site
   targetSiteRaw?: string;         // nom brut du site cible prononcé

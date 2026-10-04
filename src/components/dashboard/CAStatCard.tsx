@@ -51,7 +51,7 @@ const VARIANT_STYLES = {
 };
 
 export const CAStatCard = ({
-  value, label, icon, trend, variant, badge, sparklineData, onPress
+  value, label, icon, variant, badge, sparklineData, onPress
 }: CAStatCardProps) => {
   const v = VARIANT_STYLES[variant];
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions, Pressable } from 'react-native';
-import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, interpolate, Extrapolation, FadeInRight } from 'react-native-reanimated';
+import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, interpolate, Extrapolation, FadeInRight, type SharedValue } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { PredictiveAlert } from '@/services/predictiveService';
@@ -19,7 +19,7 @@ const SNAP_INTERVAL = CARD_WIDTH + SPACING;
 interface UrgencyCardProps {
   alert: PredictiveAlert;
   index: number;
-  scrollX: Animated.SharedValue<number>;
+  scrollX: SharedValue<number>;
   onPress: () => void;
 }
 

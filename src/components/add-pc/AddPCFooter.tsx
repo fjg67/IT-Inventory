@@ -3,7 +3,6 @@ import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { interpolateColor, SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface AddPCFooterProps {
   isValid: boolean;
@@ -28,7 +27,6 @@ export const AddPCFooter: React.FC<AddPCFooterProps> = ({
   onCancel,
   onSubmit,
 }) => {
-  const insets = useSafeAreaInsets();
   const disabled = !isValid || isLoading;
 
   const submitStyle = useAnimatedStyle(() => ({

@@ -5,11 +5,11 @@
 import React, { useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ActivityIndicator,
-  StyleSheet, Dimensions,
+  StyleSheet,
 } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle,
-  withSpring, withTiming, interpolateColor, ZoomIn,
+  withSpring, withTiming,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -22,8 +22,6 @@ interface Props {
   onSubmit: () => void;
   isEditing?: boolean;
 }
-
-const AnimTouch = Animated.createAnimatedComponent(TouchableOpacity);
 
 export const CreateArticleFooter: React.FC<Props> = ({
   isValid,

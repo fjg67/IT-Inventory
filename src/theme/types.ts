@@ -8,6 +8,7 @@ export interface ThemeColors {
   // ─── Backgrounds ───
   background: string;
   backgroundBase: string;
+  backgroundSubtle: string;
   surface: string;
   surfaceElevated: string;
   surfaceGlass: string;

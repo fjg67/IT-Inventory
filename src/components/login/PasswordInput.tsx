@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Animated, {
+  interpolate,
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
@@ -67,11 +68,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
   });
 
   const lockAnim = useAnimatedStyle(() => ({
-    color: interpolateColor(
-      focusProgress.value,
-      [0, 1],
-      [LOGIN_COLORS.text_muted, LOGIN_COLORS.green_light],
-    ) as string,
+    opacity: interpolate(focusProgress.value, [0, 1], [0.65, 1]),
   }));
 
   const eyeAnim = useAnimatedStyle(() => ({

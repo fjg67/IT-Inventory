@@ -1,13 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
   Linking,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -16,12 +13,12 @@ import {
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { Camera, useCameraDevices, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import Animated, { FadeIn, FadeInDown, FadeInRight, FadeOut, ZoomIn, ZoomOut, useSharedValue, useAnimatedStyle, withRepeat, withTiming } from 'react-native-reanimated';
-import LinearGradient from 'react-native-linear-gradient';
+import Animated, { FadeInRight, FadeOut, useSharedValue, useAnimatedStyle, withRepeat, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Article, MouvementStockForm } from '@/types';
 import { articleRepository, mouvementRepository } from '@/database';
+import { isTrackedWorkstation } from '@/services/workstationAssetService';
 import { ERROR_MESSAGES } from '@/constants';
 import { isPCArticle } from '@/constants/pcStates';
 import { clearScannedArticle } from '@/store/slices/scanSlice';
@@ -30,10 +27,8 @@ import { selectEffectiveSiteId } from '@/store/slices/siteSlice';
 import { useAppDispatch, useAppSelector } from '@/store';
 
 import { useMovementFlow } from '@/hooks/useMovementFlow';
-import { useMovementColor } from '@/hooks/useMovementColor';
 import { useStockPreview } from '@/hooks/useStockPreview';
 import { useArticleSearch } from '@/hooks/useArticleSearch';
-import { useQuantityStepper } from '@/hooks/useQuantityStepper';
 import { CAMouvementTopBar } from '@/components/create-mouvement/CAMouvementTopBar';
 import { CAMouvementStepper, type StepStatus } from '@/components/create-mouvement/CAMouvementStepper';
 import { CAMouvementArticleCard } from '@/components/create-mouvement/CAMouvementArticleCard';
@@ -45,7 +40,7 @@ import { CASwipeToConfirm } from '@/components/create-mouvement/CASwipeToConfirm
 import { MOVEMENT_IDENTITIES, type MovementType } from '@/components/movement/movementTheme';
 import { CAScreenWrapper } from '@/components/dashboard/CAScreenWrapper';
 import { CA_THEME } from '@/constants/caTheme';
-import { TextInput, ActivityIndicator } from 'react-native';
+import { TextInput } from 'react-native';
 
 const BARCODE_TYPES = [
   'ean-13', 'ean-8', 'upc-a', 'upc-e', 'code-128', 'code-39', 'code-93',
@@ -55,8 +50,6 @@ const BARCODE_TYPES = [
 const SCAN_FRAME = 240;
 
 type RouteMovementType = MovementType | undefined;
-
-type RouteSource = 'Dashboard' | 'Scan' | 'Mouvements' | 'ArticleDetail' | undefined;
 
 export const AddMovementScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -72,28 +65,22 @@ export const AddMovementScreen: React.FC = () => {
   }, []);
 
   const scrollViewRef = useRef<ScrollView | null>(null);
-  const articleStepYRef = useRef(0);
-  const typeStepYRef = useRef(0);
-  const detailsStepYRef = useRef(0);
   const targetSiteIdRef = useRef<string | number | null>(null);
 
   const initialArticleId = route.params?.articleId as number | undefined;
   const initialType = route.params?.type as RouteMovementType;
   const isTypePreset = initialType !== undefined;
-  const source = route.params?.source as RouteSource;
 
   const siteActif = useAppSelector((state) => state.site.siteActif);
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const technicien = useAppSelector((state) => state.auth.currentTechnicien);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [, setSubmitSuccess] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [, setErrors] = useState<Record<string, string>>({});
 
   const flow = useMovementFlow(initialType ?? 'entree');
-  const identityPack = useMovementColor(flow.state.type ?? 'entree');
   const search = useArticleSearch(effectiveSiteId, 200, { excludePC: true });
   const resetSearch = search.reset;
 
@@ -115,7 +102,6 @@ export const AddMovementScreen: React.FC = () => {
     setIsSubmitting(false);
     setSubmitSuccess(false);
     setShowCamera(false);
-    setShowCancelModal(false);
     setErrors({});
     resetSearch();
     dispatch(clearScannedArticle());
@@ -128,6 +114,25 @@ export const AddMovementScreen: React.FC = () => {
       comment: '',
     });
   }, [dispatch, flow.setState, initialType, resetSearch]);
+
+  const openAssetScan = useCallback((selectedArticle: Article, direction: 'entree' | 'sortie') => {
+    const destination = { articleId: selectedArticle.id, assetDirection: direction };
+    const parent = navigation.getParent();
+    if (parent) {
+      navigation.popToTop();
+      parent.navigate('Scan', destination);
+    }
+    else navigation.navigate('Scan', destination);
+  }, [navigation]);
+
+  const selectArticleForMovement = useCallback((selectedArticle: Article) => {
+    if (isTrackedWorkstation(selectedArticle) && isTypePreset && (initialType === 'entree' || initialType === 'sortie')) {
+      openAssetScan(selectedArticle, initialType);
+      return;
+    }
+    flow.selectArticle(selectedArticle);
+    if (isTrackedWorkstation(selectedArticle) && initialType === 'ajustement') flow.updateField('type', 'entree');
+  }, [flow.selectArticle, flow.updateField, initialType, isTypePreset, openAssetScan]);
 
   useFocusEffect(
     useCallback(() => {
@@ -145,15 +150,6 @@ export const AddMovementScreen: React.FC = () => {
   const minQty = flow.state.type === 'ajustement' ? 0 : 1;
   const maxQty = flow.state.type === 'sortie' ? Math.max(stockActuel, minQty) : 9999;
 
-  const quantityStepper = useQuantityStepper({
-    min: minQty,
-    max: maxQty,
-    value: flow.state.quantity,
-    onChange: (next) => {
-      flow.updateField('quantity', next);
-    },
-  });
-
   const { hasPermission, requestPermission } = useCameraPermission();
   const devices = useCameraDevices();
   const device = devices.find((d) => d.position === 'back') ?? devices[0];
@@ -166,7 +162,7 @@ export const AddMovementScreen: React.FC = () => {
     try {
       const direct = await articleRepository.findByReferenceOrBarcode(barcode, effectiveSiteId);
       if (direct && !isPCArticle(direct)) {
-        flow.selectArticle(direct);
+        selectArticleForMovement(direct);
         setErrors({});
         search.reset();
         return;
@@ -175,7 +171,7 @@ export const AddMovementScreen: React.FC = () => {
       const broader = await articleRepository.search(effectiveSiteId, { searchQuery: barcode, stockFaible: false }, 0, 6);
       const nonPCResults = broader.data.filter((article) => !isPCArticle(article));
       if (nonPCResults.length === 1) {
-        flow.selectArticle(nonPCResults[0]);
+        selectArticleForMovement(nonPCResults[0]);
         setErrors({});
         search.reset();
       } else if (nonPCResults.length > 1) {
@@ -187,7 +183,7 @@ export const AddMovementScreen: React.FC = () => {
     } catch {
       setErrors({ article: 'Erreur lors de la recherche article' });
     }
-  }, [effectiveSiteId, flow, search]);
+  }, [effectiveSiteId, search, selectArticleForMovement]);
 
   useEffect(() => {
     barcodeHandlerRef.current = searchByBarcode;
@@ -260,11 +256,11 @@ export const AddMovementScreen: React.FC = () => {
     if (!initialArticleId || !targetSiteId) return;
     articleRepository.findById(initialArticleId, targetSiteId).then((article) => {
       if (article) {
-        flow.selectArticle(article);
+        selectArticleForMovement(article);
       }
     }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialArticleId, targetSiteId]);
+  }, [initialArticleId, targetSiteId, selectArticleForMovement]);
 
   const handleBack = useCallback(() => {
     if (flow.state.step === 'details') {
@@ -284,15 +280,18 @@ export const AddMovementScreen: React.FC = () => {
     navigation.navigate('MouvementsList');
   }, [flow, navigation]);
 
-  const isTypeStepValid = !!flow.state.type && flow.state.quantity >= minQty;
-
   const isFormValid = !!flow.state.article
     && !!targetSiteId
     && flow.state.quantity >= minQty
-    && (flow.state.type !== 'sortie' || flow.state.quantity <= stockActuel);
+    && (flow.state.type !== 'sortie' || flow.state.quantity <= stockActuel)
+    && (flow.state.type !== 'ajustement' || flow.state.quantity < 10 || flow.state.comment.trim().length >= 5);
 
   const submit = async () => {
     if (!flow.state.article || !targetSiteId || !flow.state.type) return;
+    if (isTrackedWorkstation(flow.state.article)) {
+      Alert.alert('Scan des assets requis', 'Scannez la référence dans l’onglet Scanner, choisissez Entrée ou Sortie, puis scannez chaque asset.');
+      return;
+    }
     const technicienId = technicien?.id ?? 1;
 
     if (!isFormValid) return;
@@ -363,32 +362,6 @@ export const AddMovementScreen: React.FC = () => {
     }
   };
 
-  const confirmCancelMovement = useCallback(() => {
-    setShowCancelModal(false);
-    resetMovementFlow();
-
-    const parent = navigation.getParent();
-    if (source === 'Dashboard') {
-      if (parent) parent.navigate('Dashboard');
-      else navigation.navigate('Dashboard');
-      return;
-    }
-    if (source === 'Scan') {
-      if (parent) parent.navigate('Scan');
-      else navigation.navigate('Scan');
-      return;
-    }
-    if (parent) {
-      parent.navigate('Mouvements', { screen: 'MouvementsList' });
-    } else {
-      navigation.navigate('MouvementsList');
-    }
-  }, [navigation, resetMovementFlow, source]);
-
-  const cancelMovement = useCallback(() => {
-    setShowCancelModal(true);
-  }, []);
-
   const steps = [
     { key: 'article', label: 'Article', status: flow.currentStepIndex > 0 ? 'done' : flow.state.step === 'article' ? 'active' : 'pending' },
     { key: 'type',    label: 'Type',    status: flow.currentStepIndex > 1 ? 'done' : flow.state.step === 'type' ? 'active' : 'pending' },
@@ -423,13 +396,13 @@ export const AddMovementScreen: React.FC = () => {
               id: String(r.id),
               reference: r.reference,
               label: r.nom || r.displayName || r.display_name || r.reference,
-              stock_actuel: r.quantiteActuelle,
+              stock_actuel: r.quantiteActuelle ?? 0,
               imageUrl: r.photoUrl,
             }))}
             onSelectArticle={(art) => {
               const fullArticle = search.results.find(r => String(r.id) === art.id);
               if (fullArticle) {
-                flow.selectArticle(fullArticle);
+                selectArticleForMovement(fullArticle);
                 setErrors({});
                 search.reset();
               }
@@ -445,7 +418,7 @@ export const AddMovementScreen: React.FC = () => {
             article={{
               reference: flow.state.article.reference,
               label: flow.state.article.nom || flow.state.article.displayName || flow.state.article.display_name || flow.state.article.reference,
-              stockActuel: flow.state.article.quantiteActuelle,
+                stockActuel: flow.state.article.quantiteActuelle ?? 0,
               site: siteActif?.nom ?? 'Site non sélectionné',
               imageUrl: flow.state.article.photoUrl,
             }}
@@ -458,8 +431,26 @@ export const AddMovementScreen: React.FC = () => {
           <CAMouvementTypeGrid
             selected={flow.state.type as MovementType}
             onSelect={(t) => flow.updateField('type', t)}
+            allowedTypes={isTrackedWorkstation(flow.state.article) ? ['entree', 'sortie'] : undefined}
           />
 
+          {isTrackedWorkstation(flow.state.article) ? (
+            <Pressable
+              onPress={() => {
+                if (flow.state.type === 'entree' || flow.state.type === 'sortie') {
+                  openAssetScan(flow.state.article!, flow.state.type);
+                }
+              }}
+              style={styles.btnContinue}
+              accessibilityRole="button"
+              accessibilityLabel="Scanner les assets"
+            >
+              <Icon name="barcode-scan" size={20} color={CA_THEME.white} />
+              <Text style={styles.btnContinueText}>Scanner les assets</Text>
+              <Icon name="arrow-right" size={20} color={CA_THEME.white} />
+            </Pressable>
+          ) : (
+          <>
           <Text style={styles.sectionLabel}>Quantité <Text style={{color:CA_THEME.danger}}>*</Text></Text>
           <CAMouvementQtyStepper
             value={flow.state.quantity}
@@ -488,6 +479,8 @@ export const AddMovementScreen: React.FC = () => {
             <Text style={styles.btnContinueText}>Continuer</Text>
             <Icon name="arrow-right" size={20} color={CA_THEME.white} />
           </Pressable>
+          </>
+          )}
         </Animated.ScrollView>
       )}
 
@@ -498,7 +491,7 @@ export const AddMovementScreen: React.FC = () => {
             article={{
               reference: flow.state.article.reference,
               label: flow.state.article.nom || flow.state.article.displayName || flow.state.article.display_name || flow.state.article.reference,
-              stockActuel: flow.state.article.quantiteActuelle,
+                stockActuel: flow.state.article.quantiteActuelle ?? 0,
               site: siteActif?.nom ?? 'Site non sélectionné',
               imageUrl: flow.state.article.photoUrl,
             }}
@@ -511,7 +504,6 @@ export const AddMovementScreen: React.FC = () => {
             stockBefore={stockActuel}
             stockAfter={preview.newStock}
             movementType={flow.state.type as MovementType}
-            quantity={flow.state.quantity}
             threshold={stockMin}
           />
 
@@ -528,6 +520,9 @@ export const AddMovementScreen: React.FC = () => {
               style={styles.commentInput}
               accessibilityLabel="Commentaire optionnel"
             />
+            {flow.state.type === 'ajustement' && flow.state.quantity >= 10 && flow.state.comment.trim().length < 5 ? (
+              <Text style={styles.warningText}>Un commentaire d’au moins 5 caractères est obligatoire pour un ajustement important.</Text>
+            ) : null}
             <Text style={styles.charCount}>{(flow.state.comment || '').length}/200</Text>
           </View>
 
@@ -664,7 +659,7 @@ const styles = StyleSheet.create({
   btnValidateText: { fontSize: 15, fontWeight: '700', color: CA_THEME.white },
   container: {
     flex: 1,
-    backgroundColor: CA_THEME.bgLight,
+    backgroundColor: CA_THEME.lightGray,
   },
   flex: {
     flex: 1,

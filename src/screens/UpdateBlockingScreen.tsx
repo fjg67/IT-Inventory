@@ -1,12 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Linking, SafeAreaView, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, Pressable, SafeAreaView, Animated } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop, Circle, G } from 'react-native-svg';
 import { APP_CONFIG } from '@/constants';
 import { typography, shadows } from '@/constants/theme';
 import type { VersionCheckResult } from '@/services/versionService';
+import { openAppUpdatePage, showUpdateLinkError } from '@/utils/appUpdate';
 import LinearGradientComponent from 'react-native-linear-gradient';
-
-const { width } = Dimensions.get('window');
 
 interface Props {
   updateInfo: VersionCheckResult;
@@ -146,12 +145,9 @@ const SafeUpdateIllustration = () => {
 };
 
 export const UpdateBlockingScreen: React.FC<Props> = ({ updateInfo }) => {
-  const handleUpdate = () => {
-    const url = updateInfo.updateUrl || APP_CONFIG.playStoreUrl;
-    Linking.openURL(url).catch(() => {
-      // Fallback
-      Linking.openURL('market://details?id=com.itinventory').catch(console.error);
-    });
+  const handleUpdate = async () => {
+    const opened = await openAppUpdatePage(updateInfo.updateUrl);
+    if (!opened) showUpdateLinkError();
   };
 
   return (

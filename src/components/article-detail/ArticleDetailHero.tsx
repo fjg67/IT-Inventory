@@ -7,12 +7,13 @@ import {
   StyleSheet,
   Platform,
   StatusBar,
+  ViewStyle,
 } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
   ZoomIn,
-  AnimatedStyleProp,
+  type AnimatedStyle,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -29,9 +30,9 @@ interface ArticleDetailHeroProps {
   article: Article;
   isLowStock: boolean;
   isCritical: boolean;
-  photoOpacity: AnimatedStyleProp<object>;
-  compactTitleOpacity: AnimatedStyleProp<object>;
-  parallaxBg: AnimatedStyleProp<object>;
+  photoOpacity: AnimatedStyle<ViewStyle>;
+  compactTitleOpacity: AnimatedStyle<ViewStyle>;
+  parallaxBg: AnimatedStyle<ViewStyle>;
   onBack: () => void;
   onEdit: () => void;
   showEdit: boolean;

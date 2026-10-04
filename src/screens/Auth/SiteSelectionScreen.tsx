@@ -27,8 +27,8 @@ import { articleRepository } from '@/database/repositories/articleRepository';
 import { Site } from '@/types';
 import { resolveSiteVisual } from '@/constants/siteConfig';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
-import { StockPickerSheet } from '@/components/stock-picker';
 import { isPCArticle } from '@/constants/pcStates';
+import { CA_THEME } from '@/constants/caTheme';
 import {
   OnboardingFooter,
   OnboardingLayout,
@@ -124,18 +124,14 @@ export const SiteSelectionScreen: React.FC = () => {
       startupLoaderStartRef.current = Date.now();
     }
 
-    if (childSites.length === 0) {
-      setShowStartupLoader(true);
-      return;
-    }
-
     const elapsed = Date.now() - (startupLoaderStartRef.current ?? Date.now());
     const minVisibleMs = 420;
     const remaining = Math.max(0, minVisibleMs - elapsed);
+    const fallbackWait = childSites.length === 0 ? Math.max(0, 900 - elapsed) : 0;
 
     const timer = setTimeout(() => {
       setShowStartupLoader(false);
-    }, remaining);
+    }, Math.max(remaining, fallbackWait));
 
     return () => {
       clearTimeout(timer);
@@ -186,13 +182,6 @@ export const SiteSelectionScreen: React.FC = () => {
       cancelled = true;
     };
   }, [startupMode, startupSites]);
-
-  useEffect(() => {
-    if (displaySites.length === 1) {
-      const onlySite = displaySites[0];
-      handleSelectSite(onlySite).catch(() => {});
-    }
-  }, [displaySites]);
 
   const handleAddSite = useCallback(async () => {
     const name = newSiteName.trim();
@@ -250,44 +239,49 @@ export const SiteSelectionScreen: React.FC = () => {
     [dispatch, navigation, parentSiteId, rememberMe, startupMode],
   );
 
+  useEffect(() => {
+    if (!startupMode && displaySites.length === 1) {
+      handleSelectSite(displaySites[0]).catch(() => {});
+    }
+  }, [displaySites, handleSelectSite, startupMode]);
+
   if (!startupMode && isLoading && displaySites.length === 0) {
     return <FullScreenLoading message="Chargement des sites..." />;
   }
 
   if (startupMode) {
     return (
-      <SafeAreaView style={styles.startupSafeArea}>
-        <StatusBar barStyle="light-content" backgroundColor={OBSIDIAN_COLORS.bg_primary} />
-
-        <View style={styles.startupBgTop} />
-        <View style={styles.startupBgBottom} />
-
-        <View style={styles.startupContent}>
+      <SafeAreaView style={styles.caStartupSafeArea}>
+        <StatusBar barStyle="dark-content" backgroundColor={CA_THEME.lightGray} />
+        <View style={styles.caStartupContent}>
+          <View style={styles.caBrandRow}>
+            <View style={styles.caBrandIcon}><Icon name="leaf" size={22} color="#FFFFFF" /></View>
+            <View><Text style={styles.caBrandTitle}>IT-Inventory</Text><Text style={styles.caBrandSubtitle}>GESTION DES ÉQUIPEMENTS</Text></View>
+          </View>
+          <Animated.View entering={FadeInDown.delay(80).duration(260)} style={styles.caWelcome}>
+            <Text style={styles.caEyebrow}>BIENVENUE</Text>
+            <Text style={styles.caTitle}>Sur quel site êtes-vous ?</Text>
+            <Text style={styles.caSubtitle}>Choisissez le stock à consulter et gérer pour cette session.</Text>
+          </Animated.View>
           {showStartupLoader ? (
-            <Animated.View entering={FadeInDown.duration(220)} style={styles.startupLoaderWrap}>
-              <View style={styles.startupLoaderBadge}>
-                <ActivityIndicator size="small" color={OBSIDIAN_COLORS.green_primary} />
-              </View>
-
-              <Text style={styles.startupLoaderTitle}>Chargement des sites</Text>
-              <Text style={styles.startupLoaderSubtitle}>Preparation de votre selection rapide...</Text>
-            </Animated.View>
+            <View style={styles.caLoader}><ActivityIndicator size="small" color={CA_THEME.green} /><Text style={styles.caSubtitle}>Chargement des sites...</Text></View>
           ) : (
-            <StockPickerSheet
-              sites={startupSites}
-              activeSiteId={siteActif?.id}
-              activeSiteName={siteActif?.nom}
-              statsBySiteId={startupStatsBySiteId}
-              onSelectSite={(siteId) => {
-                const site = startupSites.find((item) => String(item.id) === String(siteId));
-                if (!site) return;
-                handleSelectSite(site).catch(() => {});
-              }}
-              onClose={() => {}}
-              showBackButton={false}
-              showFooterCancel={false}
-            />
+            <ScrollView contentContainerStyle={styles.caSiteList} showsVerticalScrollIndicator={false}>
+              {startupSites.map((site, index) => {
+                const visual = resolveSiteVisual(site.nom);
+                const stats = startupStatsBySiteId[String(site.id)];
+                return <Animated.View key={String(site.id)} entering={FadeInDown.delay(120 + index * 65).duration(260)}>
+                  <TouchableOpacity activeOpacity={0.86} onPress={() => handleSelectSite(site).catch(() => {})} style={styles.caSiteCard}>
+                    <View style={[styles.caSiteIcon, { backgroundColor: visual.bg }]}><Icon name={visual.icon} size={23} color={CA_THEME.green} /></View>
+                    <View style={styles.caSiteInfo}><Text style={styles.caSiteName}>{site.nom}</Text><Text style={styles.caSiteAddress} numberOfLines={1}>{getSiteSubtitle(site)}</Text>{stats ? <Text style={styles.caSiteStats}>{stats.articles} articles · {stats.pcs} PC</Text> : null}</View>
+                    <View style={styles.caSiteArrow}><Icon name="arrow-right" size={18} color={CA_THEME.green} /></View>
+                  </TouchableOpacity>
+                </Animated.View>;
+              })}
+              {startupSites.length === 0 ? <Text style={styles.caEmpty}>Aucun site disponible pour ce compte.</Text> : null}
+            </ScrollView>
           )}
+          <View style={styles.caFooter}><View style={styles.caStripeGold} /><View style={styles.caStripeLight} /><View style={styles.caStripeDark} /></View>
         </View>
       </SafeAreaView>
     );
@@ -396,6 +390,130 @@ export const SiteSelectionScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  caStartupSafeArea: {
+    flex: 1,
+    backgroundColor: CA_THEME.lightGray,
+  },
+  caStartupContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 12 : 20,
+  },
+  caBrandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    marginBottom: 34,
+  },
+  caBrandIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: CA_THEME.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  caBrandTitle: {
+    color: CA_THEME.textPrimary,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  caBrandSubtitle: {
+    color: CA_THEME.textMuted,
+    fontSize: 9,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  caWelcome: {
+    marginBottom: 20,
+    gap: 7,
+  },
+  caEyebrow: {
+    color: CA_THEME.green,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  caTitle: {
+    color: CA_THEME.textPrimary,
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: '800',
+  },
+  caSubtitle: {
+    color: CA_THEME.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  caLoader: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  caSiteList: {
+    gap: 10,
+    paddingBottom: 18,
+  },
+  caSiteCard: {
+    minHeight: 82,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 13,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: CA_THEME.borderGray,
+    backgroundColor: '#FFFFFF',
+  },
+  caSiteIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  caSiteInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  caSiteName: {
+    color: CA_THEME.textPrimary,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  caSiteAddress: {
+    color: CA_THEME.textSecondary,
+    fontSize: 11,
+    marginTop: 3,
+  },
+  caSiteStats: {
+    color: CA_THEME.green,
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 5,
+  },
+  caSiteArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: CA_THEME.greenBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  caFooter: {
+    height: 4,
+    flexDirection: 'row',
+    marginTop: 'auto',
+    marginBottom: 10,
+  },
+  caStripeGold: { flex: 1, backgroundColor: '#FFD700' },
+  caStripeLight: { flex: 1, backgroundColor: CA_THEME.greenLight },
+  caStripeDark: { flex: 1, backgroundColor: CA_THEME.greenDark },
+  caEmpty: {
+    color: CA_THEME.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 28,
+  },
   guidance: {
     marginTop: 4,
     marginBottom: 12,

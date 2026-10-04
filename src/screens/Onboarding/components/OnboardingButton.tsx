@@ -26,13 +26,10 @@ interface OnboardingButtonProps {
   style?: any;
 }
 
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
-
 const OnboardingButton: React.FC<OnboardingButtonProps> = ({
   title,
   onPress,
   primary = false,
-  secondary = false,
   style,
 }) => {
   const scale = useSharedValue(1);

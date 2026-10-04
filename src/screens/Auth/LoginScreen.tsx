@@ -10,6 +10,8 @@ import {
   TextInput,
   TouchableWithoutFeedback,
   View,
+  Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeIn, FadeInUp, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -27,6 +29,10 @@ import LoginButton from '@/components/login/LoginButton';
 import LoginError from '@/components/login/LoginError';
 import LoginFooter from '@/components/login/LoginFooter';
 import { LOGIN_COLORS } from '@/components/login/loginTheme';
+import { BiometricAuthService } from '@/services/biometricAuthService';
+import { AuthService } from '@/services/authService';
+import { syncService } from '@/api/sync.service';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -34,6 +40,8 @@ export const LoginScreen: React.FC = () => {
 
   const inputRef = useRef<TextInput>(null);
   const [secureTextEntry, setSecureTextEntry] = useState(true);
+  const [biometric, setBiometric] = useState<{ available: boolean; enabled: boolean; label: string }>({ available: false, enabled: false, label: 'Biométrie' });
+  const [biometricLoading, setBiometricLoading] = useState(false);
 
   const { shakeStyle, triggerShake } = useShakeAnimation();
   const screenOpacity = useSharedValue(1);
@@ -59,6 +67,42 @@ export const LoginScreen: React.FC = () => {
     triggerShake,
     onSuccessReady,
   });
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([BiometricAuthService.isBiometricAvailable(), BiometricAuthService.hasBiometricLoginEnabled()])
+      .then(([sensor, enabled]) => {
+        if (mounted) setBiometric({ available: sensor.available, enabled, label: sensor.label });
+      })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+  const handleBiometricLogin = useCallback(async () => {
+    if (biometricLoading) return;
+    setBiometricLoading(true);
+    try {
+      const result = await BiometricAuthService.authenticateAndGetCredentials();
+      if (!result.success) {
+        if (!result.cancelled && result.error) Alert.alert('Connexion biométrique', result.error);
+        return;
+      }
+      const login = await AuthService.login(result.credentials!.identifier, result.credentials!.password);
+      if (!login.success) throw new Error(login.error);
+      await AuthService.saveSession(login.technicien, true);
+      try {
+        await syncService.forceFullSync();
+      } catch (syncError) {
+        console.warn('[Login] Biometric post-login sync failed:', syncError);
+      }
+      screenOpacity.value = withTiming(0, { duration: 350 });
+      setTimeout(() => navigation.replace('BranchSelection', { rememberMe: true }), 380);
+    } catch (error) {
+      Alert.alert('Connexion impossible', error instanceof Error ? error.message : 'Échec de la connexion biométrique.');
+    } finally {
+      setBiometricLoading(false);
+    }
+  }, [biometricLoading, navigation, screenOpacity]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -128,6 +172,17 @@ export const LoginScreen: React.FC = () => {
                     isSuccess={showSuccess}
                     onPress={handleSubmit}
                   />
+                  {biometric.available && biometric.enabled ? (
+                    <TouchableOpacity
+                      onPress={handleBiometricLogin}
+                      disabled={biometricLoading || isLoading || isSyncing || showSuccess}
+                      activeOpacity={0.82}
+                      style={styles.biometricButton}
+                    >
+                      {biometricLoading ? <Icon name="loading" size={19} color={LOGIN_COLORS.green_primary} /> : <Icon name="face-recognition" size={19} color={LOGIN_COLORS.green_primary} />}
+                      <Text style={styles.biometricButtonText}>{biometricLoading ? 'Vérification...' : `Continuer avec ${biometric.label}`}</Text>
+                    </TouchableOpacity>
+                  ) : null}
                 </Animated.View>
 
                 <LoginFooter version={APP_CONFIG.version} />
@@ -173,6 +228,23 @@ const styles = StyleSheet.create({
   },
   fieldWrap: {
     marginTop: 16,
+  },
+  biometricButton: {
+    minHeight: 48,
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#B5D9C6',
+    backgroundColor: '#F2F8F4',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+  },
+  biometricButtonText: {
+    color: LOGIN_COLORS.green_primary,
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
 

@@ -1,31 +1,30 @@
 import React from 'react';
-import { View, Text, StyleSheet, Linking, StatusBar, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { CA_THEME } from '@/constants/caTheme';
 import { APP_CONFIG } from '@/constants/config';
 import type { VersionCheckResult } from '@/services/versionService';
+import { openAppUpdatePage, showUpdateLinkError } from '@/utils/appUpdate';
 
 interface Props {
   updateInfo: VersionCheckResult;
 }
 
 export const ForceUpdateScreen: React.FC<Props> = ({ updateInfo }) => {
-  const handleUpdate = () => {
-    const updateUrl = updateInfo.updateUrl || APP_CONFIG.playStoreUrl;
-    Linking.openURL(updateUrl).catch(() => {
-      Linking.openURL('market://details?id=com.itinventory').catch(() => {});
-    });
+  const handleUpdate = async () => {
+    const opened = await openAppUpdatePage(updateInfo.updateUrl);
+    if (!opened) showUpdateLinkError();
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={CA_THEME.obsidian} />
+      <StatusBar barStyle="light-content" backgroundColor={CA_THEME.greenDark} />
       
       {/* Background Gradient */}
       <LinearGradient
-        colors={[CA_THEME.obsidian, '#0f172a']}
+        colors={[CA_THEME.greenDark, '#0f172a']}
         style={StyleSheet.absoluteFillObject}
       />
 
@@ -70,7 +69,7 @@ export const ForceUpdateScreen: React.FC<Props> = ({ updateInfo }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: CA_THEME.obsidian,
+    backgroundColor: CA_THEME.greenDark,
   },
   glowOrb: {
     position: 'absolute',

@@ -148,7 +148,16 @@ export const movementNotificationService = {
       return;
     }
 
-    Alert.alert(title, message);
+    await notifee.displayNotification({
+      id: payload.movementId,
+      title,
+      body: message,
+      data: payload.movementId ? { movementId: payload.movementId } : undefined,
+      ios: {
+        sound: 'default',
+        foregroundPresentationOptions: { alert: true, sound: true, badge: false },
+      },
+    });
   },
 };
 

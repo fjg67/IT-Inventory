@@ -8,6 +8,7 @@ import Animated, {
   withDelay,
   Easing,
   interpolate,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { CA_THEME } from '@/constants/caTheme';
 
@@ -33,7 +34,7 @@ interface DonutSegmentArcProps {
   radius: number;
   strokeWidth: number;
   circumference: number;
-  progress: Animated.SharedValue<number>;
+  progress: SharedValue<number>;
 }
 
 // Composant dédié : un hook `useAnimatedProps` par segment, jamais dans une boucle .map()

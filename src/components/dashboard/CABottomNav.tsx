@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
 import { CA_THEME } from '@/constants/caTheme';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAppSelector } from '@/store';
@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
-const TabItem = ({ route, index, isFocused, descriptors, navigation }: any) => {
+const TabItem = ({ route, isFocused, navigation }: any) => {
   const scale = useSharedValue(isFocused ? 1.1 : 1);
   const opacity = useSharedValue(isFocused ? 1 : 0.6);
 
@@ -72,12 +72,48 @@ const TabItem = ({ route, index, isFocused, descriptors, navigation }: any) => {
   );
 };
 
-export const CABottomNav = ({ state, descriptors, navigation }: any) => {
-  const siteActif = useAppSelector(state => state.site.siteActif);
+export const CABottomNav = ({ state, navigation }: any) => {
+  const siteActif = useAppSelector(rootState => rootState.site.siteActif);
+  const activeSiteName = useAppSelector(rootState => {
+    const { selectedSubSiteId, childSites } = rootState.site;
+    if (selectedSubSiteId != null) {
+      return childSites.find(site => String(site.id) === String(selectedSubSiteId))?.nom
+        ?? rootState.site.siteActif?.nom;
+    }
+    return rootState.site.siteActif?.nom;
+  });
   const insets = useSafeAreaInsets();
+
+  const openSitePicker = () => {
+    ReactNativeHapticFeedback.trigger('impactLight');
+    const rootNavigation = navigation.getParent?.();
+    if (rootNavigation?.navigate) {
+      rootNavigation.navigate('SiteSelection', { startupMode: true });
+      return;
+    }
+    navigation.navigate('SiteSelection', { startupMode: true });
+  };
 
   return (
     <View style={[styles.floatingNavContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <Pressable
+        onPress={openSitePicker}
+        style={({ pressed }) => [styles.activeStock, pressed && styles.activeStockPressed]}
+        accessibilityRole="button"
+        accessibilityLabel={`Stock actif : ${activeSiteName ?? 'aucun site'}. Appuyez pour changer de site.`}
+      >
+        <View style={styles.activeStockIcon}>
+          <Icon name="warehouse" size={17} color={CA_THEME.white} />
+        </View>
+        <View style={styles.activeStockTextWrap}>
+          <Text style={styles.activeStockEyebrow}>STOCK ACTIF</Text>
+          <Text style={styles.activeStockName} numberOfLines={1}>{activeSiteName ?? 'Site non sélectionné'}</Text>
+        </View>
+        <View style={styles.changeStock}>
+          <Text style={styles.changeStockText}>Changer</Text>
+          <Icon name="chevron-right" size={16} color={CA_THEME.green} />
+        </View>
+      </Pressable>
       <View style={styles.nav}>
         {state.routes.map((route: any, index: number) => {
           if (route.name === 'StockMap' && siteActif?.nom !== 'Stock 1er') {
@@ -87,9 +123,7 @@ export const CABottomNav = ({ state, descriptors, navigation }: any) => {
             <TabItem
               key={route.key}
               route={route}
-              index={index}
               isFocused={state.index === index}
-              descriptors={descriptors}
               navigation={navigation}
             />
           );
@@ -107,6 +141,62 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  activeStock: {
+    width: width - 32,
+    minHeight: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 11,
+    borderRadius: 13,
+    backgroundColor: CA_THEME.white,
+    borderWidth: 1,
+    borderColor: CA_THEME.greenBg2,
+    shadowColor: CA_THEME.greenDark,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 7,
+    elevation: 5,
+  },
+  activeStockPressed: {
+    backgroundColor: '#F0F8F3',
+    transform: [{ scale: 0.99 }],
+  },
+  activeStockIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: CA_THEME.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeStockTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  activeStockEyebrow: {
+    color: CA_THEME.green,
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  activeStockName: {
+    color: CA_THEME.textPrimary,
+    fontSize: 13,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  changeStock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 1,
+  },
+  changeStockText: {
+    color: CA_THEME.green,
+    fontSize: 10,
+    fontWeight: '800',
   },
   nav: {
     flexDirection: 'row',

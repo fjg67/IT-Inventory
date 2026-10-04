@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { MovementIdentity, MovementType, MOVEMENT_IDENTITIES, MOVEMENT_COLORS } from './movementTheme';
+import { MovementType, MOVEMENT_IDENTITIES, MOVEMENT_COLORS } from './movementTheme';
 
 interface Props {
   value: MovementType;

@@ -12,7 +12,7 @@ interface ArticleCardProps {
   article: Article;
   index: number;
   query?: string;
-  onPress: (articleId: number) => void;
+  onPress: (articleId: string | number) => void;
 }
 
 const getAccentColor = (article: Article): string => {

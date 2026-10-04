@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Animated, {
   FadeInDown,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withDelay,
   Easing,
 } from 'react-native-reanimated';
 import { OBSIDIAN_COLORS } from '@/constants/colors';
@@ -14,11 +15,10 @@ export const SplashTexts: React.FC = () => {
   const lineScale = useSharedValue(0);
 
   useEffect(() => {
-    lineScale.value = withTiming(1, {
+    lineScale.value = withDelay(600, withTiming(1, {
       duration: 400,
-      delay: 600,
       easing: Easing.out(Easing.cubic),
-    });
+    }));
   }, [lineScale]);
 
   const lineStyle = useAnimatedStyle(() => ({

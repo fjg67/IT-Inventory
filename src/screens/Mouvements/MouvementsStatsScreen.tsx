@@ -8,7 +8,6 @@ import {
   RefreshControl,
   StatusBar,
   Vibration,
-  useWindowDimensions,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -250,12 +249,10 @@ export const MouvementsStatsScreen: React.FC = () => {
   const effectiveSiteId = useAppSelector(selectEffectiveSiteId);
   const { colors, isDark } = useTheme();
   const { isTablet, contentMaxWidth } = useResponsive();
-  const { width: screenWidth } = useWindowDimensions();
-  const hPad = Math.round(screenWidth * 0.04);
 
   const [period, setPeriod] = useState<PeriodFilter>('30');
   const [sortMetric, setSortMetric] = useState<SortMetric>('total');
-  const viewMode: ViewMode = 'compact';
+  const [viewMode] = useState<ViewMode>('compact');
   const [rows, setRows] = useState<TechnicienMouvementStat[]>([]);
   const [movementTotals, setMovementTotals] = useState<MouvementStats>({
     total: 0,
@@ -349,7 +346,6 @@ export const MouvementsStatsScreen: React.FC = () => {
     loadStats(true);
   }, [loadStats]);
 
-  const totalGlobal = useMemo(() => rows.reduce((sum, r) => sum + r.total, 0), [rows]);
   const sortedRows = useMemo(() => {
     const data = [...rows];
     data.sort((a, b) => {

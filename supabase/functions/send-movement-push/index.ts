@@ -369,11 +369,11 @@ serve(async (req) => {
               apns: {
                 headers: {
                   'apns-priority': '10',
+                  'apns-push-type': 'alert',
                 },
                 payload: {
                   aps: {
                     sound: 'default',
-                    'content-available': 1,
                   },
                 },
               },
