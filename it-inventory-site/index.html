@@ -1,567 +1,410 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IT-Inventory - Gestion de stock IT pour Android</title>
-  <meta name="description" content="IT-Inventory: application Android de gestion de stock IT pour techniciens. Tutoriel complet, fonctionnalités et FAQ.">
-  <meta property="og:title" content="IT-Inventory - Gestion de stock IT pour Android">
-  <meta property="og:description" content="Découvrez IT-Inventory et suivez le tutoriel complet pour techniciens Android.">
-  <meta property="og:image" content="assets/og-image.png">
-  <meta property="og:type" content="website">
-  <meta name="theme-color" content="#0A0F0D">
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles/main.css">
-  <link rel="stylesheet" href="styles/components.css">
-  <link rel="stylesheet" href="styles/screens.css">
-  <link rel="stylesheet" href="styles/animations.css">
-</head>
-<body>
-  <header class="navbar" aria-label="Navigation principale">
-    <div class="nav-inner">
-      <a href="#top" class="brand" aria-label="Aller en haut de page">
-        <img src="assets/logo.svg" alt="Logo IT-Inventory" width="28" height="28">
-        <span>IT-Inventory</span>
-      </a>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Le guide pratique IT-Inventory : premiers pas, articles, scan, mouvements de stock et parc PC. Des procédures pas à pas pour les équipes IT."
+    />
+    <meta name="theme-color" content="#1e6b52" />
+    <title>IT-Inventory · Guide pratique</title>
+    <link rel="icon" type="image/svg+xml" href="assets/guide-icon.svg" />
+    <link rel="stylesheet" href="styles/main.css" />
+    <script src="scripts/screens-data.js" defer></script>
+    <script src="scripts/tutorial.js" defer></script>
+    <script src="scripts/lightbox.js" defer></script>
+    <script src="scripts/main.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#guide">Aller aux procédures</a>
+    <svg
+      class="icon-library"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <symbol id="i-box" viewBox="0 0 24 24">
+        <path d="m12 3 9 5v8l-9 5-9-5V8l9-5Zm0 9v9M3 8l9 4 9-4M7.5 5.5l9 5" />
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24">
+        <path d="M4 12h16m-6-6 6 6-6 6" />
+      </symbol>
+      <symbol id="i-book" viewBox="0 0 24 24">
+        <path
+          d="M12 5v16M3 4h5a4 4 0 0 1 4 3 4 4 0 0 1 4-3h5v15h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3V4Z"
+        />
+      </symbol>
+      <symbol id="i-search" viewBox="0 0 24 24">
+        <circle cx="10.5" cy="10.5" r="6.5" />
+        <path d="m16 16 5 5" />
+      </symbol>
+      <symbol id="i-scan" viewBox="0 0 24 24">
+        <path
+          d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M7 7v10m3-10v10m4-10v10m3-10v10M2 12h20"
+        />
+      </symbol>
+      <symbol id="i-flux" viewBox="0 0 24 24">
+        <path d="M3 7h17m-4-4 4 4-4 4M21 17H4m4-4-4 4 4 4" />
+      </symbol>
+      <symbol id="i-laptop" viewBox="0 0 24 24">
+        <path d="M5 4h14v12H5V4ZM2 20h20l-3-4H5l-3 4Z" />
+      </symbol>
+      <symbol id="i-site" viewBox="0 0 24 24">
+        <path
+          d="M4 21V5l8-3v19M12 8h8v13M2 21h20M7 7h2M7 11h2M7 15h2M15 12h2M15 16h2"
+        />
+      </symbol>
+      <symbol id="i-mic" viewBox="0 0 24 24">
+        <rect x="9" y="2" width="6" height="12" rx="3" />
+        <path d="M5 10v2a7 7 0 0 0 14 0v-2m-7 9v3m-4 0h8" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="m5 12 4 4L19 6" />
+      </symbol>
+      <symbol id="i-image" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <circle cx="8" cy="8" r="1.5" />
+        <path d="m3 17 5-5 4 4 4-6 5 7" />
+      </symbol>
+      <symbol id="i-print" viewBox="0 0 24 24">
+        <path d="M6 8V3h12v5M6 17H3V9h18v8h-3M6 14h12v7H6v-7m11-3h1" />
+      </symbol>
+      <symbol id="i-help" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M9 9a3 3 0 1 1 4 3c-1 .5-1 1-1 2m0 3h.01" />
+      </symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24">
+        <path d="M4 6h16M4 12h16M4 18h16" />
+      </symbol>
+      <symbol id="i-close" viewBox="0 0 24 24">
+        <path d="m6 6 12 12M6 18 18 6" />
+      </symbol>
+    </svg>
 
-      <button class="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Ouvrir le menu">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-
-      <nav id="nav-links" class="nav-links" aria-label="Sections">
-        <a href="#features">Fonctionnalites</a>
-        <a href="#gallery">Galerie</a>
-        <a href="#tutorial">Tutoriel</a>
-        <a href="#faq">FAQ</a>
-      </nav>
-
-      <a class="btn btn-primary btn-nav" href="https://play.google.com/store/apps/details?id=com.itinventory" target="_blank" rel="noopener noreferrer">
-        Telecharger
-      </a>
-    </div>
-  </header>
-
-  <main id="top">
-    <section class="hero" id="hero">
-      <div class="container hero-grid">
-        <div class="hero-copy">
-          <p class="hero-badge"><span class="badge-dot"></span> Application Android - Gestion de stock IT</p>
-          <h1 class="hero-title">
-            Gerez votre stock IT
-            <span class="hero-title--accent">depuis votre telephone.</span>
-          </h1>
-          <p class="hero-subtitle">
-            IT-Inventory est l'outil qu'utilisent les techniciens Credit Agricole pour gerer les articles,
-            les PC portables et les mouvements de stock directement depuis un Android.
-          </p>
-
-          <div class="hero-actions">
-            <a class="btn btn-primary btn--lg" href="https://play.google.com/store/apps/details?id=com.itinventory" target="_blank" rel="noopener noreferrer">
-              Telecharger sur Google Play
-            </a>
-            <a class="btn btn-secondary btn--lg" href="#tutorial">Voir le tutoriel</a>
-          </div>
-
-          <div class="hero-stats" aria-label="Statistiques rapides">
-            <article>
-              <strong>183</strong>
-              <span>Articles suivis</span>
-            </article>
-            <article>
-              <strong>4</strong>
-              <span>Sites geres</span>
-            </article>
-            <article>
-              <strong>6</strong>
-              <span>Statuts PC</span>
-            </article>
-            <article>
-              <strong>100%</strong>
-              <span>Tracable</span>
-            </article>
-          </div>
-        </div>
-
-        <div class="hero-phones" aria-label="Captures d'ecran IT-Inventory">
-          <figure class="phone-frame phone-frame--hero phone-frame--left">
-            <div class="phone-shell" role="button" tabindex="0" aria-label="Agrandir la capture Articles">
-              <div class="phone-btn phone-btn--vol"></div>
-              <div class="phone-btn phone-btn--power"></div>
-              <div class="phone-notch"></div>
-              <div class="phone-screen">
-                <img class="screen-img" src="assets/screens/09_articles_list.png" alt="Liste des articles dans IT-Inventory" loading="lazy">
-                <span class="screen-badge">Articles</span>
-              </div>
-            </div>
-            <figcaption class="phone-caption">Articles</figcaption>
-          </figure>
-
-          <figure class="phone-frame phone-frame--hero">
-            <div class="phone-shell" role="button" tabindex="0" aria-label="Agrandir la capture Dashboard">
-              <div class="phone-btn phone-btn--vol"></div>
-              <div class="phone-btn phone-btn--power"></div>
-              <div class="phone-notch"></div>
-              <div class="phone-screen">
-                <img class="screen-img" src="assets/screens/08_dashboard.png" alt="Dashboard IT-Inventory avec stock, alertes et scanner" loading="eager">
-                <span class="screen-badge">Dashboard</span>
-              </div>
-            </div>
-            <figcaption class="phone-caption">Ecran Dashboard</figcaption>
-          </figure>
-
-          <figure class="phone-frame phone-frame--hero phone-frame--right">
-            <div class="phone-shell" role="button" tabindex="0" aria-label="Agrandir la capture Parc PC">
-              <div class="phone-btn phone-btn--vol"></div>
-              <div class="phone-btn phone-btn--power"></div>
-              <div class="phone-notch"></div>
-              <div class="phone-screen">
-                <img class="screen-img" src="assets/screens/12_parc_pc.png" alt="Parc PC portables dans IT-Inventory" loading="lazy">
-                <span class="screen-badge">Parc PC</span>
-              </div>
-            </div>
-            <figcaption class="phone-caption">Parc PC</figcaption>
-          </figure>
-        </div>
-      </div>
-    </section>
-
-    <section id="features" class="features">
-      <div class="container">
-        <header class="section-header">
-          <h2>Toutes les fonctionnalites</h2>
-          <p>Un outil complet pour les techniciens IT sur le terrain.</p>
-        </header>
-
-        <div class="features-grid">
-          <article class="feature-card" style="--accent: var(--green-light)">
-            <h3>Gestion des articles</h3>
-            <p>Consultez et gerez votre stock de consommables IT avec suivi des quantites en temps reel.</p>
-            <ul class="feature-list">
-              <li>Scan de codes-barres</li>
-              <li>Stock actuel vs seuil d'alerte</li>
-              <li>Etat: bon etat / defectueux</li>
-              <li>Historique des mouvements</li>
-            </ul>
-          </article>
-
-          <article class="feature-card" style="--accent: var(--warning)">
-            <h3>Parc PC portables</h3>
-            <p>Suivez l'etat de chaque PC portable: a chaud, a reusiner, en usinage, disponible, envoye ou en panne.</p>
-            <ul class="feature-list">
-              <li>5 statuts + En panne</li>
-              <li>Declaration de pannes detaillee</li>
-              <li>Renommage personnalise</li>
-              <li>Historique des pannes</li>
-            </ul>
-          </article>
-
-          <article class="feature-card" style="--accent: var(--info)">
-            <h3>Mouvements de stock</h3>
-            <p>Enregistrez toutes les entrees, sorties et ajustements avec horodatage et technicien.</p>
-            <ul class="feature-list">
-              <li>Entree / Sortie / Ajustement</li>
-              <li>Scan direct depuis l'action</li>
-              <li>Historique filtrable</li>
-              <li>Export CSV</li>
-            </ul>
-          </article>
-
-          <article class="feature-card" style="--accent: var(--purple)">
-            <h3>Multi-sites</h3>
-            <p>Changez de site actif en un tap. Epinal, Stock 5eme, Stock 8eme, TCS.</p>
-            <ul class="feature-list">
-              <li>4 sites independants</li>
-              <li>Changement instantane</li>
-              <li>Stats par site</li>
-              <li>Transferts entre sites</li>
-            </ul>
-          </article>
-
-          <article class="feature-card" style="--accent: #14b8a6">
-            <h3>Dashboard temps reel</h3>
-            <p>Vue synthetique des stocks, alertes, mouvements du jour et etat du parc PC.</p>
-            <ul class="feature-list">
-              <li>Articles en stock</li>
-              <li>Alertes seuil critique</li>
-              <li>Mouvements du jour</li>
-              <li>Sparklines animees</li>
-            </ul>
-          </article>
-
-          <article class="feature-card" style="--accent: #f43f5e">
-            <h3>Securise et tracable</h3>
-            <p>Connexion securisee, chaque action est attribuee au technicien connecte.</p>
-            <ul class="feature-list">
-              <li>Authentification Supabase</li>
-              <li>Audit log complet</li>
-              <li>Acces par profil</li>
-              <li>Donnees chiffrees</li>
-            </ul>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section id="gallery" class="screens-gallery">
-      <div class="container">
-        <header class="section-header">
-          <h2>L'app en images</h2>
-          <p>Captures d'ecran reelles de l'application sur Android.</p>
-        </header>
-
-        <div class="gallery-flow">
-          <article class="gallery-row">
-            <figure class="phone-frame phone-frame--medium">
-              <div class="phone-shell" role="button" tabindex="0" aria-label="Agrandir la capture Dashboard">
-                <div class="phone-btn phone-btn--vol"></div>
-                <div class="phone-btn phone-btn--power"></div>
-                <div class="phone-notch"></div>
-                <div class="phone-screen">
-                  <img class="screen-img" src="assets/screens/08_dashboard.png" alt="Dashboard IT-Inventory" loading="lazy">
-                  <span class="screen-badge">Dashboard</span>
-                </div>
-              </div>
-              <figcaption class="phone-caption">Ecran 1 / 8 - Dashboard</figcaption>
-            </figure>
-            <div class="gallery-copy">
-              <p class="gallery-kicker">Ecran principal</p>
-              <h3>Dashboard - Vue d'ensemble</h3>
-              <p>Le dashboard donne une vision immediate du stock, des alertes, des mouvements du jour et de l'etat du parc PC.</p>
-              <ul class="gallery-chips">
-                <li>Stock visible immediatement</li>
-                <li>Alertes seuil critique</li>
-                <li>Scanner en un tap</li>
-                <li>Site actif en haut a gauche</li>
-              </ul>
-            </div>
-          </article>
-
-          <article class="gallery-row gallery-row--reverse">
-            <figure class="phone-frame phone-frame--medium">
-              <div class="phone-shell" role="button" tabindex="0" aria-label="Agrandir la capture Articles">
-                <div class="phone-btn phone-btn--vol"></div>
-                <div class="phone-btn phone-btn--power"></div>
-                <div class="phone-notch"></div>
-                <div class="phone-screen">
-                  <img class="screen-img" src="assets/screens/09_articles_list.png" alt="Liste des articles IT-Inventory" loading="lazy">
-                  <span class="screen-badge">Articles</span>
-                </div>
-              </div>
-              <figcaption class="phone-caption">Ecran 2 / 8 - Articles</figcaption>
-            </figure>
-            <div class="gallery-copy">
-              <p class="gallery-kicker">Articles</p>
-              <h3>Gestion des articles</h3>
-              <p>Recherchez, filtrez et suivez les seuils d'alerte ainsi que l'etat des consommables IT.</p>
-              <ul class="gallery-chips">
-                <li>Recherche nom / reference</li>
-                <li>Filtres alertes / defectueux</li>
-                <li>Etat visible sur chaque carte</li>
-              </ul>
-            </div>
-          </article>
-
-          <article class="gallery-row">
-            <figure class="phone-frame phone-frame--medium">
-              <div class="phone-shell" role="button" tabindex="0" aria-label="Agrandir la capture Etat article">
-                <div class="phone-btn phone-btn--vol"></div>
-                <div class="phone-btn phone-btn--power"></div>
-                <div class="phone-notch"></div>
-                <div class="phone-screen">
-                  <img class="screen-img" src="assets/screens/11_article_condition.png" alt="Section etat article bon etat ou defectueux avec stepper" loading="lazy">
-                  <span class="screen-badge">Etat article</span>
-                </div>
-              </div>
-              <figcaption class="phone-caption">Ecran 3 / 8 - Etat article</figcaption>
-            </figure>
-            <div class="gallery-copy">
-              <p class="gallery-kicker">Nouveaute</p>
-              <h3>Etat des articles</h3>
-              <p>Definissez l'etat bon ou defectueux et ajustez le nombre d'unites concernees avec le stepper.</p>
-              <ul class="gallery-chips">
-                <li>Bon etat ou defectueux</li>
-                <li>Stepper + / -</li>
-                <li>Repartition en temps reel</li>
-                <li>Controle du stock total</li>
-              </ul>
-            </div>
-          </article>
-
-          <article class="gallery-row gallery-row--reverse">
-            <figure class="phone-frame phone-frame--medium">
-              <div class="phone-shell" role="button" tabindex="0" aria-label="Agrandir la capture Parc PC">
-                <div class="phone-btn phone-btn--vol"></div>
-                <div class="phone-btn phone-btn--power"></div>
-                <div class="phone-notch"></div>
-                <div class="phone-screen">
-                  <img class="screen-img" src="assets/screens/12_parc_pc.png" alt="Parc PC portables IT-Inventory avec statuts colores" loading="lazy">
-                  <span class="screen-badge">Parc PC</span>
-                </div>
-              </div>
-              <figcaption class="phone-caption">Ecran 4 / 8 - Parc PC</figcaption>
-            </figure>
-            <div class="gallery-copy">
-              <p class="gallery-kicker">Parc PC</p>
-              <h3>Gestion du parc PC portables</h3>
-              <p>Suivez les statuts, les pannes et les informations de chaque machine avec une traçabilite complete.</p>
-              <ul class="gallery-chips">
-                <li>6 statuts operationnels</li>
-                <li>Pannes type + priorite</li>
-                <li>Renommage personnalise</li>
-              </ul>
-            </div>
-          </article>
-
-          <article class="gallery-row">
-            <figure class="phone-frame phone-frame--medium">
-              <div class="phone-shell" role="button" tabindex="0" aria-label="Agrandir la capture Declaration panne">
-                <div class="phone-btn phone-btn--vol"></div>
-                <div class="phone-btn phone-btn--power"></div>
-                <div class="phone-notch"></div>
-                <div class="phone-screen">
-                  <img class="screen-img" src="assets/screens/14_pc_panne_modal.png" alt="Modal declaration de panne PC avec type et priorite" loading="lazy">
-                  <span class="screen-badge">Declaration panne</span>
-                </div>
-              </div>
-              <figcaption class="phone-caption">Ecran 5 / 8 - Declarer panne</figcaption>
-            </figure>
-            <div class="gallery-copy">
-              <p class="gallery-kicker">Nouveaute</p>
-              <h3>Declarer un PC en panne</h3>
-              <p>Selectionnez le type et la priorite, ajoutez une description, puis validez pour alimenter l'historique.</p>
-              <ul class="gallery-chips">
-                <li>5 types de panne</li>
-                <li>4 niveaux de priorite</li>
-                <li>Description obligatoire</li>
-                <li>Historique conserve</li>
-              </ul>
-            </div>
-          </article>
-
-          <article class="gallery-row gallery-row--reverse">
-            <figure class="phone-frame phone-frame--medium">
-              <div class="phone-shell" role="button" tabindex="0" aria-label="Agrandir la capture Scanner">
-                <div class="phone-btn phone-btn--vol"></div>
-                <div class="phone-btn phone-btn--power"></div>
-                <div class="phone-notch"></div>
-                <div class="phone-screen">
-                  <img class="screen-img" src="assets/screens/16_scanner.png" alt="Scanner de codes-barres IT-Inventory sur Android" loading="lazy">
-                  <span class="screen-badge">Scanner</span>
-                </div>
-              </div>
-              <figcaption class="phone-caption">Ecran 6 / 8 - Scanner</figcaption>
-            </figure>
-            <div class="gallery-copy">
-              <p class="gallery-kicker">Scanner</p>
-              <h3>Scanner avec la camera Android</h3>
-              <p>Le scan fonctionne sur telephone Android classique, sans dependance Zebra TC22.</p>
-              <ul class="gallery-chips">
-                <li>Camera Android native</li>
-                <li>Reconnaissance automatique</li>
-                <li>Choix Entree / Sortie / Consultation</li>
-              </ul>
-            </div>
-          </article>
-
-          <article class="gallery-row">
-            <figure class="phone-frame phone-frame--medium">
-              <div class="phone-shell" role="button" tabindex="0" aria-label="Agrandir la capture Mouvements">
-                <div class="phone-btn phone-btn--vol"></div>
-                <div class="phone-btn phone-btn--power"></div>
-                <div class="phone-notch"></div>
-                <div class="phone-screen">
-                  <img class="screen-img" src="assets/screens/19_mouvements_list.png" alt="Historique des mouvements de stock IT-Inventory" loading="lazy">
-                  <span class="screen-badge">Mouvements</span>
-                </div>
-              </div>
-              <figcaption class="phone-caption">Ecran 7 / 8 - Mouvements</figcaption>
-            </figure>
-            <div class="gallery-copy">
-              <p class="gallery-kicker">Tracabilite</p>
-              <h3>Mouvements de stock</h3>
-              <p>Chaque operation est horodatee et associee au technicien. Les filtres simplifient la consultation.</p>
-              <ul class="gallery-chips">
-                <li>Entree / Sortie / Ajustement</li>
-                <li>Groupes par date</li>
-                <li>Technicien et horaire</li>
-                <li>Export CSV</li>
-              </ul>
-            </div>
-          </article>
-
-          <article class="gallery-row gallery-row--reverse">
-            <figure class="phone-frame phone-frame--medium">
-              <div class="phone-shell" role="button" tabindex="0" aria-label="Agrandir la capture Multi-sites">
-                <div class="phone-btn phone-btn--vol"></div>
-                <div class="phone-btn phone-btn--power"></div>
-                <div class="phone-notch"></div>
-                <div class="phone-screen">
-                  <img class="screen-img" src="assets/screens/07_site_select.png" alt="Selection du site actif IT-Inventory" loading="lazy">
-                  <span class="screen-badge">Multi-sites</span>
-                </div>
-              </div>
-              <figcaption class="phone-caption">Ecran 8 / 8 - Multi-sites</figcaption>
-            </figure>
-            <div class="gallery-copy">
-              <p class="gallery-kicker">Multi-sites</p>
-              <h3>Gestion multi-sites</h3>
-              <p>Basculer entre Epinal, S5, S8 et TCS en un tap avec des stocks independants.</p>
-              <ul class="gallery-chips">
-                <li>4 sites independants</li>
-                <li>Initiales colorees</li>
-                <li>Stats articles et PC par site</li>
-                <li>Site actif mis en evidence</li>
-              </ul>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section id="tutorial" class="tutorial">
-      <div class="container">
-        <header class="section-header">
-          <h2>Comment utiliser IT-Inventory</h2>
-          <p>Guide pas a pas pour les techniciens Android.</p>
-        </header>
-
-        <div class="tutorial-nav" role="tablist" aria-label="Chapitres du tutoriel">
-          <button class="tuto-tab active" role="tab" aria-selected="true" data-chapter="install">Installation</button>
-          <button class="tuto-tab" role="tab" aria-selected="false" data-chapter="firstLaunch">Premier lancement</button>
-          <button class="tuto-tab" role="tab" aria-selected="false" data-chapter="articles">Articles</button>
-          <button class="tuto-tab" role="tab" aria-selected="false" data-chapter="parcPC">Parc PC</button>
-          <button class="tuto-tab" role="tab" aria-selected="false" data-chapter="scanner">Scanner</button>
-          <button class="tuto-tab" role="tab" aria-selected="false" data-chapter="mouvements">Mouvements</button>
-          <button class="tuto-tab" role="tab" aria-selected="false" data-chapter="multiSites">Multi-sites</button>
-        </div>
-
-        <div id="tutorial-content" class="tutorial-content" role="tabpanel" aria-live="polite"></div>
-      </div>
-    </section>
-
-    <section id="faq" class="faq">
-      <div class="container faq-container">
-        <header class="section-header">
-          <h2>Questions frequentes</h2>
-        </header>
-
-        <details class="faq-item">
-          <summary class="faq-question">
-            L'app fonctionne-t-elle sur n'importe quel Android ?
-            <span aria-hidden="true">+</span>
-          </summary>
-          <p class="faq-answer">
-            Oui. IT-Inventory fonctionne sur tout Android 8.0+. Elle etait auparavant optimisee pour Zebra TC22,
-            mais elle est desormais concue pour les telephones Android classiques avec la camera pour le scan.
-          </p>
-        </details>
-
-        <details class="faq-item">
-          <summary class="faq-question">
-            Puis-je utiliser l'app sans connexion internet ?
-            <span aria-hidden="true">+</span>
-          </summary>
-          <p class="faq-answer">
-            En mode hors-ligne, vous pouvez consulter le stock. La synchronisation des operations
-            necessite une connexion pour s'enregistrer dans la base Supabase.
-          </p>
-        </details>
-
-        <details class="faq-item">
-          <summary class="faq-question">
-            Comment scanner un code-barres avec mon telephone Android ?
-            <span aria-hidden="true">+</span>
-          </summary>
-          <p class="faq-answer">
-            Depuis le Dashboard, appuyez sur le bouton Scanner (icone QR central). Autorisez la camera,
-            puis pointez le code-barres de l'article.
-          </p>
-        </details>
-
-        <details class="faq-item">
-          <summary class="faq-question">
-            Comment changer de site actif (Stock 5eme vers Stock 8eme) ?
-            <span aria-hidden="true">+</span>
-          </summary>
-          <p class="faq-answer">
-            Sur le Dashboard, tapez sur la pill verte affichant votre site actuel en haut a gauche.
-            Choisissez ensuite le site souhaite parmi Epinal, Stock 5eme, Stock 8eme, TCS.
-          </p>
-        </details>
-
-        <details class="faq-item">
-          <summary class="faq-question">
-            Comment declarer un PC en panne ?
-            <span aria-hidden="true">+</span>
-          </summary>
-          <p class="faq-answer">
-            Dans l'onglet Parc PC, trouvez le PC concerne et appuyez sur En panne. Choisissez type,
-            priorite et description, puis confirmez.
-          </p>
-        </details>
-
-        <details class="faq-item">
-          <summary class="faq-question">
-            Comment mettre a jour l'application ?
-            <span aria-hidden="true">+</span>
-          </summary>
-          <p class="faq-answer">
-            Ouvrez le Google Play Store, recherchez IT-Inventory puis appuyez sur Mettre a jour.
-            En cas de mise a jour obligatoire, l'app affiche un ecran de mise a jour forcee.
-          </p>
-        </details>
-      </div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="container footer-grid">
-      <div>
-        <a href="#top" class="brand footer-brand">
-          <img src="assets/logo.svg" alt="Logo IT-Inventory" width="24" height="24">
-          <span>IT-Inventory</span>
+    <header class="navbar">
+      <div class="nav-inner">
+        <a
+          class="brand"
+          href="#top"
+          aria-label="IT-Inventory, accueil du guide"
+        >
+          <span class="brand-mark"
+            ><svg class="icon"><use href="#i-box" /></svg
+          ></span>
+          <span
+            ><strong>IT-Inventory<span class="brand-dot">.</span></strong
+            ><small>LE GUIDE DES ÉQUIPES IT</small></span
+          >
         </a>
-        <p>Gestion de stock IT intelligente pour les techniciens Credit Agricole.</p>
-        <a class="footer-link" href="https://play.google.com/store/apps/details?id=com.itinventory" target="_blank" rel="noopener noreferrer">Telecharger l'app</a>
+        <nav class="top-links" aria-label="Navigation principale">
+          <a href="#guide">Les procédures</a>
+          <a href="#bonnes-pratiques">Les bons réflexes</a>
+          <a href="#faq">Besoin d’aide ?</a>
+        </nav>
+        <a class="button button-small button-outline" href="#guide"
+          >Ouvrir le guide <svg class="icon"><use href="#i-arrow" /></svg
+        ></a>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow hero-eyebrow">
+              <span class="status-dot"></span> VOTRE COMPAGNON AU QUOTIDIEN
+            </p>
+            <h1 id="hero-title">
+              Le stock IT,<br />en toute <em>simplicité.</em>
+            </h1>
+            <p class="hero-description">
+              Les bons gestes, au bon endroit. Retrouvez toutes les procédures
+              IT-Inventory pour gérer vos équipements, pas à pas.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-light" href="#guide"
+                >Découvrir les procédures
+                <svg class="icon"><use href="#i-arrow" /></svg
+              ></a>
+              <a class="hero-secondary" href="#procedure/demarrage"
+                >Je débute <span aria-hidden="true">↗</span></a
+              >
+            </div>
+            <div class="hero-promises">
+              <span
+                ><svg class="icon"><use href="#i-check" /></svg> Étape par
+                étape</span
+              >
+              <span
+                ><svg class="icon"><use href="#i-check" /></svg> Pensé pour le
+                terrain</span
+              >
+              <span
+                ><svg class="icon"><use href="#i-check" /></svg> Facile à
+                retrouver</span
+              >
+            </div>
+          </div>
+          <div class="hero-visual">
+            <div class="visual-label">
+              <span class="status-dot"></span> UN REPÈRE POUR CHAQUE ÉCRAN
+            </div>
+            <figure class="hero-phone">
+              <div class="phone-top" aria-hidden="true"></div>
+              <div class="hero-capture" data-capture="accueil"></div>
+              <figcaption>Votre application. Votre guide.</figcaption>
+            </figure>
+            <div class="floating-note note-scan">
+              <span class="note-icon"
+                ><svg class="icon"><use href="#i-scan" /></svg></span
+              ><span
+                ><strong>Scanner. Identifier.</strong
+                ><small>Le bon article, sans détour.</small></span
+              >
+            </div>
+            <div class="floating-note note-check">
+              <span class="note-icon"
+                ><svg class="icon"><use href="#i-check" /></svg></span
+              ><span
+                ><strong>Vérifier. Valider.</strong
+                ><small>Chaque mouvement compte.</small></span
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="intro-strip container">
+        <span class="intro-icon"
+          ><svg class="icon"><use href="#i-book" /></svg
+        ></span>
+        <p>
+          <strong>Un guide, pas un casse-tête.</strong> Choisissez une tâche et
+          laissez-vous guider.
+        </p>
+        <span class="edition-label">ÉDITION ÉQUIPES IT</span>
       </div>
 
-      <div>
-        <h3>Fonctionnalites</h3>
-        <ul>
-          <li><a href="#features">Gestion des articles</a></li>
-          <li><a href="#features">Parc PC portables</a></li>
-          <li><a href="#features">Mouvements de stock</a></li>
-          <li><a href="#features">Multi-sites</a></li>
-          <li><a href="#features">Dashboard</a></li>
-        </ul>
+      <section
+        class="guide-section container"
+        id="guide"
+        aria-labelledby="guide-title"
+      >
+        <header class="section-heading">
+          <div>
+            <p class="eyebrow">À VOUS DE JOUER</p>
+            <h2 id="guide-title">Que souhaitez-vous faire ?</h2>
+          </div>
+          <p>De la première connexion<br />au dernier mouvement de stock.</p>
+        </header>
+        <p class="capture-notice">
+          <svg class="icon"><use href="#i-image" /></svg> Captures de
+          l’émulateur Android réalisées le 6 octobre 2026, avec les données
+          personnelles et internes masquées. La connexion et la confirmation
+          vocale restent à illustrer. Guide à valider en interne avant
+          diffusion.
+        </p>
+        <div class="guide-layout">
+          <aside class="guide-sidebar" aria-label="Trouver une procédure">
+            <label class="search-label" for="guide-search"
+              >Rechercher une procédure</label
+            >
+            <div class="search-field">
+              <svg class="icon"><use href="#i-search" /></svg>
+              <input
+                id="guide-search"
+                type="search"
+                placeholder="Scan, sortie, PC…"
+                autocomplete="off"
+              />
+            </div>
+            <div class="sidebar-heading">
+              <span>LES PROCÉDURES</span><span id="chapter-count"></span>
+            </div>
+            <button
+              class="mobile-guide-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="chapter-nav"
+            >
+              <svg class="icon"><use href="#i-menu" /></svg> Choisir une
+              procédure
+            </button>
+            <nav
+              id="chapter-nav"
+              class="chapter-nav"
+              aria-label="Procédures"
+            ></nav>
+            <p
+              id="search-status"
+              class="search-status"
+              role="status"
+              aria-live="polite"
+            ></p>
+            <div class="sidebar-tip">
+              <svg class="icon"><use href="#i-site" /></svg
+              ><strong>Le bon site, avant tout.</strong>
+              <p>Vérifiez le stock actif avant chaque opération.</p>
+            </div>
+          </aside>
+          <div class="guide-main">
+            <p id="route-status" class="route-status" role="status" hidden></p>
+            <article
+              id="tutorial-content"
+              aria-labelledby="chapter-title"
+            ></article>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="best-practices"
+        id="bonnes-pratiques"
+        aria-labelledby="practices-title"
+      >
+        <div class="container">
+          <header class="section-heading">
+            <div>
+              <p class="eyebrow">LES BONS RÉFLEXES</p>
+              <h2 id="practices-title">Un stock fiable commence ici.</h2>
+            </div>
+            <p>Trois habitudes à garder<br />pour chaque intervention.</p>
+          </header>
+          <div class="practice-grid">
+            <article>
+              <span class="practice-number">01</span
+              ><svg class="icon"><use href="#i-site" /></svg>
+              <h3>Vérifier le site</h3>
+              <p>
+                Le stock actif doit correspondre au lieu où vous intervenez. Ne
+                validez pas un mouvement sur le mauvais site.
+              </p>
+            </article>
+            <article>
+              <span class="practice-number">02</span
+              ><svg class="icon"><use href="#i-scan" /></svg>
+              <h3>Identifier le matériel</h3>
+              <p>
+                Contrôlez la référence et le nom de l’article. Pour les
+                équipements suivis par asset, scannez chaque identifiant.
+              </p>
+            </article>
+            <article>
+              <span class="practice-number">03</span
+              ><svg class="icon"><use href="#i-check" /></svg>
+              <h3>Contrôler le résultat</h3>
+              <p>
+                Relisez le récapitulatif puis vérifiez la confirmation, le stock
+                et l’historique. Un message d’erreur n’est pas une validation.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="faq-section container"
+        id="faq"
+        aria-labelledby="faq-title"
+      >
+        <div class="faq-intro">
+          <p class="eyebrow">UN COUP DE POUCE</p>
+          <h2 id="faq-title">Une question ?<br />Le bon réflexe.</h2>
+          <p>
+            Si le problème persiste, contactez votre administrateur ou utilisez
+            la rubrique Aide et support de l’application.
+          </p>
+          <span class="help-badge"
+            ><svg class="icon"><use href="#i-help" /></svg> Ne partagez jamais
+            votre mot de passe.</span
+          >
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Je n’ai pas d’identifiants de connexion.</summary>
+            <p>
+              Demandez un compte à votre administrateur. N’utilisez pas les
+              identifiants d’un collègue : les opérations doivent rester
+              attribuées à leur auteur.
+            </p>
+          </details>
+          <details>
+            <summary>Le scanner ne reconnaît pas le code-barres.</summary>
+            <p>
+              Vérifiez l’autorisation de la caméra dans les réglages du
+              téléphone, l’éclairage et la lisibilité du code. Maintenez le
+              téléphone stable. Pour un article classique, utilisez la recherche
+              par nom ou référence si nécessaire ; le suivi par asset exige le
+              scan de l’identifiant.
+            </p>
+          </details>
+          <details>
+            <summary>J’ai choisi le mauvais site.</summary>
+            <p>
+              Avant toute validation, changez le stock actif via « Changer »
+              dans la barre du bas. Si une opération a déjà été enregistrée,
+              vérifiez son historique et demandez à votre responsable la
+              correction adaptée. Ne créez pas de mouvement compensatoire au
+              hasard.
+            </p>
+          </details>
+          <details>
+            <summary>Un mouvement affiche une erreur.</summary>
+            <p>
+              Lisez le message et vérifiez le site, l’article et la quantité.
+              Une sortie ne peut pas dépasser le stock disponible. En cas de
+              conflit, actualisez le stock avant de réessayer ; vérifiez
+              l’historique pour éviter les doublons.
+            </p>
+          </details>
+          <details>
+            <summary>Comment conserver la procédure en PDF ?</summary>
+            <p>
+              Ouvrez la procédure souhaitée, puis utilisez « Imprimer » en haut
+              de sa fiche. Dans la fenêtre d’impression du navigateur,
+              choisissez l’enregistrement en PDF. Seule la procédure ouverte est
+              imprimée.
+            </p>
+          </details>
+        </div>
+      </section>
+    </main>
+    <footer class="footer container">
+      <a class="brand footer-brand" href="#top"
+        ><span class="brand-mark"
+          ><svg class="icon"><use href="#i-box" /></svg></span
+        ><strong>IT-Inventory.</strong></a
+      >
+      <p>
+        Guide pratique des équipes IT · Style inspiré du Crédit Agricole.<br />Support
+        de travail à valider en interne, non publié officiellement.
+      </p>
+      <a href="#top">Retour en haut <span aria-hidden="true">↑</span></a>
+    </footer>
+    <dialog
+      id="capture-dialog"
+      class="capture-dialog"
+      aria-labelledby="capture-dialog-title"
+    >
+      <div class="dialog-header">
+        <h2 id="capture-dialog-title">Capture de l’application</h2>
+        <button
+          class="icon-button"
+          id="close-capture"
+          type="button"
+          aria-label="Fermer la capture"
+        >
+          <svg class="icon"><use href="#i-close" /></svg>
+        </button>
       </div>
-
-      <div>
-        <h3>Tutoriel</h3>
-        <ul>
-          <li><a href="#tutorial">Installation</a></li>
-          <li><a href="#tutorial">Premier lancement</a></li>
-          <li><a href="#tutorial">Scanner un article</a></li>
-          <li><a href="#tutorial">Gerer le parc PC</a></li>
-          <li><a href="#faq">FAQ</a></li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="container footer-bottom">
-      <p>© 2025 IT-Inventory - Credit Agricole Alsace Vosges</p>
-      <p>v2.35</p>
-    </div>
-  </footer>
-
-  <script src="scripts/screens-data.js"></script>
-  <script src="scripts/tutorial.js"></script>
-  <script src="scripts/main.js"></script>
-  <script src="scripts/lightbox.js"></script>
-</body>
+      <img id="dialog-image" alt="" />
+      <p id="dialog-caption"></p>
+    </dialog>
+    <noscript
+      ><p class="noscript-notice">
+        Activez JavaScript pour consulter les procédures et utiliser la
+        recherche. Les bons réflexes et l’aide restent consultables ci-dessus.
+      </p></noscript
+    >
+  </body>
 </html>

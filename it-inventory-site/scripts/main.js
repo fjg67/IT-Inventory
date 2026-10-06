@@ -1,81 +1,114 @@
-const sections = document.querySelectorAll('section[id]');
-const navAnchors = document.querySelectorAll('.nav-links a');
-const navbar = document.querySelector('.navbar');
+/* eslint-env browser */
+/* global GUIDE_CHAPTERS */
 
-const sectionObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
+(() => {
+  const { guideIcon, renderCapture, chapterLink, renderChapter } =
+    window.ITInventoryGuide;
+  const chapterNav = document.getElementById('chapter-nav');
+  const search = document.getElementById('guide-search');
+  const mobileToggle = document.querySelector('.mobile-guide-toggle');
+  let activeChapter = GUIDE_CHAPTERS[0];
 
-      navAnchors.forEach((link) => link.classList.remove('active'));
-      const active = document.querySelector(`.nav-links a[href="#${entry.target.id}"]`);
-      if (active) active.classList.add('active');
+  function normalizeSearch(value) {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('fr')
+      .trim();
+  }
+
+  function filterChapters() {
+    const words = normalizeSearch(search.value).split(/\s+/).filter(Boolean);
+    let matches = 0;
+    chapterNav.querySelectorAll('a').forEach((link, index) => {
+      const chapter = GUIDE_CHAPTERS[index];
+      const haystack = normalizeSearch(
+        [
+          chapter.title,
+          chapter.shortTitle,
+          chapter.description,
+          chapter.keywords,
+          ...chapter.steps.map(
+            step => `${step.title} ${step.text} ${step.tip || ''}`,
+          ),
+        ].join(' '),
+      );
+      const matched = words.every(word => haystack.includes(word));
+      link.hidden = !matched;
+      if (matched) matches++;
     });
-  },
-  { threshold: 0.3 }
-);
+    document.getElementById('chapter-count').textContent = String(matches);
+    document.getElementById('search-status').textContent = words.length
+      ? matches
+        ? `${matches} procédure${matches > 1 ? 's' : ''} trouvée${
+            matches > 1 ? 's' : ''
+          }.`
+        : 'Aucune procédure trouvée. Essayez « scan », « stock » ou « PC ».'
+      : '';
+    if (words.length) {
+      chapterNav.classList.add('open');
+      mobileToggle.setAttribute('aria-expanded', 'true');
+    }
+  }
 
-sections.forEach((section) => sectionObserver.observe(section));
+  function selectChapter(chapter, moveFocus) {
+    activeChapter = chapter;
+    renderChapter(chapter);
+    chapterNav.querySelectorAll('a').forEach(link => {
+      if (link.href.endsWith(`#procedure/${chapter.id}`))
+        link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    document.title = `${chapter.shortTitle} · IT-Inventory, guide pratique`;
+    if (moveFocus) {
+      document.getElementById('chapter-title').focus({ preventScroll: true });
+      document.getElementById('guide').scrollIntoView({ block: 'start' });
+      chapterNav.classList.remove('open');
+      mobileToggle.setAttribute('aria-expanded', 'false');
+    }
+  }
 
-window.addEventListener('scroll', () => {
-  if (!navbar) return;
-  navbar.classList.toggle('scrolled', window.scrollY > 20);
-});
+  function handleRoute(moveFocus) {
+    const hash = window.location.hash;
+    const status = document.getElementById('route-status');
+    status.hidden = true;
+    if (!hash.startsWith('#procedure/')) return;
+    const id = hash.slice('#procedure/'.length);
+    const chapter = GUIDE_CHAPTERS.find(item => item.id === id);
+    if (!chapter) {
+      status.textContent =
+        'Cette procédure n’existe pas. Choisissez une procédure dans le menu.';
+      status.hidden = false;
+      document.getElementById('guide').scrollIntoView({ block: 'start' });
+      return;
+    }
+    selectChapter(chapter, moveFocus);
+  }
 
-const toggle = document.querySelector('.nav-toggle');
-const navLinks = document.querySelector('.nav-links');
-
-if (toggle && navLinks) {
-  toggle.addEventListener('click', () => {
-    const expanded = toggle.getAttribute('aria-expanded') === 'true';
-    toggle.setAttribute('aria-expanded', String(!expanded));
-    navLinks.classList.toggle('open');
+  GUIDE_CHAPTERS.forEach(chapter => {
+    const link = chapterLink(chapter, 'chapter-link');
+    link.prepend(guideIcon(chapter.icon));
+    chapterNav.append(link);
   });
-
-  navLinks.querySelectorAll('a').forEach((link) => {
-    link.addEventListener('click', () => {
-      if (window.innerWidth > 768) return;
-      navLinks.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
-    });
+  selectChapter(activeChapter, false);
+  filterChapters();
+  handleRoute(true);
+  document
+    .querySelectorAll('[data-capture]')
+    .forEach(container => renderCapture(container, container.dataset.capture));
+  search.addEventListener('input', filterChapters);
+  mobileToggle.addEventListener('click', () => {
+    const open = mobileToggle.getAttribute('aria-expanded') !== 'true';
+    mobileToggle.setAttribute('aria-expanded', String(open));
+    chapterNav.classList.toggle('open', open);
   });
-}
-
-const revealTargets = document.querySelectorAll('.feature-card, .gallery-row, .tutorial-step, .faq-item');
-const revealObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) entry.target.classList.add('visible');
-    });
-  },
-  { threshold: 0.1 }
-);
-
-revealTargets.forEach((el) => {
-  el.classList.add('reveal');
-  revealObserver.observe(el);
-});
-
-function setupScreenImages(scope = document) {
-  const images = scope.querySelectorAll('.screen-img');
-
-  images.forEach((img) => {
-    if (img.dataset.placeholderBound === 'true') return;
-    img.dataset.placeholderBound = 'true';
-
-    img.addEventListener('error', function onError() {
-      const placeholder = document.createElement('div');
-      const altText = this.alt || 'Capture ecran IT-Inventory';
-
-      placeholder.className = 'screen-placeholder';
-      placeholder.setAttribute('role', 'img');
-      placeholder.setAttribute('aria-label', `Capture d'ecran a venir: ${altText}`);
-      placeholder.innerHTML = '<i>📱</i><span>Screenshot<br>a ajouter</span>';
-
-      this.replaceWith(placeholder);
-    });
+  window.addEventListener('hashchange', () => handleRoute(true));
+  document.addEventListener('click', event => {
+    if (!(event.target instanceof Element)) return;
+    const link = event.target.closest('a[href^="#procedure/"]');
+    if (link && link.hash === window.location.hash) {
+      event.preventDefault();
+      selectChapter(activeChapter, true);
+    }
   });
-}
-
-window.setupScreenImages = setupScreenImages;
-setupScreenImages();
+})();

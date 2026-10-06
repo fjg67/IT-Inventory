@@ -2,6 +2,89 @@ This is a new [**React Native**](https://reactnative.dev) project, bootstrapped 
 
 # Getting Started
 
+## Guide web IT-Inventory
+
+Le dossier [it-inventory-site](./it-inventory-site) contient le guide de procédures
+en français, au style inspiré du Crédit Agricole. Il est indépendant de
+l'application React Native : aucun compte, accès à la base de données, outil de
+compilation ou service tiers n'est nécessaire. Ouvrir
+[index.html](./it-inventory-site/index.html) dans un navigateur récent, ou servir
+ce dossier avec un serveur statique interne. Le guide propose la recherche,
+des liens directs (`#procedure/mouvements` par exemple), des captures
+agrandissables et l'impression de la procédure ouverte en PDF.
+
+### Publication GitHub Pages
+
+Adresse publique du guide : https://fjg67.github.io/IT-Inventory/
+
+Le workflow [guide-pages.yml](./.github/workflows/guide-pages.yml) publie
+uniquement le dossier `it-inventory-site` lors des modifications de ce dossier
+sur `main`. Il peut aussi être lancé manuellement depuis l'onglet Actions.
+Dans les paramètres du dépôt, **Pages > Source** doit être réglé sur
+**GitHub Actions**. Le site étant public, ne publier que des captures
+anonymisées et des informations autorisées à la diffusion.
+
+### Captures de l'émulateur Android
+
+Le guide intègre 18 captures PNG réalisées le 6 octobre 2026 sur l'émulateur
+Android Pixel 10 Pro XL, avec l'interface chargée depuis le code du projet.
+Les fichiers publiables sont dans
+[assets/screens](./it-inventory-site/assets/screens). Les noms, sites,
+identifiants, dates d'opérations et valeurs de stock visibles ont été masqués
+avec des aplats opaques avant intégration. Les images ont été réduites à
+900 pixels de large ; la déclaration de panne est recadrée sur son formulaire.
+Les images brutes ne sont pas intégrées au dépôt.
+
+Les formulaires de création, mouvements, ajustements, transferts et panne
+ont uniquement été ouverts ou préparés, jamais validés. Les quantités saisies
+dans les brouillons sont illustratives, pas issues d'un comptage. Les lectures
+de références ont été simulées par l'événement du scanner de l'application ;
+la caméra montre la scène virtuelle de l'émulateur. Aucun asset individuel
+n'a été scanné pour modifier le stock. L'historique des assets affiché
+préexistait aux captures et a uniquement été consulté.
+
+Deux illustrations restent volontairement absentes : la connexion (pour ne
+pas déconnecter la session existante) et la confirmation vocale (aucune
+reconnaissance ni exécution vocale lancée). Leurs emplacements « Capture à
+réaliser » restent explicites ; ils ne représentent pas des captures de
+l'application. Les légendes précisent la provenance et les limites de chaque
+écran. Avant diffusion, faire valider les procédures et les captures par le
+responsable interne.
+
+### Ajouter ou remplacer une capture
+
+1. Anonymiser les captures (noms, identifiants, agences, données de stock
+   sensibles, notifications et toute information personnelle) avec des masques
+   opaques. Exporter en PNG sans métadonnées, à 900 pixels de large.
+2. Placer les fichiers validés dans `it-inventory-site/assets/screens/`.
+3. Dans [screens-data.js](./it-inventory-site/scripts/screens-data.js), remplacer
+   `src: null` du repère concerné par un chemin relatif à la page, par exemple
+   `src: 'assets/screens/accueil.png'`. Adapter aussi le texte `alt` au contenu
+   réel. Adapter le champ `note` pour préciser le contexte (formulaire non
+   validé, recadrage, lecture simulée, etc.). Retirer `pendingReason` lorsque
+   l'image manquante est fournie. Les repères sont affichés sur les emplacements
+   restant à illustrer.
+4. Recharger le guide et vérifier chaque procédure, les images, leur
+   agrandissement et le rendu imprimé. Les captures configurées mais
+   introuvables affichent une erreur explicite.
+5. Mettre à jour la date et les illustrations manquantes dans l'avertissement
+   de la page. Après validation, adapter aussi la mention du pied de page.
+   Ne présenter le guide comme officiel qu'après approbation.
+6. Si une illustration manquante est ajoutée, adapter le nombre de captures et
+   les repères encore en attente dans
+   [guideContent.test.js](./__tests__/guideContent.test.js), puis relancer le test.
+
+Les procédures sont définies dans `GUIDE_CHAPTERS` du même fichier. Vérifier
+les textes lors des évolutions de l'application, en particulier les libellés,
+les droits d'accès, les mouvements suivis par asset (enregistrés à chaque scan
+accepté) et la confirmation explicite des commandes vocales.
+
+Validation ciblée du contenu et des chemins locaux :
+
+```sh
+npm test -- __tests__/guideContent.test.js --runInBand --watch=false
+```
+
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
 
 ## Step 1: Start Metro

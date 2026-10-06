@@ -1,77 +1,54 @@
-class Lightbox {
-  constructor() {
-    this.overlay = null;
-    this.init();
+/* eslint-env browser */
+/* global GUIDE_CAPTURES */
+
+const captureDialog = document.getElementById('capture-dialog');
+const dialogImage = document.getElementById('dialog-image');
+let captureTrigger = null;
+
+document.addEventListener('click', event => {
+  if (!(event.target instanceof Element)) return;
+  const trigger = event.target.closest('[data-capture-open]');
+  if (!trigger) return;
+  const capture = GUIDE_CAPTURES[trigger.dataset.captureOpen];
+  if (!capture || !capture.src) throw new Error('Capture non configurée.');
+  captureTrigger = trigger;
+  document.getElementById('capture-dialog-title').textContent = capture.title;
+  document.getElementById('dialog-caption').textContent = `${
+    capture.alt
+  } · Capture Android, données masquées.${
+    capture.note ? ` ${capture.note}` : ''
+  }`;
+  dialogImage.alt = capture.alt;
+  dialogImage.src = capture.src;
+  captureDialog.showModal();
+});
+dialogImage.addEventListener('error', () => {
+  document.getElementById('dialog-caption').textContent =
+    'Erreur : la capture ne peut pas être chargée. Vérifiez le fichier configuré.';
+  console.error(`Impossible d’agrandir la capture : ${dialogImage.src}`);
+});
+document
+  .getElementById('close-capture')
+  .addEventListener('click', () => captureDialog.close());
+captureDialog.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    captureDialog.close();
   }
-
-  init() {
-    this.overlay = document.createElement('div');
-    this.overlay.className = 'lightbox-overlay';
-    this.overlay.setAttribute('role', 'dialog');
-    this.overlay.setAttribute('aria-modal', 'true');
-    this.overlay.setAttribute('aria-label', "Capture d'ecran agrandie");
-    this.overlay.innerHTML = `
-      <button class="lightbox-close" type="button" aria-label="Fermer">✕</button>
-      <figure class="lightbox-phone-shell">
-        <img class="lightbox-img" src="" alt="">
-        <figcaption class="lightbox-caption"></figcaption>
-      </figure>
-    `;
-
-    document.body.appendChild(this.overlay);
-
-    this.overlay.addEventListener('click', (event) => {
-      if (event.target === this.overlay || event.target.classList.contains('lightbox-close')) {
-        this.close();
-      }
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') this.close();
-    });
-
-    document.addEventListener('click', (event) => {
-      const shell = event.target.closest('.phone-shell');
-      if (!shell) return;
-
-      const img = shell.querySelector('.screen-img');
-      if (!img || !img.getAttribute('src')) return;
-
-      const caption = shell.closest('figure')?.querySelector('figcaption')?.textContent?.trim() || '';
-      this.open(img.getAttribute('src'), img.alt || '', caption);
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-      const shell = document.activeElement;
-      if (!shell || !shell.classList.contains('phone-shell')) return;
-      const img = shell.querySelector('.screen-img');
-      if (!img || !img.getAttribute('src')) return;
-      event.preventDefault();
-      const caption = shell.closest('figure')?.querySelector('figcaption')?.textContent?.trim() || '';
-      this.open(img.getAttribute('src'), img.alt || '', caption);
-    });
+});
+captureDialog.addEventListener('click', event => {
+  if (event.target !== captureDialog) return;
+  const bounds = captureDialog.getBoundingClientRect();
+  if (
+    event.clientX < bounds.left ||
+    event.clientX > bounds.right ||
+    event.clientY < bounds.top ||
+    event.clientY > bounds.bottom
+  ) {
+    captureDialog.close();
   }
-
-  open(src, alt, caption) {
-    const image = this.overlay.querySelector('.lightbox-img');
-    const legend = this.overlay.querySelector('.lightbox-caption');
-
-    image.src = src;
-    image.alt = alt;
-    legend.textContent = caption;
-
-    this.overlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-    this.overlay.querySelector('.lightbox-close').focus();
-  }
-
-  close() {
-    this.overlay.classList.remove('active');
-    document.body.style.overflow = '';
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  new Lightbox();
+});
+captureDialog.addEventListener('close', () => {
+  if (captureTrigger?.isConnected) captureTrigger.focus();
+  dialogImage.removeAttribute('src');
 });
