@@ -26,7 +26,7 @@ anonymisées et des informations autorisées à la diffusion.
 
 ### Captures de l'émulateur Android
 
-Le guide intègre 18 captures PNG réalisées le 6 octobre 2026 sur l'émulateur
+Le guide intègre 19 captures PNG réalisées le 6 octobre 2026 sur l'émulateur
 Android Pixel 10 Pro XL, avec l'interface chargée depuis le code du projet.
 Les fichiers publiables sont dans
 [assets/screens](./it-inventory-site/assets/screens). Les noms, sites,
@@ -43,10 +43,13 @@ la caméra montre la scène virtuelle de l'émulateur. Aucun asset individuel
 n'a été scanné pour modifier le stock. L'historique des assets affiché
 préexistait aux captures et a uniquement été consulté.
 
-Deux illustrations restent volontairement absentes : la connexion (pour ne
-pas déconnecter la session existante) et la confirmation vocale (aucune
-reconnaissance ni exécution vocale lancée). Leurs emplacements « Capture à
-réaliser » restent explicites ; ils ne représentent pas des captures de
+La connexion a été capturée dans un profil Android temporaire, sur une instance
+de l'émulateur sans sauvegarde. Le compte existant n'a pas été déconnecté ;
+aucun mot de passe n'a été saisi et aucune connexion n'a été effectuée.
+
+Seule la confirmation vocale reste volontairement absente (aucune
+reconnaissance ni exécution vocale lancée). Son emplacement « Capture à
+réaliser » reste explicite ; il ne représente pas une capture de
 l'application. Les légendes précisent la provenance et les limites de chaque
 écran. Avant diffusion, faire valider les procédures et les captures par le
 responsable interne.

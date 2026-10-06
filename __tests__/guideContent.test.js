@@ -79,17 +79,19 @@ it('loads only existing local resources and valid procedure deep links', () => {
   }
 });
 
-it('provides eighteen readable PNG captures and explicitly explains pending screens', async () => {
+it('provides nineteen readable PNG captures and explicitly explains pending screens', async () => {
   const configured = Object.entries(captures).filter(
     ([, capture]) => capture.src !== null,
   );
-  expect(configured).toHaveLength(18);
+  expect(configured).toHaveLength(19);
   for (const [id, capture] of Object.entries(captures)) {
     if (capture.src === null) {
-      expect(['connexion', 'vocal']).toContain(id);
+      expect(id).toBe('vocal');
       expect(capture.pendingReason.trim().length).toBeGreaterThan(0);
       continue;
     }
+    expect(captures.connexion.src).toBe('assets/screens/connexion.png');
+    expect(captures.connexion.note).toContain('aucun mot de passe saisi');
     const metadata = await sharp(path.join(sitePath, capture.src)).metadata();
     expect(metadata.format).toBe('png');
     expect(metadata.width).toBe(900);

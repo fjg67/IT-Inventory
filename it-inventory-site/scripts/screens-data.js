@@ -8,11 +8,11 @@ window.GUIDE_CAPTURES = {
     alt: 'Accueil IT-Inventory avec les indicateurs et le stock actif',
   },
   connexion: {
-    src: null,
+    src: 'assets/screens/connexion.png',
     title: 'Connexion',
     alt: 'Formulaire de connexion IT-Inventory',
-    pendingReason:
-      'À capturer dans une session de démonstration, sans déconnecter le compte utilisé pour les autres écrans.',
+    note:
+      'Formulaire vierge dans un profil Android temporaire ; aucun mot de passe saisi et aucune connexion effectuée.',
   },
   sites: {
     src: 'assets/screens/sites.png',
@@ -135,7 +135,7 @@ window.GUIDE_CHAPTERS = [
     steps: [
       {
         title: 'Se connecter à son compte',
-        text: 'Ouvrez IT-Inventory, saisissez votre identifiant et votre mot de passe, puis appuyez sur « Se connecter ». En cas d’accès refusé, contactez votre administrateur.',
+        text: 'Ouvrez IT-Inventory, saisissez le mot de passe fourni par votre administrateur, puis appuyez sur « Se connecter ». En cas d’accès refusé, contactez votre administrateur.',
         capture: 'connexion',
       },
       {
