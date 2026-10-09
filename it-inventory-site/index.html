@@ -200,8 +200,8 @@
         <p class="capture-notice">
           <svg class="icon"><use href="#i-image" /></svg> Captures de
           l’émulateur Android réalisées le 6 octobre 2026, avec les données
-          personnelles et internes masquées. Seule la confirmation
-          vocale reste à illustrer. Guide à valider en interne avant
+          personnelles et internes masquées. L’assistant vocal a été retiré
+          de l’application et du guide. Guide à valider en interne avant
           diffusion.
         </p>
         <div class="guide-layout">
@@ -246,6 +246,23 @@
               ><strong>Le bon site, avant tout.</strong>
               <p>Vérifiez le stock actif avant chaque opération.</p>
             </div>
+            <aside class="guide-assistant" aria-label="InvenBot, votre guide">
+              <span class="assistant-avatar">
+                <img
+                  src="assets/invenbot.png"
+                  alt=""
+                  width="48"
+                  height="48"
+                  loading="lazy"
+                />
+              </span>
+              <span class="assistant-copy">
+                <strong>InvenBot <span>VOTRE GUIDE</span></strong>
+                <small id="assistant-message" aria-live="polite"
+                  >Choisissez une procédure, je vous accompagne.</small
+                >
+              </span>
+            </aside>
           </aside>
           <div class="guide-main">
             <p id="route-status" class="route-status" role="status" hidden></p>

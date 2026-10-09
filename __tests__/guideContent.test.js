@@ -15,8 +15,9 @@ const chapters = context.window.GUIDE_CHAPTERS;
 const captures = context.window.GUIDE_CAPTURES;
 const html = fs.readFileSync(path.join(sitePath, 'index.html'), 'utf8');
 
-it('provides ten unique procedures with prerequisites, steps and expected results', () => {
-  expect(chapters).toHaveLength(10);
+it('provides nine unique procedures with prerequisites, steps and expected results', () => {
+  expect(chapters).toHaveLength(9);
+  expect(chapters.some(chapter => chapter.id === 'commande-vocale')).toBe(false);
   const ids = chapters.map(chapter => chapter.id);
   expect(new Set(ids).size).toBe(ids.length);
   for (const chapter of chapters) {
@@ -79,17 +80,14 @@ it('loads only existing local resources and valid procedure deep links', () => {
   }
 });
 
-it('provides nineteen readable PNG captures and explicitly explains pending screens', async () => {
+it('provides nineteen readable PNG captures without obsolete voice placeholders', async () => {
   const configured = Object.entries(captures).filter(
     ([, capture]) => capture.src !== null,
   );
   expect(configured).toHaveLength(19);
   for (const [id, capture] of Object.entries(captures)) {
-    if (capture.src === null) {
-      expect(id).toBe('vocal');
-      expect(capture.pendingReason.trim().length).toBeGreaterThan(0);
-      continue;
-    }
+    expect(id).not.toBe('vocal');
+    expect(capture.src).not.toBeNull();
     expect(captures.connexion.src).toBe('assets/screens/connexion.png');
     expect(captures.connexion.note).toContain('aucun mot de passe saisi');
     const metadata = await sharp(path.join(sitePath, capture.src)).metadata();

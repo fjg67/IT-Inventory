@@ -7,7 +7,13 @@
   const chapterNav = document.getElementById('chapter-nav');
   const search = document.getElementById('guide-search');
   const mobileToggle = document.querySelector('.mobile-guide-toggle');
+  const guideLayout = document.querySelector('.guide-layout');
+  const assistantMessage = document.getElementById('assistant-message');
   let activeChapter = GUIDE_CHAPTERS[0];
+
+  function setAssistantMessage(message) {
+    assistantMessage.textContent = message;
+  }
 
   function normalizeSearch(value) {
     return value
@@ -45,6 +51,18 @@
           }.`
         : 'Aucune procédure trouvée. Essayez « scan », « stock » ou « PC ».'
       : '';
+    guideLayout.classList.toggle('is-searching', words.length > 0);
+    if (words.length) {
+      setAssistantMessage(
+        matches
+          ? `${matches} procédure${matches > 1 ? 's' : ''} repérée${
+              matches > 1 ? 's' : ''
+            }.`
+          : 'Essayons un autre mot-clé.',
+      );
+    } else {
+      setAssistantMessage('Choisissez une procédure, je vous accompagne.');
+    }
     if (words.length) {
       chapterNav.classList.add('open');
       mobileToggle.setAttribute('aria-expanded', 'true');
@@ -54,6 +72,7 @@
   function selectChapter(chapter, moveFocus) {
     activeChapter = chapter;
     renderChapter(chapter);
+    setAssistantMessage('Voici le parcours, étape par étape.');
     chapterNav.querySelectorAll('a').forEach(link => {
       if (link.href.endsWith(`#procedure/${chapter.id}`))
         link.setAttribute('aria-current', 'page');

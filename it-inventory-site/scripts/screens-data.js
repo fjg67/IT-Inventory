@@ -110,13 +110,6 @@ window.GUIDE_CAPTURES = {
     alt: 'Formulaire de déclaration d’une panne de PC',
     note: 'Capture recadrée sur le formulaire vierge ; aucune panne déclarée.',
   },
-  vocal: {
-    src: null,
-    title: 'Confirmation vocale',
-    alt: 'Récapitulatif d’une commande vocale avec Confirmer et Annuler',
-    pendingReason:
-      'À capturer avec une commande de démonstration. Aucune reconnaissance vocale ni exécution déclenchée pour cette série.',
-  },
 };
 
 window.GUIDE_CHAPTERS = [
@@ -419,34 +412,5 @@ window.GUIDE_CHAPTERS = [
     ],
     result:
       'Le bon PC est identifié et son état reflète la situation constatée.',
-  },
-  {
-    id: 'commande-vocale',
-    icon: 'mic',
-    category: 'ASSISTANCE',
-    title: 'Utiliser une commande vocale',
-    shortTitle: 'Commande vocale',
-    description:
-      'Dictez une action, puis gardez le contrôle en vérifiant sa confirmation.',
-    keywords: 'voix vocal vocale microphone dicter confirmer annuler assistant',
-    prerequisite: 'L’accès au microphone autorisé et un stock actif vérifié.',
-    steps: [
-      {
-        title: 'Ouvrir le contrôle vocal',
-        text: 'Depuis l’accueil, touchez le bouton microphone. Autorisez l’accès si nécessaire et énoncez votre demande en précisant le matériel, la quantité et le site lorsque cela s’applique.',
-      },
-      {
-        title: 'Relire l’action interprétée',
-        text: 'Vérifiez le type d’action et tous les détails affichés : article ou PC, quantité, site de destination, personne, date de retour ou statut selon la demande.',
-        capture: 'vocal',
-        tip: 'Une commande comprise n’est pas forcément une commande correcte. Comparez toujours le récapitulatif à votre intention.',
-      },
-      {
-        title: 'Confirmer ou annuler',
-        text: 'Appuyez sur « Confirmer » uniquement si tous les détails sont corrects. Sinon, choisissez « Annuler » et reformulez. Aucune action n’est exécutée sans votre confirmation ; après confirmation, vérifiez le résultat dans l’application.',
-      },
-    ],
-    result:
-      'L’action voulue a été confirmée explicitement et son résultat a été contrôlé.',
   },
 ];

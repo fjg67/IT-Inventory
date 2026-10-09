@@ -12,6 +12,10 @@ compilation ou service tiers n'est nécessaire. Ouvrir
 ce dossier avec un serveur statique interne. Le guide propose la recherche,
 des liens directs (`#procedure/mouvements` par exemple), des captures
 agrandissables et l'impression de la procédure ouverte en PDF.
+InvenBot réutilise une image extraite de la planche officielle de l'application
+mobile, accompagne la recherche et la lecture des procédures, et respecte
+l'option système de réduction des animations. Le site reste statique : cette
+présence contextuelle n'effectue aucune recherche serveur ni action sur le stock.
 
 ### Publication GitHub Pages
 
