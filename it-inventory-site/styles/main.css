@@ -313,6 +313,65 @@ h1 em {
   height: 15px;
   color: #b6dfb0;
 }
+.hero-assistant {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 390px);
+  margin-top: 23px;
+  padding: 10px 13px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 14px;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 12px 30px rgb(4 36 26 / 18%);
+  color: var(--ink);
+}
+.hero-assistant-avatar {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #deebe2;
+  border-radius: 13px;
+  background: #f3f8f4;
+}
+.hero-assistant-avatar img {
+  display: block;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+.hero-assistant-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+.hero-assistant-copy strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.hero-assistant-copy small {
+  color: var(--green);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+.hero-assistant-copy > span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.hero-assistant-check {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  margin-left: auto;
+  color: var(--green);
+}
 .hero-visual {
   position: relative;
   min-height: 490px;
