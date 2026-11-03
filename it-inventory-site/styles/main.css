@@ -1846,6 +1846,7 @@ h1 {
 }
 
 .assistant-avatar {
+  position: relative;
   display: grid;
   width: 48px;
   height: 48px;
@@ -1857,12 +1858,60 @@ h1 {
   background: #fff;
 }
 
+.assistant-avatar::after {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  background: #8bb99b;
+  content: '';
+  transition: background 180ms ease, box-shadow 180ms ease;
+}
+
 .assistant-avatar img {
   display: block;
   width: 42px;
   height: 42px;
   object-fit: contain;
-  animation: assistant-breathe 4s ease-in-out infinite;
+  transform-origin: 50% 80%;
+}
+
+.assistant-avatar[data-state='searching'] {
+  border-color: #b8d7c3;
+  box-shadow: 0 0 0 3px rgb(23 107 80 / 7%);
+}
+
+.assistant-avatar[data-state='searching']::after {
+  background: #52a7a0;
+  box-shadow: 0 0 8px rgb(82 167 160 / 45%);
+}
+
+.assistant-avatar[data-state='searching'] img {
+  animation: assistant-search 1.8s ease-in-out infinite;
+}
+
+.assistant-avatar[data-state='checking']::after {
+  background: #43a56d;
+  box-shadow: 0 0 8px rgb(67 165 109 / 40%);
+}
+
+.assistant-avatar[data-state='checking'] img {
+  animation: assistant-search 700ms ease-in-out 1;
+}
+
+.assistant-avatar[data-micro-animation='breathe'] img {
+  animation: assistant-breathe 850ms ease-in-out 1;
+}
+
+.assistant-avatar[data-micro-animation='peek'] img {
+  animation: assistant-peek 850ms ease-in-out 1;
+}
+
+.assistant-avatar[data-micro-animation='tilt'] img {
+  animation: assistant-tilt 850ms ease-in-out 1;
 }
 
 .assistant-copy {
@@ -1890,15 +1939,6 @@ h1 {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.5;
-}
-
-.guide-layout.is-searching .assistant-avatar {
-  border-color: #b8d7c3;
-  box-shadow: 0 0 0 3px rgb(23 107 80 / 7%);
-}
-
-.guide-layout.is-searching .assistant-avatar img {
-  animation: assistant-search 1.8s ease-in-out infinite;
 }
 
 .search-status {
@@ -2077,6 +2117,26 @@ h1 {
   }
   50% {
     transform: translateY(-3px);
+  }
+}
+
+@keyframes assistant-peek {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  45% {
+    transform: translateX(2px) rotate(2deg);
+  }
+}
+
+@keyframes assistant-tilt {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  45% {
+    transform: rotate(-3deg);
   }
 }
 

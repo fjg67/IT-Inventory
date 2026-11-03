@@ -9,7 +9,85 @@
   const mobileToggle = document.querySelector('.mobile-guide-toggle');
   const guideLayout = document.querySelector('.guide-layout');
   const assistantMessage = document.getElementById('assistant-message');
+  const assistantAvatar = document.querySelector('.assistant-avatar');
   let activeChapter = GUIDE_CHAPTERS[0];
+
+  class InvenBotAnimationEngine {
+    constructor(element) {
+      this.element = element;
+      this.state = 'idle';
+      this.timer = null;
+      this.stateTimer = null;
+      this.visible = false;
+      this.reducedMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)',
+      );
+      this.microAnimations = ['breathe', 'peek', 'tilt'];
+
+      if ('IntersectionObserver' in window) {
+        this.observer = new IntersectionObserver(entries => {
+          this.visible = entries[0].isIntersecting;
+          this.update();
+        });
+        this.observer.observe(element);
+      } else {
+        this.visible = true;
+      }
+
+      document.addEventListener('visibilitychange', () => this.update());
+      this.reducedMotion.addEventListener?.('change', () => this.update());
+      this.update();
+    }
+
+    setState(state) {
+      window.clearTimeout(this.stateTimer);
+      this.state = state;
+      this.element.dataset.state = state;
+      this.update();
+    }
+
+    setStateFor(state, duration, fallbackState) {
+      this.setState(state);
+      this.stateTimer = window.setTimeout(
+        () => this.setState(fallbackState),
+        duration,
+      );
+    }
+
+    update() {
+      window.clearTimeout(this.timer);
+      delete this.element.dataset.microAnimation;
+
+      if (
+        this.state !== 'idle' ||
+        !this.visible ||
+        document.hidden ||
+        this.reducedMotion.matches
+      ) {
+        return;
+      }
+
+      this.timer = window.setTimeout(() => {
+        if (
+          this.state !== 'idle' ||
+          !this.visible ||
+          document.hidden ||
+          this.reducedMotion.matches
+        ) {
+          return;
+        }
+
+        const index = Math.floor(Math.random() * this.microAnimations.length);
+        this.element.dataset.microAnimation = this.microAnimations[index];
+        this.timer = window.setTimeout(() => {
+          delete this.element.dataset.microAnimation;
+          this.update();
+        }, 900);
+      }, 3200 + Math.random() * 2600);
+    }
+  }
+
+  const invenBot = new InvenBotAnimationEngine(assistantAvatar);
 
   function setAssistantMessage(message) {
     assistantMessage.textContent = message;
@@ -53,6 +131,7 @@
       : '';
     guideLayout.classList.toggle('is-searching', words.length > 0);
     if (words.length) {
+      invenBot.setState('searching');
       setAssistantMessage(
         matches
           ? `${matches} procédure${matches > 1 ? 's' : ''} repérée${
@@ -61,6 +140,7 @@
           : 'Essayons un autre mot-clé.',
       );
     } else {
+      invenBot.setState('idle');
       setAssistantMessage('Choisissez une procédure, je vous accompagne.');
     }
     if (words.length) {
@@ -69,9 +149,16 @@
     }
   }
 
-  function selectChapter(chapter, moveFocus) {
+  function selectChapter(chapter, moveFocus, animate = false) {
     activeChapter = chapter;
     renderChapter(chapter);
+    if (animate) {
+      invenBot.setStateFor(
+        'checking',
+        850,
+        search.value.trim() ? 'searching' : 'idle',
+      );
+    }
     setAssistantMessage('Voici le parcours, étape par étape.');
     chapterNav.querySelectorAll('a').forEach(link => {
       if (link.href.endsWith(`#procedure/${chapter.id}`))
@@ -101,7 +188,7 @@
       document.getElementById('guide').scrollIntoView({ block: 'start' });
       return;
     }
-    selectChapter(chapter, moveFocus);
+    selectChapter(chapter, moveFocus, chapter !== activeChapter);
   }
 
   GUIDE_CHAPTERS.forEach(chapter => {
@@ -127,7 +214,7 @@
     const link = event.target.closest('a[href^="#procedure/"]');
     if (link && link.hash === window.location.hash) {
       event.preventDefault();
-      selectChapter(activeChapter, true);
+      selectChapter(activeChapter, true, true);
     }
   });
 })();
