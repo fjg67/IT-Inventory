@@ -1,0 +1,62 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #20231f;
+  background: #f5f5f0;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --color-canvas: #f5f5f0;
+  --color-surface: #fff;
+  --color-surface-soft: #f8f9f6;
+  --color-ink: #20231f;
+  --color-ink-soft: #69716a;
+  --color-muted: #8b928b;
+  --color-green: #007d70;
+  --color-green-light: #00a391;
+  --color-green-pale: #e8f5f1;
+  --color-border: #e6e9e3;
+  --color-data-toolbar: #fff;
+  --color-data-header: #fafbf9;
+  --color-danger: #bd4c42;
+  --color-warning: #99621a;
+  --shadow-card: 0 20px 60px rgba(34, 48, 39, 0.08);
+  --radius-card: 24px;
+
+  --invenbot-size-mini: 40px;
+  --invenbot-eye: #6fe6ff;
+  --invenbot-warning: #ff9f2e;
+  --invenbot-shadow: rgba(20, 40, 30, .2);
+  --motion-fast: 150ms;
+  --motion-base: 220ms;
+  --ease-out-soft: cubic-bezier(.22, 1, .36, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --motion-reveal: 520ms;
+  --reveal-stagger: 70ms;
+  --reveal-distance: 12px;
+  --hero-bot-size: 210px;
+  --kpi-tilt-perspective: 800px;
+  --tone-green-rgb: 47, 150, 104;
+  --tone-amber-rgb: 214, 150, 46;
+  --tone-purple-rgb: 122, 98, 180;
+  --skeleton-base: #edf2ed;
+  --skeleton-sheen: rgba(255, 255, 255, .75);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input { font: inherit; }
+button { color: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 3px solid rgba(0, 125, 112, .3);
+  outline-offset: 3px;
+}
+::selection { background: rgba(0, 163, 145, .2); }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-data-toolbar: #1d2821;
+    --color-data-header: #1c261f;
+  }
+}

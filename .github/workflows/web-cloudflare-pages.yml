@@ -1,0 +1,46 @@
+name: Deploy IT-Inventory Web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - '.github/workflows/web-cloudflare-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: it-inventory-web-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        run: npm ci --prefix web
+      - name: Build application
+        run: npm run build --prefix web
+      - name: Deploy to Cloudflare Pages
+        if: ${{ github.ref == 'refs/heads/main' && vars.CLOUDFLARE_PAGES_ENABLED == 'true' }}
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4.136.3'
+          workingDirectory: web
+          command: pages deploy dist --project-name=it-inventory-web --branch=main
+      - name: Report deployment setup
+        if: ${{ vars.CLOUDFLARE_PAGES_ENABLED != 'true' }}
+        run: |
+          echo 'The web build passed. Configure the Cloudflare Pages project and GitHub Actions credentials before enabling deployment.'

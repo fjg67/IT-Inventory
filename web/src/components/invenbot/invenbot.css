@@ -1,0 +1,300 @@
+/* InvenBot 2.0 — SVG articulé. Seuls transform et opacity sont animés. */
+
+.invenbot--mini { width: var(--invenbot-size-mini); height: var(--invenbot-size-mini); }
+.invenbot--svg { overflow: visible; }
+.invenbot--svg .ib-svg { z-index: 1; position: relative; display: block; width: 100%; height: 100%; overflow: visible; }
+.invenbot--mini .invenbot__spark, .invenbot--mini .invenbot__halo { display: none; }
+
+.ib-svg * { transform-box: view-box; }
+
+/* Pivots (repère viewBox 200×220) */
+.ib-shadow { transform-origin: 100px 210px; }
+.ib-shadow ellipse { fill: var(--invenbot-shadow); }
+.ib-actor { transform-origin: 100px 200px; }
+.ib-body { transform-origin: 100px 177px; }
+.ib-track-head, .ib-head { transform-origin: 100px 110px; }
+.ib-antenna { transform-origin: 100px 40px; }
+.ib-antenna-ball { transform-origin: 100px 15px; }
+.ib-arm--left { transform-origin: 67px 120px; }
+.ib-arm--right { transform-origin: 133px 120px; }
+.ib-eye--left, .ib-eye--left .ib-eye-open { transform-origin: 82px 73px; }
+.ib-eye--right, .ib-eye--right .ib-eye-open { transform-origin: 118px 73px; }
+.ib-jet--left { transform-origin: 80px 196px; }
+.ib-jet--right { transform-origin: 120px 196px; }
+
+/* Pièces dont l'apparence change selon l'état */
+.ib-eye-happy, .ib-eye-closed { fill: none; stroke: var(--invenbot-eye); stroke-width: 4; stroke-linecap: round; opacity: 0; }
+.ib-eye-dots circle { fill: var(--invenbot-eye); opacity: 0; }
+.ib-mouth-smile { fill: none; stroke: var(--invenbot-eye); stroke-width: 3.5; stroke-linecap: round; }
+.ib-mouth-open { fill: var(--invenbot-eye); opacity: 0; }
+.ib-visor-scan { opacity: 0; }
+.ib-eye-open { transition: transform 70ms ease-in; }
+
+/* Suivi du regard : variables écrites par rAF, lissées côté JS */
+.ib-track-head { transform: rotate(calc(var(--ib-look-x, 0) * 8deg)); }
+.ib-track-eyes { transform: translate(calc(var(--ib-look-x, 0) * 6px), calc(var(--ib-look-y, 0) * 4px)); }
+
+/* Idle permanent */
+.invenbot--svg .ib-float { animation: ib-float 4s ease-in-out infinite; will-change: transform; }
+.invenbot--svg .ib-shadow { animation: ib-shadow 4s ease-in-out infinite; }
+.invenbot--svg .ib-body { animation: ib-breathe 3.2s ease-in-out infinite; }
+.invenbot--svg .ib-antenna { animation: ib-antenna-spring 2s .35s ease-out infinite; }
+.invenbot--svg .ib-antenna-ball { animation: ib-ball-pulse 1.8s ease-in-out infinite; }
+.invenbot--svg .ib-antenna-glow { animation: ib-glow 1.8s ease-in-out infinite; }
+.invenbot--svg .ib-jet { animation: ib-jet .34s ease-in-out infinite alternate; }
+.invenbot--svg .ib-jet--right { animation-delay: -.17s; }
+.invenbot--svg .ib-pulse { animation: ib-glow 1.6s ease-in-out infinite; }
+.invenbot.is-blinking .ib-eye-open { transform: scaleY(.08); }
+
+/* Le mini bot reste sobre : pas de flottement, juste la vie du visage */
+.invenbot--mini .ib-float, .invenbot--mini .ib-shadow, .invenbot--mini .ib-jet { animation: none; }
+
+@keyframes ib-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes ib-shadow { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.82); opacity: .6; } }
+@keyframes ib-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+@keyframes ib-antenna-spring {
+  0%, 100% { transform: rotate(0); }
+  14% { transform: rotate(6deg); }
+  30% { transform: rotate(-4deg); }
+  46% { transform: rotate(2.4deg); }
+  62% { transform: rotate(-1.2deg); }
+  78% { transform: rotate(.5deg); }
+}
+@keyframes ib-ball-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+@keyframes ib-glow { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes ib-jet { from { transform: scaleY(.76); opacity: .7; } to { transform: scaleY(1.08); opacity: 1; } }
+
+/* Pause : onglet caché ou bot hors écran */
+.invenbot--paused .ib-svg, .invenbot--paused .ib-svg * { animation-play-state: paused !important; }
+
+/* Mouvement réduit (système, préférence globale ou préférence InvenBot) */
+@media (prefers-reduced-motion: reduce) {
+  .invenbot--svg .ib-svg * { animation: none !important; }
+  .ib-track-head, .ib-track-eyes { transform: none; }
+}
+.reduce-motion .invenbot--svg .ib-svg *,
+[data-invenbot-motion='reduced'] .invenbot--svg .ib-svg *,
+[data-invenbot-motion='off'] .invenbot--svg .ib-svg * { animation: none !important; }
+.reduce-motion .ib-track-head, .reduce-motion .ib-track-eyes,
+[data-invenbot-motion='reduced'] .ib-track-head, [data-invenbot-motion='reduced'] .ib-track-eyes,
+[data-invenbot-motion='off'] .ib-track-head, [data-invenbot-motion='off'] .ib-track-eyes { transform: none; }
+
+/* ───────── États persistants ───────── */
+.ib-svg .ib-eye-open, .ib-svg .ib-eye-happy, .ib-svg .ib-eye-closed, .ib-svg .ib-eye-dots circle,
+.ib-svg .ib-mouth-smile, .ib-svg .ib-mouth-open, .ib-svg .ib-eye-glow { transition: opacity var(--motion-fast) ease; }
+
+/* checking : radar, yeux de chargement, scan de visière */
+.invenbot--checking .ib-eye-open, .invenbot--checking .ib-eye-glow { opacity: 0; }
+.invenbot--checking .ib-eye-dots circle { opacity: 1; }
+.invenbot--svg.invenbot--checking .ib-antenna { animation: ib-radar 1.1s ease-in-out infinite alternate; }
+.invenbot--svg.invenbot--checking .ib-eye-dots circle { animation: ib-dot .9s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+.invenbot--svg.invenbot--checking .ib-eye-dots circle:nth-child(2) { animation-delay: .15s; }
+.invenbot--svg.invenbot--checking .ib-eye-dots circle:nth-child(3) { animation-delay: .3s; }
+.invenbot--checking .ib-visor-scan { opacity: 1; }
+.invenbot--svg.invenbot--checking .ib-visor-scan { animation: ib-visor-scan 1.2s ease-in-out infinite; }
+
+/* success / laugh / celebrate : yeux en ^^ */
+.invenbot--success .ib-eye-open, .invenbot--laugh .ib-eye-open, .invenbot--celebrate .ib-eye-open, .invenbot--wave .ib-eye-open { opacity: 0; }
+.invenbot--success .ib-eye-happy, .invenbot--laugh .ib-eye-happy, .invenbot--celebrate .ib-eye-happy, .invenbot--wave .ib-eye-happy { opacity: 1; }
+.invenbot--laugh .ib-mouth-smile, .invenbot--celebrate .ib-mouth-smile { opacity: 0; }
+.invenbot--laugh .ib-mouth-open, .invenbot--celebrate .ib-mouth-open { opacity: 1; }
+
+/* warning : antenne orange qui clignote */
+.invenbot--warning .ib-antenna-glow { opacity: 1; }
+.invenbot--svg.invenbot--warning .ib-antenna-ball { animation: ib-alert-blink .8s steps(2, jump-none) infinite; }
+.invenbot--svg.invenbot--warning .ib-antenna-glow { animation: ib-alert-glow .8s ease-in-out infinite; }
+.invenbot--warning .ib-mouth { transform: translateY(2px) scaleY(.55); transform-origin: 100px 91px; }
+
+/* sleep : yeux fermés, antenne qui tombe, respiration lente */
+.invenbot--sleep .ib-eye-open, .invenbot--sleep .ib-eye-glow { opacity: 0; }
+.invenbot--sleep .ib-eye-closed { opacity: 1; }
+.invenbot--sleep .ib-mouth { transform: scale(.6); transform-origin: 100px 91px; }
+.invenbot--sleep .ib-antenna { transform: rotate(16deg); }
+.invenbot--svg.invenbot--sleep .ib-antenna { animation: none; }
+.invenbot--svg.invenbot--sleep .ib-body { animation-duration: 5.5s; }
+.invenbot--svg.invenbot--sleep .ib-float { animation-duration: 6.5s; }
+.invenbot--sleep .ib-jets, .invenbot--sleep .invenbot__spark { opacity: 0; }
+.invenbot__zzz { position: absolute; z-index: 2; top: -4%; right: -2%; width: 34%; height: 40%; pointer-events: none; color: var(--color-green); font-weight: 750; }
+.invenbot__zzz i { position: absolute; bottom: 0; left: 0; font-style: normal; font-size: 13px; opacity: 0; animation: ib-zzz 3s ease-out infinite; }
+.invenbot__zzz i:nth-child(2) { font-size: 17px; animation-delay: 1s; }
+.invenbot__zzz i:nth-child(3) { animation-delay: 2s; }
+.invenbot--large .invenbot__zzz i { font-size: 20px; }
+.dashboard-hero .invenbot__zzz { color: #bfe9cf; }
+.invenbot--large .invenbot__zzz i:nth-child(2) { font-size: 26px; }
+
+/* curious : la tête penche davantage, regard grand ouvert */
+.ib-head { transition: transform var(--motion-base) var(--ease-out-soft); }
+.invenbot--curious .ib-head { transform: rotate(calc(var(--ib-look-x, 0) * 7deg)); }
+.invenbot--curious .ib-eye { transform: scale(1.14); transition: transform var(--motion-base) var(--ease-spring); }
+.invenbot--curious .ib-antenna-ball { transform: scale(1.15); }
+
+@keyframes ib-radar { from { transform: rotate(-28deg); } to { transform: rotate(28deg); } }
+@keyframes ib-dot { 0%, 100% { transform: translateY(0); opacity: .45; } 40% { transform: translateY(-3px); opacity: 1; } }
+@keyframes ib-visor-scan { 0% { transform: translateX(0); } 100% { transform: translateX(120px); } }
+@keyframes ib-alert-blink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes ib-alert-glow { 0%, 100% { opacity: .4; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.35); } }
+@keyframes ib-zzz { 0% { opacity: 0; transform: translate(0, 0) scale(.7); } 20% { opacity: .9; } 100% { opacity: 0; transform: translate(14px, -30px) scale(1.1); } }
+
+/* ───────── États de recherche / export (page Articles) ───────── */
+.ib-arm { transition: transform var(--motion-base) var(--ease-spring); }
+.ib-prop, .ib-thumb, .ib-question, .ib-progress { opacity: 0; transition: opacity var(--motion-base) ease, transform var(--motion-base) var(--ease-spring); }
+.ib-prop--magnifier { transform: scale(.2); transform-origin: 133px 155px; }
+.ib-prop--crate { transform: translateY(-6px) scale(.3); transform-origin: 100px 163px; }
+.ib-thumb { transform: scale(.2); transform-origin: 139px 155px; }
+.ib-question { transform: translateY(8px) scale(.4); transform-origin: 126px 20px; }
+.ib-question text { fill: #ffb14a; stroke: #8a4a0c; stroke-width: .8px; font: 800 26px/1 var(--font-sans, system-ui), sans-serif; }
+
+/* searching : loupe en main, balayage gauche → droite, yeux plissés, antenne radar */
+.invenbot--searching .ib-prop--magnifier { opacity: 1; transform: none; }
+.invenbot--searching .ib-arm--right { transform: rotate(-82deg); }
+.invenbot--searching .ib-eye-open { transform: scaleY(.55); }
+.invenbot--searching .ib-mouth { transform: scaleX(.7); transform-origin: 100px 91px; }
+.invenbot--svg.invenbot--searching .ib-arm--right { animation: ib-sweep 1.4s ease-in-out infinite alternate; }
+.invenbot--svg.invenbot--searching .ib-actor { animation: ib-sway 2.8s ease-in-out infinite; }
+.invenbot--svg.invenbot--searching .ib-antenna { animation: ib-radar 1.1s ease-in-out infinite alternate; }
+
+/* typing : regarde le champ, tête légèrement baissée */
+.invenbot--typing .ib-head { transform: rotate(-5deg) translateY(2px); }
+.invenbot--typing .ib-eye { transform: scale(1.06); }
+
+/* exporting : porte un carton, piétine, barre de progression sur le plastron */
+.invenbot--exporting .ib-prop--crate { opacity: 1; transform: none; }
+.invenbot--exporting .ib-arm--left { transform: rotate(-17deg); }
+.invenbot--exporting .ib-arm--right { transform: rotate(17deg); }
+.invenbot--exporting .ib-progress { opacity: 1; }
+.invenbot--exporting .ib-pulse, .invenbot--svg.invenbot--exporting .ib-pulse { opacity: 0; animation: none; }
+.invenbot--svg.invenbot--exporting .ib-actor { animation: ib-stomp .52s ease-in-out infinite; }
+.invenbot--svg.invenbot--exporting .ib-progress-bar { animation: ib-progress 1.1s ease-in-out infinite; }
+.invenbot--exporting .ib-progress-bar { transform: translateX(26px); }
+
+/* confused : tête penchée, « ? », haussement d'épaules */
+.invenbot--confused .ib-question { opacity: 1; transform: none; }
+.invenbot--confused .ib-head { transform: rotate(10deg); }
+.invenbot--confused .ib-arm--left { transform: rotate(52deg); }
+.invenbot--confused .ib-arm--right { transform: rotate(-52deg); }
+.invenbot--confused .ib-mouth { transform: translateY(2px) scale(.7, .45); transform-origin: 100px 91px; }
+.invenbot--svg.invenbot--confused .ib-question { animation: ib-question-bob 1s ease-in-out infinite; }
+
+/* found : pouce levé + clin d'œil */
+.invenbot--found .ib-arm--right { transform: rotate(-82deg); }
+.invenbot--found .ib-thumb { opacity: 1; transform: none; }
+.invenbot--found .ib-eye--right .ib-eye-open, .invenbot--found .ib-eye--right .ib-eye-glow { opacity: 0; }
+.invenbot--found .ib-eye--right .ib-eye-happy { opacity: 1; }
+
+@keyframes ib-sweep { from { transform: rotate(-58deg); } to { transform: rotate(-112deg); } }
+@keyframes ib-sway { 0%, 100% { transform: translateX(-5px) rotate(-2deg); } 50% { transform: translateX(5px) rotate(2deg); } }
+@keyframes ib-stomp {
+  0%, 100% { transform: translateY(0) rotate(-2.5deg); }
+  25% { transform: translateY(-3px) rotate(0); }
+  50% { transform: translateY(0) rotate(2.5deg); }
+  75% { transform: translateY(-3px) rotate(0); }
+}
+@keyframes ib-progress { from { transform: translateX(0); } to { transform: translateX(50px); } }
+@keyframes ib-question-bob { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-3px) rotate(6deg); } }
+
+.ib-prop--helmet { transform-origin: 100px 48px; transform: translateY(-18px) scale(.3); }
+.ib-prop--thermometer { transform-origin: 60px 155px; transform: scale(.2); }
+.ib-prop--wrench { transform-origin: 133px 155px; transform: scale(.2); }
+.ib-prop--laptop, .ib-prop--first-aid { transform-origin: 100px 165px; transform: scale(.2); }
+.ib-prop--paper-plane { transform-origin: 143px 145px; transform: scale(.2); }
+.ib-sweat, .ib-repair-sparks, .ib-ready-glint { opacity: 0; }
+.ib-ready-glint { transform-origin: 159px 70px; }
+.ib-thermometer-level { transform-origin: 55px 176px; }
+:is(.invenbot--workshop, .invenbot--hot, .invenbot--inspecting, .invenbot--repairing, .invenbot--ready, .invenbot--shipping, .invenbot--fixing-alert) .ib-prop--helmet { opacity: 1; transform: none; }
+.invenbot--gear-up .ib-prop--helmet { animation: ib-helmet-on 700ms var(--ease-spring) both; }
+.invenbot--hot .ib-prop--thermometer, .invenbot--inspecting .ib-prop--laptop,
+.invenbot--inspecting .ib-prop--magnifier, .invenbot--repairing .ib-prop--laptop,
+.invenbot--repairing .ib-prop--wrench, .invenbot--fixing-alert .ib-prop--first-aid,
+.invenbot--shipping .ib-prop--paper-plane { opacity: 1; transform: none; }
+.invenbot--hot .ib-eye-open, .invenbot--inspecting .ib-eye-open { transform: scaleY(.65); }
+.invenbot--hot .ib-arm--left { transform: rotate(-15deg); }
+.invenbot--hot .ib-arm--right { transform: rotate(-120deg); animation: ib-fan .65s ease-in-out infinite alternate; }
+.invenbot--hot .ib-sweat { animation: ib-sweat 1.7s ease-in infinite; }
+.invenbot--hot .ib-thermometer-level { animation: ib-temperature 2.4s ease-in-out infinite alternate; }
+.invenbot--inspecting .ib-arm--right { transform: rotate(45deg); animation: ib-inspect 2s ease-in-out infinite; }
+.invenbot--inspecting .ib-head { transform: rotate(6deg); animation: ib-inspect-nod 2s ease-in-out infinite; }
+.invenbot--repairing .ib-arm--right { transform: rotate(38deg); animation: ib-hammer .85s ease-in-out infinite; }
+.invenbot--repairing .ib-actor { animation: ib-work-shake .85s ease-in-out infinite; }
+.invenbot--repairing .ib-repair-sparks { animation: ib-work-sparks .85s ease-out infinite; }
+.invenbot--ready .ib-arm--right { transform: rotate(-82deg); }
+.invenbot--ready .ib-thumb { opacity: 1; transform: none; }
+.invenbot--ready .ib-eye-open { opacity: 0; }
+.invenbot--ready .ib-eye-happy { opacity: 1; }
+.invenbot--ready .ib-ready-glint { opacity: 1; animation: ib-ready-glint 2s ease-in-out infinite; }
+.invenbot--shipping .ib-arm--right { transform: rotate(-65deg); }
+.invenbot--shipping .ib-prop--paper-plane { animation: ib-paper-flight 1.7s ease-out both; }
+.invenbot--fixing-alert .ib-arm--left { transform: rotate(-17deg); }
+.invenbot--fixing-alert .ib-arm--right { transform: rotate(17deg); }
+.invenbot--fixing-alert .ib-antenna-ball > circle:nth-child(2) { fill: #e9685c; }
+.invenbot--fixing-alert .ib-antenna-glow { fill: #f27b66; }
+.invenbot--fixing-alert .ib-antenna-ball { animation: ib-alert-blink .75s ease-in-out infinite; }
+.invenbot--fixing-alert .ib-actor { animation: ib-stomp .38s ease-in-out infinite; }
+.invenbot--paused .invenbot__confetti i { animation-play-state: paused; }
+@keyframes ib-helmet-on { from { opacity: 0; transform: translateY(-30px) rotate(-12deg) scale(.6); } to { opacity: 1; transform: none; } }
+@keyframes ib-fan { from { transform: rotate(-110deg); } to { transform: rotate(-145deg); } }
+@keyframes ib-sweat { 0% { opacity: 0; transform: translateY(-4px) scale(.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(17px) scale(1); } }
+@keyframes ib-temperature { from { transform: scaleY(.35); } to { transform: scaleY(1); } }
+@keyframes ib-inspect { 0%, 100% { transform: rotate(32deg); } 50% { transform: rotate(58deg); } }
+@keyframes ib-inspect-nod { 0%, 65%, 100% { transform: rotate(6deg); } 80% { transform: rotate(10deg) translateY(3px); } }
+@keyframes ib-hammer { 0%, 55%, 100% { transform: rotate(70deg); } 76% { transform: rotate(28deg); } 86% { transform: rotate(35deg); } }
+@keyframes ib-work-shake { 0%, 70%, 100% { transform: none; } 77% { transform: translateX(1.5px); } 84% { transform: translateX(-1.5px); } }
+@keyframes ib-work-sparks { 0%, 70%, 100% { opacity: 0; transform: scale(.8); } 77% { opacity: 1; transform: scale(1.1); } }
+@keyframes ib-ready-glint { 0%, 100% { opacity: .4; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.1) rotate(35deg); } }
+@keyframes ib-paper-flight { 0% { opacity: 1; transform: translate(-8px, 8px) rotate(12deg) scale(.7); } 25% { opacity: 1; transform: translate(20px, -24px) rotate(-12deg) scale(1); } 75% { opacity: 1; transform: translate(85px, -65px) rotate(10deg); } 100% { opacity: 0; transform: translate(145px, -45px) rotate(22deg) scale(.6); } }
+
+/* Mouvement réduit : poses statiques, apparition des accessoires en simple fondu */
+@media (prefers-reduced-motion: reduce) {
+  .ib-arm, .ib-prop, .ib-thumb, .ib-question { transition-property: opacity; }
+}
+.reduce-motion .ib-arm, [data-invenbot-motion='reduced'] .ib-arm, [data-invenbot-motion='off'] .ib-arm,
+[data-invenbot-motion='reduced'] .ib-prop, [data-invenbot-motion='off'] .ib-prop,
+[data-invenbot-motion='reduced'] .ib-thumb, [data-invenbot-motion='off'] .ib-thumb,
+[data-invenbot-motion='reduced'] .ib-question, [data-invenbot-motion='off'] .ib-question { transition-property: opacity; }
+
+/* ───────── Confettis / étincelles (12 particules CSS) ───────── */
+.invenbot__confetti { position: absolute; z-index: 3; left: 50%; top: 40%; width: 0; height: 0; pointer-events: none; }
+.invenbot__confetti i { position: absolute; width: 7px; height: 4px; border-radius: 1px; background: var(--c); opacity: 0; animation: ib-confetti 1.1s var(--d) cubic-bezier(.2, .7, .3, 1) both; }
+.invenbot--large .invenbot__confetti i { width: 9px; height: 5px; }
+.invenbot__confetti--sparkles i { width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 10px var(--c); }
+.invenbot--small .invenbot__confetti { transform: scale(.4); }
+@keyframes ib-confetti {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(0) scale(.4); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1); }
+}
+
+/* ───────── Stage + bulle ───────── */
+.invenbot-stage { position: relative; display: block; width: 100%; height: 100%; }
+.invenbot-stage__hit { display: block; width: 100%; height: 100%; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.invenbot-stage__hit .invenbot { width: 100%; height: 100%; }
+.invenbot-bubble-region { position: absolute; z-index: 5; right: 62%; bottom: 74%; width: max-content; max-width: 210px; pointer-events: none; }
+.invenbot-bubble { display: block; padding: 8px 11px; border: 1px solid rgba(190, 235, 204, .35); border-radius: 12px 12px 3px 12px; color: #e9f9ec; background: rgba(36, 86, 56, .94); box-shadow: 0 8px 22px rgba(7, 29, 16, .22); font-size: 11px; font-weight: 560; line-height: 1.35; animation: ib-bubble-in var(--motion-base) var(--ease-spring) both; transform-origin: 100% 100%; }
+.invenbot-bubble__ghost { visibility: hidden; }
+@keyframes ib-bubble-in { from { opacity: 0; transform: translateY(6px) scale(.9); } to { opacity: 1; transform: none; } }
+
+/* ───────── Debug (?bot=debug) ───────── */
+.invenbot-debug { position: fixed; z-index: 1000; right: 16px; bottom: 16px; display: grid; gap: 8px; max-width: 360px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 14px; color: var(--color-ink); background: rgba(255, 255, 255, .96); box-shadow: var(--shadow-card); font-size: 12px; }
+.invenbot-debug small { color: var(--color-ink-soft); }
+.invenbot-debug div { display: flex; flex-wrap: wrap; gap: 6px; }
+.invenbot-debug button { padding: 5px 9px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface-soft); font-size: 11px; cursor: pointer; }
+.invenbot-debug button[aria-pressed='true'] { border-color: var(--color-green); color: var(--color-green); background: var(--color-green-pale); }
+.invenbot-playground { min-height: 100vh; display: grid; align-content: start; gap: 24px; padding: 40px; background: var(--color-canvas); }
+.invenbot-playground__hero { max-width: 1100px; min-height: 320px; }
+.invenbot-playground__hero .dashboard-hero__visual { min-height: 260px; }
+.invenbot-playground__hero .dashboard-hero__mascot { width: 200px; height: 200px; }
+.invenbot-playground__row { display: flex; flex-wrap: wrap; gap: 28px; align-items: center; color: var(--color-ink-soft); font-size: 12px; }
+.invenbot-playground__row > span { display: inline-flex; align-items: center; gap: 10px; }
+
+/* Mouvement réduit : états statiques conservés, plus de particules ni de zZz animés */
+@media (prefers-reduced-motion: reduce) {
+  .invenbot__confetti { display: none; }
+  .invenbot__zzz i { animation: none; opacity: .8; }
+  .invenbot__zzz i:nth-child(2) { transform: translate(8px, -14px); }
+  .invenbot__zzz i:nth-child(3) { transform: translate(16px, -26px); }
+}
+.reduce-motion .invenbot__zzz i, [data-invenbot-motion='reduced'] .invenbot__zzz i, [data-invenbot-motion='off'] .invenbot__zzz i { animation: none !important; opacity: .8; }
+.reduce-motion .invenbot__zzz i:nth-child(2), [data-invenbot-motion='reduced'] .invenbot__zzz i:nth-child(2), [data-invenbot-motion='off'] .invenbot__zzz i:nth-child(2) { transform: translate(8px, -14px); }
+.reduce-motion .invenbot__zzz i:nth-child(3), [data-invenbot-motion='reduced'] .invenbot__zzz i:nth-child(3), [data-invenbot-motion='off'] .invenbot__zzz i:nth-child(3) { transform: translate(16px, -26px); }
+.invenbot--paused .invenbot__zzz i, .invenbot--paused .invenbot__confetti i { animation-play-state: paused; }
+[data-invenbot-motion='reduced'] .invenbot__spark, [data-invenbot-motion='off'] .invenbot__spark,
+[data-invenbot-motion='reduced'] .invenbot img, [data-invenbot-motion='off'] .invenbot img { animation: none !important; }

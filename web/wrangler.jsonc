@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "it-inventory-web",
+  "compatibility_date": "2026-09-28",
+  "pages_build_output_dir": "./dist",
+  "vars": {
+    "SUPABASE_PROJECT_URL": "https://lghhzbkbwttvroxodlzd.supabase.co"
+  }
+}
