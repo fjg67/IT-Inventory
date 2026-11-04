@@ -22,9 +22,10 @@ const oneShots: Array<[InvenBotOneShot, string]> = [
   ['confused', 'Perplexe'],
   ['found', 'Trouvé'],
   ['shipping', 'Expédier'],
+  ['stamping', 'Tamponner'],
 ];
 const bases: InvenBotBaseState[] = ['idle', 'checking', 'warning', 'sleep', 'searching', 'typing', 'exporting',
-  'hot', 'inspecting', 'repairing', 'ready', 'fixing-alert'];
+  'hot', 'inspecting', 'repairing', 'ready', 'fixing-alert', 'receiving', 'dispatching', 'counting', 'transferring'];
 const motions: InvenBotMotionPreference[] = ['full', 'reduced', 'off'];
 
 /** Panneau de debug, visible uniquement avec ?bot=debug. */

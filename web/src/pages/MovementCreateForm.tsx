@@ -24,10 +24,12 @@ export function MovementCreateForm({
   siteId,
   onCancel,
   onSaved,
+  onSavingChange,
 }: {
   siteId: string;
   onCancel: () => void;
   onSaved: () => void;
+  onSavingChange: (saving: boolean) => void;
 }) {
   const [articles, setArticles] = useState<ArticleListItem[]>([]);
   const [destinations, setDestinations] = useState<AvailableSite[]>([]);
@@ -113,6 +115,7 @@ export function MovementCreateForm({
       return;
     }
     setSaving(true);
+    onSavingChange(true);
     setError(null);
     try {
       await movementService.create({
@@ -127,6 +130,7 @@ export function MovementCreateForm({
       setError(apiMessage(cause));
     } finally {
       setSaving(false);
+      onSavingChange(false);
     }
   }
 

@@ -53,14 +53,17 @@ production et `SameSite=Strict`.
   renvoie l’historique paginé du site choisi, filtrable par période et type
   (`ENTRY`, `EXIT`, `ADJUSTMENT`, `TRANSFER`). L’interface permet également
   d’exporter l’ensemble des résultats filtrés en CSV UTF-8 séparé par des
-  points-virgules.
+  points-virgules. La synthèse reprend les mêmes filtres; le graphique permet
+  aussi de filtrer le tableau et l’export sur une journée.
 - `POST /api/movements` : enregistre une entrée, une sortie, un ajustement ou
   un transfert atomique. Le serveur utilise le site et le technicien de la
   session, vérifie le stock disponible et limite les transferts au site actif
   et à ses sous-sites. `quantity` est une quantité positive pour entrée/sortie/
   transfert, et le nouveau stock compté pour un ajustement. La migration
   `023_web_stock_movements.sql` crée la fonction transactionnelle appelée par
-  cette route.
+  cette route. Dans le journal, un ajustement conserve son delta signé et un
+  transfert produit deux lignes opposées; la synthèse compte le transfert une
+  fois et l’exclut du solde net.
 - `GET /api/computers?siteId=…&search=…&state=all&page=0&pageSize=25` :
   renvoie le parc PC détecté dans le stock du site choisi et de ses sous-sites
   actifs, avec recherche, filtre par état, compteurs et pagination. La réponse
@@ -170,13 +173,22 @@ dans le bundle Web; elle n’accorde aucun accès privilégié. La clé
 ## Déploiement de l’application Web sur Cloudflare Pages
 
 Le guide statique reste publié séparément sur GitHub Pages. L’application de
-gestion se déploie sur `https://it-inventory-web.pages.dev/`; le projet
+gestion est accessible sur `https://it-inventory-cg7.pages.dev/`. Son projet
+Cloudflare Pages est relié au dépôt `fjg67/IT-Inventory`. Pour un projet Pages
+connecté à GitHub, utiliser `main` comme branche de production, `web` comme
+répertoire racine, `npm run build` comme commande de build et `dist` comme
+répertoire de sortie. Les modifications poussées sur `main` sont publiées
+lorsque les déploiements automatiques Cloudflare sont activés.
+
 Cloudflare sert le front et relaie `/api/*` vers l’Edge Function Supabase avec
 `functions/api/[[path]].ts`. Cette même origine est nécessaire aux cookies
 `HttpOnly; SameSite=Strict` de la session.
 
 La GitHub Action `.github/workflows/web-cloudflare-pages.yml` construit le
-front à chaque changement de `web/`. Pour activer son déploiement :
+front à chaque changement de `web/`. Son étape de déploiement est une
+alternative facultative vers un projet Direct Upload distinct, nommé
+`it-inventory-web`; elle ne met pas à jour le site connecté ci-dessus. Pour
+activer cette alternative :
 
 1. Créer un nouveau projet Cloudflare Pages nommé `it-inventory-web` avec
    `main` comme branche de production (Direct Upload convient; la GitHub Action
@@ -186,8 +198,10 @@ front à chaque changement de `web/`. Pour activer son déploiement :
    `CLOUDFLARE_API_TOKEN` et `CLOUDFLARE_ACCOUNT_ID` aux secrets Actions du
    dépôt. Définir aussi la variable Actions `CLOUDFLARE_PAGES_ENABLED` à
    `true`. Sans ce réglage, l’action vérifie le build mais ne publie rien.
-3. Dans les secrets de l’Edge Function `web-api`, ajouter exactement
-   `https://it-inventory-web.pages.dev` à `WEB_APP_ORIGINS`, en conservant
+3. Dans les secrets de l’Edge Function `web-api`, ajouter l’origine exacte de
+   chaque domaine utilisé à `WEB_APP_ORIGINS`, notamment
+   `https://it-inventory-cg7.pages.dev` pour le site actuel et, si cette
+   alternative est activée, `https://it-inventory-web.pages.dev`. Conserver
    toutes les origines déjà autorisées. Le proxy transmet cette origine au
    serveur qui vérifie les protections CORS/CSRF. Déployer ou redémarrer
    `web-api` si nécessaire pour appliquer le secret.
@@ -214,8 +228,10 @@ correspondante.
   HttpOnly, choix de site et validation d’origine.
 - Clients API partagés, validation des réponses, Dashboard et liste Articles
   raccordés aux endpoints documentés; aucun chiffre ou statut fictif n’est affiché.
-- Historique paginé des mouvements avec filtres par type et période, raccordé
-  à l’endpoint de lecture de `web-api`, avec export CSV selon les filtres actifs.
+- Historique paginé des mouvements avec filtres par type et période, synthèse
+  filtrée, graphique quotidien cliquable, convoyeur des mouvements récents et
+  export CSV selon les filtres actifs. La création s’ouvre dans un drawer
+  accessible, avec fermeture par Échap/clic extérieur et retour du focus.
 - Module Parc PC avec recherche, états, compteurs, pagination et export CSV,
   raccordé à l’endpoint de données réelles.
 - Scanner d’articles avec recherche par code-barres, référence et nom, saisie
@@ -257,8 +273,15 @@ ou cassées et la compatibilité avec une ancienne version de l’API.
 
 ```sh
 npm test -- --runInBand __tests__/WebComputers.test.tsx __tests__/WebArticlePhotos.test.tsx __tests__/WebInvenBotQueue.test.ts
+npm test -- --runInBand __tests__/WebMovements.test.tsx __tests__/WebMovementInsights.test.ts
 npm run build --prefix web
 ```
+
+La synthèse Mouvements est calculée sur la liste complète renvoyée par le
+service pour le site, la période et le type actifs. Les consultations sont
+mises en cache par combinaison et les requêtes obsolètes sont annulées. La
+pagination normale reste côté serveur; seul un jour choisi sur le graphique
+filtre et pagine localement les lignes déjà chargées.
 
 Le panneau partagé utilise `components/data/useStickyTable.ts` pour mesurer
 l’en-tête du site et la barre d’outils avec `ResizeObserver`. Le titre du

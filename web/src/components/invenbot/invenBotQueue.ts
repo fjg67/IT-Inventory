@@ -1,7 +1,8 @@
 /** États affichables par InvenBot (expressions + gestuelle). */
 export type InvenBotBaseState = 'idle' | 'checking' | 'warning' | 'sleep' | 'searching' | 'typing' | 'exporting'
-  | 'hot' | 'inspecting' | 'repairing' | 'ready' | 'fixing-alert';
-export type InvenBotOneShot = 'wave' | 'success' | 'warning' | 'celebrate' | 'laugh' | 'confused' | 'found' | 'shipping';
+  | 'hot' | 'inspecting' | 'repairing' | 'ready' | 'fixing-alert'
+  | 'receiving' | 'dispatching' | 'counting' | 'transferring';
+export type InvenBotOneShot = 'wave' | 'success' | 'warning' | 'celebrate' | 'laugh' | 'confused' | 'found' | 'shipping' | 'stamping';
 export type InvenBotState = InvenBotBaseState | InvenBotOneShot | 'curious';
 
 /** Priorités inspirées de INVENBOT_PRIORITY (mobile). */
@@ -11,6 +12,7 @@ export const INVENBOT_PRIORITY: Record<InvenBotOneShot, number> = {
   confused: 4.8,
   found: 4.5,
   shipping: 4.6,
+  stamping: 4.3,
   celebrate: 4,
   wave: 3,
   laugh: 2.4,
@@ -22,6 +24,7 @@ export const INVENBOT_DURATION: Record<InvenBotOneShot, number> = {
   confused: 1800,
   found: 1300,
   shipping: 1900,
+  stamping: 1000,
   celebrate: 1300,
   wave: 1900,
   laugh: 700,

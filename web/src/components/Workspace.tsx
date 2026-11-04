@@ -181,7 +181,7 @@ export function Workspace({
             />
           )}
           {activeKey === 'articles' && <ArticlesPage siteId={session.activeSite?.id} />}
-          {activeKey === 'movements' && <MovementsPage siteId={session.activeSite?.id} />}
+          {activeKey === 'movements' && <MovementsPage siteId={session.activeSite?.id} currentUserName={session.activeTechnician?.name ?? session.user.name} />}
           {activeKey === 'computers' && <ComputersPage siteId={session.activeSite?.id} />}
           {activeKey === 'scanner' && <ScannerPage siteId={session.activeSite?.id} />}
           {activeKey === 'map' && <StockMapPage siteId={session.activeSite?.id} />}

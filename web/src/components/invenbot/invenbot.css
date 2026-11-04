@@ -191,11 +191,17 @@
 }
 @keyframes ib-progress { from { transform: translateX(0); } to { transform: translateX(50px); } }
 @keyframes ib-question-bob { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-3px) rotate(6deg); } }
+@keyframes ib-stamp {
+  0%, 100% { transform: translateY(0); }
+  38% { transform: translateY(3px) scale(1, .98); }
+  62% { transform: translateY(-2px); }
+}
 
 .ib-prop--helmet { transform-origin: 100px 48px; transform: translateY(-18px) scale(.3); }
 .ib-prop--thermometer { transform-origin: 60px 155px; transform: scale(.2); }
 .ib-prop--wrench { transform-origin: 133px 155px; transform: scale(.2); }
-.ib-prop--laptop, .ib-prop--first-aid { transform-origin: 100px 165px; transform: scale(.2); }
+.ib-prop--laptop, .ib-prop--first-aid, .ib-prop--clipboard { transform-origin: 100px 165px; transform: scale(.2); }
+.ib-prop--stamp { transform-origin: 133px 171px; transform: scale(.2); }
 .ib-prop--paper-plane { transform-origin: 143px 145px; transform: scale(.2); }
 .ib-sweat, .ib-repair-sparks, .ib-ready-glint { opacity: 0; }
 .ib-ready-glint { transform-origin: 159px 70px; }
@@ -206,6 +212,14 @@
 .invenbot--inspecting .ib-prop--magnifier, .invenbot--repairing .ib-prop--laptop,
 .invenbot--repairing .ib-prop--wrench, .invenbot--fixing-alert .ib-prop--first-aid,
 .invenbot--shipping .ib-prop--paper-plane { opacity: 1; transform: none; }
+.invenbot--receiving .ib-prop--crate, .invenbot--dispatching .ib-prop--crate,
+.invenbot--counting .ib-prop--clipboard, .invenbot--transferring .ib-prop--paper-plane { opacity: 1; transform: none; }
+.invenbot--receiving .ib-arm--left, .invenbot--dispatching .ib-arm--left { transform: rotate(-12deg); }
+.invenbot--receiving .ib-arm--right, .invenbot--dispatching .ib-arm--right { transform: rotate(12deg); }
+.invenbot--counting .ib-arm--right { transform: rotate(30deg); }
+.invenbot--transferring .ib-arm--right { transform: rotate(-28deg); }
+.invenbot--stamping .ib-prop--stamp { opacity: 1; transform: none; }
+.invenbot--svg.invenbot--stamping .ib-actor { animation: ib-stamp 1s ease-in-out; }
 .invenbot--hot .ib-eye-open, .invenbot--inspecting .ib-eye-open { transform: scaleY(.65); }
 .invenbot--hot .ib-arm--left { transform: rotate(-15deg); }
 .invenbot--hot .ib-arm--right { transform: rotate(-120deg); animation: ib-fan .65s ease-in-out infinite alternate; }

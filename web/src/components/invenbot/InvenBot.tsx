@@ -65,7 +65,7 @@ export function InvenBot({
   return (
     <span ref={containerRef} className={className} aria-hidden="true">
       <span className="invenbot__halo" />
-      {variant === 'png' ? <img src={invenBotImage} alt="" /> : <InvenBotSvg key={state === 'shipping' ? eventId : 0} />}
+      {variant === 'png' ? <img src={invenBotImage} alt="" /> : <InvenBotSvg key={state === 'shipping' || state === 'stamping' ? eventId : 0} />}
       <span className="invenbot__spark invenbot__spark--one" />
       <span className="invenbot__spark invenbot__spark--two" />
       {variant === 'svg' && state === 'sleep' && (

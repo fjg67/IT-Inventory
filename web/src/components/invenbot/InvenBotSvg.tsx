@@ -122,6 +122,12 @@ export const InvenBotSvg = forwardRef<SVGSVGElement>(function InvenBotSvg(_props
             <rect x="69" y="156" width="62" height="23" rx="2" fill="#b9ecf5" />
             <path d="m63 184-8 7h90l-8-7Z" fill="#b4cadb" stroke="#7899b4" strokeWidth="1.5" />
           </g>
+          <g id={id('prop-clipboard')} className="ib-prop ib-prop--clipboard" data-prop="clipboard">
+            <rect x="67" y="148" width="66" height="43" rx="5" fill="#f3f8ff" stroke="#647f9a" strokeWidth="2" />
+            <rect x="91" y="144" width="18" height="9" rx="3" fill="#c6d6e5" stroke="#647f9a" strokeWidth="1.5" />
+            <path d="M78 162h35m-35 8h29" stroke="#7893ac" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="m78 179 4 4 7-8" fill="none" stroke="#45a978" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </g>
           <g className="ib-arm ib-arm--right">
             <g transform="rotate(-20 133 122)">
               <rect x="126" y="116" width="14" height="36" rx="7" fill={url('body')} stroke="#c3cfdc" strokeWidth="1.5" />
@@ -136,6 +142,11 @@ export const InvenBotSvg = forwardRef<SVGSVGElement>(function InvenBotSvg(_props
               <g id={id('prop-wrench')} className="ib-prop ib-prop--wrench" data-prop="wrench">
                 <rect x="129" y="153" width="8" height="33" rx="4" fill="#a5bbd0" stroke="#526e89" strokeWidth="1.3" />
                 <path d="M124 183v8l9 6 9-6v-8l-5 5h-8Z" fill="#d3e2ef" stroke="#526e89" strokeWidth="1.5" strokeLinejoin="round" />
+              </g>
+              <g id={id('prop-stamp')} className="ib-prop ib-prop--stamp" data-prop="stamp">
+                <rect x="128" y="151" width="10" height="22" rx="4" fill="#d9e3ed" stroke="#526e89" strokeWidth="1.5" />
+                <rect x="123" y="170" width="20" height="8" rx="2" fill="#e66f5c" stroke="#a6463d" strokeWidth="1.5" />
+                <rect x="121" y="179" width="24" height="5" rx="2" fill="#bf5148" />
               </g>
               <circle cx="133" cy="155" r="8.5" fill="#2a6fd8" />
               <rect className="ib-thumb" x="138" y="151.5" width="13" height="7" rx="3.5" fill="#2a6fd8" stroke="#1d55ad" strokeWidth="1.2" />
