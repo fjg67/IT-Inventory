@@ -407,10 +407,9 @@
   position: fixed;
   z-index: 20;
   inset: 0;
-  padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
   display: flex;
   justify-content: flex-end;
-  overflow-y: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
   background: rgba(15, 25, 19, .48);
   -webkit-backdrop-filter: blur(3px);
@@ -419,25 +418,78 @@
 
 .movement-drawer {
   position: relative;
-  width: min(560px, 100%);
-  min-height: 100%;
-  padding: 34px 0 0;
+  width: min(520px, 100vw);
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow: hidden;
   outline: none;
   animation: movement-drawer-enter .24s cubic-bezier(.2, .75, .25, 1) both;
 }
 
 .movement-drawer > .movement-create-panel {
-  min-height: calc(100% - 34px);
-  padding: 18px;
-  border-radius: 17px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 17px 0 0 17px;
   box-shadow: 0 18px 60px rgba(13, 30, 19, .22);
 }
 
+.movement-create-header {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  padding: calc(22px + env(safe-area-inset-top)) 58px 17px 22px;
+  border-bottom: 1px solid #e8eee8;
+  background: #fff;
+}
+
+.movement-create-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 17px 20px;
+  scrollbar-gutter: stable;
+}
+
+.movement-create-scroll > .movement-create-warning { margin: 0; }
+.movement-create-scroll > .movement-create-steps { margin: 17px 0 8px; }
+.movement-create-scroll > .loading-card { margin-top: 16px; }
+
+.movement-drawer .movement-create-form {
+  min-width: 0;
+  margin: 15px 0 0;
+  padding-bottom: 4px;
+}
+
+.movement-drawer .movement-create-actions {
+  position: sticky;
+  z-index: 1;
+  bottom: 0;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid #e6ece6;
+  background: #fff;
+  box-shadow: 0 -8px 20px rgba(26, 48, 34, .06);
+}
+
+.movement-drawer .movement-create-actions .button { min-height: 43px; }
+
 .movement-drawer__close {
   position: absolute;
-  z-index: 1;
-  top: 43px;
-  right: 12px;
+  z-index: 2;
+  top: calc(12px + env(safe-area-inset-top));
+  right: 14px;
   width: 34px;
   height: 34px;
   border: 1px solid #e5eae5;
@@ -462,6 +514,37 @@
 
 .movement-drawer__close:disabled { opacity: .55; cursor: wait; }
 
+.movement-drawer .movement-create-help { margin: -5px 0 0; color: #7e8a81; font-size: 9px; line-height: 1.5; }
+.movement-drawer .movement-create-recents { display: grid; gap: 7px; }
+.movement-drawer .movement-create-recents > span { color: #78847b; font-size: 9px; font-weight: 650; }
+.movement-drawer .movement-create-recents > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.movement-drawer .movement-create-recents button { max-width: 100%; overflow: hidden; padding: 6px 9px; border: 1px solid #e1e9e2; border-radius: 999px; color: #526357; background: #f7faf8; font: inherit; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.movement-drawer .movement-create-recents button[aria-pressed="true"] { border-color: #a7d9c5; color: #17674f; background: #eef7f1; }
+.movement-drawer .movement-create-recents button:focus-visible { outline: 2px solid #338665; outline-offset: 2px; }
+.movement-drawer .movement-create-article { min-height: 64px; display: grid; grid-template-columns: 42px minmax(0, 1fr) max-content; align-items: center; gap: 10px; }
+.movement-drawer .movement-create-article--active,
+.movement-drawer .movement-create-article:focus-visible { outline: 2px solid #338665; outline-offset: -2px; }
+.movement-drawer .movement-create-article > span:nth-of-type(2) { min-width: 0; display: grid; gap: 4px; }
+.movement-drawer .movement-create-article .article-photo { width: 42px; height: 42px; flex-basis: 42px; }
+.movement-drawer .movement-create-stock { display: grid; justify-items: end; }
+.movement-drawer .movement-create-article .stock-gauge { width: 48px; height: 4px; margin: 4px 0 0 auto; }
+.movement-drawer .movement-create-selected { align-items: center; }
+.movement-drawer .movement-create-selected__details { min-width: 0; display: grid; gap: 5px; }
+.movement-drawer .movement-create-selected > .article-photo-button,
+.movement-drawer .movement-create-selected > .article-photo,
+.movement-drawer .movement-create-selected .article-photo-button,
+.movement-drawer .movement-create-selected .article-photo { width: 52px; height: 52px; flex: 0 0 52px; }
+.movement-drawer .movement-create-selected__stock { display: flex; align-items: center; gap: 8px; color: #78847b; font-size: 9px; }
+.movement-drawer .movement-create-selected__stock .stock-gauge { width: 70px; height: 5px; margin: 0; }
+.movement-drawer .movement-create-selected .article-photo-button:focus-visible { outline: 2px solid #338665; outline-offset: 3px; }
+.movement-drawer .photo-preview { width: min(92vw, 760px); max-width: none; max-height: 90vh; padding: 0; overflow: visible; border: 1px solid #dfe7df; border-radius: 18px; color: #344139; background: #fff; box-shadow: 0 18px 60px rgba(13, 30, 19, .22); }
+.movement-drawer .photo-preview::backdrop { background: rgba(12, 24, 17, .72); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+.movement-drawer .photo-preview__panel { position: relative; display: grid; justify-items: center; gap: 13px; padding: 20px; }
+.movement-drawer .photo-preview__panel img { display: block; max-width: 100%; max-height: calc(90vh - 90px); object-fit: contain; border-radius: 10px; }
+.movement-drawer .photo-preview__panel strong { max-width: 100%; overflow: hidden; color: inherit; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.movement-drawer .photo-preview__close { position: absolute; z-index: 1; top: 9px; right: 9px; width: 34px; height: 34px; border: 1px solid #dfe7df; border-radius: 50%; color: #344139; background: #fff; font-size: 22px; line-height: 1; cursor: pointer; }
+.movement-drawer .photo-preview__close:focus-visible { outline: 2px solid #338665; outline-offset: 2px; }
+
 @keyframes movement-drawer-enter {
   from { opacity: 0; transform: translateX(18px); }
   to { opacity: 1; transform: translateX(0); }
@@ -483,18 +566,36 @@
   .movement-conveyor__label { display: none; }
   .movement-conveyor__track { width: 100%; }
   .movement-conveyor__parcel { max-width: 33%; padding: 6px; }
-  .movement-drawer-backdrop { padding: 0; }
-  .movement-drawer { width: 100%; min-height: 100%; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
-  .movement-drawer > .movement-create-panel { min-height: 100%; border: 0; border-radius: 0; }
-  .movement-drawer__close { top: calc(env(safe-area-inset-top) + 10px); right: 10px; }
+}
+
+@media (max-width: 900px) {
+  .movement-drawer { width: 100vw; }
+  .movement-drawer > .movement-create-panel { border: 0; border-radius: 0; }
+  .movement-create-scroll { padding-inline: 16px; }
+  .movement-drawer .movement-create-actions { padding-right: 16px; padding-left: 16px; }
+  .movement-drawer__close { right: 12px; }
+  .movement-drawer .movement-create-article { grid-template-columns: 38px minmax(0, 1fr) max-content; gap: 8px; padding-inline: 9px; }
+  .movement-drawer .movement-create-article .article-photo { width: 38px; height: 38px; flex-basis: 38px; }
+  .movement-drawer .movement-create-selected__stock { flex-wrap: wrap; }
+}
+
+@media (max-width: 420px) {
+  .movement-create-header { padding-right: 54px; padding-left: 16px; }
+  .movement-create-scroll { padding-inline: 12px; }
+  .movement-drawer .movement-create-actions { padding-right: 12px; padding-left: 12px; }
+  .movement-create-step + .movement-create-step::before { width: 15px; margin-inline: 4px; }
+  .movement-create-step > button { gap: 4px; font-size: 8px; }
+  .movement-drawer .movement-create-recents button { max-width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .movement-conveyor *,
   .movement-drawer { animation: none !important; }
+  .movement-drawer .photo-preview[open] { animation: none !important; }
   .movement-conveyor::before { animation: none; }
   .movement-flow-day__stack { transition: none; }
 }
+.reduce-motion .movement-drawer .photo-preview[open] { animation: none !important; }
 
 @media (prefers-color-scheme: dark) {
   .movement-insights__heading h3,
@@ -536,6 +637,15 @@
   .movement-filter { color: #a2afa5; }
   .movement-filter select { color: #dce8df; border-color: #34453a; background: #202d25; }
   .movement-drawer > .movement-create-panel { color: #dce8df; border-color: #2e3d33; background: #1d2821; }
+  .movement-create-header { border-bottom-color: #2b392f; background: #1d2821; }
+  .movement-create-header h3 { color: #dce8df; }
+  .movement-create-scroll { scrollbar-color: #4a5b4e #1d2821; }
+  .movement-drawer .movement-create-actions { border-top-color: #2b392f; background: #1d2821; box-shadow: 0 -8px 20px rgba(0, 0, 0, .14); }
+  .movement-create-step + .movement-create-step::before { background: #34453a; }
+  .movement-create-step > button > span { color: #9eaca1; border-color: #34453a; background: #202d25; }
+  .movement-create-step--current > button > span { color: #a7e6c0; border-color: #42644c; background: #263b2d; }
+  .movement-create-step--completed > button { color: #a7e6c0; }
+  .movement-create-step--completed > button > span { color: #102318; border-color: #84cea0; background: #84cea0; }
   .movement-drawer .movement-create-warning { color: #e5c782; border-color: #51452f; background: #2b281f; }
   .movement-drawer .movement-create-step { color: #9eaca1; }
   .movement-drawer .movement-create-step > span { color: #c4d2c7; border-color: #34453a; background: #202d25; }
@@ -547,6 +657,14 @@
   .movement-drawer .movement-create-field textarea { color: #dce8df; border-color: #34453a; background: #202d25; }
   .movement-drawer .movement-create-articles { border-color: #34453a; }
   .movement-drawer .movement-create-article { color: #c4d2c7; border-bottom-color: #2b392f; background: #202d25; }
+  .movement-drawer .movement-create-help,
+  .movement-drawer .movement-create-recents > span { color: #9eaca1; }
+  .movement-drawer .movement-create-recents button { color: #c4d2c7; border-color: #34453a; background: #202d25; }
+  .movement-drawer .movement-create-recents button[aria-pressed="true"] { color: #a7e6c0; border-color: #42644c; background: #263b2d; }
+  .movement-drawer .movement-create-article--active,
+  .movement-drawer .movement-create-article:focus-visible,
+  .movement-drawer .movement-create-selected .article-photo-button:focus-visible,
+  .movement-drawer .photo-preview__close:focus-visible { outline-color: #a7e6c0; }
   .movement-drawer .movement-create-article strong,
   .movement-drawer .movement-create-selected strong,
   .movement-drawer .movement-create-type strong { color: #dce8df; }
@@ -555,10 +673,20 @@
   .movement-drawer .movement-create-type:hover { background: #263b2d; }
   .movement-drawer .movement-create-selected,
   .movement-drawer .movement-create-type { color: #dce8df; border-color: #34453a; background: #202d25; }
+  .movement-drawer .photo-preview { color: #dce8df; border-color: #34453a; background: #1d2821; }
+  .movement-drawer .photo-preview__close { color: #dce8df; border-color: #34453a; background: #253229; }
+  .movement-drawer .movement-create-type--disabled { color: #909e93; background: #1b261f; }
+  .movement-drawer .movement-create-type--disabled small { color: #e4a69d; }
   .movement-drawer .movement-create-selected small,
   .movement-drawer .movement-create-stock small,
   .movement-drawer .movement-create-type span { color: #9eaca1; }
   .movement-drawer .movement-create-preview { border-color: #35523d; background: #202f25; }
   .movement-drawer .movement-create-preview strong { color: #9be0b6; }
+  .movement-create-quantity { border-color: #34453a; background: #202d25; }
+  .movement-create-quantity .movement-create-quantity__input { color: #dce8df; border-color: #34453a; background: #202d25; }
+  .movement-create-quantity__step { color: #a7e6c0; background: #263b2d; }
+  .movement-create-quantity__step:first-child { border-right-color: #34453a; }
+  .movement-create-quantity__step:last-child { border-left-color: #34453a; }
+  .movement-create-quantity__step:disabled { color: #7f8e83; background: #1b261f; }
   .movement-drawer__close { color: #dce8df; border-color: #34453a; background: #253229; }
 }

@@ -34,6 +34,8 @@ export function MovementCreateDrawer({
     initialFocus?.focus();
 
     function trapFocus(event: KeyboardEvent) {
+      const nestedDialog = dialogRef.current?.querySelector<HTMLDialogElement>('dialog[open]');
+      if (nestedDialog && (event.key === 'Escape' || event.key === 'Tab')) return;
       if (event.key === 'Escape') {
         event.preventDefault();
         if (!savingRef.current) cancelRef.current();

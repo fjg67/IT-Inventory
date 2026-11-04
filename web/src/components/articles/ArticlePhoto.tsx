@@ -4,7 +4,7 @@ import { MiniIcon } from '../../pages/DashboardPage';
 interface ArticlePhotoProps {
   name: string;
   imageUrl?: string | null;
-  onPreview: (name: string, url: string) => void;
+  onPreview?: (name: string, url: string) => void;
 }
 
 export const ArticlePhoto = memo(function ArticlePhoto({ name, imageUrl, onPreview }: ArticlePhotoProps) {
@@ -19,6 +19,21 @@ export const ArticlePhoto = memo(function ArticlePhoto({ name, imageUrl, onPrevi
   }, [src]);
 
   if (src && !failed) {
+    const image = (
+      <span className="article-photo">
+        <img
+          src={src}
+          alt={`Photo de ${name}`}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+        />
+      </span>
+    );
+    if (!onPreview) return image;
+
     return (
       <button
         className={`article-photo-button${loaded ? ' is-loaded' : ' is-loading'}`}
@@ -26,17 +41,7 @@ export const ArticlePhoto = memo(function ArticlePhoto({ name, imageUrl, onPrevi
         aria-label={`Agrandir la photo de ${name}`}
         onClick={() => onPreview(name, src)}
       >
-        <span className="article-photo">
-          <img
-            src={src}
-            alt={`Photo de ${name}`}
-            loading="lazy"
-            decoding="async"
-            referrerPolicy="no-referrer"
-            onLoad={() => setLoaded(true)}
-            onError={() => setFailed(true)}
-          />
-        </span>
+        {image}
       </button>
     );
   }

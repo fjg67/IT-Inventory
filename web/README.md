@@ -251,6 +251,9 @@ correspondante.
   migration SQL transactionnelle pour mettre à jour le stock et son journal
   ensemble. Le formulaire reprend un parcours guidé en trois étapes, avec
   recherche d’article, aperçu du stock après opération et contrôle de quantité.
+  La recherche accepte un lecteur code-barres, les flèches du clavier et les
+  articles récemment sélectionnés; photos, seuils de stock et réactions
+  contextuelles d’InvenBot accompagnent les étapes sans modifier le payload.
 
 La migration `023_web_stock_movements.sql` a été exécutée manuellement dans
 Supabase. En raison de la divergence de l’historique distant, ne lancez pas
