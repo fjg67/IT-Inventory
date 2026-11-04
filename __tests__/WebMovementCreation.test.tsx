@@ -173,6 +173,19 @@ describe('movement creation', () => {
     expect(renderer.root.findByProps({ id: 'movement-article-query' })).toBeDefined();
   });
 
+  it('shows a distinct decorative mascot for each movement operation', async () => {
+    const { renderer } = await renderForm();
+    await act(async () => buttonWithText(renderer.root, 'Continuer').props.onClick());
+
+    const cards = renderer.root.findAllByProps({ className: 'movement-create-type' });
+    const mascots = cards.map((card) => card.findByType('svg'));
+    expect(mascots.map((mascot) => mascot.props['data-movement-mascot']))
+      .toEqual(['ENTRY', 'EXIT', 'ADJUSTMENT', 'TRANSFER']);
+    expect(mascots.every((mascot) => mascot.props['aria-hidden'] === 'true')).toBe(true);
+    const drawings = mascots.map((mascot) => mascot.findAllByType('path').map((path) => path.props.d).join('|'));
+    expect(new Set(drawings).size).toBe(4);
+  });
+
   it('disables stock-removing operations when the article has no stock', async () => {
     mockGetArticles.mockResolvedValueOnce([{ ...article, quantity: 0 }]);
     const { renderer } = await renderForm();
@@ -214,6 +227,7 @@ describe('movement creation', () => {
     );
     await selectType(renderer, label);
     expect(mockBotActions.setBase).toHaveBeenLastCalledWith(botState);
+    expect(renderer.root.findByProps({ 'data-movement-mascot': type }).props['aria-hidden']).toBe('true');
     const numberInput = renderer.root.findByProps({ type: 'number' });
     await act(async () => numberInput.props.onChange({ currentTarget: { value: inputQuantity } }));
     await act(async () => renderer.root.findByType('textarea').props.onChange({ currentTarget: { value: '  Test  ' } }));

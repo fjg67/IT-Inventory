@@ -9,6 +9,7 @@ import { ArticlePhoto } from '../components/articles/ArticlePhoto';
 import { PhotoPreview, type PhotoPreviewItem } from '../components/articles/PhotoPreview';
 import { StockGauge } from '../components/articles/StockGauge';
 import { useInvenBotActions } from '../components/invenbot/useInvenBot';
+import { MovementMascot } from '../components/movements/MovementMascot';
 
 const movementOptions: { value: StockMovementInput['type']; label: string; description: string }[] = [
   { value: 'ENTRY', label: 'Entrée', description: 'Ajouter au stock' },
@@ -388,6 +389,7 @@ export function MovementCreateForm({
                   return (
                     <button
                       className={`movement-create-type${type === option.value ? ' movement-create-type--selected' : ''}${stockEmpty ? ' movement-create-type--disabled' : ''}`}
+                      data-movement-type={option.value}
                       type="button"
                       key={option.value}
                       onClick={() => selectMovementType(option.value)}
@@ -395,8 +397,12 @@ export function MovementCreateForm({
                       aria-describedby={stockEmpty ? descriptionId : undefined}
                       aria-pressed={type === option.value}
                     >
-                      <strong>{option.label}</strong><span>{option.description}</span>
-                      {stockEmpty && <small id={descriptionId}>Stock vide : rien à {option.value === 'EXIT' ? 'sortir' : 'transférer'}.</small>}
+                      <MovementMascot type={option.value} />
+                      <span className="movement-create-type__copy">
+                        <strong>{option.label}</strong>
+                        <span>{option.description}</span>
+                        {stockEmpty && <small id={descriptionId}>Stock vide : rien à {option.value === 'EXIT' ? 'sortir' : 'transférer'}.</small>}
+                      </span>
                     </button>
                   );
                 })}
@@ -406,7 +412,7 @@ export function MovementCreateForm({
 
           {step === 'details' && type && (
             <>
-              <div className="movement-create-selected movement-create-field--wide">
+              <div className="movement-create-selected movement-create-selected--with-mascot movement-create-field--wide">
                 {selectedArticle && (
                   <>
                     <ArticlePhoto
@@ -425,6 +431,7 @@ export function MovementCreateForm({
                     </div>
                   </>
                 )}
+                <MovementMascot type={type} />
               </div>
               <label className="movement-create-field">
                 <span>{type === 'ADJUSTMENT' ? 'Stock réel compté' : 'Quantité'}</span>
