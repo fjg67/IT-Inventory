@@ -31,7 +31,17 @@ const periods = [
   { value: 'all', label: 'Toute la période' },
 ] as const;
 
-export function MovementsPage({ siteId, currentUserName }: { siteId?: string; currentUserName?: string }) {
+export function MovementsPage({
+  siteId,
+  currentUserName,
+  createRequested = false,
+  onCreateRequestHandled,
+}: {
+  siteId?: string;
+  currentUserName?: string;
+  createRequested?: boolean;
+  onCreateRequestHandled?: () => void;
+}) {
   const [period, setPeriod] = useState<(typeof periods)[number]['value']>('30days');
   const [type, setType] = useState<MovementFilterType>('all');
   const [pageIndex, setPageIndex] = useState(0);
@@ -54,6 +64,7 @@ export function MovementsPage({ siteId, currentUserName }: { siteId?: string; cu
   const panelRef = useStickyTable(Boolean(siteId));
   const pageRef = useRef<HTMLElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
+  const createButtonRef = useRef<HTMLButtonElement>(null);
   const active = useOnScreenAndVisible(pageRef);
   const reduced = useMotionReduced();
   const botActions = useInvenBotActions();
@@ -162,6 +173,19 @@ export function MovementsPage({ siteId, currentUserName }: { siteId?: string; cu
     botActions.setBase(baseForType(type));
   }, [savingMovement, botActions, type]);
 
+  const openCreateForm = useCallback(() => {
+    setShowCreateForm(true);
+    botActions.stop();
+    botActions.setBase('checking');
+    botActions.say('Choisissons un article et le mouvement à enregistrer.', { priority: 1 });
+  }, [botActions]);
+
+  useEffect(() => {
+    if (!createRequested || !siteId || exporting) return;
+    openCreateForm();
+    onCreateRequestHandled?.();
+  }, [createRequested, siteId, exporting, openCreateForm, onCreateRequestHandled]);
+
   function updatePeriod(event: FormEvent<HTMLSelectElement>) {
     setPeriod(event.currentTarget.value as (typeof periods)[number]['value']);
     setPageIndex(0);
@@ -214,13 +238,6 @@ export function MovementsPage({ siteId, currentUserName }: { siteId?: string; cu
     return <DataNotice title="Sélectionnez un site" message="Aucun site actif n’est associé à cette session. Les mouvements sont consultés par site." />;
   }
 
-  function openCreateForm() {
-    setShowCreateForm(true);
-    botActions.stop();
-    botActions.setBase('checking');
-    botActions.say('Choisissons un article et le mouvement à enregistrer.', { priority: 1 });
-  }
-
   function handleMovementSaved() {
     summaryCache.current.clear();
     setShowCreateForm(false);
@@ -237,13 +254,25 @@ export function MovementsPage({ siteId, currentUserName }: { siteId?: string; cu
 
   return (
     <section className="data-page" aria-labelledby="movements-heading" ref={pageRef}>
-      <div className="page-heading">
+      <div className="page-heading movements-heading">
         <div>
           <span className="eyebrow">JOURNAL DU SITE</span>
           <h2 id="movements-heading">Mouvements</h2>
           <p>Consultez les entrées, sorties, ajustements et transferts de stock.</p>
         </div>
-        <span className="data-source"><span /> Site actif</span>
+        <div className="movements-heading__actions">
+          <span className="data-source"><span /> Site actif</span>
+          <button
+            ref={createButtonRef}
+            className="button button--primary movements-create-button"
+            type="button"
+            onClick={openCreateForm}
+            disabled={exporting}
+            aria-haspopup="dialog"
+          >
+            <span aria-hidden="true">+</span> Créer un mouvement
+          </button>
+        </div>
       </div>
 
       {showCreateForm && (
@@ -253,6 +282,7 @@ export function MovementsPage({ siteId, currentUserName }: { siteId?: string; cu
           onCancel={closeCreateForm}
           onSaved={handleMovementSaved}
           onSavingChange={setSavingMovement}
+          returnFocusRef={createButtonRef}
         />
       )}
 

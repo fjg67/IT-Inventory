@@ -40,6 +40,7 @@ export function Workspace({
   const [activeKey, setActiveKey] = useState('dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [movementCreateRequested, setMovementCreateRequested] = useState(false);
   const allowedSections = useMemo(
     () => sections.filter((section) => session.user.permissions.includes(section.permission)),
     [session.user.permissions],
@@ -73,6 +74,17 @@ export function Workspace({
     });
   }, []);
   const stopLooking = useCallback(() => setMiniLook(null), []);
+  const navigateToSection = useCallback((key: string) => {
+    setMovementCreateRequested(false);
+    setActiveKey(key);
+    setAssistantOpen(false);
+  }, []);
+  const requestMovementCreation = useCallback(() => {
+    setMovementCreateRequested(true);
+    setActiveKey('movements');
+    setAssistantOpen(false);
+  }, []);
+  const acknowledgeMovementCreationRequest = useCallback(() => setMovementCreateRequested(false), []);
 
   return (
     <InvenBotProvider userName={session.user.name}>
@@ -101,7 +113,7 @@ export function Workspace({
               className={`nav-item${activeSection?.key === section.key ? ' nav-item--active' : ''}`}
               key={section.key}
               type="button"
-              onClick={() => { setActiveKey(section.key); setAssistantOpen(false); }}
+              onClick={() => navigateToSection(section.key)}
               onPointerEnter={lookAtNavItem}
               onPointerLeave={stopLooking}
               aria-current={activeSection?.key === section.key ? 'page' : undefined}
@@ -127,7 +139,7 @@ export function Workspace({
               <div className="assistant-popover__heading"><strong>Accès rapides</strong><button type="button" onClick={() => setAssistantOpen(false)} aria-label="Fermer les raccourcis">×</button></div>
               <p>Raccourcis vers les modules disponibles.</p>
               {dashboardActions.map((action) => (
-                <button className="assistant-popover__action" type="button" key={action.key} onClick={() => { setActiveKey(action.key); setAssistantOpen(false); }}>
+                <button className="assistant-popover__action" type="button" key={action.key} onClick={() => action.key === 'movements' ? requestMovementCreation() : navigateToSection(action.key)}>
                   <Icon name={action.icon} /><span>{action.label}</span><Icon name="chevron" />
                 </button>
               ))}
@@ -177,11 +189,19 @@ export function Workspace({
               siteId={session.activeSite?.id}
               siteName={session.activeSite?.name}
               actions={dashboardActions}
-              onNavigate={(key) => setActiveKey(key)}
+              onNavigate={navigateToSection}
+              onCreateMovement={requestMovementCreation}
             />
           )}
           {activeKey === 'articles' && <ArticlesPage siteId={session.activeSite?.id} />}
-          {activeKey === 'movements' && <MovementsPage siteId={session.activeSite?.id} currentUserName={session.activeTechnician?.name ?? session.user.name} />}
+          {activeKey === 'movements' && (
+            <MovementsPage
+              siteId={session.activeSite?.id}
+              currentUserName={session.activeTechnician?.name ?? session.user.name}
+              createRequested={movementCreateRequested}
+              onCreateRequestHandled={acknowledgeMovementCreationRequest}
+            />
+          )}
           {activeKey === 'computers' && <ComputersPage siteId={session.activeSite?.id} />}
           {activeKey === 'scanner' && <ScannerPage siteId={session.activeSite?.id} />}
           {activeKey === 'map' && <StockMapPage siteId={session.activeSite?.id} />}

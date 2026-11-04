@@ -1,3 +1,14 @@
+.movements-heading__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.movements-create-button { min-height: 42px; white-space: nowrap; }
+.movements-create-button > span { font-size: 19px; font-weight: 400; line-height: 1; }
+
 .movement-insights {
   min-width: 0;
   padding: 18px 17px 0;
@@ -457,6 +468,10 @@
 }
 
 @media (max-width: 760px) {
+  .movements-heading { flex-wrap: wrap; }
+  .movements-heading__actions { width: 100%; justify-content: space-between; }
+  .movements-heading__actions .data-source { margin-top: 0; }
+  .movements-create-button { min-height: 44px; }
   .movement-insights { padding: 14px 12px 0; }
   .movement-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
   .movement-summary-card { min-height: 76px; padding: 9px 10px; }

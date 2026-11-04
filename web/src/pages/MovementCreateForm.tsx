@@ -238,8 +238,8 @@ export function MovementCreateForm({
             <button className="button button--subtle" type="button" onClick={step === 'article' ? onCancel : () => { setError(null); setStep(step === 'details' ? 'type' : 'article'); }} disabled={saving}>
               {step === 'article' ? 'Annuler' : 'Retour'}
             </button>
-            {step === 'article' && <button className="button" type="button" onClick={() => { setError(null); setStep('type'); }} disabled={!selectedArticle || saving}>Continuer</button>}
-            {step === 'details' && <button className="button" type="submit" disabled={saving || !selectedArticle || !quantityValid || (type === 'TRANSFER' && destinations.length === 0)}>
+            {step === 'article' && <button className="button button--primary" type="button" onClick={() => { setError(null); setStep('type'); }} disabled={!selectedArticle || saving}>Continuer</button>}
+            {step === 'details' && <button className="button button--primary" type="submit" disabled={saving || !selectedArticle || !quantityValid || (type === 'TRANSFER' && destinations.length === 0)}>
               {saving ? 'Enregistrement…' : 'Confirmer le mouvement'}
             </button>}
           </div>

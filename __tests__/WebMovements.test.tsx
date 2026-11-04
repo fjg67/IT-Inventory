@@ -31,7 +31,22 @@ jest.mock('../web/src/components/movements/MovementInsightsPanel', () => {
       Runtime.createElement('button', { 'data-select-day': true, onClick: () => onSelectDate('2026-11-04') }, 'Filtrer par jour'),
   };
 });
-jest.mock('../web/src/components/movements/MovementCreateDrawer', () => ({ MovementCreateDrawer: () => null }));
+jest.mock('../web/src/components/movements/MovementCreateDrawer', () => {
+  const Runtime = jest.requireActual<typeof import('react')>('react');
+  return {
+    MovementCreateDrawer: ({ siteId, onCancel, onSaved, onSavingChange }: {
+      siteId: string;
+      onCancel: () => void;
+      onSaved: () => void;
+      onSavingChange: (saving: boolean) => void;
+    }) => Runtime.createElement('section', { 'data-movement-drawer': siteId },
+      Runtime.createElement('button', { 'data-close-drawer': true, onClick: onCancel }, 'Fermer'),
+      Runtime.createElement('button', { 'data-save-drawer': true, onClick: onSaved }, 'Enregistrer'),
+      Runtime.createElement('button', { 'data-start-saving': true, onClick: () => onSavingChange(true) }, 'Enregistrement en cours'),
+      Runtime.createElement('button', { 'data-stop-saving': true, onClick: () => onSavingChange(false) }, 'Enregistrement terminé'),
+    ),
+  };
+});
 jest.mock('../web/src/components/data/DataPagination', () => {
   const Runtime = jest.requireActual<typeof import('react')>('react');
   return {
@@ -93,10 +108,10 @@ function makePage(items = mockItems, page = 0, pageSize = 25): MovementPage {
   return { items: items.slice(start, start + pageSize), total: items.length, page, pageSize };
 }
 
-async function renderPage() {
+async function renderPage(props: Partial<React.ComponentProps<typeof MovementsPage>> = {}) {
   let renderer: TestRenderer.ReactTestRenderer;
   await act(async () => {
-    renderer = TestRenderer.create(<MovementsPage siteId="site-a" currentUserName="Technicien" />);
+    renderer = TestRenderer.create(<MovementsPage siteId="site-a" currentUserName="Technicien" {...props} />);
   });
   renderedPages.push(renderer!);
   return renderer!;
@@ -121,6 +136,58 @@ afterEach(() => {
 });
 
 describe('movement history', () => {
+  it('offers a prominent creation button even when the history is empty', async () => {
+    mockItems.splice(0, mockItems.length);
+    const renderer = await renderPage();
+    const heading = renderer.root.findByProps({ className: 'page-heading movements-heading' });
+    const createButton = heading.findByType('button');
+
+    expect(createButton.props.className).toContain('button--primary');
+    expect(createButton.props['aria-haspopup']).toBe('dialog');
+    expect(createButton.props.disabled).toBe(false);
+    expect(createButton.children).toContain(' Créer un mouvement');
+
+    await act(async () => createButton.props.onClick());
+    expect(renderer.root.findByProps({ 'data-movement-drawer': 'site-a' })).toBeDefined();
+    await act(async () => renderer.root.findByProps({ 'data-close-drawer': true }).props.onClick());
+    expect(renderer.root.findAllByProps({ 'data-movement-drawer': 'site-a' })).toHaveLength(0);
+  });
+
+  it('keeps creation available when the journal cannot be loaded', async () => {
+    mockGetPage.mockRejectedValueOnce(new Error('Journal indisponible'));
+    const renderer = await renderPage();
+    const createButton = renderer.root.findByProps({ className: 'page-heading movements-heading' }).findByType('button');
+
+    expect(createButton.props.disabled).toBe(false);
+    await act(async () => createButton.props.onClick());
+    expect(renderer.root.findByProps({ 'data-movement-drawer': 'site-a' })).toBeDefined();
+  });
+
+  it('opens a requested creation only when a site is available and acknowledges it', async () => {
+    const onHandled = jest.fn();
+    const renderer = await renderPage({ siteId: undefined, createRequested: true, onCreateRequestHandled: onHandled });
+    expect(onHandled).not.toHaveBeenCalled();
+
+    await act(async () => renderer.update(
+      <MovementsPage siteId="site-a" createRequested onCreateRequestHandled={onHandled} />,
+    ));
+    expect(onHandled).toHaveBeenCalledTimes(1);
+    expect(renderer.root.findByProps({ 'data-movement-drawer': 'site-a' })).toBeDefined();
+  });
+
+  it('prevents closing while saving and refreshes the journal after success', async () => {
+    const renderer = await renderPage();
+    await act(async () => renderer.root.findByProps({ className: 'page-heading movements-heading' }).findByType('button').props.onClick());
+    await act(async () => renderer.root.findByProps({ 'data-start-saving': true }).props.onClick());
+    await act(async () => renderer.root.findByProps({ 'data-close-drawer': true }).props.onClick());
+    expect(renderer.root.findByProps({ 'data-movement-drawer': 'site-a' })).toBeDefined();
+
+    await act(async () => renderer.root.findByProps({ 'data-save-drawer': true }).props.onClick());
+    expect(renderer.root.findAllByProps({ 'data-movement-drawer': 'site-a' })).toHaveLength(0);
+    expect(mockGetPage).toHaveBeenCalledTimes(2);
+    expect(mockGetAll).toHaveBeenCalledTimes(2);
+  });
+
   it('keeps server pagination and caches the full filtered summary independently', async () => {
     const renderer = await renderPage();
     expect(mockGetPage.mock.calls[0][1]).toEqual({ period: '30days', type: 'all', page: 0, pageSize: 25 });

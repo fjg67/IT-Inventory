@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import { MovementCreateForm } from '../../pages/MovementCreateForm';
 
 export function MovementCreateDrawer({
@@ -7,12 +7,14 @@ export function MovementCreateDrawer({
   onCancel,
   onSaved,
   onSavingChange,
+  returnFocusRef,
 }: {
   siteId: string;
   saving: boolean;
   onCancel: () => void;
   onSaved: () => void;
   onSavingChange: (saving: boolean) => void;
+  returnFocusRef?: RefObject<HTMLButtonElement | null>;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const savingRef = useRef(saving);
@@ -60,9 +62,10 @@ export function MovementCreateDrawer({
     return () => {
       document.removeEventListener('keydown', trapFocus);
       document.body.style.overflow = previousOverflow;
-      if (previousFocus?.isConnected) previousFocus.focus();
+      if (previousFocus?.isConnected && previousFocus !== document.body) previousFocus.focus();
+      else if (returnFocusRef?.current?.isConnected) returnFocusRef.current.focus();
     };
-  }, []);
+  }, [returnFocusRef]);
 
   return (
     <div

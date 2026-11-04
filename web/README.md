@@ -231,7 +231,9 @@ correspondante.
 - Historique paginé des mouvements avec filtres par type et période, synthèse
   filtrée, graphique quotidien cliquable, convoyeur des mouvements récents et
   export CSV selon les filtres actifs. La création s’ouvre dans un drawer
-  accessible, avec fermeture par Échap/clic extérieur et retour du focus.
+  accessible, avec fermeture par Échap/clic extérieur et retour du focus. Le
+  bouton « Créer un mouvement » en haut de Flux et les raccourcis de création
+  du Dashboard ou d’InvenBot ouvrent directement ce formulaire.
 - Module Parc PC avec recherche, états, compteurs, pagination et export CSV,
   raccordé à l’endpoint de données réelles.
 - Scanner d’articles avec recherche par code-barres, référence et nom, saisie
@@ -273,7 +275,7 @@ ou cassées et la compatibilité avec une ancienne version de l’API.
 
 ```sh
 npm test -- --runInBand __tests__/WebComputers.test.tsx __tests__/WebArticlePhotos.test.tsx __tests__/WebInvenBotQueue.test.ts
-npm test -- --runInBand __tests__/WebMovements.test.tsx __tests__/WebMovementInsights.test.ts
+npm test -- --runInBand __tests__/WebMovements.test.tsx __tests__/WebMovementInsights.test.ts __tests__/WebMovementCreation.test.tsx __tests__/WebMovementNavigation.test.tsx
 npm run build --prefix web
 ```
 

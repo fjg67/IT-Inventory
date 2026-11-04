@@ -46,11 +46,13 @@ export function DashboardPage({
   siteName,
   actions,
   onNavigate,
+  onCreateMovement,
 }: {
   siteId?: string;
   siteName?: string;
   actions: DashboardAction[];
   onNavigate: (key: string) => void;
+  onCreateMovement: () => void;
 }) {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -262,7 +264,7 @@ export function DashboardPage({
                     <strong>Aucun mouvement récent</strong>
                     <span>Tout est calme sur ce site. Le prochain mouvement enregistré apparaîtra ici.</span>
                     {canOpenMovements && (
-                      <button className="button dashboard-empty__cta" type="button" onClick={() => onNavigate('movements')}>
+                      <button className="button dashboard-empty__cta" type="button" onClick={onCreateMovement}>
                         <MiniIcon name="plus" /> Créer un mouvement
                       </button>
                     )}
@@ -299,7 +301,7 @@ export function DashboardPage({
                   </div>
                   <div className="dashboard-actions__list">
                     {actions.slice(0, 4).map((action) => (
-                      <button className={`dashboard-action dashboard-action--${action.key}`} type="button" key={action.key} onPointerDown={spawnRipple} onClick={() => onNavigate(action.key)}>
+                      <button className={`dashboard-action dashboard-action--${action.key}`} type="button" key={action.key} onPointerDown={spawnRipple} onClick={() => action.key === 'movements' ? onCreateMovement() : onNavigate(action.key)}>
                         <span className={`dashboard-action__icon dashboard-action__icon--${action.key}`}><MiniIcon name={action.icon} /></span>
                         <span><strong>{action.label}</strong><small>{action.description}</small></span>
                         <span className="dashboard-action__arrow" aria-hidden="true"><MiniIcon name="arrow" /></span>
