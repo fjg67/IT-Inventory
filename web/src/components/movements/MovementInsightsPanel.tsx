@@ -3,15 +3,16 @@ import { CountUp } from '../dashboard/CountUp';
 import { InvenBot, useMotionReduced } from '../invenbot/InvenBot';
 import { useOnScreenAndVisible } from '../motion/useOnScreenAndVisible';
 import { classifyMovementType, movementFlowByDay, summarizeMovements } from './movementInsights';
+import { MOVEMENT_COLORS } from '../../constants/movementColors';
 import type { MovementListItem } from '../../types/inventory';
 import './movement.css';
 
 const numberFormat = new Intl.NumberFormat('fr-FR');
 const typeLabels = [
-  { key: 'entries', label: 'Entrées', color: 'entry' },
-  { key: 'exits', label: 'Sorties', color: 'exit' },
-  { key: 'adjustments', label: 'Ajustements', color: 'adjustment' },
-  { key: 'transfers', label: 'Transferts', color: 'transfer' },
+  { key: 'entries', type: 'ENTRY', label: 'Entrées', color: 'entry' },
+  { key: 'exits', type: 'EXIT', label: 'Sorties', color: 'exit' },
+  { key: 'adjustments', type: 'ADJUSTMENT', label: 'Ajustements', color: 'adjustment' },
+  { key: 'transfers', type: 'TRANSFER', label: 'Transferts', color: 'transfer' },
 ] as const;
 const dateLabelFormatter = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 const dayFormatter = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', timeZone: 'UTC' });
@@ -111,7 +112,7 @@ export function MovementInsightsPanel({
         </div>
         <div className="movement-flow-legend" aria-label="Légende du graphique">
           {typeLabels.map((type) => (
-            <span key={type.key}><i className={`movement-flow-legend__swatch movement-flow-legend__swatch--${type.color}`} />{type.label}</span>
+            <span key={type.key}><i className={`movement-flow-legend__swatch movement-flow-legend__swatch--${type.color}`} style={{ backgroundColor: MOVEMENT_COLORS[type.type] }} />{type.label}</span>
           ))}
         </div>
         <div className="movement-flow-chart" role="group" aria-label="Nombre de mouvements par jour">

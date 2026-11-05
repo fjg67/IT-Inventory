@@ -21,6 +21,10 @@
   --color-data-header: #fafbf9;
   --color-danger: #bd4c42;
   --color-warning: #99621a;
+  --movement-entry: #48a978;
+  --movement-exit: #d58353;
+  --movement-adjustment: #788796;
+  --movement-transfer: #7866b5;
   --shadow-card: 0 20px 60px rgba(34, 48, 39, 0.08);
   --radius-card: 24px;
 

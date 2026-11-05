@@ -141,10 +141,10 @@
   white-space: nowrap;
 }
 
-.movement-summary-card--entry { border-top: 2px solid #51ad79; }
-.movement-summary-card--exit { border-top: 2px solid #d68454; }
-.movement-summary-card--adjustment { border-top: 2px solid #d2a440; }
-.movement-summary-card--transfer { border-top: 2px solid #7888c4; }
+.movement-summary-card--entry { border-top: 2px solid var(--movement-entry); }
+.movement-summary-card--exit { border-top: 2px solid var(--movement-exit); }
+.movement-summary-card--adjustment { border-top: 2px solid var(--movement-adjustment); }
+.movement-summary-card--transfer { border-top: 2px solid var(--movement-transfer); }
 .movement-insights__unit-note {
   margin: 7px 1px 0;
   color: #98a198;
@@ -207,13 +207,13 @@
 }
 
 .movement-flow-legend__swatch--entry,
-.movement-flow-day__segment--entry { background: #48a978; }
+.movement-flow-day__segment--entry { background: var(--movement-entry); }
 .movement-flow-legend__swatch--exit,
-.movement-flow-day__segment--exit { background: #d58353; }
+.movement-flow-day__segment--exit { background: var(--movement-exit); }
 .movement-flow-legend__swatch--adjustment,
-.movement-flow-day__segment--adjustment { background: #d3a13d; }
+.movement-flow-day__segment--adjustment { background: var(--movement-adjustment); }
 .movement-flow-legend__swatch--transfer,
-.movement-flow-day__segment--transfer { background: #7888c4; }
+.movement-flow-day__segment--transfer { background: var(--movement-transfer); }
 
 .movement-flow-chart {
   min-width: 0;
@@ -361,12 +361,12 @@
   height: 6px;
   grid-row: span 2;
   border-radius: 2px;
-  background: #56a979;
+  background: var(--movement-entry);
 }
 
-.movement-conveyor__parcel--exit > i { background: #d58353; }
-.movement-conveyor__parcel--adjustment > i { background: #d3a13d; }
-.movement-conveyor__parcel--transfer > i { background: #7888c4; }
+.movement-conveyor__parcel--exit > i { background: var(--movement-exit); }
+.movement-conveyor__parcel--adjustment > i { background: var(--movement-adjustment); }
+.movement-conveyor__parcel--transfer > i { background: var(--movement-transfer); }
 
 .movement-conveyor__parcel strong {
   overflow: hidden;

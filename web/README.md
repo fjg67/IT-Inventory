@@ -240,8 +240,12 @@ correspondante.
   manuelle et lecture caméra native lorsque le navigateur la prend en charge.
 - Cartographie en lecture seule des deux armoires et de leurs niveaux, avec
   quantités du site réel, seuils correct/faible/rupture et emplacements libres.
-- Analyse avancée des mouvements sur 7, 30 ou 90 jours, avec indicateurs,
-  évolution quotidienne et classement des articles actifs.
+- Analyse avancée des mouvements sur 7, 30 ou 90 jours, avec cinq indicateurs,
+  évolution quotidienne, classement des articles actifs et commentaires
+  d’InvenBot calculés localement, sans service d’IA. Le graphique et son cumul
+  représentent des nombres d’opérations, tandis que le solde net des
+  indicateurs correspond à la différence des quantités totales entrées et
+  sorties. Les données manquantes ou partielles sont signalées.
 - Paramètres Web avec informations de session, liste des accès disponibles,
   déconnexion et préférence de réduction des animations enregistrée dans le
   navigateur.
