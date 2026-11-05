@@ -1,5 +1,8 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { MovementCreateForm } from '../../pages/MovementCreateForm';
+import type { StockMovementInput } from '../../services/movementService';
+
+type InitialMovementType = Extract<StockMovementInput['type'], 'ENTRY' | 'EXIT'>;
 
 export function MovementCreateDrawer({
   siteId,
@@ -7,6 +10,8 @@ export function MovementCreateDrawer({
   onCancel,
   onSaved,
   onSavingChange,
+  initialBarcode,
+  initialType,
   returnFocusRef,
 }: {
   siteId: string;
@@ -14,6 +19,8 @@ export function MovementCreateDrawer({
   onCancel: () => void;
   onSaved: () => void;
   onSavingChange: (saving: boolean) => void;
+  initialBarcode?: string;
+  initialType?: InitialMovementType;
   returnFocusRef?: RefObject<HTMLButtonElement | null>;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -89,6 +96,8 @@ export function MovementCreateDrawer({
         </button>
         <MovementCreateForm
           siteId={siteId}
+          initialBarcode={initialBarcode}
+          initialType={initialType}
           onCancel={onCancel}
           onSaved={onSaved}
           onSavingChange={onSavingChange}

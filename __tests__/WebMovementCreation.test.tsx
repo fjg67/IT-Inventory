@@ -43,14 +43,21 @@ const article: ArticleListItem = {
   barcode: null,
 };
 
-async function renderForm() {
+async function renderForm(options: { initialBarcode?: string; initialType?: 'ENTRY' | 'EXIT' } = {}) {
   const onCancel = jest.fn();
   const onSaved = jest.fn();
   const onSavingChange = jest.fn();
   let renderer: TestRenderer.ReactTestRenderer;
   await act(async () => {
     renderer = TestRenderer.create(
-      <MovementCreateForm siteId="site-a" onCancel={onCancel} onSaved={onSaved} onSavingChange={onSavingChange} />,
+      <MovementCreateForm
+        siteId="site-a"
+        initialBarcode={options.initialBarcode}
+        initialType={options.initialType}
+        onCancel={onCancel}
+        onSaved={onSaved}
+        onSavingChange={onSavingChange}
+      />,
     );
   });
   renderedForms.push(renderer!);
@@ -149,6 +156,35 @@ describe('movement creation', () => {
     )).toBe(true);
     expect(mockBotActions.play).toHaveBeenCalledWith('found');
     expect(preventDefault).toHaveBeenCalledTimes(2);
+  });
+
+  it('préremplit une entrée depuis un code-barres exact sans enregistrer le mouvement', async () => {
+    mockGetArticles.mockResolvedValueOnce([{ ...article, barcode: '123456789012' }]);
+    const { renderer, onSaved } = await renderForm({ initialBarcode: '123456789012', initialType: 'ENTRY' });
+
+    expect(renderer.root.findByProps({ id: 'movement-create-form' })).toBeDefined();
+    expect(renderer.root.findByProps({ type: 'number' }).props.value).toBe('1');
+    expect(buttonWithText(renderer.root, 'Confirmer le mouvement')).toBeDefined();
+    expect(mockCreateMovement).not.toHaveBeenCalled();
+
+    await act(async () => renderer.root.findByType('form').props.onSubmit({ preventDefault: jest.fn() }));
+
+    expect(mockCreateMovement).toHaveBeenCalledWith({
+      articleId: 'article-a',
+      type: 'ENTRY',
+      quantity: 1,
+      reason: '',
+    });
+    expect(onSaved).toHaveBeenCalledTimes(1);
+  });
+
+  it('n’associe pas un code inconnu au premier article du catalogue', async () => {
+    const { renderer } = await renderForm({ initialBarcode: 'CODE-INCONNU', initialType: 'EXIT' });
+    const query = renderer.root.findByProps({ id: 'movement-article-query' });
+
+    expect(query.props.value).toBe('CODE-INCONNU');
+    expect(renderer.root.findByProps({ className: 'movement-create-empty' }).children.join('')).toContain('Aucun article ne correspond');
+    expect(buttonWithText(renderer.root, 'Continuer').props.disabled).toBe(true);
   });
 
   it('shows article photos and stock gauges throughout the guided form', async () => {

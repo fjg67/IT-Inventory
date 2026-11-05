@@ -35,11 +35,15 @@ const operationBotState: Record<StockMovementInput['type'], 'receiving' | 'dispa
 
 export function MovementCreateForm({
   siteId,
+  initialBarcode,
+  initialType,
   onCancel,
   onSaved,
   onSavingChange,
 }: {
   siteId: string;
+  initialBarcode?: string;
+  initialType?: Extract<StockMovementInput['type'], 'ENTRY' | 'EXIT'>;
   onCancel: () => void;
   onSaved: () => void;
   onSavingChange: (saving: boolean) => void;
@@ -47,11 +51,11 @@ export function MovementCreateForm({
   const [articles, setArticles] = useState<ArticleListItem[]>([]);
   const [destinations, setDestinations] = useState<AvailableSite[]>([]);
   const [articleId, setArticleId] = useState('');
-  const [type, setType] = useState<StockMovementInput['type'] | null>(null);
+  const [type, setType] = useState<StockMovementInput['type'] | null>(initialType ?? null);
   const [quantity, setQuantity] = useState('1');
   const [reason, setReason] = useState('');
   const [destinationSiteId, setDestinationSiteId] = useState('');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialBarcode?.trim() ?? '');
   const [activeOptionId, setActiveOptionId] = useState<string | null>(null);
   const [recentArticleIds, setRecentArticleIds] = useState<string[]>(() => recentArticleIdsBySite.get(siteId) ?? []);
   const [previewPhoto, setPreviewPhoto] = useState<PhotoPreviewItem | null>(null);
@@ -111,9 +115,23 @@ export function MovementCreateForm({
       .then(([availableArticles, sites]) => {
         if (controller.signal.aborted) return;
         setArticles(availableArticles);
+        const scannedCode = initialBarcode?.trim().toLocaleLowerCase();
+        const scannedArticle = scannedCode
+          ? availableArticles.find((article) =>
+            article.barcode?.trim().toLocaleLowerCase() === scannedCode ||
+            article.reference.trim().toLocaleLowerCase() === scannedCode)
+          : undefined;
         setArticleId((current) => current && availableArticles.some((article) => article.id === current)
           ? current
-          : availableArticles[0]?.id || '');
+          : scannedArticle?.id ?? (initialBarcode ? '' : availableArticles[0]?.id || ''));
+        if (scannedArticle) {
+          setActiveOptionId(scannedArticle.id);
+          if (initialType) {
+            const canUseInitialType = initialType !== 'EXIT' || scannedArticle.quantity > 0;
+            setType(canUseInitialType ? initialType : null);
+            setStep(canUseInitialType ? 'details' : 'type');
+          }
+        }
         const childSites = sites.filter((site) => site.parentSiteId === siteId);
         setDestinations(childSites);
         setDestinationSiteId((current) => current || childSites[0]?.id || '');
@@ -128,7 +146,7 @@ export function MovementCreateForm({
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [botActions, siteId]);
+  }, [botActions, initialBarcode, initialType, siteId]);
 
   function selectArticle(article: ArticleListItem, clearSearch = false) {
     setArticleId(article.id);

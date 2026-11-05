@@ -237,7 +237,12 @@ correspondante.
 - Module Parc PC avec recherche, états, compteurs, pagination et export CSV,
   raccordé à l’endpoint de données réelles.
 - Scanner d’articles avec recherche par code-barres, référence et nom, saisie
-  manuelle et lecture caméra native lorsque le navigateur la prend en charge.
+  manuelle et lecture caméra native, avec décodeur ZXing/WASM chargé à la
+  demande lorsque le navigateur ne fournit pas `BarcodeDetector`. Les actions
+  Recherche, Entrée et Sortie réutilisent le formulaire guidé de mouvement;
+  un code exact préremplit l’article et le type, sans enregistrer sans
+  confirmation. Le mode Scan rapide prépare la saisie suivante après validation;
+  la caméra doit être rouverte explicitement entre deux opérations.
 - Cartographie en lecture seule des deux armoires et de leurs niveaux, avec
   quantités du site réel, seuils correct/faible/rupture et emplacements libres.
 - Analyse avancée des mouvements sur 7, 30 ou 90 jours, avec cinq indicateurs,

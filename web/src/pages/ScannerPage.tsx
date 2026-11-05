@@ -1,38 +1,126 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ArticlePage as ArticlePageData } from '../types/inventory';
 import { articleService } from '../services/articleService';
 import { apiMessage } from '../services/apiClient';
 import { DataError, DataNotice } from './DashboardPage';
+import { CameraScanner } from '../components/scanner/CameraScanner';
+import { ManualScanner } from '../components/scanner/ManualScanner';
+import { MovementCreateDrawer } from '../components/movements/MovementCreateDrawer';
+import { QuickScanToggle } from '../components/scanner/QuickScanToggle';
+import { ScanModeSwitch } from '../components/scanner/ScanModeSwitch';
+import { ScanViewport } from '../components/scanner/ScanViewport';
+import { ScannerOperationSwitch } from '../components/scanner/ScannerOperationSwitch';
+import { WedgeScanner } from '../components/scanner/WedgeScanner';
+import { getMovementType, readQuickScanPreference, saveQuickScanPreference, type ScannerOperation, type ScannerMovementType } from '../components/scanner/scannerOperations';
+import { readScanModePreference, saveScanModePreference, type ScanMode } from '../components/scanner/scanMode';
+import { useBarcodeWedge } from '../components/scanner/useBarcodeWedge';
+import { useCamera } from '../components/scanner/useCamera';
+import '../components/scanner/scanner.css';
 
-type DetectedBarcode = { rawValue: string };
-type BarcodeDetectorLike = { detect(source: HTMLVideoElement): Promise<DetectedBarcode[]> };
-type BarcodeDetectorConstructor = new () => BarcodeDetectorLike;
-
-declare global {
-  interface Window {
-    BarcodeDetector?: BarcodeDetectorConstructor;
-  }
-}
-
-export function ScannerPage({ siteId }: { siteId?: string }) {
+export function ScannerPage({ siteId, canCreateMovements = false }: { siteId?: string; canCreateMovements?: boolean }) {
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
   const [result, setResult] = useState<ArticlePageData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [cameraMessage, setCameraMessage] = useState<string | null>(null);
+  const [scanNotice, setScanNotice] = useState<string | null>(null);
+  const [operation, setOperation] = useState<ScannerOperation>('search');
+  const [quickScan, setQuickScan] = useState(readQuickScanPreference);
+  const [scanMode, setScanMode] = useState<ScanMode>(readScanModePreference);
+  const [movementRequest, setMovementRequest] = useState<{ barcode: string; type: ScannerMovementType } | null>(null);
+  const [savingMovement, setSavingMovement] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [reload, setReload] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const cameraRef = useRef<MediaStream | null>(null);
-  const cameraRequestRef = useRef(0);
-
-  const stopCamera = useCallback(() => {
-    cameraRequestRef.current += 1;
-    cameraRef.current?.getTracks().forEach((track) => track.stop());
-    cameraRef.current = null;
-    setCameraStream(null);
+  const manualInputRef = useRef<HTMLInputElement>(null);
+  const submitLabel = operation === 'entry'
+    ? 'Préparer une entrée'
+    : operation === 'exit'
+      ? 'Préparer une sortie'
+      : 'Rechercher';
+  const submitCode = useCallback((value: string) => {
+    const code = value.trim();
+    if (code.length < 2) {
+      setError('Saisissez au moins 2 caractères pour rechercher une référence.');
+      setResult(null);
+      return;
+    }
+    setError(null);
+    setSearch(code);
   }, []);
+  const handleScannedCode = useCallback((value: string) => {
+    const code = value.trim();
+    if (code.length < 2) {
+      submitCode(code);
+      return;
+    }
+    if (operation === 'search') {
+      setScanNotice('Recherche lancée.');
+      submitCode(code);
+      return;
+    }
+    const type = getMovementType(operation);
+    if (!canCreateMovements || !type) {
+      setScanNotice('Votre compte ne peut pas créer des mouvements depuis le scanner.');
+      return;
+    }
+    setError(null);
+    setScanNotice(`Code détecté. Vérifiez les détails avant de confirmer ${type === 'ENTRY' ? 'l’entrée' : 'la sortie'}.`);
+    setSearch('');
+    setResult(null);
+    setQuery('');
+    setMovementRequest({ barcode: code, type });
+  }, [canCreateMovements, operation, submitCode]);
+  const onWedgeScan = useCallback((code: string, wasRapid: boolean) => {
+    setQuery(code);
+    handleScannedCode(code);
+    if (operation === 'search') setScanNotice(wasRapid ? 'Code reçu de la douchette.' : 'Lecture terminée.');
+  }, [handleScannedCode, operation]);
+  const camera = useCamera(scanMode === 'camera' && movementRequest === null, handleScannedCode);
+  const wedge = useBarcodeWedge(scanMode === 'wedge' && movementRequest === null, onWedgeScan);
+
+  function changeScanMode(nextMode: ScanMode) {
+    setScanMode(nextMode);
+    saveScanModePreference(nextMode);
+    setScanNotice(null);
+  }
+
+  function changeOperation(nextOperation: ScannerOperation) {
+    setOperation(nextOperation);
+    setQuery('');
+    setSearch('');
+    setResult(null);
+    setError(null);
+    setScanNotice(null);
+  }
+
+  function changeQuickScan(enabled: boolean) {
+    setQuickScan(enabled);
+    saveQuickScanPreference(enabled);
+  }
+
+  function handleMovementCancel() {
+    if (savingMovement) return;
+    setMovementRequest(null);
+    setQuery('');
+    setScanNotice('Mouvement annulé. Vous pouvez scanner un autre article.');
+  }
+
+  function handleMovementSaved() {
+    const scannedCode = movementRequest?.barcode ?? '';
+    setMovementRequest(null);
+    setSavingMovement(false);
+    setReload((value) => value + 1);
+    setError(null);
+    if (quickScan) {
+      setQuery('');
+      setSearch('');
+      setResult(null);
+      setScanNotice('Mouvement enregistré. Prêt pour le scan suivant.');
+      return;
+    }
+    setQuery('');
+    setSearch(scannedCode);
+    setScanNotice('Mouvement enregistré. Le stock a été actualisé.');
+  }
 
   useEffect(() => {
     if (!siteId || !search) {
@@ -55,100 +143,19 @@ export function ScannerPage({ siteId }: { siteId?: string }) {
   }, [siteId, search, reload]);
 
   useEffect(() => {
-    if (!cameraStream) return;
-    const Detector = window.BarcodeDetector;
-    const video = videoRef.current;
-    if (!Detector || !video) return;
-    video.srcObject = cameraStream;
-    let stopped = false;
-    let timer = 0;
-    const detector = new Detector();
+    if (movementRequest || scanMode !== 'wedge') return;
+    const frame = window.requestAnimationFrame(() => wedge.focusInput());
+    return () => window.cancelAnimationFrame(frame);
+  }, [movementRequest, scanMode, wedge.focusInput]);
 
-    async function scanFrame() {
-      if (stopped || !video) return;
-      try {
-        const detected = await detector.detect(video);
-        const code = detected.find((item) => item.rawValue.trim())?.rawValue.trim();
-        if (code) {
-          setQuery(code);
-          setSearch(code);
-          setCameraMessage('Code détecté. Recherche dans le stock…');
-          stopCamera();
-          return;
-        }
-      } catch {
-        if (!stopped) setCameraMessage('La lecture caméra a échoué. Vous pouvez saisir le code manuellement.');
-        stopCamera();
-        return;
-      }
-      if (!stopped) timer = window.setTimeout(scanFrame, 250);
-    }
-
-    void video.play().then(scanFrame).catch(() => {
-      setCameraMessage('Impossible de démarrer la caméra. Vérifiez son autorisation ou saisissez le code manuellement.');
-      stopCamera();
-    });
-    return () => {
-      stopped = true;
-      window.clearTimeout(timer);
-      cameraStream.getTracks().forEach((track) => track.stop());
-      if (video.srcObject === cameraStream) video.srcObject = null;
-    };
-  }, [cameraStream, stopCamera]);
-
-  useEffect(() => () => {
-    cameraStream?.getTracks().forEach((track) => track.stop());
-  }, [cameraStream]);
-
-  useEffect(() => () => {
-    cameraRequestRef.current += 1;
-    cameraRef.current?.getTracks().forEach((track) => track.stop());
-    cameraRef.current = null;
-  }, []);
+  useEffect(() => {
+    if (movementRequest || scanMode !== 'manual') return;
+    const frame = window.requestAnimationFrame(() => manualInputRef.current?.focus({ preventScroll: true }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [movementRequest, scanMode]);
 
   if (!siteId) {
     return <DataNotice title="Sélectionnez un site" message="Le scanner recherche une référence uniquement dans le stock du site actif et de ses sous-sites." />;
-  }
-
-  async function startCamera() {
-    setCameraMessage(null);
-    if (!window.BarcodeDetector) {
-      setCameraMessage('La lecture caméra n’est pas prise en charge par ce navigateur. Saisissez le code-barres ci-dessous.');
-      return;
-    }
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraMessage('La caméra n’est pas disponible dans ce contexte. Saisissez le code-barres ci-dessous.');
-      return;
-    }
-    const requestId = ++cameraRequestRef.current;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: { facingMode: { ideal: 'environment' } },
-      });
-      if (requestId !== cameraRequestRef.current) {
-        stream.getTracks().forEach((track) => track.stop());
-        return;
-      }
-      cameraRef.current = stream;
-      setCameraStream(stream);
-    } catch {
-      setCameraMessage('Accès caméra refusé ou indisponible. Vérifiez les autorisations du navigateur, ou saisissez le code manuellement.');
-    }
-  }
-
-  function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const code = query.trim();
-    if (code.length < 2) {
-      setError('Saisissez au moins 2 caractères pour rechercher une référence.');
-      setResult(null);
-      return;
-    }
-    stopCamera();
-    setCameraMessage(null);
-    setError(null);
-    setSearch(code);
   }
 
   const matches = result?.items.slice().sort((left, right) => {
@@ -158,44 +165,91 @@ export function ScannerPage({ siteId }: { siteId?: string }) {
   });
 
   return (
-    <section className="data-page" aria-labelledby="scanner-heading">
-      <div className="page-heading">
+    <section className="data-page scanner-page" aria-labelledby="scanner-heading">
+      <div className="page-heading scanner-heading">
         <div>
           <span className="eyebrow">RECHERCHE PAR CODE</span>
           <h2 id="scanner-heading">Scanner</h2>
-          <p>Scannez ou saisissez un code-barres pour retrouver l’article dans le stock.</p>
+          <p>Un poste unique pour la caméra, la douchette ou la saisie manuelle.</p>
         </div>
-        <span className="data-source"><span /> Site actif</span>
+        <span className="scanner-heading__status"><i aria-hidden="true" />Site actif</span>
       </div>
 
-      <section className="panel scanner-panel">
-        <div className="scanner-panel__intro">
-          <span className="scanner-panel__icon" aria-hidden="true"><BarcodeIcon /></span>
-          <div><strong>Identifier un article</strong><p>La recherche porte sur le code-barres, la référence ou le nom.</p></div>
-        </div>
-        {cameraStream && <video className="scanner-video" ref={videoRef} autoPlay muted playsInline aria-label="Caméra de lecture des codes-barres" />}
-        <div className="scanner-actions">
-          {cameraStream
-            ? <button className="button button--subtle" type="button" onClick={() => { stopCamera(); setCameraMessage(null); }}>Arrêter la caméra</button>
-            : <button className="button button--subtle" type="button" onClick={() => void startCamera()}>Ouvrir la caméra</button>}
-          <span className="scanner-actions__hint">La caméra nécessite une connexion sécurisée (HTTPS).</span>
-        </div>
-        {cameraMessage && <div className="scanner-message" role="status">{cameraMessage}</div>}
-        <form className="scanner-search" onSubmit={submitSearch} role="search">
-          <label htmlFor="scanner-code">Code-barres ou référence</label>
-          <div>
-            <input
-              id="scanner-code"
-              autoComplete="off"
-              inputMode="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Ex. 123456789"
-            />
-            <button className="button button--primary" type="submit" disabled={loading}>Rechercher</button>
+      <section className="panel scanner-workstation" aria-label="Poste de scan">
+        <div className="scanner-workstation__top">
+          <div className="scanner-workstation__title">
+            <strong>Action du scanner</strong>
+            <span>Choisissez la recherche ou le type de mouvement à préparer.</span>
           </div>
-        </form>
+          <div className="scanner-workstation__operation">
+            <ScannerOperationSwitch value={operation} canCreateMovements={canCreateMovements} onChange={changeOperation} />
+            {!canCreateMovements && <small id="scanner-operation-help">Votre compte peut rechercher des articles, mais ne peut pas créer de mouvements.</small>}
+          </div>
+        </div>
+
+        <div className="scanner-workstation__tools">
+          <div className="scanner-workstation__scan-mode">
+            <span>Moyen de scan</span>
+            <ScanModeSwitch value={scanMode} onChange={changeScanMode} />
+          </div>
+          {operation !== 'search' && (
+            <div className="scanner-workstation__quick-scan">
+              <QuickScanToggle enabled={quickScan} onChange={changeQuickScan} descriptionId="scanner-quick-scan-help" />
+              <small id="scanner-quick-scan-help">Après confirmation, efface le code pour le scan suivant. La caméra doit être rouverte manuellement.</small>
+            </div>
+          )}
+        </div>
+
+        {scanMode === 'camera' && <CameraScanner camera={camera} />}
+        {scanMode === 'wedge' && (
+          <>
+            <ScanViewport mode="wedge" state="scanning">
+              <div className="scan-standby">
+                <span aria-hidden="true"><BarcodeIcon /></span>
+                <strong>Prêt à recevoir un code</strong>
+                <small>Présentez une étiquette à la douchette.</small>
+              </div>
+            </ScanViewport>
+            <WedgeScanner
+              value={query}
+              inputRef={wedge.inputRef}
+              onKeyDown={wedge.onKeyDown}
+              onChange={setQuery}
+              onSearch={() => handleScannedCode(query)}
+              submitLabel={submitLabel}
+            />
+          </>
+        )}
+        {scanMode === 'manual' && (
+          <>
+            <ScanViewport mode="manual" state="idle">
+              <div className="scan-standby">
+                <span aria-hidden="true"><BarcodeIcon /></span>
+                <strong>Saisir une recherche</strong>
+                <small>Code-barres, référence ou nom de l’article.</small>
+              </div>
+            </ScanViewport>
+            <ManualScanner value={query} inputRef={manualInputRef} onChange={setQuery} onSearch={() => handleScannedCode(query)} submitLabel={submitLabel} onClear={() => {
+              setQuery('');
+              setSearch('');
+              setError(null);
+            }} />
+          </>
+        )}
+        {scanNotice && <div className="scanner-message" role="status">{scanNotice}</div>}
       </section>
+
+      {movementRequest && (
+        <MovementCreateDrawer
+          siteId={siteId}
+          saving={savingMovement}
+          initialBarcode={movementRequest.barcode}
+          initialType={movementRequest.type}
+          onCancel={handleMovementCancel}
+          onSaved={handleMovementSaved}
+          onSavingChange={setSavingMovement}
+        />
+      )}
 
       {error && <DataError message={error} onRetry={() => setReload((value) => value + 1)} />}
       {loading && <div className="loading-card loading-card--table" aria-live="polite"><span className="spinner spinner--green" aria-hidden="true" />Recherche dans le stock…</div>}
@@ -230,7 +284,7 @@ export function ScannerPage({ siteId }: { siteId?: string }) {
 
 function BarcodeIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none">
+    <svg viewBox="0 0 24 24" fill="none" focusable="false">
       <path d="M3 5v14m3-14v14m3-14v14m4-14v14m3-14v14m3-14v14m3-14v14" />
     </svg>
   );

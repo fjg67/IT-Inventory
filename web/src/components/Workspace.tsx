@@ -203,7 +203,12 @@ export function Workspace({
             />
           )}
           {activeKey === 'computers' && <ComputersPage siteId={session.activeSite?.id} />}
-          {activeKey === 'scanner' && <ScannerPage siteId={session.activeSite?.id} />}
+          {activeKey === 'scanner' && (
+            <ScannerPage
+              siteId={session.activeSite?.id}
+              canCreateMovements={session.user.permissions.includes('movements:write')}
+            />
+          )}
           {activeKey === 'map' && <StockMapPage siteId={session.activeSite?.id} />}
           {activeKey === 'analytics' && <AnalyticsPage siteId={session.activeSite?.id} />}
           {activeKey === 'settings' && <SettingsPage session={session} signingOut={signingOut} onSignOut={onSignOut} />}
@@ -214,10 +219,7 @@ export function Workspace({
             />
           )}
           {!activeSection && <DataNotice title="Aucun module accessible" message="Votre compte n’a actuellement accès à aucun module Web." />}
-          <section className="workspace__footnote">
-            <span className="workspace__footnote-dot" />
-            Les accès visibles dans la navigation ne remplacent jamais les contrôles de permissions côté serveur.
-          </section>
+          {/* Les accès visibles dans la navigation ne remplacent jamais les contrôles de permissions côté serveur. */}
         </main>
       </div>
     </div>
